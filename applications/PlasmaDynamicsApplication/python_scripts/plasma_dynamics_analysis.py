@@ -19,8 +19,7 @@ import swimming_DEM_procedures as SDP
 import swimming_DEM_gid_output """
 import CFD_DEM_for_plasma_dynamics_coupling
 import plasma_dynamics_procedures
-import embedded
-import variables_management
+#import variables_management
 
 def Say(*args):
     Logger.PrintInfo("PlasmaDynamics", *args)
@@ -70,9 +69,6 @@ class PlasmaDynamicsLogger(object):
     def getvalue(self):
         return self.terminal.getvalue()
 
-class python_parameters:
-    def __init__(self):
-        pass
 
 class PlasmaDynamicsAnalysis(AnalysisStage):
     def __enter__ (self):
@@ -83,11 +79,21 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
 
     def __init__(self, model, parameters = Parameters("{}")):
         sys.stdout = PlasmaDynamicsLogger()
+        self.StartTimer()
+        self.model = model
+        self.main_path = os.getcwd()
+        self.project_parameters = parameters
+        self.vars_man = variables_management.VariablesManager(self.project_parameters)
+
+        # storing some frequently used variables
+        self.time_step = self.project_parameters["MaxTimeStep"].GetDouble()
+        self.end_time   = self.project_parameters["FinalTime"].GetDouble()
+        self.do_print_results = self.project_parameters["do_print_results_option"].GetBool()
 
     # To-do: for the moment, provided for compatibility
     def _CreateSolver(self):
-        import swimming_DEM_solver
-        return swimming_DEM_solver.SwimmingDEMSolver(self.model,
+        import plasma_dynamics_solver
+        return plasma_dynamics_solver.PlasmaDynamicsSolver(self.model,
                                                      self.project_parameters,
                                                      self.GetFieldUtility(),
                                                      self.fluid_solution._GetSolver(),

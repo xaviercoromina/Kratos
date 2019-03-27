@@ -1,4 +1,4 @@
-from __future__ import print_function, absolute_import, division #makes KratosMultiphysics backward compatible with python 2.6 and 2.7
+""" from __future__ import print_function, absolute_import, division #makes KratosMultiphysics backward compatible with python 2.6 and 2.7
 import math
 from KratosMultiphysics import *
 #from KratosMultiphysics.IncompressibleFluidApplication import *
@@ -46,7 +46,7 @@ class ProjectionModule:
                 self.projector = BinBasedIonDEMFluidCoupledMapping3D(self.projector_parameters)
 
             else:
-                self.projector = BinBasedDEMFluidCoupledMapping3D(self.projector_parameters)
+                raise Exception('You have to precise the type of charged particles: only IonParticle available at the moment') 
             self.bin_of_objects_fluid = BinBasedFastPointLocator3D(fluid_model_part)
 
         else:
@@ -77,6 +77,7 @@ class ProjectionModule:
         else:
             self.bin_of_objects_fluid.UpdateSearchDatabaseAssignedSize(HMin)
 
+    #TODO: Transfer electric field
     def ApplyForwardCoupling(self, alpha = None):
         if self.do_impose_flow_from_field:
             self.ImposeFluidFlowOnParticles()
@@ -127,3 +128,4 @@ class ProjectionModule:
 
     def ComputePostProcessResults(self, particles_process_info):
         self.projector.ComputePostProcessResults(self.particles_model_part, self.fluid_model_part, self.FEM_DEM_model_part, self.bin_of_objects_fluid, particles_process_info)
+ """

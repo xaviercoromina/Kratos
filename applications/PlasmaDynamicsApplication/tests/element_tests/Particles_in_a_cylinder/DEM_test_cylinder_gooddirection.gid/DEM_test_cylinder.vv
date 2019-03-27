@@ -1,0 +1,33 @@
+BeginZE /home/mchung/GidProjects/DEM_test_cylinder.gid/DEM_test_cylinder.vv
+   x -0.794062256813049316 2.99769830703735352
+   y 1.42108166217803955 -1.87949788570404053
+   z -2.29263639450073242 2.3019866943359375
+   e 1.30671346187591553
+   v 0.350124704534335474 -0.253748488844604936 0.0149230821340537584
+   r -0.901555154887069499
+   m 0.870778024196624756 -0.150779262185096741 0.467986404895782471 0 -0.204595193266868591 0.754379987716674805 0.623740017414093018 0 -0.447086632251739502 -0.638886868953704834 0.626048803329467773 0 0 0 0 1
+   c 0.990575671195983887 -0.00474005984142422676 -0.00467504654079675674
+   pd 0
+   pno 0
+   pfo 0
+   pf 4
+   pv 0
+   NowUse 1
+   DrawingType 0
+   LightVector 90 90 150 0
+   OGLShadow(UseShadows) 0
+   OGLShadow(RenderMode) RenderNice
+   OGLShadow(ShadowBias) -0.002
+   OGLShadow(AmbientShadows) 1
+   OGLShadow(UseFBO) 1
+   OGLShadow(FBOSize) 2048
+   OGLShadow(DimmedLightFactor) 0.02
+   OGLStereo(UseStereo) 0
+   OGLStereo(RelativeEyeDistance) 1
+   OGLStereo(FlipEyes) 0
+   OGLStereo(StereoMode) AnaglyphColors
+   OGLStereo(EyeDistance) 0.075
+   OGLStereo(LeftEyeDistance) 1 0 0 1
+   OGLStereo(RightEyeDistance) 0 1 1 1
+EndZE /home/mchung/GidProjects/DEM_test_cylinder.gid/DEM_test_cylinder.vv
+

@@ -17,7 +17,7 @@ from plasma_dynamics_analysis import PlasmaDynamicsAnalysis
 
 class PlasmaDynamicsAnalysisWithFlush(PlasmaDynamicsAnalysis):
     def __init__(self, model, algorithm = None, parameters=Parameters("{}")):
-        with open('ProjectParameters.json','r') as parameter_file:
+        with open('ProjectParametersPlasmaDynamics.json','r') as parameter_file:
             parameters = Parameters(parameter_file.read())
         super(PlasmaDynamicsAnalysisWithFlush, self).__init__(model, parameters)
 
