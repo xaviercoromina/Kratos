@@ -110,38 +110,11 @@ class VariablesManager:
         self.fluid_vars += self.fluid_printing_vars
         self.fluid_vars += self.coupling_fluid_vars
 
-        if parameters["pressure_grad_recovery_type"].GetInt() > 0:
-            self.fluid_vars += [RECOVERED_PRESSURE_GRADIENT]
 
-        if (parameters["gradient_calculation_type"].GetInt() > 1
-            or parameters["pressure_grad_recovery_type"].GetInt() > 1
-            or parameters["material_acceleration_calculation_type"].GetInt() == 7
-            or parameters["laplacian_calculation_type"].GetInt() > 1):
-            self.fluid_vars += [NODAL_WEIGHTS]
 
-        if parameters["material_acceleration_calculation_type"].GetInt():
-            self.fluid_vars += [MATERIAL_ACCELERATION]
-            self.fluid_vars += [VELOCITY_COMPONENT_GRADIENT]
+        #self.fluid_vars += [NODAL_WEIGHTS]
 
-            if (parameters["material_acceleration_calculation_type"].GetInt() == 5
-                or parameters["material_acceleration_calculation_type"].GetInt() == 6):
-                if parameters["store_full_gradient_option"].GetBool():
-                    self.fluid_vars += [VELOCITY_X_GRADIENT]
-                    self.fluid_vars += [VELOCITY_Y_GRADIENT]
-                    self.fluid_vars += [VELOCITY_Z_GRADIENT]
 
-        if (parameters["vorticity_calculation_type"].GetInt() > 0
-            or PT.RecursiveFindParametersWithCondition(parameters["properties"], 'vorticity_induced_lift_parameters')):
-            self.fluid_vars += [VORTICITY]
-
-        if parameters["laplacian_calculation_type"].GetInt():
-            self.fluid_vars += [VELOCITY_LAPLACIAN]
-
-        if PT.RecursiveFindTrueBoolInParameters(parameters["properties"], 'do_apply_faxen_corrections'):
-            self.fluid_vars += [VELOCITY_LAPLACIAN_RATE]
-
-        if parameters["calculate_diffusivity_option"].GetBool():
-            self.fluid_vars += [CONDUCTIVITY]
 
         # dem variables
         self.dem_vars = []
@@ -228,6 +201,22 @@ class VariablesManager:
         #Adding results to print in case some parameters are used (redundancy is managed with EliminateRepeatedValuesFromList)
         if parameters["ElementType"].GetString() == "IonParticle3D":
             self.dem_nodal_results += ["EXTERNAL_APPLIED_FORCE"]
+            self.dem_nodal_results += ["ELECTRIC_FIELD_PROJECTED_TO_PARTICLE"]
+            self.dem_nodal_results += ["MACROPARTICLE_ION_DENSITY"]
+            self.dem_nodal_results += ["PARTICLE_ION_VELOCITY"]
+            
+            self.fluid_nodal_results += ["ELECTRIC_POTENTIAL"]
+            self.fluid_nodal_results += ["FLUID_ION_DENSITY"]
+            self.fluid_nodal_results += ["FLUID_ELECTRON_DENSITY"]
+            self.fluid_nodal_results += ["FLUID_NEUTRAL_DENSITY"]
+            self.fluid_nodal_results += ["ELECTRIC_FIELD"]
+            self.fluid_nodal_results += ["MAGNETIC_FIELD"]
+
+
+
+
+
+
 
 
 
@@ -295,37 +284,10 @@ class VariablesManager:
         if parameters["coupling_level_type"].GetInt() > 0:
             self.coupling_dem_vars += [ADDITIONAL_FORCE] # Here for safety for the moment
 
-            if PT.RecursiveFindTrueBoolInParameters(parameters["properties"], 'do_apply_faxen_corrections'):
-                self.coupling_dem_vars += [FLUID_VEL_LAPL_PROJECTED]
-                self.coupling_dem_vars += [FLUID_VEL_LAPL_RATE_PROJECTED]
-
-            if parameters["basset_force_type"].GetInt() > 0:
-                self.coupling_dem_vars += [FLUID_VEL_PROJECTED_RATE]
 
         if parameters["coupling_level_type"].GetInt() >= 1 or parameters["fluid_model_type"].GetInt() == 0:
             self.coupling_dem_vars += [FLUID_FRACTION_PROJECTED]
 
-        if (parameters["coupling_level_type"].GetInt() >= 1
-            and 'FLUID_FRACTION_GRADIENT_PROJECTED' in self.dem_printing_vars):
-            self.coupling_dem_vars += [FLUID_FRACTION_GRADIENT_PROJECTED]
-
-        if parameters["non_newtonian_option"].GetBool():
-            self.coupling_dem_vars += [POWER_LAW_N]
-            self.coupling_dem_vars += [POWER_LAW_K]
-            self.coupling_dem_vars += [YIELD_STRESS]
-
-        if PT.RecursiveFindParametersWithCondition(parameters["properties"], 'vorticity_induced_lift_parameters'):
-            self.coupling_dem_vars += [FLUID_VORTICITY_PROJECTED]
-            self.coupling_dem_vars += [SHEAR_RATE_PROJECTED]
-
-        if parameters["embedded_option"].GetBool():
-            self.coupling_dem_vars += [DISTANCE]
-
-        if 'REYNOLDS_NUMBER' in self.dem_nodal_results:
-            self.coupling_dem_vars += [REYNOLDS_NUMBER]
-
-        if parameters["apply_time_filter_to_fluid_fraction_option"].GetBool():
-            self.time_filtered_vars += [FLUID_FRACTION_FILTERED]
 
         if parameters["filter_velocity_option"].GetBool():
             self.time_filtered_vars += [PARTICLE_VEL_FILTERED]

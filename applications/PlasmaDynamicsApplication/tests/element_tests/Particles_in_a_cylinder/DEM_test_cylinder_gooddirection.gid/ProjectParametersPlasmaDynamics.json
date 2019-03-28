@@ -8,6 +8,7 @@
     "CleanIndentationsOption"        : false,
 
     "strategy_parameters"            : {
+        "strategy"                   : "plasma_sphere_strategy",
         "RemoveBallsInitiallyTouchingWalls" : false
     },
 
@@ -16,10 +17,10 @@
     "Multifile"                      : "multiple_files",
 
     "ElementType__comment"           : "Should_be_put_in_main.py_too",
-    "ElementType"                    : "SphericPartDEMElement3D", 
+    "ElementType"                    : "IonParticle3D", 
 
 
-    "TranslationalIntegrationScheme" : "Symplectic_Euler",
+    "TranslationalIntegrationScheme" : "Hybrid_Bashforth",
     "RotationalIntegrationScheme"    : "Direct_Integration",
     "MaxTimeStep"                    : 1e-6,
     "FinalTime"                      : 1.0,
@@ -29,57 +30,20 @@
     "coupling_level_type"                    : 0,
 
 
-    "dem_nodal_results" : {"REYNOLDS_NUMBER" : false,
-        "SLIP_VELOCITY" : true,
-        "RADIUS" : false,
-        "ANGULAR_VELOCITY" : false,
-        "ELASTIC_FORCES" : false,
-        "CONTACT_FORCES" : false,
-        "TOTAL_FORCES" : false,
-        "EXTERNAL_APPLIED_FORCE" : true,
-        "CATION_CONCENTRATION" : false,
-        "PRESSURE_GRAD_PROJECTED" : false,
-        "HYDRODYNAMIC_FORCE" : false,
-        "HYDRODYNAMIC_MOMENT" : false,
-        "FLUID_VEL_PROJECTED_RATE" : false,
-        "FLUID_VEL_LAPL_PROJECTED" : false,
-        "FLUID_VEL_LAPL_RATE_PROJECTED" : false,
-        "FLUID_ACCEL_PROJECTED" : false,
-        "FLUID_ACCEL_FOLLOWING_PARTICLE_PROJECTED" : false,
-        "FLUID_FRACTION_GRADIENT_PROJECTED" : false,
-        "FLUID_VISCOSITY_PROJECTED" : false,
-        "BUOYANCY" : false,
-        "DRAG_FORCE" : false,
-        "VIRTUAL_MASS_FORCE" : false,
-        "BASSET_FORCE" : false,
-        "LIFT_FORCE" : false,
-        "IMPACT_WEAR" : false,
-        "NON_DIMENSIONAL_VOLUME_WEAR" : false,
-        "PRESSURE" : false,
-        "FLUID_VEL_PROJECTED" : false},
+    "dem_nodal_results" : {
+        "EXTERNAL_APPLIED_FORCE" : false,
+        "ELECTRIC_FIELD_PROJECTED_TO_PARTICLE": false,
+        "MACROPARTICLE_ION_DENSITY": false,
+        "PARTICLE_ION_VELOCITY" : false
+        },
 
-    "fluid_nodal_results" : {"MATERIAL_ACCELERATION" : false,
-          "AVERAGED_FLUID_VELOCITY" : false,
-          "FLUID_FRACTION" : false,
-          "FLUID_FRACTION_OLD" : false,
-          "DISPERSE_FRACTION" : false,
-          "PARTICLE_VEL_FILTERED" : false,
-          "TIME_AVERAGED_ARRAY_3" : false,
-          "PHASE_FRACTION" : false,
-          "FLUID_FRACTION_GRADIENT" : false,
-          "FLUID_FRACTION_RATE" : false,
-          "HYDRODYNAMIC_REACTION" : false,
-          "MEAN_HYDRODYNAMIC_REACTION" : false,
-          "POWER_LAW_N" : false,
-          "POWER_LAW_K" : false,
-          "YIELD_STRESS" : false,
-          "GEL_STRENGTH" : false,
-          "VISCOSITY" : false,
-          "DISTANCE" : false,
-
-          "ELECTRIC_POTENTIAL": false,
-
-          "SLIP_VELOCITY" : false},
+    "fluid_nodal_results" : {"ELECTRIC_POTENTIAL": false,
+        "FLUID_ION_DENSITY": false,
+        "FLUID_ELECTRON_DENSITY": false,
+        "FLUID_NEUTRAL_DENSITY": false,
+        "ELECTRIC_FIELD": false,
+        "MAGNETIC_FIELD": false
+        },
 
 
     "properties": [{
@@ -165,7 +129,7 @@
         "ControlTime"                      : 5.0,
         "NeighbourSearchFrequency"         : 1,
         "TestType"                         : "None",
-        "ElementType"                      : "SwimmingDEMElement",
+        "ElementType"                      : "IonParticle3D",
         "problem_name"                     : "Plasma_Dynamics_test_particles_in_a_virtual_cylinder_DEM",
         "GraphExportFreq"                  : 1e-3,
         "VelTrapGraphExportFreq"           : 1e-3,

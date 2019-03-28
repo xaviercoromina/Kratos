@@ -1,4 +1,4 @@
-""" from __future__ import print_function, absolute_import, division  # makes KratosMultiphysics backward compatible with python 2.6 and 2.7
+from __future__ import print_function, absolute_import, division  # makes KratosMultiphysics backward compatible with python 2.6 and 2.7
 
 # Importing the Kratos Library
 import KratosMultiphysics
@@ -7,15 +7,15 @@ from python_solver import PythonSolver
 # Import applications
 import KratosMultiphysics.PlasmaDynamicsApplication as PlasmaDynamicsApplication
 import plasma_dynamics_procedures 
-import CFD_DEM_coupling
+import CFD_DEM_for_plasma_dynamics_coupling
 import derivative_recovery.derivative_recovery_strategy as derivative_recoverer
 import math
 
 def Say(*args):
-    KratosMultiphysics.Logger.PrintInfo("SwimmingDEM", *args)
+    KratosMultiphysics.Logger.PrintInfo("PlasmaDynamics", *args)
     KratosMultiphysics.Logger.Flush()
 
-class SwimmingDEMSolver(PythonSolver):
+class PlasmaDynamicsSolver(PythonSolver):
     def _ValidateSettings(self, project_parameters):
 
         default_processes_settings = KratosMultiphysics.Parameters("""{
@@ -80,14 +80,14 @@ class SwimmingDEMSolver(PythonSolver):
         self.ConstructDerivativeRecoverer()
         self.ConstructHistoryForceUtility()
         # Call the base Python solver constructor
-        super(SwimmingDEMSolver, self).__init__(model, project_parameters)
+        super(PlasmaDynamicsSolver, self).__init__(model, project_parameters)
 
     def ConstructStationarityTool(self):
         self.stationarity = False
         self.stationarity_counter = self.GetStationarityCounter()
-        self.stationarity_tool = SDP.StationarityAssessmentTool(
+        self.stationarity_tool = plasma_dynamics_procedures.StationarityAssessmentTool(
             self.project_parameters["max_pressure_variation_rate_tol"].GetDouble(),
-            SDP.FunctionsCalculator()
+            plasma_dynamics_procedures.FunctionsCalculator()
             )
 
     def _ConstructProjectionModule(self):
@@ -121,14 +121,14 @@ class SwimmingDEMSolver(PythonSolver):
         self.recovery = derivative_recoverer.DerivativeRecoveryStrategy(
             self.project_parameters,
             self.fluid_solver.main_model_part,
-            SDP.FunctionsCalculator(self.fluid_domain_dimension))
+            plasma_dynamics_procedures.FunctionsCalculator(self.fluid_domain_dimension))
 
     def ConstructHistoryForceUtility(self):
         self.quadrature_counter = self.GetHistoryForceQuadratureCounter()
-        self.basset_force_tool = SwimmingDEMApplication.BassetForceTools()
+        self.basset_force_tool = PlasmaDynamicsApplication.BassetForceTools()
 
     def GetStationarityCounter(self):
-        return SDP.Counter(
+        return plasma_dynamics_procedures.Counter(
             steps_in_cycle=self.project_parameters["time_steps_per_stationarity_step"].GetInt(),
             beginning_step=1,
             is_active=self.project_parameters["stationary_problem_option"].GetBool())
@@ -137,25 +137,27 @@ class SwimmingDEMSolver(PythonSolver):
         there_is_something_to_recover = (
             self.project_parameters["coupling_level_type"].GetInt() or
             self.project_parameters["print_PRESSURE_GRADIENT_option"].GetBool())
-        return SDP.Counter(1, 1, there_is_something_to_recover)
+        return plasma_dynamics_procedures.Counter(1, 1, there_is_something_to_recover)
+
 
     def GetHistoryForceQuadratureCounter(self):
         for prop in self.project_parameters["properties"].values():
-            if prop["hydrodynamic_law_parameters"].Has("history_force_parameters"):
-                history_force_parameters =  prop["hydrodynamic_law_parameters"]["history_force_parameters"]
+            if prop["plasma_dynamics_law_parameters"].Has("history_force_parameters"):
+                history_force_parameters =  prop["plasma_dynamics_law_parameters"]["history_force_parameters"]
                 if history_force_parameters.Has("time_steps_per_quadrature_step"):
                     time_steps_per_quadrature_step = history_force_parameters["time_steps_per_quadrature_step"].GetInt()
 
-                    return SDP.Counter(steps_in_cycle=time_steps_per_quadrature_step, beginning_step=1)
+                    return plasma_dynamics_procedures.Counter(steps_in_cycle=time_steps_per_quadrature_step, beginning_step=1)
 
-        return SDP.Counter(is_dead=True)
+        return plasma_dynamics_procedures.Counter(is_dead=True)
+
 
     def AdvanceInTime(self, step, time):
         self.step, self.time = self.dem_solver.AdvanceInTime(step, time)
-        self.calculating_fluid_in_current_step = bool(time >= self.next_time_to_solve_fluid)
+"""         self.calculating_fluid_in_current_step = bool(time >= self.next_time_to_solve_fluid)
         if self.calculating_fluid_in_current_step:
             self.next_time_to_solve_fluid = self.fluid_solver.AdvanceInTime(time)
-            self.fluid_step += 1
+            self.fluid_step += 1 """
 
         return self.step, self.time
 
@@ -180,7 +182,8 @@ class SwimmingDEMSolver(PythonSolver):
             self._GetProjectionModule().ComputePostProcessResults(self.dem_solver.spheres_model_part.ProcessInfo)
 
     def CannotIgnoreFluidNow(self):
-        return self.solve_system and self.calculating_fluid_in_current_step
+        #return self.solve_system and self.calculating_fluid_in_current_step
+        return False
 
     def Predict(self):
         if self.CannotIgnoreFluidNow():
@@ -274,4 +277,4 @@ class SwimmingDEMSolver(PythonSolver):
         pass
 
     def GetComputingModelPart(self):
-        return self.dem_solver.spheres_model_part """
+        return self.dem_solver.spheres_model_part

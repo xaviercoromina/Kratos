@@ -1,4 +1,4 @@
-""" from __future__ import print_function, absolute_import, division #makes KratosMultiphysics backward compatible with python 2.6 and 2.7
+from __future__ import print_function, absolute_import, division #makes KratosMultiphysics backward compatible with python 2.6 and 2.7
 import math
 from KratosMultiphysics import *
 #from KratosMultiphysics.IncompressibleFluidApplication import *
@@ -36,17 +36,17 @@ class ProjectionModule:
         self.projector_parameters.AddValue("min_fluid_fraction", project_parameters["min_fluid_fraction"])
         self.projector_parameters.AddValue("coupling_type", project_parameters["coupling_weighing_type"])
         self.projector_parameters.AddValue("time_averaging_type", project_parameters["time_averaging_type"])
-        self.projector_parameters.AddValue("n_particles_per_depth_distance", project_parameters["n_particles_in_depth"]) #neutrals
+        self.projector_parameters.AddValue("n_particles_per_depth_distance", project_parameters["n_particles_in_depth"]) #TODO this is for 2D
         self.projector_parameters.AddValue("body_force_per_unit_mass_variable_name", project_parameters["body_force_per_unit_mass_variable_name"])
 
 
         if self.dimension == 3:
 
-            if project_parameters["ElementType"].GetString() == "IonParticle":
+            if project_parameters["ElementType"].GetString() == "IonParticle3D":
                 self.projector = BinBasedIonDEMFluidCoupledMapping3D(self.projector_parameters)
 
             else:
-                raise Exception('You have to precise the type of charged particles: only IonParticle available at the moment') 
+                raise Exception('You have to precise the type of charged particles: only IonParticle3D available at the moment') 
             self.bin_of_objects_fluid = BinBasedFastPointLocator3D(fluid_model_part)
 
         else:
@@ -79,19 +79,21 @@ class ProjectionModule:
 
     #TODO: Transfer electric field
     def ApplyForwardCoupling(self, alpha = None):
-        if self.do_impose_flow_from_field:
+ """        if self.do_impose_flow_from_field:
             self.ImposeFluidFlowOnParticles()
         else:
             if alpha == None:
                 self.ProjectFromNewestFluid()
             else:
-                self.ProjectFromFluid(alpha)
+                self.ProjectFromFluid(alpha) """
+        pass
 
     def ApplyForwardCouplingOfVelocityToSlipVelocityOnly(self):
-        if self.do_impose_flow_from_field:
+"""         if self.do_impose_flow_from_field:
             self.ImposeVelocityOnDEMFromFieldToSlipVelocity()
         else:
-            self.InterpolateVelocityOnSlipVelocity()
+            self.InterpolateVelocityOnSlipVelocity() """
+        pass
 
     def ProjectFromFluid(self, alpha):
 
@@ -128,4 +130,3 @@ class ProjectionModule:
 
     def ComputePostProcessResults(self, particles_process_info):
         self.projector.ComputePostProcessResults(self.particles_model_part, self.fluid_model_part, self.FEM_DEM_model_part, self.bin_of_objects_fluid, particles_process_info)
- """
