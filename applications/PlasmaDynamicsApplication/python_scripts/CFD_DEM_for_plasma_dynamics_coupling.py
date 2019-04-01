@@ -79,7 +79,7 @@ class ProjectionModule:
 
     #TODO: Transfer electric field
     def ApplyForwardCoupling(self, alpha = None):
- """        if self.do_impose_flow_from_field:
+        """        if self.do_impose_flow_from_field:
             self.ImposeFluidFlowOnParticles()
         else:
             if alpha == None:
@@ -89,7 +89,7 @@ class ProjectionModule:
         pass
 
     def ApplyForwardCouplingOfVelocityToSlipVelocityOnly(self):
-"""         if self.do_impose_flow_from_field:
+        """         if self.do_impose_flow_from_field:
             self.ImposeVelocityOnDEMFromFieldToSlipVelocity()
         else:
             self.InterpolateVelocityOnSlipVelocity() """

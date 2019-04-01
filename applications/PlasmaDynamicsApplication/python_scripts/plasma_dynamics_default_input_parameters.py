@@ -9,11 +9,12 @@ def GetDefaultInputParameters():
             "GravityX" : 0.0,
             "GravityY" : 0.0,
             "GravityZ" : 0.0,
-
+            "RotationOption" : false,
             "OutputFileType" : "Binary",
             "Multifile" : "multiple_files",
 
             "TranslationalIntegrationScheme" : "Hybrid_Bashforth",
+            "RotationalIntegrationScheme"    : "Direct_Integration",
             "MaxTimeStep" : 0.005,
             "FinalTime" : 1.0,
             "ControlTime" : 4.0,

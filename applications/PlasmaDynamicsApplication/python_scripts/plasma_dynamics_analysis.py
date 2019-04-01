@@ -90,6 +90,8 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
         self.end_time   = self.project_parameters["FinalTime"].GetDouble()
         self.do_print_results = self.project_parameters["do_print_results_option"].GetBool()
 
+        self.SetCouplingParameters(parameters)
+
         self.SetFluidParameters()
 
         self.ModifyInputParametersForCoherence()
@@ -209,7 +211,7 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
         self.disperse_phase_solution.BaseReadModelParts(max_node_Id, max_elem_Id, max_cond_Id)
 
     def SetFluidAlgorithm(self):
-"""         import DEM_coupled_fluid_plasma_dynamics_analysis
+        """         import DEM_coupled_fluid_plasma_dynamics_analysis
         self.fluid_solution = DEM_coupled_fluid_plasma_dynamics_analysis.DEMCoupledFluidPlasmaDynamicsAnalysis(self.model, self.project_parameters, self.vars_man)
         self.fluid_solution.main_path = self.main_path """
         pass
@@ -272,7 +274,7 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
 
         # coarse-graining: applying changes to the physical properties of the model to adjust for
         # the similarity transformation if required (fluid effects only).
-"""         plasma_dynamics_procedures.ApplySimilarityTransformations(
+        """         plasma_dynamics_procedures.ApplySimilarityTransformations(
             self.fluid_model_part,
             self.project_parameters["similarity_transformation_type"].GetInt(),
             self.project_parameters["model_over_real_diameter_factor"].GetDouble()
@@ -360,7 +362,7 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
         # ANALYTICS BEGIN
         self.project_parameters.AddEmptyValue("perform_analytics_option").SetBool(False)
 
-"""         if self.project_parameters["perform_analytics_option"].GetBool():
+        """         if self.project_parameters["perform_analytics_option"].GetBool():
             import analytics
             variables_to_measure = [PRESSURE]
             steps_between_measurements = 100
@@ -540,7 +542,7 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
     def InitializeSolutionStep(self):
         self.TellTime()
         self.disperse_phase_solution.InitializeSolutionStep()
-"""         if self._GetSolver().CannotIgnoreFluidNow():
+        """         if self._GetSolver().CannotIgnoreFluidNow():
             self.fluid_solution.InitializeSolutionStep() """
         super(PlasmaDynamicsAnalysis, self).InitializeSolutionStep()
 
@@ -557,18 +559,18 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
 
     def FinalizeSolutionStep(self):
         # printing if required
-"""         if self._GetSolver().CannotIgnoreFluidNow():
+        """         if self._GetSolver().CannotIgnoreFluidNow():
             self.fluid_solution.FinalizeSolutionStep() """
 
         self.disperse_phase_solution.FinalizeSolutionStep()
 
         # applying DEM-to-fluid coupling
 
-"""         if self.DEM_to_fluid_counter.Tick() and self.time >= self.project_parameters["interaction_start_time"].GetDouble():
+        """         if self.DEM_to_fluid_counter.Tick() and self.time >= self.project_parameters["interaction_start_time"].GetDouble():
             self._GetSolver().projection_module.ProjectFromParticles() """
 
         # coupling checks (debugging)
-"""         if self.debug_info_counter.Tick():
+        """         if self.debug_info_counter.Tick():
             self.dem_volume_tool.UpdateDataAndPrint(
                 self.project_parameters["fluid_domain_volume"].GetDouble()) """
 

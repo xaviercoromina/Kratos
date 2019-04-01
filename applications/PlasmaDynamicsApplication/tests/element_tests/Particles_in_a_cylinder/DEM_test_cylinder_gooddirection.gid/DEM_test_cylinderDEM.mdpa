@@ -17,7 +17,7 @@ Begin Properties 1
     DEM_CONTINUUM_CONSTITUTIVE_LAW_NAME DEMContinuumConstitutiveLaw
 End Properties
 
-Begin Nodes
+Begin Nodes // GUI group identifier: DEM celemid IonParticle3D
     1        2.00000        0.43301        0.25000
     2        1.78173        0.37017        0.33612
     3        1.78359        0.48192        0.13323
@@ -277,7 +277,7 @@ Begin Nodes
 End Nodes
 
 
-Begin Elements SphericParticle3D// GUI group identifier: Parts Auto1
+Begin Elements IonParticle3D// GUI group identifier: DEM
         1          1          1 
         2          1          2 
         3          1          3 
@@ -524,7 +524,7 @@ Begin Elements SphericParticle3D// GUI group identifier: Parts Auto1
       244          1        244 
 End Elements
 
-Begin NodalData RADIUS // GUI group identifier: Parts Auto1
+Begin NodalData RADIUS // GUI group identifier: DEM Elementid IonParticle3D 
           1 0       0.05
           2 0       0.05
           3 0       0.05

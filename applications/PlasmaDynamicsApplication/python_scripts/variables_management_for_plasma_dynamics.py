@@ -6,7 +6,7 @@ from KratosMultiphysics.DEMApplication import *
 from KratosMultiphysics.FluidTransportApplication import *
 from KratosMultiphysics.PlasmaDynamicsApplication import *
 import ast
-import parameters_tools as PT
+import parameters_tools_for_plasma_dynamics as PT
 def Say(*args):
     Logger.PrintInfo("PlasmaDynamics", *args)
     Logger.Flush()
@@ -108,7 +108,7 @@ class VariablesManager:
         # fluid variables
         self.fluid_vars = []
         self.fluid_vars += self.fluid_printing_vars
-        self.fluid_vars += self.coupling_fluid_vars
+        #self.fluid_vars += self.coupling_fluid_vars
 
 
 
@@ -119,7 +119,7 @@ class VariablesManager:
         # dem variables
         self.dem_vars = []
         self.dem_vars += self.dem_printing_vars
-        self.dem_vars += self.coupling_dem_vars
+        #self.dem_vars += self.coupling_dem_vars
         self.dem_vars += [BUOYANCY]
         self.dem_vars += [VELOCITY_OLD]
 
@@ -204,7 +204,7 @@ class VariablesManager:
             self.dem_nodal_results += ["ELECTRIC_FIELD_PROJECTED_TO_PARTICLE"]
             self.dem_nodal_results += ["MACROPARTICLE_ION_DENSITY"]
             self.dem_nodal_results += ["PARTICLE_ION_VELOCITY"]
-            
+
             self.fluid_nodal_results += ["ELECTRIC_POTENTIAL"]
             self.fluid_nodal_results += ["FLUID_ION_DENSITY"]
             self.fluid_nodal_results += ["FLUID_ELECTRON_DENSITY"]

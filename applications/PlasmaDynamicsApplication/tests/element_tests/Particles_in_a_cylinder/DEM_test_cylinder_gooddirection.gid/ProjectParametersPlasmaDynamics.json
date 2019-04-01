@@ -5,18 +5,19 @@
     "GravityY"                       : 0.0,
     "GravityZ"                       : 0.0,
     "RotationOption"                 : false,
-    "CleanIndentationsOption"        : false,
+
 
     "strategy_parameters"            : {
         "strategy"                   : "plasma_sphere_strategy",
         "RemoveBallsInitiallyTouchingWalls" : false
     },
-
+    "do_print_results_option" : true,
+    "full_particle_history_watcher" : "Empty",
+    "full_particle_history_watcher" : "",
 
     "OutputFileType"                 : "Binary",
     "Multifile"                      : "multiple_files",
 
-    "ElementType__comment"           : "Should_be_put_in_main.py_too",
     "ElementType"                    : "IonParticle3D", 
 
 
@@ -84,6 +85,9 @@
             "start_time"    : 0.0,
             "end_time"      : 1
         },
+        "solver_settings"   :{
+            "strategy" : "plasma_sphere_strategy"
+        },
         "do_print_results_option"          : false,
         "Dimension"                        : 3,
         "PeriodicDomainOption"             : false,
@@ -106,7 +110,6 @@
 
         "VelocityTrapOption"               : false,
         "RotationOption"                   : false,
-        "CleanIndentationsOption"          : false,
         "RemoveBallsInEmbeddedOption"      : true,
 
         "DeltaOption"                      : "Absolute",

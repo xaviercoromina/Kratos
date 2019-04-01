@@ -117,7 +117,7 @@ class PlasmaDynamicsGiDOutput(gid_output.GiDOutput):
             self.io.FinalizeMesh()
             self.io.InitializeResults(label, mixed_model_part.GetMesh())
 
-"""         for var in fluid_nodal_variables:
+            """         for var in fluid_nodal_variables:
             kratos_variable = globals()[var]
             self._write_nodal_results(label, fluid_model_part, kratos_variable) """
 
@@ -133,11 +133,11 @@ class PlasmaDynamicsGiDOutput(gid_output.GiDOutput):
             kratos_variable = globals()[var]
             self._write_nodal_results(label, rigid_faces_model_part, kratos_variable)
 
-"""         for var in mixed_nodal_variables:
+            """         for var in mixed_nodal_variables:
             kratos_variable = globals()[var]
             self._write_nodal_results(label, mixed_model_part, kratos_variable) """
 
-"""         for var in fluid_gp_variables:
+            """         for var in fluid_gp_variables:
             kratos_variable = globals()[var]
             self._write_gp_results(label, fluid_model_part, kratos_variable) """
 

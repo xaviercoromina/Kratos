@@ -154,7 +154,7 @@ class PlasmaDynamicsSolver(PythonSolver):
 
     def AdvanceInTime(self, step, time):
         self.step, self.time = self.dem_solver.AdvanceInTime(step, time)
-"""         self.calculating_fluid_in_current_step = bool(time >= self.next_time_to_solve_fluid)
+        """         self.calculating_fluid_in_current_step = bool(time >= self.next_time_to_solve_fluid)
         if self.calculating_fluid_in_current_step:
             self.next_time_to_solve_fluid = self.fluid_solver.AdvanceInTime(time)
             self.fluid_step += 1 """
