@@ -51,7 +51,7 @@ class VariablesManager:
 
             model_part.ProcessInfo.SetValue(ANGULAR_VELOCITY_MOVING_FRAME, angular_velocity_of_frame)
 
-            if frame_of_reference_type >= 2: # Gemeral frame
+            if frame_of_reference_type >= 2: # General frame
                 angular_velocity_of_frame_old = Vector(3)
                 angular_velocity_of_frame_old[:] = [parameters["angular_velocity_of_frame_old" + comp].GetDouble() for comp in ['_X', '_Y', '_Z']][:]
                 acceleration_of_frame_origin = Vector(3)
@@ -67,12 +67,6 @@ class VariablesManager:
         VariablesManager.AddFrameOfReferenceRelatedVariables(parameters, fluid_model_part)
 
         fluid_model_part.ProcessInfo.SetValue(FRACTIONAL_STEP, 1)
-        gravity = Vector(3)
-        if parameters["body_force_on_fluid_option"].GetBool():
-            gravity[0] = parameters["GravityX"].GetDouble()
-            gravity[1] = parameters["GravityY"].GetDouble()
-            gravity[2] = parameters["GravityZ"].GetDouble()
-        fluid_model_part.ProcessInfo.SetValue(GRAVITY, gravity)
 
 
     def AddExtraProcessInfoVariablesToDispersePhaseModelPart(self, parameters, dem_model_part):
@@ -82,18 +76,12 @@ class VariablesManager:
 
         dem_model_part.ProcessInfo.SetValue(FLUID_MODEL_TYPE, parameters["fluid_model_type"].GetInt())
 
-        for prop in parameters["properties"].values():
-            if prop["plasma_dynamics_law_parameters"].Has("history_force_parameters"):
-                history_force_parameters =  prop["plasma_dynamics_law_parameters"]["history_force_parameters"]
-
-                if (prop["plasma_dynamics_law_parameters"]["name"].GetString() != "default"
-                    and history_force_parameters["name"].GetString() != "default"):
-                    break
 
 
     def ConstructListsOfVariables(self, parameters):
         # PRINTING VARIABLES
         # constructing lists of variables to be printed
+        self.gauss_points_results = []
         self.ConstructListsOfResultsToPrint(parameters)
 
         # COUPLING VARIABLES
@@ -120,38 +108,24 @@ class VariablesManager:
         self.dem_vars = []
         self.dem_vars += self.dem_printing_vars
         #self.dem_vars += self.coupling_dem_vars
-        self.dem_vars += [BUOYANCY]
         self.dem_vars += [VELOCITY_OLD]
 
         if parameters["frame_of_reference_type"].GetInt() and parameters["basset_force_type"].GetInt() > 0:
             self.dem_vars += [DISPLACEMENT_OLD]
             self.dem_vars += [VELOCITY_OLD_OLD]
 
-        if (parameters["TranslationalIntegrationScheme"].GetString()
-            in {'Hybrid_Bashforth', 'TerminalVelocityScheme'}
-            or parameters["basset_force_type"].GetInt() > 0):
-            self.dem_vars += [VELOCITY_OLD]
-            self.dem_vars += [ADDITIONAL_FORCE_OLD]
-            self.dem_vars += [AUX_VEL]
 
-        if parameters["add_each_hydro_force_option"].GetBool():
-            self.dem_vars += [DRAG_FORCE]
 
         self.dem_vars += [PARTICLE_SPHERICITY] # TODO: add only when needed
 
-        if (PT.RecursiveFindParametersWithCondition(parameters["properties"], 'vorticity_induced_lift_parameters')
-            and parameters["add_each_hydro_force_option"].GetBool()):
-            self.dem_vars += [LIFT_FORCE]
-
-        if parameters["add_each_hydro_force_option"].GetBool():
-            self.dem_vars += [VIRTUAL_MASS_FORCE]
 
         will_need_basset_force_variable = False
-        for prop in parameters["properties"].values():
+        """         for prop in parameters["properties"].values():
             if prop["plasma_dynamics_law_parameters"].Has("history_force_parameters"):
                 if prop["plasma_dynamics_law_parameters"]["history_force_parameters"]["name"].GetString() != 'default':
                     will_need_basset_force_variable = True
-                    break
+                    break """
+        will_need_basset_force_variable = False
 
         if will_need_basset_force_variable:
             self.dem_vars += [BASSET_FORCE]

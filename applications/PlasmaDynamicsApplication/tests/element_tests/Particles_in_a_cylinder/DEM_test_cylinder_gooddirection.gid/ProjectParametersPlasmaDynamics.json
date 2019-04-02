@@ -11,32 +11,76 @@
         "strategy"                   : "plasma_sphere_strategy",
         "RemoveBallsInitiallyTouchingWalls" : false
     },
-    "do_print_results_option" : true,
-    "full_particle_history_watcher" : "Empty",
-    "full_particle_history_watcher" : "",
+    "do_print_results_option"        : true,
+    "full_particle_history_watcher"  : "Empty",
 
-    "OutputFileType"                 : "Binary",
+    "OutputFileType"                 : "ascii",
     "Multifile"                      : "multiple_files",
 
-    "ElementType"                    : "IonParticle3D", 
 
 
-    "TranslationalIntegrationScheme" : "Hybrid_Bashforth",
+    "TranslationalIntegrationScheme" : "Symplectic_Euler",
     "RotationalIntegrationScheme"    : "Direct_Integration",
     "MaxTimeStep"                    : 1e-6,
     "FinalTime"                      : 1.0,
     "ControlTime"                    : 5.0,
     "OutputTimeStep"                 : 0.01,
 
-    "coupling_level_type"                    : 0,
+    "coupling_level_type"            : 0,
+    "do_search_neighbours" : false,
+    "do_solve_dem" : true,
 
+    "ElementType"                    : "IonParticle3D", 
+    "echo_level"                     : 1,
+    "problem_data"                   : {
+        "problem_name"                 : "Particles_in_a_cylinder_under_an_x_oriented_electric_field",
+        "parallel_type"                : "OpenMP",
+        "echo_level"                   : 1,
+        "start_time"                   : 0.0,
+        "end_time"                     : 1
+    },
+
+    "plasma_dynamics_output_processes" : {
+        "gid_output" : [{    
+            "python_module" : "gid_output_process",
+            "kratos_module" : "KratosMultiphysics",
+            "process_name"  : "GiDOutputProcess",
+            "help"          : "This process writes postprocessing files for GiD",
+            "Parameters"    : {
+                "model_part_name"        : "Particles_in_a_cylinder",
+                "output_name"            : "Electrically_accelerated_ions",
+                "postprocess_parameters" : {
+                    "result_file_configuration" : {
+                        "gidpost_flags"       : {
+                            "GiDPostMode"           : "GiD_PostAscii",
+                            "WriteDeformedMeshFlag" : "WriteUndeformed",
+                            "WriteConditionsFlag"   : "WriteElementsOnly",
+                            "MultiFileFlag"         : "MultipleFiles"
+                        },
+                        "file_label"          : "step",
+                        "output_control_type" : "step",
+                        "output_frequency"    : 1,
+                        "body_output"         : true,
+                        "node_output"         : true,
+                        "skin_output"         : false,
+                        "plane_output"        : [],
+                        "nodal_results"       : ["DISPLACEMENT","REACTION","VELOCITY","ACCELERATION"],
+                        "gauss_point_results" : []
+                    },
+                    "point_data_configuration"  : []
+                }
+            }
+        }]
+    },
+
+    "meso_scale_length" : 0.0002,
 
     "dem_nodal_results" : {
         "EXTERNAL_APPLIED_FORCE" : false,
         "ELECTRIC_FIELD_PROJECTED_TO_PARTICLE": false,
         "MACROPARTICLE_ION_DENSITY": false,
         "PARTICLE_ION_VELOCITY" : false
-        },
+    },
 
     "fluid_nodal_results" : {"ELECTRIC_POTENTIAL": false,
         "FLUID_ION_DENSITY": false,
@@ -44,14 +88,16 @@
         "FLUID_NEUTRAL_DENSITY": false,
         "ELECTRIC_FIELD": false,
         "MAGNETIC_FIELD": false
-        },
+    },
+
+    "problem_name"                   : "Plasma_Dynamics_test_particles_in_a_virtual_cylinder",
 
 
     "properties": [{
-        "model_part_name": "settling_particles",
+        "model_part_name": "particles_in_a_cylinder",
         "properties_id": 1,
         "plasma_dynamics_law_parameters": {
-            "name": "DEM_electromagnetic_CL"
+            "name": "DEM_electromagnetic"
             }
         },
         {"electromagnetic_field_parameters":{
@@ -61,20 +107,9 @@
             "external_magnetic_field_X": 0.0,
             "external_magnetic_field_Y": 0.0,
             "external_magnetic_field_Z": 0.0
-            }
+        }
         
     }],
-
-
-
-
-
-
-
-
-
-    "problem_name"                   : "Plasma_Dynamics_test_particles_in_a_virtual_cylinder",
-
 
 
     "dem_parameters" : {
@@ -86,7 +121,8 @@
             "end_time"      : 1
         },
         "solver_settings"   :{
-            "strategy" : "plasma_sphere_strategy"
+            "strategy" : "plasma_sphere_strategy",
+            "RemoveBallsInitiallyTouchingWalls" : false
         },
         "do_print_results_option"          : false,
         "Dimension"                        : 3,
@@ -121,10 +157,10 @@
         "RollingFrictionOption"            : false,
         "DontSearchUntilFailure"           : false,
         "ContactMeshOption"                : false,
-        "OutputFileType"                   : "Binary",
+        "OutputFileType"                   : "ascii",
         "Multifile"                        : "multiple_files",
 
-        "TranslationalIntegrationScheme"   : "Hybrid_Bashforth",
+        "TranslationalIntegrationScheme"   : "Symplectic_Euler",
         "RotationalIntegrationScheme"      : "Direct_Integration",
         "DeltaTimeSafetyFactor"            : 1.0,
         "MaxTimeStep"                      : 1e-6,

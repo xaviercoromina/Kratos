@@ -7,14 +7,14 @@
 
 #include <string>
 #include <iostream>
-#include "custom_constitutive/DEM_discontinuum_constitutive_law.h"
+#include "../DEMApplication/custom_constitutive/DEM_discontinuum_constitutive_law.h"
 
 
 namespace Kratos {
     
     class SphericParticle;
 
-    class KRATOS_API(DEM_APPLICATION) DEM_electromagnetic : public DEMDiscontinuumConstitutiveLaw 
+    class KRATOS_API(PLASMA_DYNAMICS_APPLICATION) DEM_electromagnetic : public DEMDiscontinuumConstitutiveLaw 
     {
     public:
 

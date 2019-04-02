@@ -14,25 +14,10 @@ class PlasmaStrategy(BaseStrategy):
     def TranslationalIntegrationSchemeTranslator(self, name):
         class_name = BaseStrategy.TranslationalIntegrationSchemeTranslator(self, name)
 
-        if name == 'Hybrid_Bashforth':
-            class_name = 'HybridBashforthScheme'
-        if name == 'TerminalVelocityScheme':
-            class_name = 'TerminalVelocityScheme'
-
         return class_name
 
     def RotationalIntegrationSchemeTranslator(self, name_translational, name_rotational):
         class_name = BaseStrategy.RotationalIntegrationSchemeTranslator(self, name_translational, name_rotational)
-
-        if name_rotational == 'Direct_Integration':
-            if name_translational == 'Hybrid_Bashforth':
-                class_name = 'HybridBashforthScheme'
-            elif name_translational == 'TerminalVelocityScheme':
-                class_name = 'TerminalVelocityScheme'
-        elif name_rotational == 'Runge_Kutta':
-            class_name = 'RungeKuttaScheme'
-        elif name_rotational == 'Quaternion_Integration':
-            class_name = 'QuaternionIntegrationScheme'
 
         return class_name
 
@@ -40,17 +25,10 @@ class PlasmaStrategy(BaseStrategy):
         self.SetVariablesAndOptions()
         do_search_neighbours =  self.project_parameters["do_search_neighbours"].GetBool()
         solver_settings = self.DEM_parameters["solver_settings"]
-
         if self.DEM_parameters["TranslationalIntegrationScheme"].GetString() == 'Verlet_Velocity':
             self.cplusplus_strategy = IterativeSolverStrategy(self.settings, self.max_delta_time, self.n_step_search, self.safety_factor,
                                                               self.delta_option, self.creator_destructor, self.dem_fem_search,
                                                               self.search_strategy, solver_settings, do_search_neighbours)
-
-        elif self.DEM_parameters["TranslationalIntegrationScheme"].GetString() in {'Hybrid_Bashforth', 'TerminalVelocityScheme'}:
-            self.cplusplus_strategy = AdamsBashforthStrategy(self.settings, self.max_delta_time, self.n_step_search, self.safety_factor,
-                                                              self.delta_option, self.creator_destructor, self.dem_fem_search,
-                                                              self.search_strategy, solver_settings, do_search_neighbours)
-
         else:
             self.cplusplus_strategy = ExplicitSolverStrategy(self.settings, self.max_delta_time, self.n_step_search, self.safety_factor,
                                                              self.delta_option, self.creator_destructor, self.dem_fem_search,
@@ -78,9 +56,9 @@ class PlasmaStrategy(BaseStrategy):
     @staticmethod
     def CreatePlasmaDynamicsLaw(properties, plasma_dynamics_law_parameters):
 
-        plasma_dynamics_name = plasma_dynamics_law_parameters['name'].GetString()
-        PlasmaDynamicsInteractionLaw = globals().get(plasma_dynamics_name)(properties, plasma_dynamics_law_parameters)
-
+        #plasma_dynamics_name = plasma_dynamics_law_parameters['name'].GetString() 
+        # TODO: remove this when decided on which way to call the name of the law
+        PlasmaDynamicsInteractionLaw = globals().get(properties[DEM_DISCONTINUUM_CONSTITUTIVE_LAW_NAME])()
         PlasmaDynamicsInteractionLaw.SetConstitutiveLawInProperties(properties, True)
 
     def ModifyProperties(self, properties, param = 0):

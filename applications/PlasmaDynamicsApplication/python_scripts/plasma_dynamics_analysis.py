@@ -20,6 +20,7 @@ import swimming_DEM_gid_output """
 import CFD_DEM_for_plasma_dynamics_coupling
 import plasma_dynamics_procedures
 import variables_management_for_plasma_dynamics
+import plasma_dynamics_gid_output
 
 def Say(*args):
     Logger.PrintInfo("PlasmaDynamics", *args)
@@ -303,14 +304,14 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
 
         # creating a custom functions calculator for the implementation of
         # additional custom functions
-        fluid_domain_dimension = self.project_parameters["fluid_parameters"]["solver_settings"]["domain_size"].GetInt()
-        self.custom_functions_tool = plasma_dynamics_procedures.FunctionsCalculator(fluid_domain_dimension)
+        #fluid_domain_dimension = self.project_parameters["fluid_parameters"]["solver_settings"]["domain_size"].GetInt()
+        #self.custom_functions_tool = plasma_dynamics_procedures.FunctionsCalculator(fluid_domain_dimension)
 
         # creating a stationarity assessment tool
-        self.stationarity_tool = plasma_dynamics_procedures.StationarityAssessmentTool(
+        """         self.stationarity_tool = plasma_dynamics_procedures.StationarityAssessmentTool(
             self.project_parameters["max_pressure_variation_rate_tol"].GetDouble(),
             self.custom_functions_tool
-            )
+            ) """
 
         # creating a debug tool
         self.dem_volume_tool = self.GetVolumeDebugTool()
@@ -333,8 +334,8 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
 
         # setting up loop counters:
         self.DEM_to_fluid_counter = self.GetBackwardCouplingCounter()
-        self.derivative_recovery_counter = self.GetRecoveryCounter()
-        self.stationarity_counter = self.GetStationarityCounter()
+        #self.derivative_recovery_counter = self.GetRecoveryCounter()
+        #self.stationarity_counter = self.GetStationarityCounter()
         self.print_counter = self.GetPrintCounter()
         self.debug_info_counter = self.GetDebugInfo()
         self.particles_results_counter = self.GetParticlesResultsCounter()
@@ -356,8 +357,6 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
                                                  self.fluid_model_part,
                                                  self.spheres_model_part)
 
-        if self.do_print_results:
-            self.SetUpResultsDatabase()
 
         # ANALYTICS BEGIN
         self.project_parameters.AddEmptyValue("perform_analytics_option").SetBool(False)
@@ -385,12 +384,12 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
             Say(gauge.variables) """
         # ANALYTICS END
 
-        import derivative_recovery.derivative_recovery_strategy as derivative_recoverer
+        """         import derivative_recovery.derivative_recovery_strategy as derivative_recoverer
 
         self.recovery = derivative_recoverer.DerivativeRecoveryStrategy(
             self.project_parameters,
             self.fluid_model_part,
-            self.custom_functions_tool)
+            self.custom_functions_tool) """
 
         self.FillHistoryForcePrecalculatedVectors()
 
@@ -441,8 +440,7 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
 
     def GetRecoveryCounter(self):
         there_is_something_to_recover = (
-            self.project_parameters["coupling_level_type"].GetInt() or
-            self.project_parameters["print_PRESSURE_GRADIENT_option"].GetBool())
+            self.project_parameters["coupling_level_type"].GetInt()) 
         return plasma_dynamics_procedures.Counter(1, 1, there_is_something_to_recover)
 
     def GetStationarityCounter(self):
@@ -470,13 +468,13 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
             self.project_parameters["print_particles_results_option"].GetBool())
 
     def GetHistoryForceQuadratureCounter(self):
-        for prop in self.project_parameters["properties"].values():
+        """         for prop in self.project_parameters["properties"].values():
             if prop["plasma_dynamics_law_parameters"].Has("history_force_parameters"):
                 history_force_parameters =  prop["plasma_dynamics_law_parameters"]["history_force_parameters"]
                 if history_force_parameters.Has("time_steps_per_quadrature_step"):
                     time_steps_per_quadrature_step = history_force_parameters["time_steps_per_quadrature_step"].GetInt()
 
-                    return plasma_dynamics_procedures.Counter(steps_in_cycle=time_steps_per_quadrature_step, beginning_step=1)
+                    return plasma_dynamics_procedures.Counter(steps_in_cycle=time_steps_per_quadrature_step, beginning_step=1) """
 
         return plasma_dynamics_procedures.Counter(is_dead=True)
 
@@ -487,18 +485,19 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
             is_active=self.project_parameters["do_process_analytic_data"].GetBool())
 
     def GetVolumeDebugTool(self):
-        return plasma_dynamics_procedures.ProjectionDebugUtils(
+        pass
+        """         return plasma_dynamics_procedures.ProjectionDebugUtils(
             self.project_parameters["fluid_domain_volume"].GetDouble(),
             self.fluid_model_part,
             self.spheres_model_part,
-            self.custom_functions_tool)
+            self.custom_functions_tool) """
 
 
 
     def FillHistoryForcePrecalculatedVectors(self): # TODO: more robust implementation
         # Warning: this estimation is based on a constant time step for DEM.
         # This is usually the case, but could not be so.
-        for prop in self.project_parameters["properties"].values():
+        """         for prop in self.project_parameters["properties"].values():
             if prop["plasma_dynamics_law_parameters"].Has("history_force_parameters"):
 
                 if prop["plasma_dynamics_law_parameters"]["history_force_parameters"]["name"].GetString() != 'default':
@@ -520,13 +519,13 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
                             self.spheres_model_part,
                             mae_parameters["m"].GetInt(),
                             number_of_quadrature_steps_in_window)
-                            break
+                            break """
+        pass
 
 
     def _Print(self):
         os.chdir(self.post_path)
-        import define_output
-        self.drag_list = define_output.DefineDragList()
+        
         self.drag_file_output_list = []
 
         if self.particles_results_counter.Tick():
@@ -660,6 +659,7 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
     # To-do: for the moment, provided for compatibility
     def _CreateSolver(self):
         import plasma_dynamics_solver
+        self.fluid_solution = self.disperse_phase_solution #TODO: remove this and create the fluid solution 
         return plasma_dynamics_solver.PlasmaDynamicsSolver(self.model,
                                                      self.project_parameters,
                                                      self.GetFieldUtility(),

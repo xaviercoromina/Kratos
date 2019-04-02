@@ -71,13 +71,14 @@ def SetModelPartSolutionStepValue(model_part, var, value):
         node.SetSolutionStepValue(var, 0, value)
 
 def InitializeVariablesWithNonZeroValues(parameters, fluid_model_part, balls_model_part):
-    checker = PlasmaDynApp.VariableChecker()
+    """     checker = PlasmaDynApp.VariableChecker()
 
     if checker.ModelPartHasNodalVariableOrNot(fluid_model_part, FLUID_FRACTION):
         SetModelPartSolutionStepValue(fluid_model_part, FLUID_FRACTION, 1.0)
         SetModelPartSolutionStepValue(fluid_model_part, FLUID_FRACTION_OLD, 1.0)
     if checker.ModelPartHasNodalVariableOrNot(balls_model_part, FLUID_FRACTION_PROJECTED):
-        SetModelPartSolutionStepValue(balls_model_part, FLUID_FRACTION_PROJECTED, 1.0)
+        SetModelPartSolutionStepValue(balls_model_part, FLUID_FRACTION_PROJECTED, 1.0) """
+    pass
 
 def FixModelPart(model_part):
 
@@ -200,12 +201,12 @@ def ApplySimilarityTransformations(fluid_model_part, transformation_type, mod_ov
 
         if transformation_type == 1:  # Tsuji 2013, (Preserves Archimedes and Reynolds numbers)
 
-            Logger.PrintWarning ('The fluid variables to be modified are\n\nDENSITY\nVISCOSITY\n\n***')
+            Logger.PrintWarning ('The fluid variables to be modified are\n\nDENSITY\n\n***')
 
             fluid_density_factor = mod_over_real
-            fluid_viscosity_factor = mod_over_real * mod_over_real
+            
             MultiplyNodalVariableByFactor(fluid_model_part, DENSITY, fluid_density_factor)
-            MultiplyNodalVariableByFactor(fluid_model_part, VISCOSITY, fluid_viscosity_factor)
+            
     else:
 
         Logger.PrintWarning("PlasmaDynamics",('The entered value similarity_transformation_type = ', transformation_type, 'is not currently supported'))
@@ -461,7 +462,7 @@ class PostUtils:
         Logger.Flush()
 
         if self.project_parameters['Multifile'].GetString() == "multiple_files":
-            renumbering_utility = PlasmaDynApp.RenumberingNodesUtility(self.fluid_model_part, self.rigid_faces_model_part, self.balls_model_part)
+            renumbering_utility = PlasmaDynApp.RenumberingNodesUtilityForPlasmaDynamics(self.fluid_model_part, self.rigid_faces_model_part, self.balls_model_part)
             renumbering_utility.Renumber()
 
             self.mixed_model_part.Elements.clear()
@@ -477,7 +478,7 @@ class PostUtils:
                                                self.clusters_model_part,
                                                self.rigid_faces_model_part,
                                                self.mixed_model_part,
-                                               self.vars_man.nodal_results,
+                                               self.vars_man.fluid_nodal_results,
                                                self.vars_man.dem_nodal_results,
                                                self.vars_man.clusters_nodal_results,
                                                self.vars_man.rigid_faces_nodal_results,

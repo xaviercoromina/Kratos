@@ -28,7 +28,7 @@ class ProjectionModule:
         self.coupling_type               = project_parameters["coupling_weighing_type"].GetInt()
         self.meso_scale_length           = project_parameters["meso_scale_length"].GetDouble()
         self.shape_factor                = project_parameters["shape_factor"].GetDouble()
-        self.do_impose_flow_from_field   = project_parameters["do_impose_flow_from_field_option"].GetBool()
+
         self.flow_field                  = flow_field
 
         # Create projector_parameters

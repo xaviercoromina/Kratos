@@ -14,8 +14,9 @@
 // External includes
 
 // Project includes
-#include "custom_python/add_custom_utilities_to_python.h"
+#include "add_custom_utilities_to_python.h"
 #include "includes/kratos_parameters.h"
+#include "custom_utilities/renumbering_nodes_utility_for_plasma_dynamics.h"
 
 namespace Kratos
 {
@@ -23,9 +24,22 @@ namespace Kratos
 namespace Python
 {
 
+
+
+
 void  AddCustomUtilitiesToPython(pybind11::module& m)
 {
     namespace py = pybind11;
+
+    py::class_<RenumberingNodesUtilityForPlasmaDynamics> (m, "RenumberingNodesUtilityForPlasmaDynamics")
+        .def(py::init<ModelPart&>())
+        .def(py::init<ModelPart&,ModelPart&>())
+        .def(py::init<ModelPart&,ModelPart&,ModelPart&>())
+        .def(py::init<ModelPart&,ModelPart&,ModelPart&,ModelPart&>())
+        .def(py::init<ModelPart&,ModelPart&,ModelPart&,ModelPart&,ModelPart&>())
+        .def("Renumber", &RenumberingNodesUtilityForPlasmaDynamics::Renumber)
+        .def("UndoRenumber", &RenumberingNodesUtilityForPlasmaDynamics::UndoRenumber)
+        ;    
 }
 
 }  // namespace Python.

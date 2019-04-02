@@ -35,6 +35,14 @@ void KratosPlasmaDynamicsApplication::Register()
 {
     //Calling base class register to register Kratos components
     KratosApplication::Register();
+    KRATOS_INFO("PlasmaDyn") << std::endl;
+    KRATOS_INFO("PlasmaDyn") << "     KRATOS |  _  ) |  _ \\  |  _ \\ __ _  ___| | __      "<< std::endl;
+    KRATOS_INFO("PlasmaDyn") << "            | |_| ) | | | | | |_) / _` |/ __| |/ /      "<< std::endl;
+    KRATOS_INFO("PlasmaDyn") << "            |  ___) | |_| | |  __/ (_| | (__|   <       "<< std::endl;
+    KRATOS_INFO("PlasmaDyn") << "            |_|     |____/  |_|   \\__,_|\\___|_|\\_\\      " << std::endl;
+    KRATOS_INFO("PlasmaDyn") << std::endl;
+    KRATOS_INFO("PlasmaDyn") << "Importing PlasmaDynamicsApplication... ";
+  
     KRATOS_INFO("") << "Initializing KratosPlasmaDynamicsApplication... " << std::endl;
 
     //Register Elements

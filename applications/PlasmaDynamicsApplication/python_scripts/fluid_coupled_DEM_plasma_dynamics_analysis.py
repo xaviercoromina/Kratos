@@ -34,10 +34,15 @@ class FluidCoupledDEMPDAnalysisStage(BaseAnalysis):
         translational_scheme_name = self.project_parameters["TranslationalIntegrationScheme"].GetString()
 
         if translational_scheme is None:
-            if translational_scheme_name == 'Hybrid_Bashforth':
-                return HybridBashforthScheme()
-            elif translational_scheme_name == "TerminalVelocityScheme":
-                return TerminalVelocityScheme()
+
+            if translational_scheme_name == 'Forward_Euler':
+                return ForwardEulerScheme()
+            elif translational_scheme_name == "Symplectic_Euler":
+                return SymplecticEulerScheme()
+            elif translational_scheme_name == "Taylor_Scheme":
+                return TaylorScheme()
+            elif translational_scheme_name == "Velocity_Verlet":
+                return VelocityVerletScheme()
             else:
                 return None
         else:
@@ -50,10 +55,7 @@ class FluidCoupledDEMPDAnalysisStage(BaseAnalysis):
 
         if rotational_scheme is None:
             if rotational_scheme_name == 'Direct_Integration':
-                if translational_scheme_name == 'Hybrid_Bashforth':
-                    return HybridBashforthScheme()
-                elif translational_scheme_name == 'TerminalVelocityScheme':
-                    return TerminalVelocityScheme()
+                return self.SelectTranslationalScheme()
             elif rotational_scheme_name == 'Runge_Kutta':
                 return RungeKuttaScheme()
             elif rotational_scheme_name == 'Quaternion_Integration':
