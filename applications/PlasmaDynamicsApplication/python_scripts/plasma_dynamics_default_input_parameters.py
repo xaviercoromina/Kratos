@@ -208,6 +208,8 @@ def GetDefaultInputParameters():
                 }
             }],
 
+            "fluid_domain_volume"            : 1.0, 
+
             "fluid_parameters" : {},
 
             "dem_parameters" : {
@@ -293,7 +295,85 @@ def GetDefaultInputParameters():
                 "PostParticleMoment"               : false,
                 "PostEulerAngles"                  : false,
                 "PostBoundingBox"                  : false                
+            },
+
+
+            "frame_of_reference" : {
+                "frame_type": 0,
+                "angular_velocity_of_frame_X" : 0.0,
+                "angular_velocity_of_frame_Y" : 0.0,
+                "angular_velocity_of_frame_Z" : 0.0,
+                "angular_velocity_of_frame_old_X" : 0.0,
+                "angular_velocity_of_frame_old_Y" : 0.0,
+                "angular_velocity_of_frame_old_Z" : 0.0,
+                "acceleration_of_frame_origin_X" : 0.0,
+                "acceleration_of_frame_origin_Y" : 0.0,
+                "acceleration_of_frame_origin_Z" : 0.0,
+                "angular_acceleration_of_frame_X" : 0.0,
+                "angular_acceleration_of_frame_Y" : 0.0,
+                "angular_acceleration_of_frame_Z" : 0.0,
+                "frame_rotation_axis_initial_point" : [0.0,0.0,0.0],
+                "frame_rotation_axis_final_point" : [0.0,0.0,1.0],
+                "angular_velocity_magnitude" : 0.0
+            },
+
+            "custom_dem" : {
+                "do_solve_dem" : true,
+                "do_search_neighbours" : false,
+                "type_of_dem_inlet" : "VelocityImposed",
+                "type_of_dem_inlet_comment" : "VelocityImposed or ForceImposed",
+                "translational_integration_scheme" : "Symplectic_Euler"
+            },            
+
+            "custom_fluid" : {
+                "fluid_already_calculated" : false,
+                "embedded_option" : false,
+                "embedded_option_comment" : "the embedded domain tools are to be used",
+                "do_impose_flow_from_field_option" : false,
+                "body_force_on_fluid_option" : true,
+                "ALE_option" : false,
+                "fluid_model_type" : 1,
+                "fluid_model_type_comment" : " untouched, velocity incremented by 1/fluid_fraction (0), modified mass conservation only (1)"
+            },
+
+            "stationarity" : {
+                "stationary_problem_option" : false,
+                "stationary_problem_option_comment" : " stationary, stop calculating the fluid after it reaches the stationary state",
+                "max_pressure_variation_rate_tol" : 1e-3,
+                "max_pressure_variation_rate_tol_comment": " for stationary problems, criterion to stop the fluid calculations",
+                "time_steps_per_stationarity_step" : 15,
+                "time_steps_per_stationarity_step_comment": " number of fluid time steps between consecutive assessment of stationarity steps",
+                "time_steps_per_analytic_processing_step": 1
+            },
+
+            "output_interval" : 0.5,
+
+            "coupling" : {
+                "coupling_level_type" : 1,
+                "coupling_weighing_type" : 2,
+                "coupling_weighing_type_comment" : "{fluid_to_DEM, DEM_to_fluid, fluid_fraction} = {lin, lin, imposed} (-1), {lin, const, const} (0), {lin, lin, const} (1), {lin, lin, lin} (2), averaging method (3)",
+                "interaction_start_time" : 0.0,
+                "time_averaging_type" : 0,
+
+                "backward_coupling" : {
+                    "meso_scale_length" : 0.2,
+                    "meso_scale_length_comment" : " the radius of the support of the averaging function for homogenization (<=0 for automatic calculation)",
+                    "shape_factor" : 0.5,
+                    "filter_velocity_option" : false,
+                    "apply_time_filter_to_fluid_fraction_option" : false,
+                    "min_fluid_fraction" : 0.2,
+                    "fluid_fraction_grad_type" : 0,
+                    "calculate_diffusivity_option" : false,
+                    "viscosity_modification_type" : 0
+                }
+            },
+
+
+            "time_stepping" : {
+                "automatic_time_step" : false,
+                "time_step"           : 1e-5
             }
+
             }""")
 
     return default_settings

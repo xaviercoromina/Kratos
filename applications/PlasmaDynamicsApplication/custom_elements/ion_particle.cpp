@@ -38,6 +38,9 @@ void IonParticle::ComputeAdditionalForces(array_1d<double, 3>& additionally_appl
 {
     KRATOS_TRY
 
+    mExternalElectricField = r_current_process_info[EXTERNAL_ELECTRIC_FIELD];
+    mExternalMagneticField = r_current_process_info[EXTERNAL_MAGNETIC_FIELD];   
+
     array_1d<double, 3> Coulomb_force; 
     CalculateCoulombForce(Coulomb_force);
 

@@ -273,30 +273,29 @@ class IOTools:
 
 class ProjectionDebugUtils:
 
-    def __init__(self, domain_volume, fluid_model_part, particles_model_part, custom_functions_calculator):
+    def __init__(self, domain_volume, fluid_model_part, particles_model_part):
         self.balls_model_part = particles_model_part
         self.fluid_model_part = fluid_model_part
-        self.custom_utils = custom_functions_calculator
         self.UpdateDataAndPrint(domain_volume, False)
 
     def UpdateDataAndPrint(self, domain_volume, is_time_to_print = True):
         self.granul_utils                         = DEM_procedures.GranulometryUtils(domain_volume, self.balls_model_part)
-        self.domain_volume                        = domain_volume
+        #self.domain_volume                        = domain_volume
         self.number_of_balls                      = self.balls_model_part.NumberOfElements(0)
-        self.discr_domain_volume                  = self.custom_utils.CalculateDomainVolume(self.fluid_model_part)
-        self.proj_fluid_volume                    = self.custom_utils.CalculateGlobalFluidVolume(self.fluid_model_part)
+        #self.discr_domain_volume                  = self.custom_utils.CalculateDomainVolume(self.fluid_model_part)
+        #self.proj_fluid_volume                    = self.custom_utils.CalculateGlobalFluidVolume(self.fluid_model_part)
         self.solid_volume                         = self.granul_utils.solid_volume
         self.balls_per_area                       = self.granul_utils.spheres_per_area
-        self.fluid_volume                         = domain_volume - self.solid_volume
-        self.discr_fluid_volume                   = self.discr_domain_volume - self.solid_volume
-        self.proj_solid_volume                    = self.discr_domain_volume - self.proj_fluid_volume
-        self.global_fluid_fraction                = self.fluid_volume / self.domain_volume
-        self.global_solid_fraction                = 1.0 - self.global_fluid_fraction
-        self.fluid_on_balls_total_force           = Array3()
-        self.proj_balls_on_fluid_total_force      = Array3()
-        self.mean_proj_balls_on_fluid_total_force = Array3()
-        self.custom_utils.CalculateTotalHydrodynamicForceOnParticles(self.balls_model_part, self.fluid_on_balls_total_force)
-        self.custom_utils.CalculateTotalHydrodynamicForceOnFluid(self.fluid_model_part, self.proj_balls_on_fluid_total_force, self.mean_proj_balls_on_fluid_total_force)
+        #self.fluid_volume                         = domain_volume - self.solid_volume
+        #self.discr_fluid_volume                   = self.discr_domain_volume - self.solid_volume
+        #self.proj_solid_volume                    = self.discr_domain_volume - self.proj_fluid_volume
+        #self.global_fluid_fraction                = self.fluid_volume / self.domain_volume
+        #self.global_solid_fraction                = 1.0 - self.global_fluid_fraction
+        #self.fluid_on_balls_total_force           = Array3()
+        #self.proj_balls_on_fluid_total_force      = Array3()
+        #self.mean_proj_balls_on_fluid_total_force = Array3()
+        #self.custom_utils.CalculateTotalHydrodynamicForceOnParticles(self.balls_model_part, self.fluid_on_balls_total_force)
+        #self.custom_utils.CalculateTotalHydrodynamicForceOnFluid(self.fluid_model_part, self.proj_balls_on_fluid_total_force, self.mean_proj_balls_on_fluid_total_force)
 
         if not is_time_to_print:
             return
@@ -308,19 +307,19 @@ class ProjectionDebugUtils:
         Logger.PrintInfo("PlasmaDynamics","Projection-related measurements")
         Logger.PrintInfo("PlasmaDynamics",tot_len * "**")
         Logger.PrintInfo("PlasmaDynamics",GetWordWithSpaces("number_of_balls", tot_len)                      + '=', self.number_of_balls)
-        Logger.PrintInfo("PlasmaDynamics",GetWordWithSpaces("domain_volume", tot_len)                        + '=', self.domain_volume)
-        Logger.PrintInfo("PlasmaDynamics",GetWordWithSpaces("fluid_volume", tot_len)                         + '=', self.fluid_volume)
+        #Logger.PrintInfo("PlasmaDynamics",GetWordWithSpaces("domain_volume", tot_len)                        + '=', self.domain_volume)
+        #Logger.PrintInfo("PlasmaDynamics",GetWordWithSpaces("fluid_volume", tot_len)                         + '=', self.fluid_volume)
         Logger.PrintInfo("PlasmaDynamics",GetWordWithSpaces("solid_volume", tot_len)                         + '=', self.solid_volume)
-        Logger.PrintInfo("PlasmaDynamics",GetWordWithSpaces("discr_domain_volume", tot_len)                  + '=', self.discr_domain_volume)
-        Logger.PrintInfo("PlasmaDynamics",GetWordWithSpaces("discr_fluid_volume", tot_len)                   + '=', self.discr_fluid_volume)
-        Logger.PrintInfo("PlasmaDynamics",GetWordWithSpaces("proj_fluid_volume", tot_len)                    + '=', self.proj_fluid_volume)
-        Logger.PrintInfo("PlasmaDynamics",GetWordWithSpaces("proj_solid_volume", tot_len)                    + '=', self.proj_solid_volume)
-        Logger.PrintInfo("PlasmaDynamics",GetWordWithSpaces("global_fluid_fraction", tot_len)                + '=', self.global_fluid_fraction)
-        Logger.PrintInfo("PlasmaDynamics",GetWordWithSpaces("global_solid_fraction", tot_len)                + '=', self.global_solid_fraction)
+        #Logger.PrintInfo("PlasmaDynamics",GetWordWithSpaces("discr_domain_volume", tot_len)                  + '=', self.discr_domain_volume)
+        #Logger.PrintInfo("PlasmaDynamics",GetWordWithSpaces("discr_fluid_volume", tot_len)                   + '=', self.discr_fluid_volume)
+        #Logger.PrintInfo("PlasmaDynamics",GetWordWithSpaces("proj_fluid_volume", tot_len)                    + '=', self.proj_fluid_volume)
+        #Logger.PrintInfo("PlasmaDynamics",GetWordWithSpaces("proj_solid_volume", tot_len)                    + '=', self.proj_solid_volume)
+        #Logger.PrintInfo("PlasmaDynamics",GetWordWithSpaces("global_fluid_fraction", tot_len)                + '=', self.global_fluid_fraction)
+        #Logger.PrintInfo("PlasmaDynamics",GetWordWithSpaces("global_solid_fraction", tot_len)                + '=', self.global_solid_fraction)
         Logger.PrintInfo("PlasmaDynamics",GetWordWithSpaces("balls_per_area", tot_len)                       + '=', self.balls_per_area)
-        Logger.PrintInfo("PlasmaDynamics",GetWordWithSpaces("fluid_on_balls_total_force", tot_len)           + '=', self.fluid_on_balls_total_force)
-        Logger.PrintInfo("PlasmaDynamics",GetWordWithSpaces("proj_balls_on_fluid_total_force", tot_len)      + '=', self.proj_balls_on_fluid_total_force)
-        Logger.PrintInfo("PlasmaDynamics",GetWordWithSpaces("mean_proj_balls_on_fluid_total_force", tot_len) + '=', self.mean_proj_balls_on_fluid_total_force)
+        #Logger.PrintInfo("PlasmaDynamics",GetWordWithSpaces("fluid_on_balls_total_force", tot_len)           + '=', self.fluid_on_balls_total_force)
+        #Logger.PrintInfo("PlasmaDynamics",GetWordWithSpaces("proj_balls_on_fluid_total_force", tot_len)      + '=', self.proj_balls_on_fluid_total_force)
+        #Logger.PrintInfo("PlasmaDynamics",GetWordWithSpaces("mean_proj_balls_on_fluid_total_force", tot_len) + '=', self.mean_proj_balls_on_fluid_total_force)
         Logger.PrintInfo("PlasmaDynamics",tot_len * "**")
         Logger.PrintInfo("PlasmaDynamics",)
         Logger.Flush()
@@ -470,7 +469,7 @@ class PostUtils:
             # here order is important!
             self.post_utilities.AddModelPartToModelPart(self.mixed_model_part, self.balls_model_part)
             self.post_utilities.AddModelPartToModelPart(self.mixed_model_part, self.rigid_faces_model_part)
-            self.post_utilities.AddModelPartToModelPart(self.mixed_model_part, self.fluid_model_part)
+            #self.post_utilities.AddModelPartToModelPart(self.mixed_model_part, self.fluid_model_part)
 
         self.gid_io.write_plasma_dynamics_results(time,
                                                self.fluid_model_part,

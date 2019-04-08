@@ -67,6 +67,15 @@ class VariablesManager:
         VariablesManager.AddFrameOfReferenceRelatedVariables(parameters, fluid_model_part)
 
         fluid_model_part.ProcessInfo.SetValue(FRACTIONAL_STEP, 1)
+        fluid_model_part.ProcessInfo.SetValue(ELECTRIC_POTENTIAL, 1)
+        fluid_model_part.ProcessInfo.SetValue(FLUID_ION_DENSITY, 1)
+        fluid_model_part.ProcessInfo.SetValue(FLUID_ELECTRON_DENSITY, 1)
+        fluid_model_part.ProcessInfo.SetValue(FLUID_NEUTRAL_DENSITY, 1)
+
+        electric_field = Vector(3)
+        magnetic_field = Vector(3)
+        fluid_model_part.ProcessInfo.SetValue(ELECTRIC_FIELD, electric_field)
+        fluid_model_part.ProcessInfo.SetValue(MAGNETIC_FIELD, magnetic_field)        
 
 
     def AddExtraProcessInfoVariablesToDispersePhaseModelPart(self, parameters, dem_model_part):
@@ -77,10 +86,30 @@ class VariablesManager:
         dem_model_part.ProcessInfo.SetValue(FLUID_MODEL_TYPE, parameters["fluid_model_type"].GetInt())
 
 
+        external_electric_field = Vector(3)
+        external_electric_field[0] = parameters["properties"][1]["electromagnetic_field_parameters"]["external_electric_field_X"].GetDouble()
+        external_electric_field[1] = parameters["properties"][1]["electromagnetic_field_parameters"]["external_electric_field_Y"].GetDouble()
+        external_electric_field[2] = parameters["properties"][1]["electromagnetic_field_parameters"]["external_electric_field_Z"].GetDouble()
+
+        external_magnetic_field = Vector(3)
+        external_magnetic_field[0] = parameters["properties"][1]["electromagnetic_field_parameters"]["external_magnetic_field_X"].GetDouble()
+        external_magnetic_field[1] = parameters["properties"][1]["electromagnetic_field_parameters"]["external_magnetic_field_Y"].GetDouble()  
+        external_magnetic_field[2] = parameters["properties"][1]["electromagnetic_field_parameters"]["external_magnetic_field_Z"].GetDouble()
+
+        electric_field_projected_to_particle = Vector(3)
+        particle_ion_velocity = Vector(3)
+        dem_model_part.ProcessInfo.SetValue(EXTERNAL_ELECTRIC_FIELD, external_electric_field)
+        dem_model_part.ProcessInfo.SetValue(EXTERNAL_MAGNETIC_FIELD, external_magnetic_field)
+        dem_model_part.ProcessInfo.SetValue(ELECTRIC_FIELD_PROJECTED_TO_PARTICLE, electric_field_projected_to_particle)
+        dem_model_part.ProcessInfo.SetValue(MACROPARTICLE_ION_DENSITY, 1.0)
+        dem_model_part.ProcessInfo.SetValue(PARTICLE_ION_VELOCITY, particle_ion_velocity)
+
+
 
     def ConstructListsOfVariables(self, parameters):
         # PRINTING VARIABLES
         # constructing lists of variables to be printed
+        self.fluid_nodal_results = []
         self.gauss_points_results = []
         self.ConstructListsOfResultsToPrint(parameters)
 
@@ -115,20 +144,14 @@ class VariablesManager:
             self.dem_vars += [VELOCITY_OLD_OLD]
 
 
+        if (parameters["custom_dem"]["translational_integration_scheme"].GetString()
+            in {'Hybrid_Bashforth', 'TerminalVelocityScheme'}):
+            self.dem_vars += [VELOCITY_OLD]
+            self.dem_vars += [ADDITIONAL_FORCE_OLD]
+            self.dem_vars += [AUX_VEL]
+
 
         self.dem_vars += [PARTICLE_SPHERICITY] # TODO: add only when needed
-
-
-        will_need_basset_force_variable = False
-        """         for prop in parameters["properties"].values():
-            if prop["plasma_dynamics_law_parameters"].Has("history_force_parameters"):
-                if prop["plasma_dynamics_law_parameters"]["history_force_parameters"]["name"].GetString() != 'default':
-                    will_need_basset_force_variable = True
-                    break """
-        will_need_basset_force_variable = False
-
-        if will_need_basset_force_variable:
-            self.dem_vars += [BASSET_FORCE]
 
         # clusters variables
         self.clusters_vars = []
@@ -199,15 +222,13 @@ class VariablesManager:
         #self.ChangeListOfFluidNodalResultsToPrint(parameters)
 
         #Construction of the list of mixed parameters to print
-        self.mixed_nodal_results = []
+        self.mixed_nodal_results = ["VELOCITY", "DISPLACEMENT"]
 
         for var in self.mixed_nodal_results:
 
             if var in self.fluid_nodal_results:
                 self.fluid_nodal_results.remove(var)
 
-            if var in self.dem_nodal_results:
-                self.dem_nodal_results.remove(var)   
 
         #Construction of a special list for variables to print in a file
         self.variables_to_print_in_file = ["VELOCITY"]

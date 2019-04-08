@@ -37,9 +37,9 @@ class PlasmaDynamicsGiDOutput(gid_output.GiDOutput):
             self.io.WriteSphereMesh(DEM_model_part.GetMesh())
             self.io.WriteMesh(clusters_model_part.GetMesh())
             self.io.WriteMesh(rigid_faces_model_part.GetMesh())
-            #self.io.WriteMesh(mixed_model_part.GetMesh())
+            self.io.WriteMesh(mixed_model_part.GetMesh())
             self.io.FinalizeMesh()
-            self.io.InitializeResults(mesh_name, mixed_model_part.GetMesh())
+            self.io.InitializeResults(mesh_name, DEM_model_part.GetMesh())
 
         # Initialize list file
         with open(self.listfilename, "w") as listfile:
@@ -103,19 +103,19 @@ class PlasmaDynamicsGiDOutput(gid_output.GiDOutput):
 
         # label = str(label) #it should be a C double
         # update cut data if necessary
-        out_model_part = self.get_out_model_part(fluid_model_part)
+        #out_model_part = self.get_out_model_part(fluid_model_part)
 
         # update cut data if necessary
-        if not self.volume_output:
-            self.cut_app.UpdateCutData(out_model_part, fluid_model_part)
+        #if not self.volume_output:
+        #    self.cut_app.UpdateCutData(out_model_part, fluid_model_part)
 
         if self.multi_file == MultiFileFlag.MultipleFiles:
             self.io.InitializeMesh(label)
             self.io.WriteSphereMesh(DEM_model_part.GetMesh())
-            #self.io.WriteMesh(mixed_model_part.GetMesh())
+            self.io.WriteMesh(mixed_model_part.GetMesh())
             self.io.WriteMesh(rigid_faces_model_part.GetMesh())
             self.io.FinalizeMesh()
-            self.io.InitializeResults(label, mixed_model_part.GetMesh())
+            self.io.InitializeResults(label, DEM_model_part.GetMesh())
 
             """         for var in fluid_nodal_variables:
             kratos_variable = globals()[var]
@@ -133,9 +133,9 @@ class PlasmaDynamicsGiDOutput(gid_output.GiDOutput):
             kratos_variable = globals()[var]
             self._write_nodal_results(label, rigid_faces_model_part, kratos_variable)
 
-            """         for var in mixed_nodal_variables:
+        for var in mixed_nodal_variables:
             kratos_variable = globals()[var]
-            self._write_nodal_results(label, mixed_model_part, kratos_variable) """
+            self._write_nodal_results(label, mixed_model_part, kratos_variable) 
 
             """         for var in fluid_gp_variables:
             kratos_variable = globals()[var]

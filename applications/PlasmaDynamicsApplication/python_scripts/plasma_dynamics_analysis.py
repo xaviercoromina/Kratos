@@ -10,13 +10,10 @@ import weakref
 
 from KratosMultiphysics import *
 from KratosMultiphysics.DEMApplication import *
-from KratosMultiphysics.FluidTransportApplication import *
+from KratosMultiphysics.PlasmaDynamicsApplication import *
 
 from analysis_stage import AnalysisStage
 
-""" import CFD_DEM_coupling
-import swimming_DEM_procedures as SDP
-import swimming_DEM_gid_output """
 import CFD_DEM_for_plasma_dynamics_coupling
 import plasma_dynamics_procedures
 import variables_management_for_plasma_dynamics
@@ -83,39 +80,27 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
         self.StartTimer()
         self.model = model
         self.main_path = os.getcwd()
-        self.project_parameters = parameters
+
+        self.SetProjectParameters(parameters)
+
         self.vars_man = variables_management_for_plasma_dynamics.VariablesManager(self.project_parameters)
 
-        # storing some frequently used variables
-        self.time_step = self.project_parameters["MaxTimeStep"].GetDouble()
-        self.end_time   = self.project_parameters["FinalTime"].GetDouble()
-        self.do_print_results = self.project_parameters["do_print_results_option"].GetBool()
+        self._GetDEMAnalysis().coupling_analysis = weakref.proxy(self)
 
-        self.SetCouplingParameters(parameters)
+        #self._GetFluidAnalysis().coupling_analysis = weakref.proxy(self)
 
-        self.SetFluidParameters()
-
-        self.ModifyInputParametersForCoherence()
-
-        self.SetDispersePhaseAlgorithm()
-
-        self.disperse_phase_solution.coupling_analysis = weakref.proxy(self)
-
-        #self.SetFluidAlgorithm()
-        #self.fluid_solution.coupling_analysis = weakref.proxy(self)
-
-        self.procedures = weakref.proxy(self.disperse_phase_solution.procedures)
+        self.procedures = weakref.proxy(self._GetDEMAnalysis().procedures)
         self.report = DEM_procedures.Report()
 
-        self.disperse_phase_solution.SetAnalyticFaceWatcher()
+        self._GetDEMAnalysis().SetAnalyticFaceWatcher()
 
         # defining member variables for the model_parts (for convenience)
         #self.fluid_model_part = self.fluid_solution.fluid_model_part
-        self.fluid_model_part = self.disperse_phase_solution.spheres_model_part
-        self.spheres_model_part = self.disperse_phase_solution.spheres_model_part
-        self.cluster_model_part = self.disperse_phase_solution.cluster_model_part
-        self.rigid_face_model_part = self.disperse_phase_solution.rigid_face_model_part
-        self.dem_inlet_model_part = self.disperse_phase_solution.dem_inlet_model_part
+        self.fluid_model_part = self._GetDEMAnalysis().spheres_model_part
+        self.spheres_model_part = self._GetDEMAnalysis().spheres_model_part
+        self.cluster_model_part = self._GetDEMAnalysis().cluster_model_part
+        self.rigid_face_model_part = self._GetDEMAnalysis().rigid_face_model_part
+        self.dem_inlet_model_part = self._GetDEMAnalysis().dem_inlet_model_part
         self.vars_man.ConstructListsOfVariables(self.project_parameters)
         super(PlasmaDynamicsAnalysis, self).__init__(model, self.project_parameters) # TODO: The DEM jason is now interpreted as the coupling json. This must be changed
 
@@ -123,99 +108,75 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
         self.timer = timer
         self.simulation_start_time = timer.time()
 
-    def SetCouplingParameters(self, parameters):
+
+    def SetProjectParameters(self, parameters):
+        self.project_parameters = parameters
+        self.time_step = self.project_parameters["time_stepping"]["time_step"].GetDouble()
+        self.end_time   = self.project_parameters["problem_data"]["end_time"].GetDouble()
+        self.do_print_results = self.project_parameters["do_print_results_option"].GetBool()
+        self.fluid_parameters = self.project_parameters['fluid_parameters']
 
         # First, read the parameters generated from the interface
-        self.ReadDispersePhaseAndCouplingParameters()
+        import plasma_dynamics_default_input_parameters as only_plasma_dynamics_defaults
+        self.project_parameters.ValidateAndAssignDefaults(only_plasma_dynamics_defaults.GetDefaultInputParameters())
 
         # Second, set the default 'beta' parameters (candidates to be moved to the interface)
         self.SetBetaParameters()
 
-        # Third, set the parameters fed to the particular case that you are running
-        self.SetCustomBetaParameters(parameters)
+        # Third, make sure the parameters passed to the different (sub-)analyses is coherent
+        # with the general parameters
+        self.ModifyInputParametersForCoherence()
 
-
-    def ReadDispersePhaseAndCouplingParameters(self):
-        self.project_parameters = self.project_parameters # TO-DO: remove this
-
-        import plasma_dynamics_default_input_parameters
-        only_plasma_dynamics_defaults = plasma_dynamics_default_input_parameters.GetDefaultInputParameters()
-
-        self.project_parameters.ValidateAndAssignDefaults(only_plasma_dynamics_defaults)
 
 
     # Set input parameters that have not yet been transferred to the interface
     # import the configuration data as read from the GiD
     def SetBetaParameters(self):
         Add = self.project_parameters.AddEmptyValue
-        Add("angular_velocity_of_frame_X").SetDouble(0.0)
-        Add("angular_velocity_of_frame_Y").SetDouble(0.0)
-        Add("angular_velocity_of_frame_Z").SetDouble(0.0)
-        Add("angular_velocity_of_frame_old_X").SetDouble(0.0)
-        Add("angular_velocity_of_frame_old_Y").SetDouble(0.0)
-        Add("angular_velocity_of_frame_old_Z").SetDouble(0.0)
-        Add("acceleration_of_frame_origin_X").SetDouble(0.0)
-        Add("acceleration_of_frame_origin_Y").SetDouble(0.0)
-        Add("acceleration_of_frame_origin_Z").SetDouble(0.0)
-        Add("angular_acceleration_of_frame_X").SetDouble(0.0)
-        Add("angular_acceleration_of_frame_Y").SetDouble(0.0)
-        Add("angular_acceleration_of_frame_Z").SetDouble(0.0)
-        Add("frame_rotation_axis_initial_point").SetVector(Vector([0., 0., 0.]))
-        Add("frame_rotation_axis_final_point").SetVector(Vector([0., 0., 1.]))
-        Add("angular_velocity_magnitude").SetDouble(1.0)
-        if self.project_parameters["type_of_dem_inlet"].GetString() == 'ForceImposed':
+        if self.project_parameters["custom_dem"]["type_of_dem_inlet"].GetString() == 'ForceImposed':
             Add("inlet_force_vector").SetVector(Vector([0., 0., 1.])) # TODO: generalize
 
         # Setting body_force_per_unit_mass_variable_name
         Add("body_force_per_unit_mass_variable_name").SetString('BODY_FORCE')
 
-    def SetCustomBetaParameters(self, custom_parameters):
-        custom_parameters.ValidateAndAssignDefaults(self.project_parameters)
-        self.project_parameters = custom_parameters
-
-    def SetFluidParameters(self):
-        #self.fluid_parameters = self.project_parameters['fluid_parameters']
-        pass
 
     # This step is added to allow modifications to the possibly incompatibilities
     # between the individual parameters coming from each sub-application
     # (i.e., fluid and dem apps)
     def ModifyInputParametersForCoherence(self):
         # Making all time steps exactly commensurable
-        output_time = self.project_parameters["OutputTimeStep"].GetDouble()
+        output_time = self.project_parameters["output_interval"].GetDouble()
         self.output_time = int(output_time / self.time_step) * self.time_step
-        self.project_parameters["OutputTimeStep"].SetDouble(self.output_time)
-        #self.fluid_time_step = self.fluid_parameters["solver_settings"]["time_stepping"]["time_step"].GetDouble()
-        #self.fluid_time_step = int(self.fluid_time_step / self.time_step) * self.time_step
-        #self.fluid_parameters["solver_settings"]["time_stepping"]["time_step"].SetDouble(self.fluid_time_step)
+        self.project_parameters["output_interval"].SetDouble(self.output_time)
+        self.fluid_time_step = self.fluid_parameters["solver_settings"]["time_stepping"]["time_step"].GetDouble()
+        self.fluid_time_step = int(self.fluid_time_step / self.time_step) * self.time_step
+        self.fluid_parameters["solver_settings"]["time_stepping"]["time_step"].SetDouble(self.fluid_time_step)
         self.project_parameters["dem_parameters"]["MaxTimeStep"].SetDouble(self.time_step)
+        translational_scheme_name = self.project_parameters["custom_dem"]["translational_integration_scheme"].GetString()
+        self.project_parameters["dem_parameters"]["TranslationalIntegrationScheme"].SetString(translational_scheme_name)
+
+        time_steps_per_stationarity_step = self.project_parameters["stationarity"]["time_steps_per_stationarity_step"].GetInt()
+        self.project_parameters["stationarity"]["time_steps_per_stationarity_step"].SetInt(max(1, int(time_steps_per_stationarity_step)))
+
+        if self.project_parameters["coupling"]["coupling_level_type"].GetInt() > 1:
+            self.project_parameters["stationarity"]["stationary_problem_option"].SetBool(False)
+
         self.SetDoSolveDEMVariable()
 
+
     def SetDoSolveDEMVariable(self):
-        self.do_solve_dem = True  #TODO put this into default parameters
-        #self.do_solve_dem = self.project_parameters["do_solve_dem"].GetBool()
-
-
-    def SetDispersePhaseAlgorithm(self):
-        import fluid_coupled_DEM_plasma_dynamics_analysis as DEM_analysis
-        self.disperse_phase_solution = DEM_analysis.FluidCoupledDEMPDAnalysisStage(self.model, self.project_parameters)
+        self.do_solve_dem = self.project_parameters["custom_dem"]["do_solve_dem"].GetBool()
 
 
     def ReadDispersePhaseModelParts(self,
                                     starting_node_Id=0,
                                     starting_elem_Id=0,
                                     starting_cond_Id=0):
-        creator_destructor = self.disperse_phase_solution.creator_destructor
+        creator_destructor = self._GetDEMAnalysis().creator_destructor
         max_node_Id = creator_destructor.FindMaxNodeIdInModelPart(self.spheres_model_part)  #self.fluid_model_part
         max_elem_Id = creator_destructor.FindMaxElementIdInModelPart(self.spheres_model_part)
         max_cond_Id = creator_destructor.FindMaxConditionIdInModelPart(self.spheres_model_part)
-        self.disperse_phase_solution.BaseReadModelParts(max_node_Id, max_elem_Id, max_cond_Id)
-
-    def SetFluidAlgorithm(self):
-        """         import DEM_coupled_fluid_plasma_dynamics_analysis
-        self.fluid_solution = DEM_coupled_fluid_plasma_dynamics_analysis.DEMCoupledFluidPlasmaDynamicsAnalysis(self.model, self.project_parameters, self.vars_man)
-        self.fluid_solution.main_path = self.main_path """
-        pass
+        self._GetDEMAnalysis().BaseReadModelParts(max_node_Id, max_elem_Id, max_cond_Id)
 
     def Run(self):
         super(PlasmaDynamicsAnalysis, self).Run()
@@ -304,7 +265,7 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
 
         # creating a custom functions calculator for the implementation of
         # additional custom functions
-        #fluid_domain_dimension = self.project_parameters["fluid_parameters"]["solver_settings"]["domain_size"].GetInt()
+        fluid_domain_dimension = self.project_parameters["fluid_parameters"]["solver_settings"]["domain_size"].GetInt()
         #self.custom_functions_tool = plasma_dynamics_procedures.FunctionsCalculator(fluid_domain_dimension)
 
         # creating a stationarity assessment tool
@@ -341,7 +302,7 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
         self.particles_results_counter = self.GetParticlesResultsCounter()
         self.quadrature_counter = self.GetHistoryForceQuadratureCounter()
         # Phantom
-        self.disperse_phase_solution.analytic_data_counter = self.ProcessAnalyticDataCounter()
+        self._GetDEMAnalysis().analytic_data_counter = self.ProcessAnalyticDataCounter()
         self.mat_deriv_averager           = plasma_dynamics_procedures.Averager(1, 3)
         self.laplacian_averager           = plasma_dynamics_procedures.Averager(1, 3)
 
@@ -406,12 +367,12 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
         self.vars_man.__class__.AddNodalVariables(self.rigid_face_model_part, self.vars_man.rigid_faces_vars)
         self.vars_man.__class__.AddNodalVariables(self.dem_inlet_model_part, self.vars_man.inlet_vars)
         self.vars_man.AddExtraProcessInfoVariablesToDispersePhaseModelPart(self.project_parameters,
-                                                                           self.disperse_phase_solution.spheres_model_part)
+                                                                           self._GetDEMAnalysis().spheres_model_part)
 
-        self.disperse_phase_solution.Initialize()
+        self._GetDEMAnalysis().Initialize()
 
     def SetAllModelParts(self):
-        self.all_model_parts = weakref.proxy(self.disperse_phase_solution.all_model_parts)
+        self.all_model_parts = weakref.proxy(self._GetDEMAnalysis().all_model_parts)
 
         # defining a fluid model
         #self.all_model_parts.Add(self.fluid_model_part) TODO add fluid coupling
@@ -485,12 +446,10 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
             is_active=self.project_parameters["do_process_analytic_data"].GetBool())
 
     def GetVolumeDebugTool(self):
-        pass
-        """         return plasma_dynamics_procedures.ProjectionDebugUtils(
+        return plasma_dynamics_procedures.ProjectionDebugUtils(
             self.project_parameters["fluid_domain_volume"].GetDouble(),
             self.fluid_model_part,
-            self.spheres_model_part,
-            self.custom_functions_tool) """
+            self.spheres_model_part) 
 
 
 
@@ -540,7 +499,7 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
 
     def InitializeSolutionStep(self):
         self.TellTime()
-        self.disperse_phase_solution.InitializeSolutionStep()
+        self._GetDEMAnalysis().InitializeSolutionStep()
         """         if self._GetSolver().CannotIgnoreFluidNow():
             self.fluid_solution.InitializeSolutionStep() """
         super(PlasmaDynamicsAnalysis, self).InitializeSolutionStep()
@@ -561,7 +520,7 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
         """         if self._GetSolver().CannotIgnoreFluidNow():
             self.fluid_solution.FinalizeSolutionStep() """
 
-        self.disperse_phase_solution.FinalizeSolutionStep()
+        self._GetDEMAnalysis().FinalizeSolutionStep()
 
         # applying DEM-to-fluid coupling
 
@@ -599,8 +558,8 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
             elif self.project_parameters["type_of_inlet"].GetString() == 'ForceImposed':
                 self.DEM_inlet = DEM_Force_Based_Inlet(self.dem_inlet_model_part, self.project_parameters["inlet_force_vector"].GetVector())
 
-            self.disperse_phase_solution.DEM_inlet = self.DEM_inlet
-            self.DEM_inlet.InitializeDEM_Inlet(self.spheres_model_part, self.disperse_phase_solution.creator_destructor)
+            self._GetDEMAnalysis().DEM_inlet = self.DEM_inlet
+            self.DEM_inlet.InitializeDEM_Inlet(self.spheres_model_part, self._GetDEMAnalysis().creator_destructor)
 
 
     def SetAnalyticParticleWatcher(self):
@@ -659,14 +618,28 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
     # To-do: for the moment, provided for compatibility
     def _CreateSolver(self):
         import plasma_dynamics_solver
-        self.fluid_solution = self.disperse_phase_solution #TODO: remove this and create the fluid solution 
+        self.fluid_solution = self._GetDEMAnalysis() #TODO: remove this and create the fluid solution 
         return plasma_dynamics_solver.PlasmaDynamicsSolver(self.model,
                                                      self.project_parameters,
                                                      self.GetFieldUtility(),
                                                      self.fluid_solution._GetSolver(),
-                                                     self.disperse_phase_solution._GetSolver(),
+                                                     self._GetDEMAnalysis()._GetSolver(),
                                                      self.vars_man)
 
+    def _GetDEMAnalysis(self):
+        if not hasattr(self, '_disperse_phase_analysis'):
+            import fluid_coupled_DEM_plasma_dynamics_analysis as DEM_analysis
+            self._disperse_phase_analysis = DEM_analysis.FluidCoupledDEMPDAnalysisStage(self.model, self.project_parameters)
+
+        return self._disperse_phase_analysis
+
+    def _GetFluidAnalysis(self):
+        """         if not hasattr(self, '_fluid_phase_analysis'):
+            import DEM_coupled_fluid_plasma_dynamics_analysis as fluid_analysis
+            self._fluid_phase_analysis = fluid_analysis.DEMCoupledFluidDynamicsAnalysis(self.model, self.project_parameters, self.vars_man)
+            self._fluid_phase_analysis.main_path = self.main_path """
+        #return self._fluid_phase_analysis
+        pass
 
     def GetFieldUtility(self):
         return None

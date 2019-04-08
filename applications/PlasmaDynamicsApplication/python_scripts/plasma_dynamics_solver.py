@@ -286,9 +286,6 @@ class PlasmaDynamicsSolver(PythonSolver):
 
         # Performing the time integration of the DEM part
 
-        if self.do_solve_dem:
-            self.SolveDEMSolutionStep()
-
         self.first_DEM_iteration = False
 
     def AppendValuesForTheHistoryForce(self):
