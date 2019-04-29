@@ -29,13 +29,13 @@ public:
 
     IonParticle():SphericParticle()
     {
-    mSingleIonCharge = 1.60e-19; // in Coulomb, Hard-coded but should go into node
+    mSingleIonCharge = 1.60e-19; // in Coulomb, single charged ion, can go into node
     mDoubleIonCharge = 3.20e-19; // in Coulomb, Double charged ion
     mXenonMass = 2.18e-25; // in kg, Xenon is the most common gas used in plasma thrusters
-    mExternalElectricField[0]=0.0 ; // External Electric Field, should be improved to compute complexe external fields
+    mExternalElectricField[0]=0.0 ; // External Electric Field initialized, should be improved to compute complexe external fields
     mExternalElectricField[1]=0.0 ; 
     mExternalElectricField[2]=0.0 ;
-    mExternalMagneticField[0]=0.0 ; // External Magnetic Field
+    mExternalMagneticField[0]=0.0 ; // External Magnetic Field initialized
     mExternalMagneticField[1]=0.0 ;
     mExternalMagneticField[2]=0.0 ;
     }

@@ -8,8 +8,13 @@ from python_solver import PythonSolver
 import KratosMultiphysics.PlasmaDynamicsApplication as PlasmaDynamicsApplication
 import plasma_dynamics_procedures 
 import CFD_DEM_for_plasma_dynamics_coupling
-#import parameters_tools_for_plasma_dynamics as PT
-#import derivative_recovery.derivative_recovery_strategy as derivative_recoverer
+import parameters_tools_for_plasma_dynamics as PT
+import sys
+lib_path = os.path.abspath(os.path.join(__file__, '..', 'SwimmingDEMApplication', 'python_scripts','derivative_recovery'))
+sys.path.append(lib_path)
+
+import derivative_recovery.derivative_recovery_strategy as derivative_recoverer
+
 import math
 
 def Say(*args):
@@ -18,41 +23,21 @@ def Say(*args):
 
 class PlasmaDynamicsSolver(PythonSolver):
     def _ValidateSettings(self, project_parameters):
-        #calculate_nodal_area_process
-        #TODO: to complete
+
         default_processes_settings = Parameters("""{
-                "python_module" : "gid_output_process",
+                "python_module" : "calculate_nodal_area_process",
                 "kratos_module" : "KratosMultiphysics",
-                "process_name"  : "GiDOutputProcess",
+                "process_name"  : "CalculateNodalAreaProcess",
                 "Parameters"    : {
-                    "model_part_name"        : "Particles_in_a_cylinder",
-                    "output_name"            : "Electrically_accelerated_ions",
-                    "postprocess_parameters" : {
-                        "result_file_configuration" : {
-                            "gidpost_flags"       : {
-                                "GiDPostMode"           : "GiD_PostBinary",
-                                "WriteDeformedMeshFlag" : "WriteUndeformed",
-                                "WriteConditionsFlag"   : "WriteElementsOnly",
-                                "MultiFileFlag"         : "MultipleFiles"
-                            },
-                            "file_label"          : "step",
-                            "output_control_type" : "step",
-                            "output_frequency"    : 1,
-                            "body_output"         : true,
-                            "node_output"         : true,
-                            "skin_output"         : false,
-                            "plane_output"        : [],
-                            "nodal_results"       : ["DISPLACEMENT","REACTION","VELOCITY","ACCELERATION"],
-                            "gauss_point_results" : []
-                        },
-                    "point_data_configuration"  : []
-                    }
+                    "model_part_name" : "FluidModelPart",
+                    "domain_size" : 3,
+                    "fixed_mesh": false
                 }
             }
 
         """)
 
-        """         if not project_parameters["processes"].Has('non_optional_solver_processes'):
+        if not project_parameters["processes"].Has('non_optional_solver_processes'):
             project_parameters["processes"].AddEmptyArray("non_optional_solver_processes")
 
         else: # reconstruct non_optional_solver_processes list making sure calculate_nodal_area_process is not added twice
@@ -66,12 +51,13 @@ class PlasmaDynamicsSolver(PythonSolver):
 
         non_optional_solver_processes = project_parameters["processes"]["non_optional_solver_processes"]
         non_optional_solver_processes.Append(default_processes_settings)
-        nodal_area_process_parameters = non_optional_solver_processes[non_optional_solver_processes.size() -1]["Parameters"] """
-        #nodal_area_process_parameters["model_part_name"].SetString(self.fluid_solver.main_model_part.Name)
-        #nodal_area_process_parameters["domain_size"].SetInt(self.fluid_domain_dimension)
+        nodal_area_process_parameters = non_optional_solver_processes[non_optional_solver_processes.size() -1]["Parameters"]
+        nodal_area_process_parameters["model_part_name"].SetString(self.fluid_solver.main_model_part.Name)
+        nodal_area_process_parameters["domain_size"].SetInt(self.fluid_domain_dimension)
 
-
-        #nodal_area_process_parameters["fixed_mesh"].SetBool(True)
+        if self.fluid_solver.settings.Has('move_mesh_flag'):
+            the_mesh_moves = self.fluid_solver.settings["move_mesh_flag"].GetBool()
+            nodal_area_process_parameters["fixed_mesh"].SetBool(not the_mesh_moves)
 
         return project_parameters
 
@@ -79,20 +65,19 @@ class PlasmaDynamicsSolver(PythonSolver):
         # Validate settings
         self.field_utility = field_utility
         self.vars_man = variables_manager
-        #self.fluid_domain_dimension = project_parameters["fluid_parameters"]["solver_settings"]["domain_size"].GetInt()
+        self.fluid_domain_dimension = project_parameters["fluid_parameters"]["solver_settings"]["domain_size"].GetInt()
         self.fluid_solver = fluid_solver
         self.dem_solver = dem_solver
         self.project_parameters = self._ValidateSettings(project_parameters)
         self.next_time_to_solve_fluid = project_parameters['problem_data']['start_time'].GetDouble()
-        self.coupling_level_type = project_parameters["coupling_level_type"].GetInt()
-        #self.coupling_scheme_type = project_parameters["coupling_scheme_type"].GetString()
-        self.interaction_start_time = project_parameters["interaction_start_time"].GetDouble()
-        #self.project_at_every_substep_option = project_parameters["project_at_every_substep_option"].GetBool()
-        self.integration_scheme = project_parameters["TranslationalIntegrationScheme"].GetString()
-        #self.fluid_dt = fluid_solver.settings["time_stepping"]["time_step"].GetDouble()
-        self.do_solve_dem = project_parameters["do_solve_dem"].GetBool()
-        self.solve_system = not self.project_parameters["fluid_already_calculated"].GetBool()
+        self.coupling_level_type = project_parameters["coupling"]["coupling_level_type"].GetInt()
+        self.interaction_start_time = project_parameters["coupling"]["interaction_start_time"].GetDouble()
+        self.integration_scheme = project_parameters["custom_dem"]["translational_integration_scheme"].GetString()
+        self.fluid_dt = fluid_solver.settings["time_step"].GetDouble()
+        self.do_solve_dem = project_parameters["custom_dem"]["do_solve_dem"].GetBool()
+        self.solve_system = not self.project_parameters["custom_fluid"]["fluid_already_calculated"].GetBool()
 
+        self.step = 0
         self.fluid_step = 0
         self.calculating_fluid_in_current_step = True
         self.first_DEM_iteration = True
@@ -101,6 +86,35 @@ class PlasmaDynamicsSolver(PythonSolver):
         self.ConstructHistoryForceUtility()
         # Call the base Python solver constructor
         super(PlasmaDynamicsSolver, self).__init__(model, project_parameters)
+
+
+    def AddVariables(self):
+        super(PlasmaDynamicsSolver,self).AddVariables()
+
+        self.fluid_solver.main_model_part.ProcessInfo.SetValue(DENSITY, 0.0)  #should always be 0 when solving the Poisson equation
+        self.fluid_solver.main_model_part.ProcessInfo.SetValue(ABSORPTION_COEFFICIENT, 0.0) #should always be 0 when solving the Poisson equation
+        self.fluid_solver.main_model_part.ProcessInfo.SetValue(CONDUCTIVITY, 1.0) #should always be 1.0 when solving the Poisson equation
+        self.fluid_solver.main_model_part.AddNodalSolutionStepVariable(FLUID_FRACTION)
+        self.fluid_solver.main_model_part.AddNodalSolutionStepVariable(FLUID_FRACTION_OLD)
+        self.fluid_solver.main_model_part.AddNodalSolutionStepVariable(FLUID_FRACTION_RATE)
+        self.fluid_solver.main_model_part.AddNodalSolutionStepVariable(ELECTRIC_POTENTIAL)
+        self.fluid_solver.main_model_part.AddNodalSolutionStepVariable(ELECTRIC_FIELD)
+        self.fluid_solver.main_model_part.AddNodalSolutionStepVariable(FLUID_ION_DENSITY)
+
+        #self.dem_solver.spheres_model_part.AddNodalSolutionStepVariable(PARTICLE_ION_VELOCITY)
+
+        for node in self.fluid_solver.main_model_part.Nodes:
+            node.SetSolutionStepValue(FLUID_FRACTION, 0, 1.0)
+            node.SetSolutionStepValue(FLUID_FRACTION_OLD, 0, 1.0)
+        for node in self.dem_solver.spheres_model_part.Nodes:    
+            node.SetSolutionStepValue(FLUID_FRACTION_PROJECTED, 0, 1.0)
+                    
+
+
+
+
+        
+
 
     def ConstructStationarityTool(self):
         """         self.stationarity = False
@@ -112,14 +126,14 @@ class PlasmaDynamicsSolver(PythonSolver):
         pass
 
     def _ConstructProjectionModule(self):
-        """         # creating a projection module for the fluid-DEM coupling
+        # creating a projection module for the fluid-DEM coupling
         self.h_min = 0.01 #TODO: this must be set from interface and the method must be checked for 2D
         n_balls = 1
         fluid_volume = 10
         # the variable n_particles_in_depth is only relevant in 2D problems
         self.project_parameters.AddEmptyValue("n_particles_in_depth").SetInt(int(math.sqrt(n_balls / fluid_volume)))
 
-        projection_module = CFD_DEM_coupling.ProjectionModule(
+        projection_module = CFD_DEM_for_plasma_dynamics_coupling.ProjectionModule(
         self.fluid_solver.main_model_part,
         self.dem_solver.spheres_model_part,
         self.dem_solver.all_model_parts.Get("RigidFacePart"),
@@ -133,17 +147,17 @@ class PlasmaDynamicsSolver(PythonSolver):
 
         projection_module.UpdateDatabase(self.h_min)
 
-        return projection_module """
-        pass
+        return projection_module
+        
 
     def ConstructDerivativeRecoverer(self):
         self.derivative_recovery_counter = self.GetRecoveryCounter()
         self.using_hinsberg_method = bool(self.project_parameters["basset_force_type"].GetInt() >= 3 or
                                           self.project_parameters["basset_force_type"].GetInt() == 1)
-        """         self.recovery = derivative_recoverer.DerivativeRecoveryStrategy(
+        self.recovery = derivative_recoverer.DerivativeRecoveryStrategy(
             self.project_parameters,
             self.fluid_solver.main_model_part,
-            plasma_dynamics_procedures.FunctionsCalculator(self.fluid_domain_dimension)) """
+            plasma_dynamics_procedures.FunctionsCalculator(self.fluid_domain_dimension)) 
 
     def ConstructHistoryForceUtility(self):
         """         self.quadrature_counter = self.GetHistoryForceQuadratureCounter()
@@ -158,7 +172,7 @@ class PlasmaDynamicsSolver(PythonSolver):
 
     def GetRecoveryCounter(self):
         there_is_something_to_recover = (
-            self.project_parameters["coupling_level_type"].GetInt())
+            self.project_parameters["coupling"]["coupling_level_type"].GetInt())
         return plasma_dynamics_procedures.Counter(1, 1, there_is_something_to_recover)
 
 
@@ -176,10 +190,11 @@ class PlasmaDynamicsSolver(PythonSolver):
 
     def AdvanceInTime(self, time):
         self.time = self.dem_solver.AdvanceInTime(time)
-        """         self.calculating_fluid_in_current_step = bool(time >= self.next_time_to_solve_fluid)
+        self.calculating_fluid_in_current_step = bool(time >= self.next_time_to_solve_fluid)
         if self.calculating_fluid_in_current_step:
             self.next_time_to_solve_fluid = self.fluid_solver.AdvanceInTime(time)
-            self.fluid_step += 1 """
+            self.fluid_step += 1 
+        self.step += 1 
 
         return self.time
 
@@ -199,37 +214,38 @@ class PlasmaDynamicsSolver(PythonSolver):
     # solution algorithm. For instance, the pressure gradient, which is not used for
     # the coupling but can be of interest.
     def ComputePostProcessResults(self):
-        if self.project_parameters["coupling_level_type"].GetInt():
+        if self.project_parameters["coupling"]["coupling_level_type"].GetInt():
             self._GetProjectionModule().ComputePostProcessResults(self.dem_solver.spheres_model_part.ProcessInfo)
 
     def CannotIgnoreFluidNow(self):
-        #return self.solve_system and self.calculating_fluid_in_current_step
-        return False
+        return self.solve_system and self.calculating_fluid_in_current_step
+
 
     def Predict(self):
-        """         if self.CannotIgnoreFluidNow():
-            self.fluid_solver.Predict() """
-        pass
+        if self.CannotIgnoreFluidNow():
+            self.fluid_solver.Predict() 
+
 
     def ApplyForwardCoupling(self, alpha='None'):
         self._GetProjectionModule().ApplyForwardCoupling(alpha)
 
-    def ApplyForwardCouplingOfVelocityToSlipVelocityOnly(self, time=None):
-        #self._GetProjectionModule().ApplyForwardCouplingOfVelocityToSlipVelocityOnly()
-        pass
 
     def _GetProjectionModule(self):
         if not hasattr(self, 'projection_module'):
             self.projection_module = self._ConstructProjectionModule()
         return self.projection_module
 
+
+    def InitializeSolutionStep(self):
+        self.fluid_solver.InitializeSolutionStep()
+
     def SolveSolutionStep(self):
         # update possible movements of the fluid mesh
         self.UpdateALEMeshMovement(self.time)
 
         # Solving the fluid part
-        #Say('Solving Fluid... (', self.fluid_solver.main_model_part.NumberOfElements(0), 'elements )\n')
-        self.solve_system = not self.project_parameters["fluid_already_calculated"].GetBool() 
+        Say('Solving Fluid... (', self.fluid_solver.main_model_part.NumberOfElements(0), 'elements )\n')
+        self.solve_system = not self.project_parameters["custom_fluid"]["fluid_already_calculated"].GetBool() 
 
         if self.CannotIgnoreFluidNow():
             self.SolveFluidSolutionStep()
@@ -241,18 +257,18 @@ class PlasmaDynamicsSolver(PythonSolver):
         """         if self.stationarity_counter.Tick():
             self.AssessStationarity() """
 
-        """         self.derivative_recovery_counter.Activate(self.time > self.interaction_start_time and self.calculating_fluid_in_current_step)
+        self.derivative_recovery_counter.Activate(self.time > self.interaction_start_time and self.calculating_fluid_in_current_step)
 
         if self.derivative_recovery_counter.Tick():
-            self.recovery.Recover() """
+            self.recovery.Recover()
 
         # Solving the disperse-phase component
         Say('Solving DEM... (', self.dem_solver.spheres_model_part.NumberOfElements(0), 'elements )')
         self.SolveDEM()
 
     def SolveFluidSolutionStep(self):
-        #self.fluid_solver.SolveSolutionStep()
-        pass
+        self.fluid_solver.SolveSolutionStep()
+        
 
     def SolveDEMSolutionStep(self):
         self.dem_solver.SolveSolutionStep()
@@ -260,33 +276,54 @@ class PlasmaDynamicsSolver(PythonSolver):
     def SolveDEM(self):
         #self.PerformEmbeddedOperations() TO-DO: it's crashing
 
-        """         it_is_time_to_forward_couple = (
-            self.time >= self.interaction_start_time and
-            self.coupling_level_type and
-            (self.project_at_every_substep_option or self.calculating_fluid_in_current_step)
-        ) """
+        it_is_time_to_forward_couple = (self.time >= self.interaction_start_time
+                                        and self.coupling_level_type)
 
-        """         if it_is_time_to_forward_couple or self.first_DEM_iteration:
+        alpha = 1.0 - (self.next_time_to_solve_fluid - self.time) / self.fluid_dt
 
-            if self.coupling_scheme_type == "UpdatedDEM":
-                self.ApplyForwardCoupling()
-
-            else:
-                alpha = 1.0 - (self.next_time_to_solve_fluid - self.time) / self.fluid_dt
-                self.ApplyForwardCoupling(alpha) """
+        if it_is_time_to_forward_couple or self.first_DEM_iteration:
+            self.ApplyForwardCoupling(alpha)
 
         """         if self.quadrature_counter.Tick():
             self.AppendValuesForTheHistoryForce() """
 
-        if self.integration_scheme in {'Symplectic_Euler', 'Forward_Euler', 'Taylor_Scheme', 'Velocity_Verlet'}:
-            # Advance in space only
-            if self.do_solve_dem:
-                self.SolveDEMSolutionStep()
-            self.ApplyForwardCouplingOfVelocityToSlipVelocityOnly(self.time)
-
         # Performing the time integration of the DEM part
 
+        if self.do_solve_dem:
+            self.SolveDEMSolutionStep()
+
         self.first_DEM_iteration = False
+
+    def FinalizeSolutionStep(self):
+        if self.CannotIgnoreFluidNow():
+            for node in self.fluid_solver.main_model_part.Nodes:
+
+                #Getting the electric potential Phi using the variable TEMPERATURE in the FluidTransportApplication
+                electric_potential = node.GetSolutionStepValue(TEMPERATURE)  #TODO: inverse the way
+                node.SetSolutionStepValue(ELECTRIC_POTENTIAL, electric_potential)
+
+                #Calculate electron density on each fluid model node TODO: put it in C++
+                n_0 = 0.0 # electron density when Phi = 0 TODO: put it in the json
+                # e = 1.602*10**(-19) C  Coulomb charge
+                # k = 1.38*10**(-23) J/K  Boltzmann constant
+                # T_e = 58025 K  (= 5eV) Electron temperature TODO: put it in the json
+                # n_e = n_0 * exp(e * Phi / (k * T_e))
+                electric_constant = 2  # e / (k * T_e)
+                fluid_electron_density = n_0 * math.exp(electric_constant * electric_potential)
+
+                node.SetSolutionStepValue(FLUID_ELECTRON_DENSITY, fluid_electron_density)
+
+
+                fluid_ion_density = node.GetSolutionStepValue(FLUID_ION_DENSITY)  
+
+                RHS = 1.81*(10**(-8))*(fluid_electron_density-fluid_ion_density)
+
+                node.SetSolutionStepValue(HEAT_FLUX, RHS)
+
+        for node in self.dem_solver.spheres_model_part.Nodes:
+            particle_ion_velocity = node.GetSolutionStepValue(VELOCITY)
+            node.SetSolutionStepValue(PARTICLE_ION_VELOCITY, particle_ion_velocity)
+
 
     def AppendValuesForTheHistoryForce(self):
         if self.using_hinsberg_method:

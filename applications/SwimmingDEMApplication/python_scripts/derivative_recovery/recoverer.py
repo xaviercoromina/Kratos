@@ -24,6 +24,8 @@ class EmptyGradientRecoverer(DerivativesRecoverer):
         pass
     def RecoverPressureGradient(self):
         pass
+    def RecoverMaterialAcceleration(self):
+        pass
 
 class EmptyMaterialAccelerationRecoverer(DerivativesRecoverer):
     def __init__(self, project_parameters, model_part):

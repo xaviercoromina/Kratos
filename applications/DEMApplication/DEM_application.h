@@ -19,6 +19,7 @@
 #include "custom_elements/spheric_particle.h"
 #include "custom_elements/spheric_continuum_particle.h"
 #include "custom_elements/nanoparticle.h"
+#include "./../PlasmaDynamicsApplication/custom_elements/ion_particle.h"
 #include "custom_elements/analytic_spheric_particle.h"
 #include "custom_elements/ice_continuum_particle.h"
 #include "custom_elements/Particle_Contact_Element.h"

@@ -33,7 +33,7 @@
     "ElementType"                    : "IonParticle3D", 
     "echo_level"                     : 1,
     "problem_data"                   : {
-        "problem_name"                 : "Particles_in_a_cylinder_under_an_x_oriented_electric_field",
+        "problem_name"                 : "PIC_forward_coupling_only",
         "parallel_type"                : "OpenMP",
         "echo_level"                   : 1,
         "start_time"                   : 0.0,
@@ -74,6 +74,7 @@
     },
 
     "meso_scale_length" : 0.0002,
+    "material_acceleration_calculation_type" : 0,
 
     "dem_nodal_results" : {
         "EXTERNAL_APPLIED_FORCE" : false,
@@ -82,16 +83,16 @@
         "PARTICLE_ION_VELOCITY" : false
     },
 
-    "fluid_nodal_results" : {"ELECTRIC_POTENTIAL": false,
+    "fluid_nodal_results" : {"ELECTRIC_POTENTIAL": true,
         "FLUID_ION_DENSITY": false,
         "FLUID_ELECTRON_DENSITY": false,
         "FLUID_NEUTRAL_DENSITY": false,
-        "ELECTRIC_FIELD": false,
+        "ELECTRIC_FIELD": true,
+        "FLUID_FRACTION" : true,
         "MAGNETIC_FIELD": false
     },
     "fluid_domain_volume"            : 1.0,
 
-    "problem_name"                   : "Plasma_Dynamics_test_particles_in_a_virtual_cylinder",
 
 
 
@@ -103,7 +104,7 @@
             }
         },
         {"electromagnetic_field_parameters":{
-            "external_electric_field_X": 10.0,
+            "external_electric_field_X": 0.0,
             "external_electric_field_Y": 0.0,
             "external_electric_field_Z": 0.0,
             "external_magnetic_field_X": 0.0,
@@ -122,98 +123,128 @@
     ],
 
     "fluid_parameters" : {
-        "problem_data"     : {
-            "problem_name"  : "Plasma_Dynamics_test_particles_in_a_virtual_cylinder",
-            "parallel_type" : "OpenMP",
-            "echo_level"    : 0,
-            "start_time"    : 0.0,
-            "end_time"      : 1e-4
+        "problem_data": {
+            "problem_name":         "PIC_forward_coupling_only_Fluid",
+            "start_time":           0.0,
+            "end_time":             0.0001,
+            "echo_level":           1,
+            "parallel_type":        "OpenMP",
+            "number_of_threads":    4
         },
-    
-        "solver_settings"  : {
-            "model_part_name"             : "FluidModelPart",
-            "domain_size"                 : 3,
-            "solver_type"                 : "Monolithic",
-            "model_import_settings"       : {
-                "input_type"     : "mdpa",
-                "input_filename" : "k"
+        "solver_settings": {
+            "solver_type":                        "fluid_transport_solver",
+            "model_part_name":                    "FluidTransportDomain",
+            "domain_size":                        3,
+            "start_time":                         0.0,
+            "time_step":                          0.000001,
+            "model_import_settings":              {
+                "input_type":       "mdpa",
+                "input_filename":   "PIC_forward_coupling_only_Fluid"
             },
-            "formulation": {
-                "element_type": "vms"
+            "buffer_size":                        3,
+            "echo_level":                         1,
+            "clear_storage":                      false,
+            "compute_reactions":                  false,
+            "move_mesh_flag":                     false,
+            "block_builder":                      true,
+            "solution_type":                      "Transient",
+            "scheme_type":                        "Implicit",
+            "newmark_theta":                      0.8,
+            "strategy_type":                      "Linear",
+            "convergence_criterion":              "And_criterion",
+            "displacement_relative_tolerance":    1.0E-4,
+            "displacement_absolute_tolerance":    1.0E-9,
+            "residual_relative_tolerance":        1.0E-4,
+            "residual_absolute_tolerance":        1.0E-9,
+            "max_iteration":                      15,
+            "linear_solver_settings":             {
+                "solver_type":   "ExternalSolversApplication.super_lu"
             },
-            "echo_level"                  : 1,
-            "compute_reactions"           : false,
-            "maximum_iterations"          : 10,
-            "relative_velocity_tolerance" : 0.001,
-            "absolute_velocity_tolerance" : 1e-5,
-            "relative_pressure_tolerance" : 0.001,
-            "absolute_pressure_tolerance" : 1e-5,
-            "linear_solver_settings"      : {
-                "solver_type"         : "amgcl",
-                "max_iteration"       : 200,
-                "tolerance"           : 1e-7,
-                "provide_coordinates" : false,
-                "smoother_type"       : "ilu0",
-                "krylov_type"         : "gmres",
-                "coarsening_type"     : "aggregation",
-                "scaling"             : false
-            },
-            "volume_model_part_name"      : "Parts_fluid",
-            "skin_parts"                  : ["Outlet3D_fixed_pressure","NoSlip3D_walls"],
-            "no_skin_parts"               : [],
-            "time_stepping"               : {
-                "automatic_time_step" : false,
-                "time_step"           : 1e-5
-            }
+            "problem_domain_sub_model_part_list": ["Body_Part-auto-1"],
+            "processes_sub_model_part_list":      ["Velocity-auto-1","Phi_Value-auto-1","Phi_Value-auto-2"]
         },
-        "processes"        : {
-            "initial_conditions_process_list"  : [{
-                "python_module" : "assign_vector_variable_process",
-                "kratos_module" : "KratosMultiphysics",
-                "Parameters"    : {
-                    "model_part_name" : "FluidModelPart.VELOCITY_fluid",
-                    "variable_name"   : "VELOCITY",
-                    "constrained"     : [false,false,false],
-                    "value"           : [0.0,0.0,0.0]
-                }
-            }],
-            "boundary_conditions_process_list" : [{
-                "python_module" : "apply_outlet_process",
-                "kratos_module" : "KratosMultiphysics.FluidDynamicsApplication",
-                "Parameters"    : {
-                    "model_part_name"    : "FluidModelPart.Outlet3D_fixed_pressure",
-                    "variable_name"      : "PRESSURE",
-                    "constrained"        : true,
-                    "value"              : 0.0,
-                    "hydrostatic_outlet" : false,
-                    "h_top"              : 0.0
-                }
-            },{
-                "python_module" : "apply_noslip_process",
-                "kratos_module" : "KratosMultiphysics.FluidDynamicsApplication",
-                "Parameters"    : {
-                    "model_part_name" : "FluidModelPart.NoSlip3D_walls"
-                }
-            }],
-            "gravity"                          : [{
-                "python_module" : "assign_vector_by_direction_process",
-                "kratos_module" : "KratosMultiphysics",
-                "process_name"  : "AssignVectorByDirectionProcess",
-                "Parameters"    : {
-                    "model_part_name" : "FluidModelPart.Parts_fluid",
-                    "variable_name"   : "BODY_FORCE",
-                    "modulus"         : 9.81,
-                    "constrained"     : false,
-                    "direction"       : [0.0,0.0,-1.0]
-                }
-            }],
-            "auxiliar_process_list"            : []
+        "output_configuration": {
+            "result_file_configuration": {
+                "gidpost_flags":       {
+                    "WriteDeformedMeshFlag": "WriteUndeformed",
+                    "WriteConditionsFlag":   "WriteElementsOnly",
+                    "GiDPostMode":           "GiD_PostBinary",
+                    "MultiFileFlag":         "SingleFile"
+                },
+                "file_label":          "time",
+                "output_control_type": "time",
+                "output_frequency":    0.000001,
+                "body_output":         true,
+                "node_output":         true,
+                "skin_output":         false,
+                "plane_output":        [],
+                "nodal_results":       ["VELOCITY","NODAL_PHI_GRADIENT","NODAL_ANALYTIC_SOLUTION","TEMPERATURE","PHI_THETA","NORMAL"],
+                "gauss_point_results": ["PECLET","CFL_NUMBER","FIC_BETA","PHI_GRADIENT"]
+            },
+            "point_data_configuration":  []
+        },
+        "constraints_process_list": [{
+            "python_module": "apply_vector_constraint_table_process",
+            "kratos_module": "KratosMultiphysics.FluidTransportApplication",
+            "process_name":  "ApplyVectorConstraintTableProcess",
+            "Parameters":    {
+                "model_part_name": "Velocity-auto-1",
+                "variable_name":   "VELOCITY",
+                "active":          [true,true,true],
+                "is_fixed":        [true,true,true],
+                "value":           [0.0,0.0,0.0],
+                "table":           [0,0,0]
             }
+        },{
+            "python_module": "apply_scalar_constraint_table_process",
+            "kratos_module": "KratosMultiphysics.FluidTransportApplication",
+            "process_name":  "ApplyScalarConstraintTableProcess",
+            "Parameters":    {
+                "model_part_name":      "Phi_Value-auto-1",
+                "variable_name":        "PHI_THETA",
+                "is_fixed":             true,
+                "value":                0.0,
+                "table":                0
+            }
+        },{
+            "python_module": "apply_scalar_constraint_table_process",
+            "kratos_module": "KratosMultiphysics.FluidTransportApplication",
+            "process_name":  "ApplyScalarConstraintTableProcess",
+            "Parameters":    {
+                "model_part_name":      "Phi_Value-auto-2",
+                "variable_name":        "PHI_THETA",
+                "is_fixed":             true,
+                "value":                100,
+                "table":                0
+            }
+        },{
+            "python_module": "apply_scalar_constraint_table_process",
+            "kratos_module": "KratosMultiphysics.FluidTransportApplication",
+            "process_name":  "ApplyScalarConstraintTableProcess",
+            "Parameters":    {
+                "model_part_name":      "Phi_Value-auto-1",
+                "variable_name":        "TEMPERATURE",
+                "value":                0.0,
+                "table":                0
+            }
+        },{
+            "python_module": "apply_scalar_constraint_table_process",
+            "kratos_module": "KratosMultiphysics.FluidTransportApplication",
+            "process_name":  "ApplyScalarConstraintTableProcess",
+            "Parameters":    {
+                "model_part_name":      "Phi_Value-auto-2",
+                "variable_name":        "TEMPERATURE",
+                "value":                100,
+                "table":                0
+            }
+        }],
+        "loads_process_list":       []
     },
+    
 
     "dem_parameters" : {
         "problem_data"     : {
-            "problem_name"  : "Plasma_Dynamics_test_particles_in_a_virtual_cylinder_DEM",
+            "problem_name"  : "PIC_forward_coupling_only",
             "parallel_type" : "OpenMP",
             "echo_level"    : 1,
             "start_time"    : 0.0,
@@ -226,7 +257,7 @@
         "do_print_results_option"          : true,
         "Dimension"                        : 3,
         "PeriodicDomainOption"             : true,
-        "BoundingBoxOption"                : true,
+        "BoundingBoxOption"                : false,
         "AutomaticBoundingBoxOption"       : false,
         "BoundingBoxEnlargementFactor"     : 1.0,
         "BoundingBoxStartTime"             : 0.0,
@@ -268,10 +299,10 @@
         "NeighbourSearchFrequency"         : 1,
         "TestType"                         : "None",
         "ElementType"                      : "IonParticle3D",
-        "problem_name"                     : "Plasma_Dynamics_test_particles_in_a_virtual_cylinder_DEM",
+        "problem_name"                     : "PIC_forward_coupling_only",
         "GraphExportFreq"                  : 1e-3,
         "VelTrapGraphExportFreq"           : 1e-3,
-        "OutputTimeStep"                   : 0.01,
+        "OutputTimeStep"                   : 1e-6,
         "PostDisplacement"                 : true,
         "PostVelocity"                     : true,
         "PostElasticForces"                : false,
@@ -309,7 +340,11 @@
         "do_impose_flow_from_field_option" : false,
         "ALE_option" : false,
         "fluid_model_type" : 1,
-        "fluid_model_type_comment" : " untouched, velocity incremented by 1/fluid_fraction (0), modified mass conservation only (1)"
+        "fluid_model_type_comment" : " untouched, velocity incremented by 1/fluid_fraction (0), modified mass conservation only (1)",
+        "time_stepping" : {
+            "automatic_time_step" : false,
+            "time_step"           : 1e-6
+        }
     },
 
     "stationarity" : {
@@ -317,7 +352,7 @@
         "stationary_problem_option_comment" : " stationary, stop calculating the fluid after it reaches the stationary state",
         "max_pressure_variation_rate_tol" : 1e-3,
         "max_pressure_variation_rate_tol_comment": " for stationary problems, criterion to stop the fluid calculations",
-        "time_steps_per_stationarity_step" : 15,
+        "time_steps_per_stationarity_step" : 50,
         "time_steps_per_stationarity_step_comment": " number of fluid time steps between consecutive assessment of stationarity steps",
         "time_steps_per_analytic_processing_step": 1
     },

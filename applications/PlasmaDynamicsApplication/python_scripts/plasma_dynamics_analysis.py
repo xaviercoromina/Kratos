@@ -87,7 +87,7 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
 
         self._GetDEMAnalysis().coupling_analysis = weakref.proxy(self)
 
-        #self._GetFluidAnalysis().coupling_analysis = weakref.proxy(self)
+        self._GetFluidAnalysis().coupling_analysis = weakref.proxy(self)
 
         self.procedures = weakref.proxy(self._GetDEMAnalysis().procedures)
         self.report = DEM_procedures.Report()
@@ -95,8 +95,7 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
         self._GetDEMAnalysis().SetAnalyticFaceWatcher()
 
         # defining member variables for the model_parts (for convenience)
-        #self.fluid_model_part = self.fluid_solution.fluid_model_part
-        self.fluid_model_part = self._GetDEMAnalysis().spheres_model_part
+        self.fluid_model_part = self._GetFluidAnalysis().fluid_model_part
         self.spheres_model_part = self._GetDEMAnalysis().spheres_model_part
         self.cluster_model_part = self._GetDEMAnalysis().cluster_model_part
         self.rigid_face_model_part = self._GetDEMAnalysis().rigid_face_model_part
@@ -148,9 +147,19 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
         output_time = self.project_parameters["output_interval"].GetDouble()
         self.output_time = int(output_time / self.time_step) * self.time_step
         self.project_parameters["output_interval"].SetDouble(self.output_time)
-        self.fluid_time_step = self.fluid_parameters["solver_settings"]["time_stepping"]["time_step"].GetDouble()
+
+
+        self.fluid_time_step = self.fluid_parameters["solver_settings"]["time_step"].GetDouble()
+
+        if self.fluid_time_step < self.time_step:
+            error_message = ('The fluid time step (' + str(self.fluid_time_step)
+                             + ') must be larger or equal than the overall time step (' + str(self.time_step)
+                             + ')!')
+            raise Exception(error_message)
+
+
         self.fluid_time_step = int(self.fluid_time_step / self.time_step) * self.time_step
-        self.fluid_parameters["solver_settings"]["time_stepping"]["time_step"].SetDouble(self.fluid_time_step)
+        self.fluid_parameters["solver_settings"]["time_step"].SetDouble(self.fluid_time_step)
         self.project_parameters["dem_parameters"]["MaxTimeStep"].SetDouble(self.time_step)
         translational_scheme_name = self.project_parameters["custom_dem"]["translational_integration_scheme"].GetString()
         self.project_parameters["dem_parameters"]["TranslationalIntegrationScheme"].SetString(translational_scheme_name)
@@ -195,12 +204,12 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
         if self.do_print_results:
             [self.post_path, data_and_results, self.graphs_path, MPI_results] = \
             self.procedures.CreateDirectories(str(self.main_path),
-                                            str(self.project_parameters["problem_name"].GetString()),
+                                            str(self.project_parameters["problem_data"]["problem_name"].GetString()),
                                             self.run_code)
             plasma_dynamics_procedures.CopyInputFilesIntoFolder(self.main_path, self.post_path)
             self.MPI_results = MPI_results
 
-        #self.FluidInitialize()
+        self.FluidInitialize()
 
         self.DispersePhaseInitialize()
 
@@ -218,7 +227,7 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
 
             self.plasma_dynamics_gid_io = \
             plasma_dynamics_gid_output.PlasmaDynamicsGiDOutput(
-                file_name = self.project_parameters["problem_name"].GetString(),
+                file_name = self.project_parameters["problem_data"]["problem_name"].GetString(),
                 vol_output = result_file_configuration["body_output"].GetBool(),
                 post_mode = old_gid_output_post_options_dict[post_mode_key],
                 multifile = old_gid_output_multiple_file_option_dict[multiple_files_option_key],
@@ -251,22 +260,22 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
         dem_physics_calculator = SphericElementGlobalPhysicsCalculator(
             self.spheres_model_part)
 
-        if self.project_parameters["coupling_level_type"].GetInt():
+        if self.project_parameters["coupling"]["coupling_level_type"].GetInt():
             default_meso_scale_length_needed = (
-                self.project_parameters["meso_scale_length"].GetDouble() <= 0.0 and
+                self.project_parameters["coupling"]["backward_coupling"]["meso_scale_length"].GetDouble() <= 0.0 and
                 self.spheres_model_part.NumberOfElements(0) > 0)
 
             if default_meso_scale_length_needed:
-                biggest_size = (2 * dem_physics_calculator.CalculateMaxNodalVariable(self.spheres_model_part, RADIUS))
-                self.project_parameters["meso_scale_length"].SetDouble(20 * biggest_size)
+                biggest_size = (2 * dem_physics_calculator.CalculateMaxNodalVariable(self.spheres_model_part, Kratos.RADIUS))
+                self.project_parameters["coupling"]["backward_coupling"]["meso_scale_length"].SetDouble(20 * biggest_size)
 
             elif self.spheres_model_part.NumberOfElements(0) == 0:
-                self.project_parameters["meso_scale_length"].SetDouble(1.0)
+                self.project_parameters["coupling"]["backward_coupling"]["meso_scale_length"].SetDouble(1.0)
 
         # creating a custom functions calculator for the implementation of
         # additional custom functions
         fluid_domain_dimension = self.project_parameters["fluid_parameters"]["solver_settings"]["domain_size"].GetInt()
-        #self.custom_functions_tool = plasma_dynamics_procedures.FunctionsCalculator(fluid_domain_dimension)
+        self.custom_functions_tool = plasma_dynamics_procedures.FunctionsCalculator(fluid_domain_dimension)
 
         # creating a stationarity assessment tool
         """         self.stationarity_tool = plasma_dynamics_procedures.StationarityAssessmentTool(
@@ -285,9 +294,8 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
         #    I N I T I A L I Z I N G    T I M E    L O O P
 
         ##################################################
-        self.step = 0
         self.time = self.project_parameters["problem_data"]["start_time"].GetDouble()
-        #self.fluid_time_step = self.fluid_solution._GetSolver()._ComputeDeltaTime()
+        self.fluid_time_step = self._GetFluidAnalysis()._GetSolver().ComputeDeltaTime()
         self.time_step = self.spheres_model_part.ProcessInfo.GetValue(DELTA_TIME)
         self.rigid_face_model_part.ProcessInfo[DELTA_TIME] = self.time_step
         self.cluster_model_part.ProcessInfo[DELTA_TIME] = self.time_step
@@ -295,7 +303,6 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
 
         # setting up loop counters:
         self.DEM_to_fluid_counter = self.GetBackwardCouplingCounter()
-        #self.derivative_recovery_counter = self.GetRecoveryCounter()
         #self.stationarity_counter = self.GetStationarityCounter()
         self.print_counter = self.GetPrintCounter()
         self.debug_info_counter = self.GetDebugInfo()
@@ -313,10 +320,7 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
         # creating a Post Utils object that executes several post-related tasks
         self.post_utils_DEM = DEM_procedures.PostUtils(self.project_parameters['dem_parameters'], self.spheres_model_part)
 
-        # otherwise variables are set to 0 by default:
-        plasma_dynamics_procedures.InitializeVariablesWithNonZeroValues(self.project_parameters,
-                                                 self.fluid_model_part,
-                                                 self.spheres_model_part)
+
 
 
         # ANALYTICS BEGIN
@@ -362,6 +366,23 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
     def GetRunCode(self):
         return ""
 
+
+    def FluidInitialize(self):
+        self.fluid_model_part = self._GetFluidAnalysis().fluid_model_part
+        self._GetFluidAnalysis().vars_man = self.vars_man
+        self._GetFluidAnalysis().Initialize()
+
+        self.AddExtraProcessInfoVariablesToFluid()
+
+        plasma_dynamics_procedures.AddExtraDofs(self.fluid_model_part,
+                         self.spheres_model_part,
+                         self.cluster_model_part,
+                         self.dem_inlet_model_part,
+                         self.vars_man)
+
+    def AddExtraProcessInfoVariablesToFluid(self):
+        self.vars_man.AddExtraProcessInfoVariablesToFluidModelPart(self.project_parameters, self.fluid_model_part)
+
     def DispersePhaseInitialize(self):
         self.vars_man.__class__.AddNodalVariables(self.spheres_model_part, self.vars_man.dem_vars)
         self.vars_man.__class__.AddNodalVariables(self.rigid_face_model_part, self.vars_man.rigid_faces_vars)
@@ -375,7 +396,7 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
         self.all_model_parts = weakref.proxy(self._GetDEMAnalysis().all_model_parts)
 
         # defining a fluid model
-        #self.all_model_parts.Add(self.fluid_model_part) TODO add fluid coupling
+        self.all_model_parts.Add(self.fluid_model_part) 
 
         # defining a model part for the mixed part
         self.all_model_parts.Add(self.model.CreateModelPart("MixedPart"))
@@ -397,18 +418,18 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
 
 
     def GetBackwardCouplingCounter(self):
-        return plasma_dynamics_procedures.Counter(1, 1, self.project_parameters["coupling_level_type"].GetInt() > 1)
+        return plasma_dynamics_procedures.Counter(1, 1, self.project_parameters["coupling"]["coupling_level_type"].GetInt() > 1)
 
     def GetRecoveryCounter(self):
         there_is_something_to_recover = (
-            self.project_parameters["coupling_level_type"].GetInt()) 
+            self.project_parameters["coupling"]["coupling_level_type"].GetInt()) 
         return plasma_dynamics_procedures.Counter(1, 1, there_is_something_to_recover)
 
     def GetStationarityCounter(self):
         return plasma_dynamics_procedures.Counter(
-            steps_in_cycle=self.project_parameters["time_steps_per_stationarity_step"].GetInt(),
+            steps_in_cycle=self.project_parameters["stationarity"]["time_steps_per_stationarity_step"].GetInt(),
             beginning_step=1,
-            is_active=self.project_parameters["stationary_problem_option"].GetBool())
+            is_active=self.project_parameters["stationarity"]["stationary_problem_option"].GetBool())
 
     def GetPrintCounter(self):
         counter = plasma_dynamics_procedures.Counter(steps_in_cycle=int(self.output_time / self.time_step + 0.5),
@@ -441,7 +462,7 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
 
     def ProcessAnalyticDataCounter(self):
         return plasma_dynamics_procedures.Counter(
-            steps_in_cycle=self.project_parameters["time_steps_per_analytic_processing_step"].GetInt(),
+            steps_in_cycle=self.project_parameters["stationarity"]["time_steps_per_analytic_processing_step"].GetInt(),
             beginning_step=1,
             is_active=self.project_parameters["do_process_analytic_data"].GetBool())
 
@@ -449,7 +470,8 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
         return plasma_dynamics_procedures.ProjectionDebugUtils(
             self.project_parameters["fluid_domain_volume"].GetDouble(),
             self.fluid_model_part,
-            self.spheres_model_part) 
+            self.spheres_model_part,
+            self.custom_functions_tool) 
 
 
 
@@ -484,8 +506,6 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
 
     def _Print(self):
         os.chdir(self.post_path)
-        
-        self.drag_file_output_list = []
 
         if self.particles_results_counter.Tick():
             self.io_tools.PrintParticlesResults(
@@ -500,37 +520,37 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
     def InitializeSolutionStep(self):
         self.TellTime()
         self._GetDEMAnalysis().InitializeSolutionStep()
-        """         if self._GetSolver().CannotIgnoreFluidNow():
-            self.fluid_solution.InitializeSolutionStep() """
+        if self._GetSolver().CannotIgnoreFluidNow():
+            self._GetFluidAnalysis().InitializeSolutionStep()
         super(PlasmaDynamicsAnalysis, self).InitializeSolutionStep()
 
     def TellTime(self):
-        Say('DEM time: ', str(self.time) + ', step: ', self.step)
-        #Say('fluid time: ', str(self._GetSolver().next_time_to_solve_fluid) + ', step: ', self._GetSolver().fluid_step)
+        Say('DEM time: ', str(self.time) + ', step: ', self._GetSolver().step)
+        Say('fluid time: ', str(self._GetSolver().next_time_to_solve_fluid) + ', step: ', self._GetSolver().fluid_step)
         Say('ELAPSED TIME = ', self.timer.time() - self.simulation_start_time, '\n')
 
 
     def ApplyForwardCoupling(self, alpha='None'):
-        #self._GetSolver().projection_module.ApplyForwardCoupling(alpha)
-        pass
+        self._GetSolver().projection_module.ApplyForwardCoupling(alpha)
+        
 
 
     def FinalizeSolutionStep(self):
         # printing if required
-        """         if self._GetSolver().CannotIgnoreFluidNow():
-            self.fluid_solution.FinalizeSolutionStep() """
+        if self._GetSolver().CannotIgnoreFluidNow():
+            self._GetFluidAnalysis().FinalizeSolutionStep() 
 
         self._GetDEMAnalysis().FinalizeSolutionStep()
 
-        # applying DEM-to-fluid coupling
+        # applying DEM-to-fluid coupling (backward coupling)
 
-        """         if self.DEM_to_fluid_counter.Tick() and self.time >= self.project_parameters["interaction_start_time"].GetDouble():
-            self._GetSolver().projection_module.ProjectFromParticles() """
+        """         if self.DEM_to_fluid_counter.Tick() and self.time >= self.project_parameters["coupling"]["interaction_start_time"].GetDouble():
+            self._GetSolver().projection_module.ProjectFromParticles()  """
 
         # coupling checks (debugging)
-        """         if self.debug_info_counter.Tick():
+        if self.debug_info_counter.Tick():
             self.dem_volume_tool.UpdateDataAndPrint(
-                self.project_parameters["fluid_domain_volume"].GetDouble()) """
+                self.project_parameters["fluid_domain_volume"].GetDouble()) 
 
         super(PlasmaDynamicsAnalysis, self).FinalizeSolutionStep()
 
@@ -544,7 +564,7 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
         super(PlasmaDynamicsAnalysis, self).OutputSolutionStep()
 
     def ComputePostProcessResults(self):
-        if self.project_parameters["coupling_level_type"].GetInt():
+        if self.project_parameters["coupling"]["coupling_level_type"].GetInt():
             self._GetSolver().projection_module.ComputePostProcessResults(self.spheres_model_part.ProcessInfo)
 
     def SetInlet(self):
@@ -577,9 +597,9 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
 
         self.PerformFinalOperations(self.time)
 
-        #self.fluid_solution.Finalize()
+        self._GetFluidAnalysis().Finalize()
 
-        self.TellFinalSummary(self.time, self.step, self._GetSolver().fluid_step)
+        self.TellFinalSummary(self.time, self._GetSolver().step, self._GetSolver().fluid_step)
 
 
 
@@ -594,9 +614,9 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
     def TellFinalSummary(self, time, dem_step, fluid_step, message_n_char_width=60):
         simulation_elapsed_time = self.timer.time() - self.simulation_start_time
 
-        if simulation_elapsed_time and dem_step : #and fluid_step
+        if simulation_elapsed_time and dem_step and fluid_step: 
             elapsed_time_per_unit_dem_step = simulation_elapsed_time / dem_step
-            #elapsed_time_per_unit_fluid_step = simulation_elapsed_time / fluid_step
+            elapsed_time_per_unit_fluid_step = simulation_elapsed_time / fluid_step
 
         else:
             elapsed_time_per_unit_dem_step = 0.0
@@ -606,9 +626,9 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
                          + '*' * message_n_char_width + '\n'
                          + 'CALCULATIONS FINISHED. THE SIMULATION ENDED SUCCESSFULLY.' + '\n'
                          + 'Total number of DEM steps run: ' + str(dem_step) + '\n'
-  #                       + 'Total number of fluid steps run: ' + str(fluid_step) + '\n'
+                         + 'Total number of fluid steps run: ' + str(fluid_step) + '\n'
                          + 'Elapsed time: ' + '%.5f'%(simulation_elapsed_time) + ' s ' + '\n'
-  #                       + ',, per fluid time step: ' + '%.5f'%(elapsed_time_per_unit_fluid_step) + ' s ' + '\n'
+                         + ',, per fluid time step: ' + '%.5f'%(elapsed_time_per_unit_fluid_step) + ' s ' + '\n'
                          + ',, per DEM time step: ' + '%.5f'%(elapsed_time_per_unit_dem_step) + ' s ' + '\n'
                          + '*' * message_n_char_width + '\n')
 
@@ -618,11 +638,10 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
     # To-do: for the moment, provided for compatibility
     def _CreateSolver(self):
         import plasma_dynamics_solver
-        self.fluid_solution = self._GetDEMAnalysis() #TODO: remove this and create the fluid solution 
         return plasma_dynamics_solver.PlasmaDynamicsSolver(self.model,
                                                      self.project_parameters,
                                                      self.GetFieldUtility(),
-                                                     self.fluid_solution._GetSolver(),
+                                                     self._GetFluidAnalysis()._GetSolver(),
                                                      self._GetDEMAnalysis()._GetSolver(),
                                                      self.vars_man)
 
@@ -634,12 +653,12 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
         return self._disperse_phase_analysis
 
     def _GetFluidAnalysis(self):
-        """         if not hasattr(self, '_fluid_phase_analysis'):
+        if not hasattr(self, '_fluid_phase_analysis'):
             import DEM_coupled_fluid_plasma_dynamics_analysis as fluid_analysis
-            self._fluid_phase_analysis = fluid_analysis.DEMCoupledFluidDynamicsAnalysis(self.model, self.project_parameters, self.vars_man)
-            self._fluid_phase_analysis.main_path = self.main_path """
-        #return self._fluid_phase_analysis
-        pass
+            self._fluid_phase_analysis = fluid_analysis.DEMCoupledFluidPlasmaDynamicsAnalysis(self.model, self.project_parameters, self.vars_man)
+            self._fluid_phase_analysis.main_path = self.main_path 
+        return self._fluid_phase_analysis
+        
 
     def GetFieldUtility(self):
         return None

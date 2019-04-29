@@ -94,6 +94,10 @@ def GetDefaultInputParameters():
             "shape_factor" : 0.5,
 
 
+            "material_acceleration_calculation_type" : 0,
+            "laplacian_calculation_type" : 0,
+            "vorticity_calculation_type" : 0,
+            "pressure_grad_recovery_type" : 0,
 
             "basset_force_type" : 0,
             "basset_force_integration_type" : 2,
@@ -133,7 +137,7 @@ def GetDefaultInputParameters():
                                    "PRESSURE" : false,
                                    
                                    "ELECTRIC_FIELD_PROJECTED_TO_PARTICLE": false,
-                                   "MACROPARTICLE_ION_DENSITY": false,
+                                   "NUMBER_OF_PARTICLES_IN_A_ION_MACROPARTICLE": false,
                                    "PARTICLE_ION_VELOCITY" : false,       
                                    "FLUID_VEL_PROJECTED" : false},
 
@@ -162,27 +166,6 @@ def GetDefaultInputParameters():
                                      "MAGNETIC_FIELD": false
                                      },
 
-            "print_FLUID_ACCEL_PROJECTED_option" : false,
-
-            "print_BASSET_FORCE_option" : false,
-
-            "print_FLUID_FRACTION_PROJECTED_option" : false,
-            "print_FLUID_VEL_LAPL_PROJECTED_option" : false,
-
-            "print_BODY_FORCE_option" : false,
-            "print_FLUID_FRACTION_option" : false,
-            "print_FLUID_FRACTION_GRADIENT_option" : false,
-
-            "print_PRESSURE_option" : false,
-
-            "print_VELOCITY_LAPLACIAN_option" : false,
-            "print_VELOCITY_LAPLACIAN_RATE_option" : false,
-
-            "print_VELOCITY_GRADIENT_option" : false,
-
-            "print_FLUID_ACCEL_FOLLOWING_PARTICLE_PROJECTED_option" : false,
-            "print_PARTICLE_VEL_option" : false,
-            "print_SLIP_VELOCITY_option" : false,
             "print_distance_option" : false,
 
             "print_steps_per_plot_step" : 1,
@@ -196,16 +179,22 @@ def GetDefaultInputParameters():
                 "model_part_name": "dummy_name.Provide_a_real_one",
                 "properties_id": 1,
                 "plasma_dynamics_law_parameters": {
-                    "name": "DEM_electromagnetic",
-                    "electromagnetic_field_parameters":{
-                        "external_electric_field_X": 0.0,
-                        "external_electric_field_Y": 0.0,
-                        "external_electric_field_Z": 0.0,
-                        "external_magnetic_field_X": 0.0,
-                        "external_magnetic_field_Y": 0.0,
-                        "external_magnetic_field_Z": 0.0
+                    "name": "DEM_electromagnetic"}
+                },
+                {"electromagnetic_field_parameters":{
+                    "external_electric_field_X": 0.0,
+                    "external_electric_field_Y": 0.0,
+                    "external_electric_field_Z": 0.0,
+                    "external_magnetic_field_X": 0.0,
+                    "external_magnetic_field_Y": 0.0,
+                    "external_magnetic_field_Z": 0.0
                     }
-                }
+                },
+                {"density_parameters":{
+                    "number_of_particles_in_a_ion_macroparticle": 1,
+                    "fluid_neutral_density": 1.0,
+                    "fluid_electron_density": 1.0
+                    }
             }],
 
             "fluid_domain_volume"            : 1.0, 

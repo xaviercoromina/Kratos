@@ -39,7 +39,8 @@ void IonParticle::ComputeAdditionalForces(array_1d<double, 3>& additionally_appl
     KRATOS_TRY
 
     mExternalElectricField = r_current_process_info[EXTERNAL_ELECTRIC_FIELD];
-    mExternalMagneticField = r_current_process_info[EXTERNAL_MAGNETIC_FIELD];   
+    mExternalMagneticField = r_current_process_info[EXTERNAL_MAGNETIC_FIELD];  
+
 
     array_1d<double, 3> Coulomb_force; 
     CalculateCoulombForce(Coulomb_force);
@@ -56,10 +57,11 @@ void IonParticle::ComputeAdditionalForces(array_1d<double, 3>& additionally_appl
 
 void IonParticle::CalculateCoulombForce(array_1d<double, 3>& Coulomb_force)
 {
-    //double Density =  this->GetDensity();
-    Coulomb_force[0] =  mSingleIonCharge * mExternalElectricField[0];
-    Coulomb_force[1] =  mSingleIonCharge * mExternalElectricField[1];
-    Coulomb_force[2] =  mSingleIonCharge * mExternalElectricField[2];
+    array_1d<double, 3 >& ElectricFieldPoisson = this->GetGeometry()[0].FastGetSolutionStepValue(ELECTRIC_FIELD_PROJECTED_TO_PARTICLE);
+    //KRATOS_INFO("DEM: DEM: ElectricFieldPoisson")<< ElectricFieldPoisson << std::endl;
+    Coulomb_force[0] =  mSingleIonCharge * (mExternalElectricField[0] + ElectricFieldPoisson[0] );
+    Coulomb_force[1] =  mSingleIonCharge * (mExternalElectricField[1] + ElectricFieldPoisson[1] );
+    Coulomb_force[2] =  mSingleIonCharge * (mExternalElectricField[2] + ElectricFieldPoisson[2] );
     //KRATOS_INFO("DEM: DEM: Coulomb Force")<< Coulomb_force << std::endl;
 }
 
@@ -105,6 +107,7 @@ array_1d<double, 3> IonParticle::GetExternalMagneticField()
 {
     return mExternalMagneticField;
 }
+
 
     
 } // namespace Kratos

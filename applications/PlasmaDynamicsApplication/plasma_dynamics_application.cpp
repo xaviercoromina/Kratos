@@ -49,6 +49,9 @@ void KratosPlasmaDynamicsApplication::Register()
     KRATOS_REGISTER_ELEMENT("IonParticle3D", mIonParticle3D)
     KRATOS_REGISTER_ELEMENT("ElectronParticle3D", mElectronParticle3D)
 
+    //Embedded Elements
+    KRATOS_REGISTER_VARIABLE(NODAL_WEIGHTS);
+
     // Register Constitutive Laws
     Serializer::Register("DEM_electromagnetic", DEM_electromagnetic());
     KRATOS_INFO("") << " done." << std::endl;

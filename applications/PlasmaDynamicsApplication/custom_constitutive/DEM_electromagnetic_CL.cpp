@@ -8,7 +8,6 @@
 
 
 namespace Kratos {
-    // Hard-coded values for the moment; some should probably be nodal
 
     void DEM_electromagnetic::Initialize(const ProcessInfo& r_process_info) {}
 

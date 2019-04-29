@@ -5,7 +5,6 @@ from KratosMultiphysics import *
 from KratosMultiphysics.DEMApplication import *
 from KratosMultiphysics.FluidTransportApplication import *
 from KratosMultiphysics.PlasmaDynamicsApplication import *
-import ast
 import parameters_tools_for_plasma_dynamics as PT
 def Say(*args):
     Logger.PrintInfo("PlasmaDynamics", *args)
@@ -67,10 +66,13 @@ class VariablesManager:
         VariablesManager.AddFrameOfReferenceRelatedVariables(parameters, fluid_model_part)
 
         fluid_model_part.ProcessInfo.SetValue(FRACTIONAL_STEP, 1)
-        fluid_model_part.ProcessInfo.SetValue(ELECTRIC_POTENTIAL, 1)
-        fluid_model_part.ProcessInfo.SetValue(FLUID_ION_DENSITY, 1)
-        fluid_model_part.ProcessInfo.SetValue(FLUID_ELECTRON_DENSITY, 1)
-        fluid_model_part.ProcessInfo.SetValue(FLUID_NEUTRAL_DENSITY, 1)
+        fluid_model_part.ProcessInfo.SetValue(ELECTRIC_POTENTIAL, 0.0)
+        fluid_model_part.ProcessInfo.SetValue(FLUID_ION_DENSITY, 1.0)
+
+        fluid_electron_density = parameters["properties"][2]["density_parameters"]["fluid_electron_density"].GetDouble()
+        fluid_neutral_density = parameters["properties"][2]["density_parameters"]["fluid_neutral_density"].GetDouble()
+        fluid_model_part.ProcessInfo.SetValue(FLUID_ELECTRON_DENSITY, fluid_electron_density)
+        fluid_model_part.ProcessInfo.SetValue(FLUID_NEUTRAL_DENSITY, fluid_neutral_density)
 
         electric_field = Vector(3)
         magnetic_field = Vector(3)
@@ -96,27 +98,37 @@ class VariablesManager:
         external_magnetic_field[1] = parameters["properties"][1]["electromagnetic_field_parameters"]["external_magnetic_field_Y"].GetDouble()  
         external_magnetic_field[2] = parameters["properties"][1]["electromagnetic_field_parameters"]["external_magnetic_field_Z"].GetDouble()
 
-        electric_field_projected_to_particle = Vector(3)
-        particle_ion_velocity = Vector(3)
         dem_model_part.ProcessInfo.SetValue(EXTERNAL_ELECTRIC_FIELD, external_electric_field)
         dem_model_part.ProcessInfo.SetValue(EXTERNAL_MAGNETIC_FIELD, external_magnetic_field)
+
+        electric_field_projected_to_particle = Vector(3)
+        particle_ion_velocity = Vector(3)
         dem_model_part.ProcessInfo.SetValue(ELECTRIC_FIELD_PROJECTED_TO_PARTICLE, electric_field_projected_to_particle)
-        dem_model_part.ProcessInfo.SetValue(MACROPARTICLE_ION_DENSITY, 1.0)
         dem_model_part.ProcessInfo.SetValue(PARTICLE_ION_VELOCITY, particle_ion_velocity)
+
+        number_of_particles_in_a_ion_macroparticle = parameters["properties"][2]["density_parameters"]["number_of_particles_in_a_ion_macroparticle"].GetInt()
+        dem_model_part.ProcessInfo.SetValue(NUMBER_OF_PARTICLES_IN_A_ION_MACROPARTICLE, number_of_particles_in_a_ion_macroparticle)
+
 
 
 
     def ConstructListsOfVariables(self, parameters):
         # PRINTING VARIABLES
         # constructing lists of variables to be printed
-        self.fluid_nodal_results = []
         self.gauss_points_results = []
+
+        if self.project_parameters.Has('plasma_dynamics_output_processes'):
+            gid_output_options = self.project_parameters["plasma_dynamics_output_processes"]["gid_output"][0]["Parameters"]
+            result_file_configuration = gid_output_options["postprocess_parameters"]["result_file_configuration"]
+            gauss_point_results = result_file_configuration["gauss_point_results"]
+            self.gauss_points_results = [gauss_point_results[i].GetString() for i in range(gauss_point_results.size())]
+
         self.ConstructListsOfResultsToPrint(parameters)
 
         # COUPLING VARIABLES
         # listing the variables involved in the fluid-particles coupling
 
-        if parameters["coupling_level_type"].GetInt():
+        if parameters["coupling"]["coupling_level_type"].GetInt():
             self.ConstructListsOfVariablesForCoupling(parameters)
 
         # VARIABLES TO ADD
@@ -125,23 +137,22 @@ class VariablesManager:
         # fluid variables
         self.fluid_vars = []
         self.fluid_vars += self.fluid_printing_vars
-        #self.fluid_vars += self.coupling_fluid_vars
+        self.fluid_vars += self.coupling_fluid_vars
 
-
-
-        #self.fluid_vars += [NODAL_WEIGHTS]
-
-
+        #TODO: remove if not necessary
+        if (parameters["pressure_grad_recovery_type"].GetInt() > 1
+            or parameters["material_acceleration_calculation_type"].GetInt() == 7
+            or parameters["laplacian_calculation_type"].GetInt() > 1):
+            self.fluid_vars += [Kratos.NODAL_WEIGHTS]
 
         # dem variables
         self.dem_vars = []
         self.dem_vars += self.dem_printing_vars
-        #self.dem_vars += self.coupling_dem_vars
+        self.dem_vars += self.coupling_dem_vars
         self.dem_vars += [VELOCITY_OLD]
 
-        if parameters["frame_of_reference_type"].GetInt() and parameters["basset_force_type"].GetInt() > 0:
-            self.dem_vars += [DISPLACEMENT_OLD]
-            self.dem_vars += [VELOCITY_OLD_OLD]
+        self.dem_vars += [DISPLACEMENT_OLD]
+        self.dem_vars += [VELOCITY_OLD_OLD]
 
 
         if (parameters["custom_dem"]["translational_integration_scheme"].GetString()
@@ -171,7 +182,7 @@ class VariablesManager:
                                  NODAL_AREA,
                                  VELOCITY_OLD]
 
-        if parameters["embedded_option"].GetBool():
+        if parameters["custom_fluid"]["embedded_option"].GetBool():
             self.rigid_faces_vars += [FORCE]
             self.rigid_faces_vars += [POSITIVE_FACE_PRESSURE]
             self.rigid_faces_vars += [NEGATIVE_FACE_PRESSURE]
@@ -199,43 +210,24 @@ class VariablesManager:
         if parameters["ElementType"].GetString() == "IonParticle3D":
             self.dem_nodal_results += ["EXTERNAL_APPLIED_FORCE"]
             self.dem_nodal_results += ["ELECTRIC_FIELD_PROJECTED_TO_PARTICLE"]
-            self.dem_nodal_results += ["MACROPARTICLE_ION_DENSITY"]
             self.dem_nodal_results += ["PARTICLE_ION_VELOCITY"]
 
             self.fluid_nodal_results += ["ELECTRIC_POTENTIAL"]
             self.fluid_nodal_results += ["FLUID_ION_DENSITY"]
             self.fluid_nodal_results += ["FLUID_ELECTRON_DENSITY"]
-            self.fluid_nodal_results += ["FLUID_NEUTRAL_DENSITY"]
             self.fluid_nodal_results += ["ELECTRIC_FIELD"]
-            self.fluid_nodal_results += ["MAGNETIC_FIELD"]
+            self.fluid_nodal_results += ["NODAL_PHI_GRADIENT"]
 
-
-
-
-
-
-
-
-
-
-        # changes on the fluid variables to print for the sake of consistency
-        #self.ChangeListOfFluidNodalResultsToPrint(parameters)
+        self.ChangeListOfFluidNodalResultsToPrint(parameters)
 
         #Construction of the list of mixed parameters to print
         self.mixed_nodal_results = ["VELOCITY", "DISPLACEMENT"]
 
-        for var in self.mixed_nodal_results:
-
-            if var in self.fluid_nodal_results:
-                self.fluid_nodal_results.remove(var)
-
-
         #Construction of a special list for variables to print in a file
-        self.variables_to_print_in_file = ["VELOCITY"]
+        self.variables_to_print_in_file = ["VELOCITY","ELECTRIC_FIELD_PROJECTED_TO_PARTICLE","EXTERNAL_APPLIED_FORCE"]
 
 
-
-        #Evaluation of the variables we want to print
+        #Initialization of the lists of evaluation of the nodal variables to print
         self.dem_printing_vars = []
         self.fluid_printing_vars = []
 
@@ -244,7 +236,23 @@ class VariablesManager:
 
         self.time_filtered_vars = []
 
-     
+        VariablesManager.EliminateRepeatedValuesFromList(self.fluid_nodal_results)
+        VariablesManager.EliminateRepeatedValuesFromList(self.dem_nodal_results)
+        VariablesManager.EliminateRepeatedValuesFromList(self.mixed_nodal_results)
+
+        #Evaluation of the variables we want to print
+
+        for variable in self.mixed_nodal_results:
+            self.dem_printing_vars += [eval(variable)]
+            self.fluid_printing_vars += [eval(variable)]
+
+        for var in self.mixed_nodal_results:
+
+            if var in self.fluid_nodal_results:
+                self.fluid_nodal_results.remove(var)     
+            if var in self.dem_nodal_results:
+                self.dem_nodal_results.remove(var)                 
+
 
         for variable in self.fluid_nodal_results:
             self.fluid_printing_vars += [eval(variable)]
@@ -258,45 +266,66 @@ class VariablesManager:
         for variable in self.rigid_faces_nodal_results:
             self.rigid_faces_printing_vars += [eval(variable)]
 
-        for variable in self.mixed_nodal_results:
-            self.dem_printing_vars += [eval(variable)]
-            self.fluid_printing_vars += [eval(variable)]
 
-        VariablesManager.EliminateRepeatedValuesFromList(self.fluid_nodal_results)
-        VariablesManager.EliminateRepeatedValuesFromList(self.dem_nodal_results)
-        VariablesManager.EliminateRepeatedValuesFromList(self.mixed_nodal_results)
 
 
     def ConstructListsOfVariablesForCoupling(self, parameters):
 
-        # fluid coupling variables
+        ## fluid coupling variables
         self.coupling_fluid_vars = []
 
+        #for safety for the moment
+        self.coupling_fluid_vars += [MATERIAL_ACCELERATION]
 
-        # dem coupling variables
+        self.coupling_fluid_vars += [FLUID_FRACTION]
+        self.coupling_fluid_vars += [FLUID_FRACTION_OLD]
+
+        self.coupling_fluid_vars += [DISPERSE_FRACTION]
+
+        self.coupling_fluid_vars += [PARTICLE_VEL_FILTERED]
+        self.coupling_fluid_vars += [TIME_AVERAGED_ARRAY_3]
+        self.coupling_fluid_vars += [PHASE_FRACTION]
+
+        self.coupling_fluid_vars += [FLUID_FRACTION_GRADIENT]
+        self.coupling_fluid_vars += [FLUID_FRACTION_RATE]
+
+
+        self.coupling_fluid_vars += [HYDRODYNAMIC_REACTION]
+
+        #Plasma Dynamics coupling variables: forward coupling
+        self.coupling_fluid_vars += [ELECTRIC_POTENTIAL]
+        self.coupling_fluid_vars += [ELECTRIC_FIELD]
+        self.coupling_fluid_vars += [FLUID_ION_DENSITY]
+        self.coupling_fluid_vars += [FLUID_ELECTRON_DENSITY]
+        self.coupling_fluid_vars += [FLUID_NEUTRAL_DENSITY]
+
+
+
+        ## dem coupling variables
         self.coupling_dem_vars = []
 
-        if parameters["coupling_level_type"].GetInt() > 0:
-            self.coupling_dem_vars += [ADDITIONAL_FORCE] # Here for safety for the moment
+        #for safety for the moment
+        self.coupling_dem_vars += [FLUID_VEL_PROJECTED]
+        self.coupling_dem_vars += [FLUID_ACCEL_PROJECTED]
+        self.coupling_dem_vars += [FLUID_DENSITY_PROJECTED]
+
+        self.coupling_dem_vars += [MATERIAL_FLUID_ACCEL_PROJECTED]
+        self.coupling_dem_vars += [FLUID_ACCEL_PROJECTED]
+        self.coupling_dem_vars += [FLUID_ACCEL_FOLLOWING_PARTICLE_PROJECTED]
+        self.coupling_dem_vars += [ADDITIONAL_FORCE]  # Here for safety for the moment
+
+        self.coupling_dem_vars += [FLUID_FRACTION_PROJECTED]
+
+        #Plasma Dynamics coupling variables: forward coupling
+        self.coupling_dem_vars += [ELECTRIC_FIELD_PROJECTED_TO_PARTICLE]
 
 
-        if parameters["coupling_level_type"].GetInt() >= 1 or parameters["fluid_model_type"].GetInt() == 0:
-            self.coupling_dem_vars += [FLUID_FRACTION_PROJECTED]
+        if parameters["coupling"]["backward_coupling"]["apply_time_filter_to_fluid_fraction_option"].GetBool():
+            self.time_filtered_vars += [FLUID_FRACTION_FILTERED]
 
-
-        if parameters["filter_velocity_option"].GetBool():
+        if parameters["coupling"]["backward_coupling"]["filter_velocity_option"].GetBool():
             self.time_filtered_vars += [PARTICLE_VEL_FILTERED]
 
-
     def ChangeListOfFluidNodalResultsToPrint(self, parameters):
-
-        if parameters["store_full_gradient_option"].GetBool() and 'VELOCITY_GRADIENT' in self.fluid_nodal_results:
-            self.fluid_nodal_results += ["VELOCITY_X_GRADIENT"]
-            self.fluid_nodal_results += ["VELOCITY_Y_GRADIENT"]
-            self.fluid_nodal_results += ["VELOCITY_Z_GRADIENT"]
-
-        if parameters["fluid_model_type"].GetInt() == 0 and 'AVERAGED_FLUID_VELOCITY' in self.fluid_nodal_results:
-            self.fluid_nodal_results += ["AVERAGED_FLUID_VELOCITY"]
-
-        if parameters["fluid_model_type"].GetInt() == 1 and 'FLUID_FRACTION_GRADIENT' in self.fluid_nodal_results:
-            self.fluid_nodal_results += ["FLUID_FRACTION_GRADIENT"]
+        fluid_list = self.project_parameters["fluid_nodal_results"]
+        self.fluid_nodal_results.extend(key for key in fluid_list.keys() if fluid_list[key].GetBool())
