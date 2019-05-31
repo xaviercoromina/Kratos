@@ -85,12 +85,12 @@
         "MACROPARTICLE_ION_DENSITY": false
     },
 
-    "fluid_nodal_results" : {"ELECTRIC_POTENTIAL": true,
-        "FLUID_ION_DENSITY": true,
+    "fluid_nodal_results" : {"ELECTRIC_POTENTIAL": false,
+        "FLUID_ION_DENSITY": false,
         "FLUID_ELECTRON_DENSITY": false,
         "FLUID_NEUTRAL_DENSITY": false,
         "ELECTRIC_FIELD": true,
-        "FLUID_FRACTION" : true,
+        "FLUID_FRACTION" : false,
         "MAGNETIC_FIELD": false
     },
     "fluid_domain_volume"            : 1.0,
@@ -115,7 +115,8 @@
             }
         },
         {"density_parameters":{
-            "number_of_particles_in_a_ion_macroparticle": 1,
+            "number_of_particles_in_a_ion_macroparticle": 1000,
+            "particle_ion_density": 4.16e-22,
             "fluid_neutral_density": 1.0,
             "fluid_electron_density": 1.0
             }
@@ -125,206 +126,182 @@
     ],
 
     "fluid_parameters" : {
-        "problem_data": {
-            "problem_name":         "PIC_backward_coupling_Fluid",
-            "start_time":           0.0,
-            "end_time":             0.0001,
-            "echo_level":           1,
-            "parallel_type":        "OpenMP",
-            "number_of_threads":    1
+    "problem_data": {
+        "problem_name":         "PIC_backward_coupling_Fluid",
+        "start_time":           0.0,
+        "end_time":             0.0001,
+        "echo_level":           1,
+        "parallel_type":        "OpenMP",
+        "number_of_threads":    1
+    },
+    "solver_settings": {
+        "solver_type":                        "fluid_transport_solver",
+        "model_part_name":                    "FluidTransportDomain",
+        "domain_size":                        3,
+        "start_time":                         0.0,
+        "time_step":                          0.000001,
+        "model_import_settings":              {
+            "input_type":       "mdpa",
+            "input_filename":   "PIC_backward_coupling_Fluid"
         },
-        "solver_settings": {
-            "solver_type":                        "fluid_transport_solver",
-            "model_part_name":                    "fluid_transport_computing_domain",
-            "domain_size":                        3,
-            "start_time":                         0.0,
-            "time_step":                          0.000001,
-            "model_import_settings":              {
-                "input_type":       "mdpa",
-                "input_filename":   "PIC_backward_coupling_Fluid"
-            },
-            "buffer_size":                        3,
-            "echo_level":                         1,
-            "clear_storage":                      false,
-            "compute_reactions":                  false,
-            "move_mesh_flag":                     false,
-            "block_builder":                      true,
-            "solution_type":                      "Transient",
-            "scheme_type":                        "Implicit",
-            "newmark_theta":                      0.8,
-            "strategy_type":                      "Linear",
-            "convergence_criterion":              "And_criterion",
-            "displacement_relative_tolerance":    1.0E-4,
-            "displacement_absolute_tolerance":    1.0E-9,
-            "residual_relative_tolerance":        1.0E-4,
-            "residual_absolute_tolerance":        1.0E-9,
-            "max_iteration":                      15,
-            "linear_solver_settings":             {
-                "solver_type":   "ExternalSolversApplication.super_lu"
-            },
-            "problem_domain_sub_model_part_list": ["Body_Part-auto-1"],
-            "processes_sub_model_part_list":      ["Velocity-auto-1","Phi_Value-auto-1","Phi_Value-auto-2"]
+        "buffer_size":                        3,
+        "echo_level":                         1,
+        "clear_storage":                      false,
+        "compute_reactions":                  false,
+        "move_mesh_flag":                     false,
+        "block_builder":                      true,
+        "solution_type":                      "Transient",
+        "scheme_type":                        "Implicit",
+        "newmark_theta":                      0.8,
+        "strategy_type":                      "Linear",
+        "convergence_criterion":              "And_criterion",
+        "displacement_relative_tolerance":    1.0E-4,
+        "displacement_absolute_tolerance":    1.0E-9,
+        "residual_relative_tolerance":        1.0E-4,
+        "residual_absolute_tolerance":        1.0E-9,
+        "max_iteration":                      15,
+        "linear_solver_settings":             {
+            "solver_type":   "ExternalSolversApplication.super_lu"
         },
-        "output_configuration": {
-            "result_file_configuration": {
-                "gidpost_flags":       {
-                    "WriteDeformedMeshFlag": "WriteUndeformed",
-                    "WriteConditionsFlag":   "WriteElementsOnly",
-                    "GiDPostMode":           "GiD_PostBinary",
-                    "MultiFileFlag":         "SingleFile"
-                },
-                "file_label":          "time",
-                "output_control_type": "time",
-                "output_frequency":    0.000001,
-                "body_output":         true,
-                "node_output":         true,
-                "skin_output":         false,
-                "plane_output":        [],
-                "nodal_results":       ["VELOCITY","NODAL_PHI_GRADIENT","NODAL_ANALYTIC_SOLUTION","TEMPERATURE","PHI_THETA","NORMAL"],
-                "gauss_point_results": ["PECLET","CFL_NUMBER","FIC_BETA","PHI_GRADIENT"]
+        "problem_domain_sub_model_part_list": ["Body_Part-auto-1"],
+        "processes_sub_model_part_list":      ["Velocity-auto-1","Phi_Value-auto-1","Phi_Value-auto-2"]
+    },
+    "output_configuration": {
+        "result_file_configuration": {
+            "gidpost_flags":       {
+                "WriteDeformedMeshFlag": "WriteUndeformed",
+                "WriteConditionsFlag":   "WriteElementsOnly",
+                "GiDPostMode":           "GiD_PostBinary",
+                "MultiFileFlag":         "SingleFile"
             },
-            "point_data_configuration":  []
+            "file_label":          "step",
+            "output_control_type": "step",
+            "output_frequency":    1,
+            "body_output":         true,
+            "node_output":         false,
+            "skin_output":         false,
+            "plane_output":        [],
+            "nodal_results":       ["VELOCITY","NODAL_PHI_GRADIENT","NODAL_ANALYTIC_SOLUTION","TEMPERATURE","PHI_THETA","NORMAL"],
+            "gauss_point_results": ["PECLET","CFL_NUMBER","FIC_BETA","PHI_GRADIENT"]
         },
-        "constraints_process_list": [{
-            "python_module": "apply_vector_constraint_table_process",
-            "kratos_module": "KratosMultiphysics.FluidTransportApplication",
-            "process_name":  "ApplyVectorConstraintTableProcess",
-            "Parameters":    {
-                "model_part_name": "Velocity-auto-1",
-                "variable_name":   "VELOCITY",
-                "active":          [true,true,true],
-                "is_fixed":        [true,true,true],
-                "value":           [0.0,0.0,0.0],
-                "table":           [0,0,0]
-            }
-        },{
-            "python_module": "apply_scalar_constraint_table_process",
-            "kratos_module": "KratosMultiphysics.FluidTransportApplication",
-            "process_name":  "ApplyScalarConstraintTableProcess",
-            "Parameters":    {
-                "model_part_name":      "Phi_Value-auto-1",
-                "variable_name":        "PHI_THETA",
-                "is_fixed":             true,
-                "value":                0.0,
-                "table":                0
-            }
-        },{
-            "python_module": "apply_scalar_constraint_table_process",
-            "kratos_module": "KratosMultiphysics.FluidTransportApplication",
-            "process_name":  "ApplyScalarConstraintTableProcess",
-            "Parameters":    {
-                "model_part_name":      "Phi_Value-auto-2",
-                "variable_name":        "PHI_THETA",
-                "is_fixed":             true,
-                "value":                100,
-                "table":                0
-            }
-            },{
-                "python_module": "apply_scalar_constraint_table_process",
-                "kratos_module": "KratosMultiphysics.FluidTransportApplication",
-                "process_name":  "ApplyScalarConstraintTableProcess",
-                "Parameters":    {
-                    "model_part_name":      "Phi_Value-auto-1",
-                    "variable_name":        "TEMPERATURE",
-                    "value":                0.0,
-                    "table":                0
-                }
-            },{
-                "python_module": "apply_scalar_constraint_table_process",
-                "kratos_module": "KratosMultiphysics.FluidTransportApplication",
-                "process_name":  "ApplyScalarConstraintTableProcess",
-                "Parameters":    {
-                    "model_part_name":      "Phi_Value-auto-2",
-                    "variable_name":        "TEMPERATURE",
-                    "value":                100,
-                    "table":                0
-                }
-        }],
-        "loads_process_list":       []
+        "point_data_configuration":  []
+    },
+    "constraints_process_list": [{
+        "python_module": "apply_vector_constraint_table_process",
+        "kratos_module": "KratosMultiphysics.FluidTransportApplication",
+        "process_name":  "ApplyVectorConstraintTableProcess",
+        "Parameters":    {
+            "model_part_name": "Velocity-auto-1",
+            "variable_name":   "VELOCITY",
+            "active":          [true,true,true],
+            "is_fixed":        [false,false,false],
+            "value":           [0.0,0.0,0.0],
+            "table":           [0,0,0]
+        }
+    },{
+        "python_module": "apply_scalar_constraint_table_process",
+        "kratos_module": "KratosMultiphysics.FluidTransportApplication",
+        "process_name":  "ApplyScalarConstraintTableProcess",
+        "Parameters":    {
+            "model_part_name":      "Phi_Value-auto-1",
+            "variable_name":        "PHI_THETA",
+            "is_fixed":             true,
+            "value":                0.0,
+            "table":                0
+        }
+    },{
+        "python_module": "apply_scalar_constraint_table_process",
+        "kratos_module": "KratosMultiphysics.FluidTransportApplication",
+        "process_name":  "ApplyScalarConstraintTableProcess",
+        "Parameters":    {
+            "model_part_name":      "Phi_Value-auto-2",
+            "variable_name":        "PHI_THETA",
+            "is_fixed":             true,
+            "value":                100.0,
+            "table":                0
+        }
+    },{
+        "python_module": "apply_scalar_constraint_table_process",
+        "kratos_module": "KratosMultiphysics.FluidTransportApplication",
+        "process_name":  "ApplyScalarConstraintTableProcess",
+        "Parameters":    {
+            "model_part_name":      "Phi_Value-auto-1",
+            "variable_name":        "TEMPERATURE",
+            "value":                0.0,
+            "table":                0
+        }
+    },{
+        "python_module": "apply_scalar_constraint_table_process",
+        "kratos_module": "KratosMultiphysics.FluidTransportApplication",
+        "process_name":  "ApplyScalarConstraintTableProcess",
+        "Parameters":    {
+            "model_part_name":      "Phi_Value-auto-2",
+            "variable_name":        "TEMPERATURE",
+            "value":                100.0,
+            "table":                0
+        }
+    }],
+    "loads_process_list":       []
     },
     
 
     "dem_parameters" : {
-        "problem_data"     : {
-            "problem_name"  : "PIC_backward_coupling",
-            "parallel_type" : "OpenMP",
-            "echo_level"    : 1,
-            "start_time"    : 0.0,
-            "end_time"      : 1e-4
-        },
-        "solver_settings"   :{
-            "strategy" : "plasma_sphere_strategy",
-            "RemoveBallsInitiallyTouchingWalls" : false
-        },
-        "do_print_results_option"          : true,
-        "Dimension"                        : 3,
-        "PeriodicDomainOption"             : true,
-        "BoundingBoxOption"                : false,
-        "AutomaticBoundingBoxOption"       : false,
-        "BoundingBoxEnlargementFactor"     : 1.0,
-        "BoundingBoxStartTime"             : 0.0,
-        "BoundingBoxStopTime"              : 1000.0,
-        "BoundingBoxMaxX"                  : 1000.0,
-        "BoundingBoxMaxY"                  : 1000.0,
-        "BoundingBoxMaxZ"                  : 1000.0,
-        "BoundingBoxMinX"                  : -1000.0,
-        "BoundingBoxMinY"                  : -1000.0,
-        "BoundingBoxMinZ"                  : -1000.0,
-
-        "dem_inlet_option"                 : false,
-        "GravityX"                         : 0.0,
-        "GravityY"                         : 0.0,
-        "GravityZ"                         : 0.0,
-
-        "VelocityTrapOption"               : false,
-        "RotationOption"                   : false,
-        "RemoveBallsInEmbeddedOption"      : true,
-
-        "DeltaOption"                      : "Absolute",
-        "SearchTolerance"                  : 0.0001,
-        "CoordinationNumber"               : 10,
-        "AmplifiedSearchRadiusExtension"   : 0.0,
-        "ModelDataInfo"                    : false,
-        "VirtualMassCoefficient"           : 1.0,
-        "RollingFrictionOption"            : false,
-        "DontSearchUntilFailure"           : false,
-        "ContactMeshOption"                : false,
-        "OutputFileType"                   : "ascii",
-        "Multifile"                        : "multiple_files",
-
-        "TranslationalIntegrationScheme"   : "Symplectic_Euler",
-        "RotationalIntegrationScheme"      : "Direct_Integration",
-        "DeltaTimeSafetyFactor"            : 1.0,
-        "MaxTimeStep"                      : 1e-6,
-        "FinalTime"                        : 1e-4,
-        "ControlTime"                      : 5.0,
-        "NeighbourSearchFrequency"         : 1,
-        "TestType"                         : "None",
-        "ElementType"                      : "IonParticle3D",
-        "problem_name"                     : "PIC_backward_coupling",
-        "GraphExportFreq"                  : 1e-3,
-        "VelTrapGraphExportFreq"           : 1e-3,
-        "OutputTimeStep"                   : 1e-6,
-        "PostDisplacement"                 : true,
-        "PostVelocity"                     : true,
-        "PostElasticForces"                : false,
-        "PostContactForces"                : false,
-        "PostRigidElementForces"           : false,
-        "PostTangentialElasticForces"      : false,
-        "PostTotalForces"                  : false,
-        "PostShearStress"                  : false,
-        "PostNonDimensionalVolumeWear"     : false,
-        "PostNodalArea"                    : false,
-        "PostRHS"                          : false,
-        "PostDampForces"                   : false,
-        "PostAppliedForces"                : false,
-        "PostRadius"                       : true,
-        "PostGroupId"                      : false,
-        "PostExportId"                     : false,
-        "PostAngularVelocity"              : false,
-        "PostParticleMoment"               : false,
-        "PostEulerAngles"                  : false,
-        "PostBoundingBox"                  : false
+    "Dimension"                      : 3,
+    "PeriodicDomainOption"           : false,
+    "BoundingBoxOption"              : false,
+    "AutomaticBoundingBoxOption"     : false,
+    "BoundingBoxEnlargementFactor"   : 1.1,
+    "BoundingBoxStartTime"           : 0.0,
+    "BoundingBoxStopTime"            : 1000.0,
+    "BoundingBoxMaxX"                : 10,
+    "BoundingBoxMaxY"                : 10,
+    "BoundingBoxMaxZ"                : 10,
+    "BoundingBoxMinX"                : -10,
+    "BoundingBoxMinY"                : -10,
+    "BoundingBoxMinZ"                : -10,
+    "dem_inlet_option"               : false,
+    "GravityX"                       : 0.0,
+    "GravityY"                       : 0.0,
+    "GravityZ"                       : 0.0,
+    "RotationOption"                 : true,
+    "CleanIndentationsOption"        : false,
+    "solver_settings"                : {
+        "RemoveBallsInitiallyTouchingWalls" : false,
+        "strategy"                          : "plasma_sphere_strategy"
+    },
+    "VirtualMassCoefficient"         : 1.0,
+    "RollingFrictionOption"          : false,
+    "GlobalDamping"                  : 0.0,
+    "ContactMeshOption"              : false,
+    "OutputFileType"                 : "Binary",
+    "Multifile"                      : "multiple_files",
+    "ElementType"                    : "IonParticle3D",
+    "TranslationalIntegrationScheme" : "Symplectic_Euler",
+    "RotationalIntegrationScheme"    : "Direct_Integration",
+    "MaxTimeStep"                    : 1e-6,
+    "FinalTime"                      : 0.0001,
+    "GraphExportFreq"                : 1,
+    "VelTrapGraphExportFreq"         : 1,
+    "OutputTimeStep"                 : 1e-6,
+    "PostBoundingBox"                : false,
+    "PostLocalContactForce"          : false,
+    "PostDisplacement"               : true,
+    "PostRadius"                     : true,
+    "PostVelocity"                   : true,
+    "PostAngularVelocity"            : false,
+    "PostElasticForces"              : false,
+    "PostContactForces"              : false,
+    "PostRigidElementForces"         : false,
+    "PostStressStrainOption"         : false,
+    "PostTangentialElasticForces"    : false,
+    "PostTotalForces"                : false,
+    "PostPressure"                   : false,
+    "PostShearStress"                : false,
+    "PostNonDimensionalVolumeWear"   : false,
+    "PostParticleMoment"             : false,
+    "PostEulerAngles"                : false,
+    "PostRollingResistanceMoment"    : false,
+    "problem_name"                   : "PIC_backward_coupling"
     },
 
     "custom_dem" : {
@@ -360,11 +337,15 @@
     },
     
     "coupling" : {
+        "coupling_type" : 2,
         "coupling_level_type" : 2,
         "coupling_weighing_type" : 2,
         "coupling_weighing_type_comment" : "{fluid_to_DEM, DEM_to_fluid, fluid_fraction} = {lin, lin, imposed} (-1), {lin, const, const} (0), {lin, lin, const} (1), {lin, lin, lin} (2), averaging method (3)",
         "interaction_start_time" : 0.0,
-        "time_averaging_type" : 0,
+
+        "forward_coupling":{
+            "time_averaging_type" : 0
+        },
 
         "backward_coupling" : {
             "meso_scale_length" : 0.2,
@@ -374,8 +355,7 @@
             "apply_time_filter_to_fluid_fraction_option" : false,
             "min_fluid_fraction" : 0.2,
             "fluid_fraction_grad_type" : 0,
-            "calculate_diffusivity_option" : false,
-            "viscosity_modification_type" : 0
+            "calculate_diffusivity_option" : false
         }
     },
 

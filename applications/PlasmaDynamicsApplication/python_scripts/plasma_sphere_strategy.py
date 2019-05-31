@@ -3,10 +3,10 @@ from KratosMultiphysics import *
 from KratosMultiphysics.DEMApplication import *
 from KratosMultiphysics.PlasmaDynamicsApplication import *
 
-import sphere_strategy
-BaseStrategy = sphere_strategy.ExplicitStrategy
-
+from sphere_strategy import ExplicitStrategy
+BaseStrategy = ExplicitStrategy
 class PlasmaStrategy(BaseStrategy):
+
     def __init__(self, all_model_parts, creator_destructor, dem_fem_search, parameters, procedures):
         self.project_parameters = parameters
         super(PlasmaStrategy, self).__init__(all_model_parts, creator_destructor, dem_fem_search, parameters['dem_parameters'], procedures)
@@ -23,28 +23,29 @@ class PlasmaStrategy(BaseStrategy):
 
     def CreateCPlusPlusStrategy(self):
         self.SetVariablesAndOptions()
-        do_search_neighbours =  self.project_parameters["do_search_neighbours"].GetBool() #TODO: old version, check and remove
-        solver_settings = self.DEM_parameters["solver_settings"]
+
         if (self.DEM_parameters["TranslationalIntegrationScheme"].GetString() == 'Velocity_Verlet'):
             self.cplusplus_strategy = IterativeSolverStrategy(self.settings, self.max_delta_time, self.n_step_search, self.safety_factor,
                                                               self.delta_option, self.creator_destructor, self.dem_fem_search,
-                                                              self.search_strategy, solver_settings)
+                                                              self.search_strategy, self.solver_settings)
         else:
             self.cplusplus_strategy = ExplicitSolverStrategy(self.settings, self.max_delta_time, self.n_step_search, self.safety_factor,
                                                              self.delta_option, self.creator_destructor, self.dem_fem_search,
-                                                             self.search_strategy, solver_settings)
+                                                             self.search_strategy, self.solver_settings)
 
     def GetTranslationalSchemeInstance(self, class_name):
-         if not class_name == 'NewmarkBetaScheme':
-             return globals().get(class_name)()
-         else:
-             return globals().get(class_name)(0.5,0.25)
+        try:
+            translational_scheme = super(PlasmaStrategy, self).GetTranslationalSchemeInstance(class_name)
+        except Exception:
+            translational_scheme = PlasmaStrategy.class_name()
+        return translational_scheme
 
     def GetRotationalSchemeInstance(self, class_name):
-         if not class_name == 'NewmarkBetaScheme':
-             return globals().get(class_name)()
-         else:
-             return globals().get(class_name)(0.5,0.25)
+        try:
+            rotational_scheme = super(PlasmaStrategy, self).GetRotationalSchemeInstance(class_name)
+        except Exception:
+            rotational_scheme = PlasmaStrategy.class_name()
+        return rotational_scheme
 
     def GetPlasmaConstitutiveLawParametersIfItExists(self, properties):
         if self.project_parameters.Has('properties'):
@@ -58,16 +59,18 @@ class PlasmaStrategy(BaseStrategy):
 
         #plasma_dynamics_name = plasma_dynamics_law_parameters['name'].GetString() 
         # TODO: remove this when decided on which way to call the name of the law
-        PlasmaDynamicsInteractionLaw = globals().get(properties[DEM_DISCONTINUUM_CONSTITUTIVE_LAW_NAME])()
-        PlasmaDynamicsInteractionLaw.SetConstitutiveLawInProperties(properties, True)
+        #PlasmaDynamicsInteractionLaw = globals().get(properties['DEM_DISCONTINUUM_CONSTITUTIVE_LAW_NAME'])()
+        #PlasmaDynamicsInteractionLaw.SetConstitutiveLawInProperties(properties, True)
+        pass
 
     def ModifyProperties(self, properties, param = 0):
-
+        print(properties[DEM_DISCONTINUUM_CONSTITUTIVE_LAW_NAME])
+        globals()['DEM_electromagnetic'] = DEM_electromagnetic()
         super(PlasmaStrategy,self).ModifyProperties(properties, param)
 
-        plasma_dynamics_law_parameters = self.GetPlasmaConstitutiveLawParametersIfItExists(properties)
-        if plasma_dynamics_law_parameters:
-            PlasmaStrategy.CreatePlasmaDynamicsLaw(properties, plasma_dynamics_law_parameters)
+        #plasma_dynamics_law_parameters = self.GetPlasmaConstitutiveLawParametersIfItExists(properties)
+        #if plasma_dynamics_law_parameters:
+        #    PlasmaStrategy.CreatePlasmaDynamicsLaw(properties, plasma_dynamics_law_parameters)
 
         if not param:
             if not properties.Has(PARTICLE_SPHERICITY):

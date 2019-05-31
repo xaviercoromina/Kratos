@@ -32,6 +32,7 @@
 #include "custom_elements/swimming_particle.h"
 #include "custom_utilities/AuxiliaryFunctions.h"
 #include "../../DEMApplication/custom_elements/spheric_particle.h"
+#include "../../PlasmaDynamicsApplication/custom_elements/ion_particle.h"
 #include "../swimming_DEM_application.h"
 #include "../../../kratos/utilities/geometry_utilities.h"
 

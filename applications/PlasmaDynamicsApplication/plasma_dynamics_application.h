@@ -42,7 +42,7 @@ public:
     KratosPlasmaDynamicsApplication();
 
     // Destructor
-    ~KratosPlasmaDynamicsApplication() override {}
+    virtual ~KratosPlasmaDynamicsApplication() {}
 
 
     void Register() override;

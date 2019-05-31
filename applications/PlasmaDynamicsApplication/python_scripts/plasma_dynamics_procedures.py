@@ -1,6 +1,7 @@
 from __future__ import print_function, absolute_import, division #makes KratosMultiphysics backward compatible with python 2.6 and 2.7
 import math
 from KratosMultiphysics import Array3, Logger
+import KratosMultiphysics as Kratos
 import KratosMultiphysics.DEMApplication as DEMApp
 import KratosMultiphysics.SwimmingDEMApplication as SDEMApp
 import KratosMultiphysics.PlasmaDynamicsApplication as PlasmaDynApp
@@ -61,7 +62,14 @@ def SetModelPartSolutionStepValue(model_part, var, value):
         node.SetSolutionStepValue(var, 0, value)
 
 def InitializeVariablesWithNonZeroValues(parameters, fluid_model_part, balls_model_part):
-    pass
+    number_of_particles_in_a_ion_macroparticle = balls_model_part.ProcessInfo.GetValue(Kratos.NUMBER_OF_PARTICLES_IN_A_ION_MACROPARTICLE)
+    particle_density = parameters["properties"][2]["density_parameters"]["particle_ion_density"].GetDouble()   
+    macroparticle_ion_density = number_of_particles_in_a_ion_macroparticle * particle_density
+
+    for node in balls_model_part.Nodes:    
+        node.SetSolutionStepValue(Kratos.FLUID_FRACTION_PROJECTED, 0, 1.0)
+        node.SetSolutionStepValue(Kratos.MACROPARTICLE_ION_DENSITY, macroparticle_ion_density )
+
     
 
 def FixModelPart(model_part):

@@ -321,7 +321,9 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
         self.post_utils_DEM = DEM_procedures.PostUtils(self.project_parameters['dem_parameters'], self.spheres_model_part)
 
 
-
+        plasma_dynamics_procedures.InitializeVariablesWithNonZeroValues(self.project_parameters, 
+                                                                        self.fluid_model_part, 
+                                                                        self.spheres_model_part)
 
         # ANALYTICS BEGIN
         self.project_parameters.AddEmptyValue("perform_analytics_option").SetBool(False)
@@ -544,8 +546,8 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
 
         # applying DEM-to-fluid coupling (backward coupling)
 
-        """         if self.DEM_to_fluid_counter.Tick() and self.time >= self.project_parameters["coupling"]["interaction_start_time"].GetDouble():
-            self._GetSolver().projection_module.ProjectFromParticles()  """
+        if self.DEM_to_fluid_counter.Tick() and self.time >= self.project_parameters["coupling"]["interaction_start_time"].GetDouble():
+            self._GetSolver().projection_module.ProjectFromParticles() 
 
         # coupling checks (debugging)
         if self.debug_info_counter.Tick():

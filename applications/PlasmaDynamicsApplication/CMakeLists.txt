@@ -9,6 +9,7 @@ include_directories( ${CMAKE_SOURCE_DIR}/kratos )
 include_directories( ${CMAKE_SOURCE_DIR}/applications/DEMApplication )
 include_directories( ${CMAKE_SOURCE_DIR}/applications/SwimmingDEMApplication )
 include_directories( ${CMAKE_SOURCE_DIR}/applications/FluidTransportApplication )
+include_directories( ${CMAKE_SOURCE_DIR}/applications/FluidDynamicsApplication )
 include_directories( ${CMAKE_SOURCE_DIR}/applications/PlasmaDynamicsApplication )
 
 ## Define application core sources (pure C++ parts)
@@ -19,7 +20,7 @@ set( KRATOS_PLASMA_DYNAMICS_APPLICATION_CORE_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/plasma_dynamics_application_variables.cpp
 
     # Utilities
-
+    ${CMAKE_CURRENT_SOURCE_DIR}/custom_utilities/binbased_DEM_fluid_coupled_mapping_for_plasma_dynamics.cpp
     # Processes
 
     # Constitutive Laws
@@ -42,7 +43,7 @@ set( KRATOS_PLASMA_DYNAMICS_APPLICATION_PYTHON_INTERFACE_SOURCES
 
 ## PlasmaDynamicsApplication core library (C++ parts)
 add_library( KratosPlasmaDynamicsCore SHARED ${KRATOS_PLASMA_DYNAMICS_APPLICATION_CORE_SOURCES})
-target_link_libraries( KratosPlasmaDynamicsCore PUBLIC KratosCore KratosSwimmingDEMCore KratosDEMCore KratosFluidTransportCore)
+target_link_libraries( KratosPlasmaDynamicsCore PUBLIC KratosCore KratosSwimmingDEMCore KratosDEMCore KratosFluidDynamicsCore KratosFluidTransportCore)
 
 # get_property(inc_dirs DIRECTORY PROPERTY INCLUDE_DIRECTORIES)
 # message("TestApplication subdir inc_dirs = ${inc_dirs}")

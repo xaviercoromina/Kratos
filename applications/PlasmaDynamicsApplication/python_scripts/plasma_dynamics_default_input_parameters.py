@@ -30,7 +30,6 @@ def GetDefaultInputParameters():
 
             "coupling_level_type" : 0,
             "NeighbourSearchFrequency" : 1,
-            "time_averaging_type" : 0,
             "interaction_start_time" : 0.0,
             "do_search_neighbours" : false,
             "do_solve_dem" : true,
@@ -138,7 +137,8 @@ def GetDefaultInputParameters():
                                    
                                    "ELECTRIC_FIELD_PROJECTED_TO_PARTICLE": false,
                                    "NUMBER_OF_PARTICLES_IN_A_ION_MACROPARTICLE": false,
-                                   "PARTICLE_ION_VELOCITY" : false,       
+                                   "PARTICLE_ION_VELOCITY" : false,
+                                   "MACROPARTICLE_ION_DENSITY": false,       
                                    "FLUID_VEL_PROJECTED" : false},
 
             "fluid_nodal_results" : {
@@ -192,6 +192,7 @@ def GetDefaultInputParameters():
                 },
                 {"density_parameters":{
                     "number_of_particles_in_a_ion_macroparticle": 1,
+                    "particle_ion_density": 4.16e-22,
                     "fluid_neutral_density": 1.0,
                     "fluid_electron_density": 1.0
                     }

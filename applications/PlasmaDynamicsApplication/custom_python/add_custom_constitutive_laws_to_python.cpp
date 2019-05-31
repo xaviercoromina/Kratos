@@ -26,8 +26,11 @@ namespace py = pybind11;
 
 void  AddCustomConstitutiveLawsToPython(pybind11::module& m)
 {
-    py::class_<DEM_electromagnetic, DEM_electromagnetic::Pointer, DEMDiscontinuumConstitutiveLaw>(m, "DEM_electromagnetic")
+    py::class_<DEM_electromagnetic, DEM_electromagnetic::Pointer>(m, "DEM_electromagnetic")
     .def(py::init<>())
+    .def("Clone", &DEM_electromagnetic::Clone)
+    .def("SetConstitutiveLawInProperties", &DEM_electromagnetic::SetConstitutiveLawInProperties)
+    .def("GetTypeOfLaw", &DEM_electromagnetic::GetTypeOfLaw)
     ;
 }
 

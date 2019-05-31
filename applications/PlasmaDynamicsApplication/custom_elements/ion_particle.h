@@ -21,7 +21,7 @@ class KRATOS_API(PLASMA_DYNAMICS_APPLICATION) IonParticle : public SphericPartic
 public:
 
     /// Pointer definition of IonParticle
-    KRATOS_CLASS_POINTER_DEFINITION(IonParticle);
+    KRATOS_CLASS_INTRUSIVE_POINTER_DEFINITION(IonParticle);
 
     using SphericParticle::GetGeometry;
     using SphericParticle::GetDensity;
@@ -85,8 +85,13 @@ public:
     /// Destructor.
     virtual ~IonParticle();
 
+
+    std::vector<Node<3>::Pointer> mNeighbourNodes;
+    std::vector<double> mNeighbourNodesDistances;
+
+    
     /// Assignment operator.
-    IonParticle& operator=(const IonParticle& rOther); 
+    IonParticle& operator=(IonParticle const& rOther); 
 
     /// Turn back information as a string.
     virtual std::string Info() const override
@@ -102,14 +107,14 @@ public:
     /// Print object's data.
     virtual void PrintData(std::ostream& rOStream) const override {}    
 
-    virtual void Initialize(const ProcessInfo& r_process_info) override;
+    void Initialize(const ProcessInfo& r_process_info) override;
 
-    virtual void ComputeAdditionalForces(array_1d<double, 3>& additionally_applied_force,
+    void ComputeAdditionalForces(array_1d<double, 3>& additionally_applied_force,
                                  array_1d<double, 3>& additionally_applied_moment,
                                  const ProcessInfo& r_current_process_info,
                                  const array_1d<double,3>& gravity) override;
 
-    virtual void MemberDeclarationFirstStep(const ProcessInfo& r_process_info) override;
+    void MemberDeclarationFirstStep(const ProcessInfo& r_process_info) override;
     
     virtual void CalculateCoulombForce(array_1d<double, 3>& Coulomb_force);
     virtual void CalculateLaplaceForce(array_1d<double, 3>& Laplace_force);

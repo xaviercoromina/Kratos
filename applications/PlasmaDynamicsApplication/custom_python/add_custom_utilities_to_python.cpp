@@ -17,6 +17,7 @@
 #include "add_custom_utilities_to_python.h"
 #include "includes/kratos_parameters.h"
 #include "custom_utilities/renumbering_nodes_utility_for_plasma_dynamics.h"
+#include "custom_utilities/binbased_DEM_fluid_coupled_mapping_for_plasma_dynamics.h"
 
 
 namespace Kratos
@@ -42,7 +43,20 @@ void  AddCustomUtilitiesToPython(pybind11::module& m)
         .def("UndoRenumber", &RenumberingNodesUtilityForPlasmaDynamics::UndoRenumber)
         ;  
 
-
+    py::class_<BinBasedDEMFluidCoupledMappingForPlasmaDynamics> (m, "BinBasedDEMFluidCoupledMappingForPlasmaDynamics3D")
+        .def(py::init<Parameters&>())
+        .def("InterpolateVelocityOnAuxVelocity", &BinBasedDEMFluidCoupledMappingForPlasmaDynamics ::InterpolateVelocityOnAuxVelocity)
+        .def("ImposeVelocityOnDEMFromFieldToAuxVelocity", &BinBasedDEMFluidCoupledMappingForPlasmaDynamics ::ImposeVelocityOnDEMFromFieldToAuxVelocity)
+        .def("InterpolateFromFluidMesh", &BinBasedDEMFluidCoupledMappingForPlasmaDynamics ::InterpolateFromFluidMesh)
+        .def("ImposeFlowOnDEMFromField", &BinBasedDEMFluidCoupledMappingForPlasmaDynamics ::ImposeFlowOnDEMFromField)
+        .def("InterpolateFromDEMMesh", &BinBasedDEMFluidCoupledMappingForPlasmaDynamics ::InterpolateFromDEMMesh)
+        .def("HomogenizeFromDEMMesh", &BinBasedDEMFluidCoupledMappingForPlasmaDynamics ::HomogenizeFromDEMMesh)
+        .def("ComputePostProcessResults", &BinBasedDEMFluidCoupledMappingForPlasmaDynamics ::ComputePostProcessResults)
+        .def("AddDEMCouplingVariable", &BinBasedDEMFluidCoupledMappingForPlasmaDynamics ::AddDEMCouplingVariable)
+        .def("AddFluidCouplingVariable", &BinBasedDEMFluidCoupledMappingForPlasmaDynamics ::AddFluidCouplingVariable)
+        .def("AddDEMVariablesToImpose", &BinBasedDEMFluidCoupledMappingForPlasmaDynamics ::AddDEMVariablesToImpose)
+        .def("AddFluidVariableToBeTimeFiltered", &BinBasedDEMFluidCoupledMappingForPlasmaDynamics ::AddFluidVariableToBeTimeFiltered)
+        ;
 
 
 

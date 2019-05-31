@@ -66,8 +66,8 @@ class VariablesManager:
         VariablesManager.AddFrameOfReferenceRelatedVariables(parameters, fluid_model_part)
 
         fluid_model_part.ProcessInfo.SetValue(FRACTIONAL_STEP, 1)
-        fluid_model_part.ProcessInfo.SetValue(ELECTRIC_POTENTIAL, 0.0)
-        fluid_model_part.ProcessInfo.SetValue(FLUID_ION_DENSITY, 1.0)
+        #fluid_model_part.ProcessInfo.SetValue(ELECTRIC_POTENTIAL, 0.0)
+        #fluid_model_part.ProcessInfo.SetValue(FLUID_ION_DENSITY, 1.0) TODO:remove this if not necessary
 
         fluid_electron_density = parameters["properties"][2]["density_parameters"]["fluid_electron_density"].GetDouble()
         fluid_neutral_density = parameters["properties"][2]["density_parameters"]["fluid_neutral_density"].GetDouble()
@@ -101,13 +101,14 @@ class VariablesManager:
         dem_model_part.ProcessInfo.SetValue(EXTERNAL_ELECTRIC_FIELD, external_electric_field)
         dem_model_part.ProcessInfo.SetValue(EXTERNAL_MAGNETIC_FIELD, external_magnetic_field)
 
-        electric_field_projected_to_particle = Vector(3)
-        particle_ion_velocity = Vector(3)
-        dem_model_part.ProcessInfo.SetValue(ELECTRIC_FIELD_PROJECTED_TO_PARTICLE, electric_field_projected_to_particle)
-        dem_model_part.ProcessInfo.SetValue(PARTICLE_ION_VELOCITY, particle_ion_velocity)
+        #electric_field_projected_to_particle = Vector(3)
+        #particle_ion_velocity = Vector(3)
+        #dem_model_part.ProcessInfo.SetValue(ELECTRIC_FIELD_PROJECTED_TO_PARTICLE, electric_field_projected_to_particle)
+        #dem_model_part.ProcessInfo.SetValue(PARTICLE_ION_VELOCITY, particle_ion_velocity)
 
         number_of_particles_in_a_ion_macroparticle = parameters["properties"][2]["density_parameters"]["number_of_particles_in_a_ion_macroparticle"].GetInt()
         dem_model_part.ProcessInfo.SetValue(NUMBER_OF_PARTICLES_IN_A_ION_MACROPARTICLE, number_of_particles_in_a_ion_macroparticle)
+
 
 
 
@@ -211,6 +212,7 @@ class VariablesManager:
             self.dem_nodal_results += ["EXTERNAL_APPLIED_FORCE"]
             self.dem_nodal_results += ["ELECTRIC_FIELD_PROJECTED_TO_PARTICLE"]
             self.dem_nodal_results += ["PARTICLE_ION_VELOCITY"]
+            self.dem_nodal_results += ["MACROPARTICLE_ION_DENSITY"]
 
             self.fluid_nodal_results += ["ELECTRIC_POTENTIAL"]
             self.fluid_nodal_results += ["FLUID_ION_DENSITY"]
@@ -295,9 +297,11 @@ class VariablesManager:
         #Plasma Dynamics coupling variables: forward coupling
         self.coupling_fluid_vars += [ELECTRIC_POTENTIAL]
         self.coupling_fluid_vars += [ELECTRIC_FIELD]
-        self.coupling_fluid_vars += [FLUID_ION_DENSITY]
         self.coupling_fluid_vars += [FLUID_ELECTRON_DENSITY]
         self.coupling_fluid_vars += [FLUID_NEUTRAL_DENSITY]
+        
+        #Plasma Dynamics coupling variables: backward coupling
+        self.coupling_fluid_vars += [FLUID_ION_DENSITY]
 
 
 
@@ -318,6 +322,9 @@ class VariablesManager:
 
         #Plasma Dynamics coupling variables: forward coupling
         self.coupling_dem_vars += [ELECTRIC_FIELD_PROJECTED_TO_PARTICLE]
+
+        #Plasma Dynamics coupling variables: backward coupling
+        #self.coupling_dem_vars += [MACROPARTICLE_ION_DENSITY]
 
 
         if parameters["coupling"]["backward_coupling"]["apply_time_filter_to_fluid_fraction_option"].GetBool():

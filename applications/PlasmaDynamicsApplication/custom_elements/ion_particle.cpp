@@ -17,7 +17,8 @@ IonParticle::~IonParticle(){}
 IonParticle& IonParticle::operator=(IonParticle const& rOther) {
     
     SphericParticle::operator=(rOther);
-        
+    mNeighbourNodes = rOther.mNeighbourNodes;
+    mNeighbourNodesDistances = rOther.mNeighbourNodesDistances;    
     mSingleIonCharge = rOther.mSingleIonCharge;
     mDoubleIonCharge = rOther.mDoubleIonCharge;
     mXenonMass = rOther.mXenonMass;

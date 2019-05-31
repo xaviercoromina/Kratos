@@ -4,6 +4,7 @@ import KratosMultiphysics as Kratos
 from KratosMultiphysics import Parameters
 from KratosMultiphysics.DEMApplication import *
 import KratosMultiphysics.SwimmingDEMApplication as SDEM
+import KratosMultiphysics.PlasmaDynamicsApplication as PDYN
 import sys
 
 class ProjectionModule:
@@ -35,14 +36,14 @@ class ProjectionModule:
         self.projector_parameters = Parameters("{}")
         self.projector_parameters.AddValue("backward_coupling", project_parameters["coupling"]["backward_coupling"])
         self.projector_parameters.AddValue("coupling_type", project_parameters["coupling"]["coupling_weighing_type"])
-        self.projector_parameters.AddValue("time_averaging_type", project_parameters["coupling"]["time_averaging_type"])
+        self.projector_parameters.AddValue("forward_coupling", project_parameters["coupling"]["forward_coupling"])
         self.projector_parameters.AddValue("n_particles_per_depth_distance", project_parameters["n_particles_in_depth"])
- 
+        self.projector_parameters.AddValue("body_force_per_unit_mass_variable_name", project_parameters["body_force_per_unit_mass_variable_name"])
 
         if self.dimension == 3:
 
             if project_parameters["ElementType"].GetString() == "IonParticle3D":
-                self.projector = SDEM.BinBasedDEMFluidCoupledMapping3D(self.projector_parameters)
+                self.projector = PDYN.BinBasedDEMFluidCoupledMappingForPlasmaDynamics3D(self.projector_parameters)
 
             else:
                 self.projector = SDEM.BinBasedDEMFluidCoupledMapping3D(self.projector_parameters)
@@ -114,8 +115,8 @@ class ProjectionModule:
         self.projector.ImposeVelocityOnDEMFromFieldToAuxVelocity(self.flow_field, self.particles_model_part)
 
     def ProjectFromParticles(self, recalculate_neigh = True):
-        #print("\nProjecting from particles to the fluid...")
-        #sys.stdout.flush()
+        print("\nProjecting from particles to the fluid...")
+        sys.stdout.flush()
 
         if self.coupling_type != 3:
             self.projector.InterpolateFromDEMMesh(self.particles_model_part, self.fluid_model_part, self.bin_of_objects_fluid)
@@ -123,8 +124,8 @@ class ProjectionModule:
         else:
             self.projector.HomogenizeFromDEMMesh(self.particles_model_part, self.fluid_model_part, self.meso_scale_length, self.shape_factor, recalculate_neigh)
 
-        #print("\nFinished projecting from particles to the fluid...")
-        #sys.stdout.flush()
+        print("\nFinished projecting from particles to the fluid...")
+        sys.stdout.flush()
 
     def ComputePostProcessResults(self, particles_process_info):
         self.projector.ComputePostProcessResults(self.particles_model_part, self.fluid_model_part, self.FEM_DEM_model_part, self.bin_of_objects_fluid, particles_process_info)

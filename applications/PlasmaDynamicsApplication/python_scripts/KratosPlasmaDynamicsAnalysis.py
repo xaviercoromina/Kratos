@@ -9,6 +9,7 @@ from __future__ import print_function, absolute_import, division #makes KratosMu
 # Kratos
 from KratosMultiphysics import *
 from KratosMultiphysics.ExternalSolversApplication   import *
+from KratosMultiphysics.SwimmingDEMApplication import *
 from KratosMultiphysics.DEMApplication import *
 from KratosMultiphysics.FluidTransportApplication import *
 from KratosMultiphysics.PlasmaDynamicsApplication import *

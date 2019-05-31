@@ -100,17 +100,12 @@ class PlasmaDynamicsSolver(PythonSolver):
         self.fluid_solver.main_model_part.AddNodalSolutionStepVariable(ELECTRIC_POTENTIAL)
         self.fluid_solver.main_model_part.AddNodalSolutionStepVariable(ELECTRIC_FIELD)
         self.fluid_solver.main_model_part.AddNodalSolutionStepVariable(FLUID_ION_DENSITY)
-
+        #self.dem_solver.spheres_model_part.AddNodalSolutionStepVariable(MACROPARTICLE_ION_DENSITY)
         #self.dem_solver.spheres_model_part.AddNodalSolutionStepVariable(PARTICLE_ION_VELOCITY)
 
         for node in self.fluid_solver.main_model_part.Nodes:
             node.SetSolutionStepValue(FLUID_FRACTION, 0, 1.0)
             node.SetSolutionStepValue(FLUID_FRACTION_OLD, 0, 1.0)
-        for node in self.dem_solver.spheres_model_part.Nodes:    
-            node.SetSolutionStepValue(FLUID_FRACTION_PROJECTED, 0, 1.0)
-                    
-
-
 
 
         
@@ -317,7 +312,6 @@ class PlasmaDynamicsSolver(PythonSolver):
                 fluid_ion_density = node.GetSolutionStepValue(FLUID_ION_DENSITY)  
 
                 RHS = 1.81*(10**(-8))*(fluid_electron_density-fluid_ion_density)
-
                 node.SetSolutionStepValue(HEAT_FLUX, RHS)
 
         for node in self.dem_solver.spheres_model_part.Nodes:
