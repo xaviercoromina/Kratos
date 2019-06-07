@@ -106,7 +106,7 @@ class VariablesManager:
         #dem_model_part.ProcessInfo.SetValue(ELECTRIC_FIELD_PROJECTED_TO_PARTICLE, electric_field_projected_to_particle)
         #dem_model_part.ProcessInfo.SetValue(PARTICLE_ION_VELOCITY, particle_ion_velocity)
 
-        number_of_particles_in_a_ion_macroparticle = parameters["properties"][2]["density_parameters"]["number_of_particles_in_a_ion_macroparticle"].GetInt()
+        number_of_particles_in_a_ion_macroparticle = parameters["properties"][2]["density_parameters"]["number_of_particles_in_a_ion_macroparticle"].GetDouble()
         dem_model_part.ProcessInfo.SetValue(NUMBER_OF_PARTICLES_IN_A_ION_MACROPARTICLE, number_of_particles_in_a_ion_macroparticle)
 
 

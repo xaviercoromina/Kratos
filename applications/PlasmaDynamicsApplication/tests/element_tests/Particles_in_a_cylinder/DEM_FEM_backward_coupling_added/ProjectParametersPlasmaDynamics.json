@@ -116,7 +116,7 @@
         },
         {"density_parameters":{
             "number_of_particles_in_a_ion_macroparticle": 1000,
-            "particle_ion_density": 4.16e-22,
+            "particle_ion_density": 4.16e6,
             "fluid_neutral_density": 1.0,
             "fluid_electron_density": 1.0
             }

@@ -1451,10 +1451,10 @@ void BinBasedDEMFluidCoupledMappingForPlasmaDynamics::TransferWithLinearWeighing
     // Geometry of the element of the destination model part
     Geometry<Node<3> >& geom = p_elem->GetGeometry();
     const double& origin_data = p_node->FastGetSolutionStepValue(r_origin_variable);
-    KRATOS_WATCH("MACROPARTICLE_ION_DENSITY:");
-    KRATOS_WATCH(p_node->FastGetSolutionStepValue(MACROPARTICLE_ION_DENSITY));
-    KRATOS_WATCH("NODAL_MASS:");
-    KRATOS_WATCH(p_node->FastGetSolutionStepValue(NODAL_MASS));
+    //KRATOS_WATCH("MACROPARTICLE_ION_DENSITY:");
+    //KRATOS_WATCH(p_node->FastGetSolutionStepValue(MACROPARTICLE_ION_DENSITY));
+    //KRATOS_WATCH("NODAL_MASS:");
+    //KRATOS_WATCH(p_node->FastGetSolutionStepValue(NODAL_MASS));
 
 
     if (r_origin_variable == MACROPARTICLE_ION_DENSITY){
@@ -1494,9 +1494,9 @@ void BinBasedDEMFluidCoupledMappingForPlasmaDynamics::TransferWithLinearWeighing
     else {
         std::cout << "Variable " << r_origin_variable << " is not supported for transference with linear weights" ;
     }
-    KRATOS_WATCH("After Transfer with linear weighing");
-    KRATOS_WATCH("MACROPARTICLE_ION_DENSITY:");
-    KRATOS_WATCH(p_node->FastGetSolutionStepValue(MACROPARTICLE_ION_DENSITY));
+    //KRATOS_WATCH("After Transfer with linear weighing");
+    //KRATOS_WATCH("MACROPARTICLE_ION_DENSITY:");
+    //KRATOS_WATCH(p_node->FastGetSolutionStepValue(MACROPARTICLE_ION_DENSITY));
 }
 //***************************************************************************************************************
 //***************************************************************************************************************
