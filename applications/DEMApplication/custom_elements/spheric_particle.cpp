@@ -1582,8 +1582,6 @@ void SphericParticle::ComputeAdditionalForces(array_1d<double, 3>& externally_ap
         noalias(externally_applied_moment) += this->GetGeometry()[0].FastGetSolutionStepValue(EXTERNAL_APPLIED_MOMENT);
     }
     KRATOS_CATCH("")
-      
-    
 }
 
 array_1d<double,3> SphericParticle::ComputeWeight(const array_1d<double,3>& gravity, const ProcessInfo& r_process_info) {
