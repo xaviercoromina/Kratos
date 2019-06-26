@@ -30,9 +30,6 @@
 "drag_modifier_type" : 2,
 "drag_modifier_type_comment" : " Hayder (2), Chien (3) # problemtype option",
 
-"OutputTimeStep"                   : 0.5,
-"PostPressure"                     : false,
-"PostFluidPressure"                          : false,
 
 "output_interval" : 0.5,
 
@@ -51,7 +48,7 @@
             "name":"StokesDragLaw"
         },
         "history_force_parameters": {
-            "name":"BoussinesqBassetHistoryForceLaw",
+            "name":"default",
             "quadrature_order": 2,
             "mae_parameters": {
                 "do_use_mae": false,
@@ -60,8 +57,6 @@
                 "type":4
             }
         }
-    },
-    "electromagnetic_field_parameters":{
     }
 }],
 

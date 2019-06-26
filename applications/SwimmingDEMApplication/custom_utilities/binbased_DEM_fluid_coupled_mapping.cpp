@@ -2,7 +2,6 @@
 #include "swimming_DEM_application.h"
 #include "swimming_dem_application_variables.h"
 
-
 namespace Kratos
 {
 //***************************************************************************************************************
@@ -46,9 +45,6 @@ void BinBasedDEMFluidCoupledMapping<TDim, TBaseTypeOfSwimmingParticle>::Interpol
     // setting interpolated variables to their default values
     ResetDEMVariables(r_dem_model_part);
 
-    // getting the electric field from the electric potential (PlasmaDynamicsApplication)
-    GetElectricFieldValue(r_fluid_model_part);
-
     Vector shape_function_values_at_point;
     const int max_results = 10000;
     typename BinBasedFastPointLocator<TDim>::ResultContainerType results(max_results);
@@ -79,11 +75,6 @@ void BinBasedDEMFluidCoupledMapping<TDim, TBaseTypeOfSwimmingParticle>::Interpol
                             p_particle,
                             mDEMCouplingVariables[j],
                             alpha);
-                    ProjectPlasmaDynamics(p_element,
-                            shape_function_values_at_point,
-                            p_particle,
-                            mDEMCouplingVariables[j],
-                            alpha);                             
                 }
             }
 
@@ -960,34 +951,6 @@ void BinBasedDEMFluidCoupledMapping<TDim, TBaseTypeOfSwimmingParticle>::Project(
 //***************************************************************************************************************
 //***************************************************************************************************************
 template <std::size_t TDim, typename TBaseTypeOfSwimmingParticle>
-void BinBasedDEMFluidCoupledMapping<TDim, TBaseTypeOfSwimmingParticle>::ProjectPlasmaDynamics(Element::Pointer p_elem,
-             const Vector& N,
-             Node<3>::Pointer p_node,
-             const VariableData *r_destination_variable,
-             double alpha)
-{
-    if (*r_destination_variable == ELECTRIC_FIELD_PROJECTED_TO_PARTICLE){
-        Interpolate(p_elem, N, p_node, ELECTRIC_FIELD, ELECTRIC_FIELD_PROJECTED_TO_PARTICLE, alpha);
-    }
-}
-//***************************************************************************************************************
-//***************************************************************************************************************
-template <std::size_t TDim, typename TBaseTypeOfSwimmingParticle>
-void BinBasedDEMFluidCoupledMapping<TDim, TBaseTypeOfSwimmingParticle>::GetElectricFieldValue(ModelPart& r_fluid_model_part)
-{
-    #pragma omp parallel for
-    for (int i = 0; i < (int)r_fluid_model_part.Nodes().size(); ++i){
-        NodeIteratorType i_node = r_fluid_model_part.NodesBegin() + i;
-		
-        array_1d<double, 3 >& grad_phi = i_node->FastGetSolutionStepValue(NODAL_PHI_GRADIENT);
-
-        array_1d<double, 3 >& electric_field = i_node->FastGetSolutionStepValue(ELECTRIC_FIELD);
-        noalias(electric_field) = - grad_phi; 
-    }
-}
-//***************************************************************************************************************
-//***************************************************************************************************************
-template <std::size_t TDim, typename TBaseTypeOfSwimmingParticle>
 void BinBasedDEMFluidCoupledMapping<TDim, TBaseTypeOfSwimmingParticle>::DistributeDimensionalContributionToFluidFraction(
     Element::Pointer p_elem,
     const Vector& N,
@@ -1786,6 +1749,5 @@ template class BinBasedDEMFluidCoupledMapping<2, SphericParticle>;
 template class BinBasedDEMFluidCoupledMapping<2, NanoParticle>;
 template class BinBasedDEMFluidCoupledMapping<3, SphericParticle>;
 template class BinBasedDEMFluidCoupledMapping<3, NanoParticle>;
-
 
 }//namespace Kratos

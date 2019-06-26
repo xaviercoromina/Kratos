@@ -200,8 +200,6 @@ void VariingRadiusHomogenizeFromDEMMesh(ModelPart& r_dem_model_part, ModelPart& 
 void HomogenizeFromDEMMesh(ModelPart& r_dem_model_part, ModelPart& r_fluid_model_part, const double& search_radius, const double& shape_factor, bool must_search = true);
 void ComputePostProcessResults(ModelPart& r_dem_model_part, ModelPart& r_fluid_model_part, ModelPart& rfem_dem_model_part, BinBasedFastPointLocator<TDim>& bin_of_objects_fluid, const ProcessInfo& r_current_process_info);
 
-
-
 ///@}
 ///@name Access
 ///@{
@@ -360,13 +358,6 @@ void FillVectorOfSwimmingSpheres(ModelPart& r_dem_model_part);
 double inline CalculateDistance(Node<3>::Pointer a, SwimmingParticle<TBaseTypeOfSwimmingParticle>* b);
 double inline GetAlpha(const VariableData& r_variable);
 const Variable<array_1d<double,3>>& GetBodyForcePerUnitMassVariable() const;
-void ProjectPlasmaDynamics(Element::Pointer p_elem,
-             const Vector& N,
-             Node<3>::Pointer p_node,
-             const VariableData *r_destination_variable,
-             double alpha) ;
-void GetElectricFieldValue(ModelPart& r_fluid_model_part);
-
 //***************************************************************************************************************
 //***************************************************************************************************************
 
