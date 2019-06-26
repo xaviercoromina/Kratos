@@ -825,7 +825,7 @@ void SphericParticle::ComputeBallToBallContactForce(SphericParticle::ParticleDat
 
             RelativeDisplacementAndVelocityOfContactPointDueToOtherReasons(r_process_info, DeltDisp, RelVel, data_buffer.mOldLocalCoordSystem, data_buffer.mLocalCoordSystem, data_buffer.mpOtherParticle);
 
-            //KRATOS_INFO("DEM:  inside SphericParticle::ComputeBallToBallContactForce before EvaluateBallToBallForcesForPositiveIndentiations")<< std::endl;
+
             EvaluateBallToBallForcesForPositiveIndentiations(data_buffer,
                                                              r_process_info,
                                                              LocalElasticContactForce,
@@ -1013,7 +1013,7 @@ void SphericParticle::ComputeBallToRigidFaceContactForce(SphericParticle::Partic
             data_buffer.mLocalRelVel[1] = 0.0;
             data_buffer.mLocalRelVel[2] = 0.0;
 
-            if (indentation > -1.0) {
+            if (indentation > 0.0) {
 
                 GeometryFunctions::VectorGlobal2Local(data_buffer.mLocalCoordSystem, DeltVel, data_buffer.mLocalRelVel);
                 mDiscontinuumConstitutiveLaw->CalculateForcesWithFEM(r_process_info,
@@ -1880,11 +1880,11 @@ bool SphericParticle::CalculateRelativePositionsOrSkipContact(ParticleDataBuffer
     const bool multistage_condition = data_buffer.mMultiStageRHS  &&  this->Id() > data_buffer.mpOtherParticle->Id();
 
     bool must_skip_contact_calculation = other_is_injecting_me || i_am_injecting_other || multistage_condition;
-    //KRATOS_INFO("DEM:")<< other_is_injecting_me << i_am_injecting_other << multistage_condition << std::endl;
+
     if (must_skip_contact_calculation){
         return false;
     }
-    //KRATOS_INFO("DEM:  inside SphericParticle::CalculateRelativePositionsOrSkipContact  after first condition")<< std::endl;
+
     NodeType& other_node = data_buffer.mpOtherParticle->GetGeometry()[0];
     DEM_COPY_SECOND_TO_FIRST_3(data_buffer.mOtherCoors, other_node)
 
@@ -1903,13 +1903,12 @@ bool SphericParticle::CalculateRelativePositionsOrSkipContact(ParticleDataBuffer
     if (must_skip_contact_calculation){
         return false;
     }
-    //KRATOS_INFO("DEM:  inside SphericParticle::CalculateRelativePositionsOrSkipContact  after second condition")<< std::endl;
 
     data_buffer.mOtherRadius = data_buffer.mpOtherParticle->GetInteractionRadius();
     data_buffer.mRadiusSum   = this->GetInteractionRadius() + data_buffer.mOtherRadius;
     data_buffer.mIndentation = data_buffer.mRadiusSum - data_buffer.mDistance;
-    //KRATOS_INFO("DEM:") << data_buffer.mIndentation << std::endl;
-    return data_buffer.mIndentation > -1.0;
+
+    return data_buffer.mIndentation > 0.0;
 }
 
 void SphericParticle::RelativeDisplacementAndVelocityOfContactPointDueToOtherReasons(const ProcessInfo& r_process_info,
