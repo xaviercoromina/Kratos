@@ -21,7 +21,7 @@ class KRATOS_API(DEM_APPLICATION) ElectronParticle : public IonParticle
 public:
 
     /// Pointer definition of ElectronParticle
-    KRATOS_CLASS_POINTER_DEFINITION(ElectronParticle);
+    KRATOS_CLASS_INTRUSIVE_POINTER_DEFINITION(ElectronParticle);
 
 
     ElectronParticle():IonParticle()
@@ -67,10 +67,11 @@ public:
     /// Print object's data.
     virtual void PrintData(std::ostream& rOStream) const override {}    
 
-    virtual void Initialize(const ProcessInfo& r_process_info) override;
+    void Initialize(const ProcessInfo& r_process_info) override;
 
+    void Calculate(const Variable<double>& rVariable, double& Output, const ProcessInfo& r_process_info) override;
 
-    virtual void MemberDeclarationFirstStep(const ProcessInfo& r_process_info) override;
+    void MemberDeclarationFirstStep(const ProcessInfo& r_process_info) override;
     
     void CalculateCoulombForce(array_1d<double, 3>& Coulomb_force) override;
     void CalculateLaplaceForce(array_1d<double, 3>& Laplace_force) override;

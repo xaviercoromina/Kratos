@@ -109,6 +109,8 @@ public:
 
     void Initialize(const ProcessInfo& r_process_info) override;
 
+    void Calculate(const Variable<double>& rVariable, double& Output, const ProcessInfo& r_process_info) override;
+
     void ComputeAdditionalForces(array_1d<double, 3>& additionally_applied_force,
                                  array_1d<double, 3>& additionally_applied_moment,
                                  const ProcessInfo& r_current_process_info,

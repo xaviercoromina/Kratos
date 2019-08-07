@@ -64,8 +64,8 @@ class PlasmaStrategy(BaseStrategy):
         pass
 
     def ModifyProperties(self, properties, param = 0):
-        print(properties[DEM_DISCONTINUUM_CONSTITUTIVE_LAW_NAME])
-        globals()['DEM_electromagnetic'] = DEM_electromagnetic()
+        #print(properties[DEM_DISCONTINUUM_CONSTITUTIVE_LAW_NAME])
+        #globals()['DEM_electromagnetic'] = DEM_electromagnetic()
         super(PlasmaStrategy,self).ModifyProperties(properties, param)
 
         #plasma_dynamics_law_parameters = self.GetPlasmaConstitutiveLawParametersIfItExists(properties)

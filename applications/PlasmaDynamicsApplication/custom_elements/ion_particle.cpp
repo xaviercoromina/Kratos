@@ -32,6 +32,18 @@ void IonParticle::Initialize(const ProcessInfo& r_process_info) {
     SetMass(added_mass_coefficient * GetDensity() * CalculateVolume());
 }
 
+void IonParticle::Calculate(const Variable<double>& rVariable, double& Output, const ProcessInfo& r_process_info) {   
+    SphericParticle::Calculate(rVariable, Output, r_process_info);
+    // ELECTRIC_FIELD_PROJECTED_TO_PARTICLE is a common variable to all types of charged particle used in the plasma dynamics application
+    // should be read as if we consider a charged particle then we define its ID_type 
+    // this ID_type is then used to create a SubModelPart of the spheres_model_part containing all the particles of this type
+    if (rVariable == ELECTRIC_FIELD_PROJECTED_TO_PARTICLE){
+
+        Output = 1.0;
+
+    };
+}
+
 void IonParticle::ComputeAdditionalForces(array_1d<double, 3>& additionally_applied_force,
                              array_1d<double, 3>& additionally_applied_moment,
                              const ProcessInfo& r_current_process_info,

@@ -65,10 +65,22 @@ def InitializeVariablesWithNonZeroValues(parameters, fluid_model_part, balls_mod
     number_of_particles_in_a_ion_macroparticle = balls_model_part.ProcessInfo.GetValue(Kratos.NUMBER_OF_PARTICLES_IN_A_ION_MACROPARTICLE)
     particle_density = parameters["properties"][2]["density_parameters"]["particle_ion_density"].GetDouble()   
     macroparticle_ion_density = number_of_particles_in_a_ion_macroparticle * particle_density
-
     for node in balls_model_part.Nodes:    
         node.SetSolutionStepValue(Kratos.FLUID_FRACTION_PROJECTED, 0, 1.0)
-        node.SetSolutionStepValue(Kratos.MACROPARTICLE_ION_DENSITY, macroparticle_ion_density )
+
+
+    if parameters["full_PIC_option"].GetBool():
+        number_of_particles_in_a_electron_macroparticle = balls_model_part.ProcessInfo.GetValue(Kratos.NUMBER_OF_PARTICLES_IN_A_ION_MACROPARTICLE)
+        electron_particle_density = parameters["properties"][2]["density_parameters"]["particle_electron_density"].GetDouble()   
+        macroparticle_electron_density = number_of_particles_in_a_electron_macroparticle * electron_particle_density
+        for node in balls_model_part.GetSubModelPart("ElectronParticlePart").Nodes:    
+            node.SetSolutionStepValue(Kratos.MACROPARTICLE_ELECTRON_DENSITY, macroparticle_electron_density )
+
+        for node in balls_model_part.GetSubModelPart("IonParticlePart").Nodes:    
+            node.SetSolutionStepValue(Kratos.MACROPARTICLE_ION_DENSITY, macroparticle_ion_density )
+    else:
+        for node in balls_model_part.Nodes:    
+            node.SetSolutionStepValue(Kratos.MACROPARTICLE_ION_DENSITY, macroparticle_ion_density )
 
     
 

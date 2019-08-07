@@ -29,14 +29,25 @@ void ElectronParticle::Initialize(const ProcessInfo& r_process_info) {
     SetMass(added_mass_coefficient * GetDensity() * CalculateVolume());
 }
 
+void ElectronParticle::Calculate(const Variable<double>& rVariable, double& Output, const ProcessInfo& r_process_info) {   
+    SphericParticle::Calculate(rVariable, Output, r_process_info);
+    // ELECTRIC_FIELD_PROJECTED_TO_PARTICLE is a common variable to all types of charged particle used in the plasma dynamics application
+    // should be read as if we consider a charged particle then we define its ID_type 
+    // this ID_type is then used to create a SubModelPart of the spheres_model_part containing all the particles of this type
+    if (rVariable == ELECTRIC_FIELD_PROJECTED_TO_PARTICLE){
+
+        Output = 2.0;
+
+    };
+}
 
 void ElectronParticle::CalculateCoulombForce(array_1d<double, 3>& Coulomb_force)
 {
-    //double Density =  this->GetDensity();
-    
-    Coulomb_force[0] =  mElectronCharge * IonParticle::mExternalElectricField[0];
-    Coulomb_force[1] =  mElectronCharge * IonParticle::mExternalElectricField[1];
-    Coulomb_force[2] =  mElectronCharge * IonParticle::mExternalElectricField[2];
+    array_1d<double, 3 >& ElectricFieldPoisson = this->GetGeometry()[0].FastGetSolutionStepValue(ELECTRIC_FIELD_PROJECTED_TO_PARTICLE);
+    //KRATOS_INFO("DEM: DEM: ElectricFieldPoisson")<< ElectricFieldPoisson << std::endl;
+    Coulomb_force[0] =  mElectronCharge * (IonParticle::mExternalElectricField[0]+ ElectricFieldPoisson[0] );
+    Coulomb_force[1] =  mElectronCharge * (IonParticle::mExternalElectricField[1]+ ElectricFieldPoisson[1] );
+    Coulomb_force[2] =  mElectronCharge * (IonParticle::mExternalElectricField[2]+ ElectricFieldPoisson[2] );
     //KRATOS_INFO("DEM: DEM: Coulomb Force")<< Coulomb_force << std::endl;
 }
 

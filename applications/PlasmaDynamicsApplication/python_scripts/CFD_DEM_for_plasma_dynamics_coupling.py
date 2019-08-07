@@ -98,7 +98,7 @@ class ProjectionModule:
         self.InterpolateVelocityOnAuxVelocity(alpha)
 
     def ProjectFromFluid(self, alpha):
-
+        #Forward Coupling
         self.projector.InterpolateFromFluidMesh(self.fluid_model_part,
                                                 self.particles_model_part,
                                                 self.project_parameters,
@@ -115,6 +115,7 @@ class ProjectionModule:
         self.projector.ImposeVelocityOnDEMFromFieldToAuxVelocity(self.flow_field, self.particles_model_part)
 
     def ProjectFromParticles(self, recalculate_neigh = True):
+        #Backward Coupling
         print("\nProjecting from particles to the fluid...")
         sys.stdout.flush()
 

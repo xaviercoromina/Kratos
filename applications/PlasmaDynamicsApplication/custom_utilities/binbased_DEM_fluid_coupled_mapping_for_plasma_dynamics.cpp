@@ -1710,6 +1710,9 @@ void BinBasedDEMFluidCoupledMappingForPlasmaDynamics::ResetFluidVariables(ModelP
         if (!IsFluidVariableToBeTimeFiltered(FLUID_FRACTION)){
             ClearVariable(node_it, FLUID_FRACTION);
         }
+        if (IsFluidVariable(FLUID_ION_DENSITY)){
+            ClearVariable(node_it, FLUID_ION_DENSITY);
+        }
 
         if (mTimeAveragingType == 0 || mTimeAveragingType == 2){
             if (IsFluidVariable(PHASE_FRACTION)){

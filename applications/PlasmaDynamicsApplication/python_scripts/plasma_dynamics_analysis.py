@@ -7,6 +7,7 @@ import sys
 import math
 import time as timer
 import weakref
+from mpmath import *
 
 from KratosMultiphysics import *
 from KratosMultiphysics.DEMApplication import *
@@ -114,6 +115,13 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
         self.end_time   = self.project_parameters["problem_data"]["end_time"].GetDouble()
         self.do_print_results = self.project_parameters["do_print_results_option"].GetBool()
         self.fluid_parameters = self.project_parameters['fluid_parameters']
+        self.time_to_calculate_poisson_step = self.project_parameters["time_stepping"]["time_to_calculate_poisson_step"].GetDouble()
+        self.full_PIC_option = self.project_parameters["full_PIC_option"].GetBool()
+
+        self.is_the_first_time = True
+
+        if self.full_PIC_option:
+            self.electron_time_step = self.project_parameters["time_stepping"]["electron_time_step"].GetDouble()
 
         # First, read the parameters generated from the interface
         import plasma_dynamics_default_input_parameters as only_plasma_dynamics_defaults
@@ -148,18 +156,22 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
         self.output_time = int(output_time / self.time_step) * self.time_step
         self.project_parameters["output_interval"].SetDouble(self.output_time)
 
+        if self.full_PIC_option:
+            if self.time_step != 0.0 and self.electron_time_step != 0.0:
+                self.electron_time_step = self.time_step / (int(self.time_step / self.electron_time_step))
 
         self.fluid_time_step = self.fluid_parameters["solver_settings"]["time_step"].GetDouble()
+        self.fluid_end_time = self.fluid_parameters["problem_data"]["end_time"].GetDouble()
 
-        if self.fluid_time_step < self.time_step:
-            error_message = ('The fluid time step (' + str(self.fluid_time_step)
-                             + ') must be larger or equal than the overall time step (' + str(self.time_step)
-                             + ')!')
-            raise Exception(error_message)
+        # if self.fluid_time_step < self.time_step:
+        #     error_message = ('The fluid time step (' + str(self.fluid_time_step)
+        #                      + ') must be larger or equal than the overall time step (' + str(self.time_step)
+        #                      + ')!')
+        #     raise Exception(error_message)
 
 
-        self.fluid_time_step = int(self.fluid_time_step / self.time_step) * self.time_step
-        self.fluid_parameters["solver_settings"]["time_step"].SetDouble(self.fluid_time_step)
+        # self.fluid_time_step = int(self.fluid_time_step / self.time_step) * self.time_step
+        # self.fluid_parameters["solver_settings"]["time_step"].SetDouble(self.fluid_time_step)
         self.project_parameters["dem_parameters"]["MaxTimeStep"].SetDouble(self.time_step)
         translational_scheme_name = self.project_parameters["custom_dem"]["translational_integration_scheme"].GetString()
         self.project_parameters["dem_parameters"]["TranslationalIntegrationScheme"].SetString(translational_scheme_name)
@@ -182,9 +194,9 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
                                     starting_elem_Id=0,
                                     starting_cond_Id=0):
         creator_destructor = self._GetDEMAnalysis().creator_destructor
-        max_node_Id = creator_destructor.FindMaxNodeIdInModelPart(self.spheres_model_part)  #self.fluid_model_part
-        max_elem_Id = creator_destructor.FindMaxElementIdInModelPart(self.spheres_model_part)
-        max_cond_Id = creator_destructor.FindMaxConditionIdInModelPart(self.spheres_model_part)
+        max_node_Id = creator_destructor.FindMaxNodeIdInModelPart(self.fluid_model_part)  #self.fluid_model_part
+        max_elem_Id = creator_destructor.FindMaxElementIdInModelPart(self.fluid_model_part)
+        max_cond_Id = creator_destructor.FindMaxConditionIdInModelPart(self.fluid_model_part)
         self._GetDEMAnalysis().BaseReadModelParts(max_node_Id, max_elem_Id, max_cond_Id)
 
     def Run(self):
@@ -213,6 +225,9 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
 
         self.DispersePhaseInitialize()
 
+        if self.full_PIC_option:
+            self.FillParticlesSubModelParts()
+
         self.SetAllModelParts()
 
         if self.project_parameters.Has('plasma_dynamics_output_processes') and self.do_print_results:
@@ -232,7 +247,8 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
                 post_mode = old_gid_output_post_options_dict[post_mode_key],
                 multifile = old_gid_output_multiple_file_option_dict[multiple_files_option_key],
                 deformed_mesh = deformed_mesh_option,
-                write_conditions = write_conditions_option)
+                write_conditions = write_conditions_option
+                )
 
             self.plasma_dynamics_gid_io.initialize_plasma_dynamics_results(
                 self.spheres_model_part,
@@ -295,11 +311,36 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
 
         ##################################################
         self.time = self.project_parameters["problem_data"]["start_time"].GetDouble()
+        self.interaction_start_time = self.project_parameters["coupling"]["interaction_start_time"].GetDouble()
+
+        #fluid_time is independent from the ion/electron time line, it is the own time parameter of the Poisson equation solver
+        #time_to_calculate_poisson is the time parameter belonging to the ion/electron time line which says when to solve the space charge equation (Poisson)
+        self.fluid_time = self.fluid_parameters["problem_data"]["start_time"].GetDouble()
+        self.time_to_calculate_poisson = self.project_parameters["time_stepping"]["start_time_to_calculate_poisson"].GetDouble()
+
+        self.time_to_calculate_Boltzmann_electron_density = self.project_parameters["time_stepping"]["start_time_Boltzmann_electron_density"].GetDouble()
+
+        if self.full_PIC_option:
+            self.electron_time = self.project_parameters["time_stepping"]["electron_start_time"].GetDouble()
+
         self.fluid_time_step = self._GetFluidAnalysis()._GetSolver().ComputeDeltaTime()
         self.time_step = self.spheres_model_part.ProcessInfo.GetValue(DELTA_TIME)
         self.rigid_face_model_part.ProcessInfo[DELTA_TIME] = self.time_step
         self.cluster_model_part.ProcessInfo[DELTA_TIME] = self.time_step
+
+        if self.full_PIC_option:
+            self.electron_model_part.ProcessInfo[DELTA_TIME] = self.time_step
+            self.ion_model_part.ProcessInfo[DELTA_TIME] = self.time_step
+        
+        
         self.stationarity = False
+    
+        self.upstream_potential = self.project_parameters["upstream_potential"].GetDouble()
+        self.downstream_potential = self.project_parameters["downstream_potential"].GetDouble()
+        self.upstream_electron_density = self.project_parameters["upstream_electron_density"].GetDouble()
+        self.downstream_electron_density = self.project_parameters["downstream_electron_density"].GetDouble()    
+
+        self.coupling_level_type = self.project_parameters["coupling"]["coupling_level_type"].GetInt()
 
         # setting up loop counters:
         self.DEM_to_fluid_counter = self.GetBackwardCouplingCounter()
@@ -393,6 +434,21 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
                                                                            self._GetDEMAnalysis().spheres_model_part)
 
         self._GetDEMAnalysis().Initialize()
+
+    def FillParticlesSubModelParts(self):
+        info_particle = 0.0
+        if not self.spheres_model_part.HasSubModelPart("ElectronParticlePart"):
+            self.spheres_model_part.CreateSubModelPart('ElectronParticlePart')
+        self.electron_model_part = self.spheres_model_part.GetSubModelPart('ElectronParticlePart')
+
+        electron_particle_ids = [elem.Id for elem in self.spheres_model_part.Elements if (elem.Calculate(ELECTRIC_FIELD_PROJECTED_TO_PARTICLE, info_particle, self.spheres_model_part.ProcessInfo)==2.0)]
+        self.electron_model_part.AddElements(electron_particle_ids)
+
+        if not self.spheres_model_part.HasSubModelPart("IonParticlePart"):
+            self.spheres_model_part.CreateSubModelPart('IonParticlePart')
+        self.ion_model_part = self.spheres_model_part.GetSubModelPart('IonParticlePart')
+        ion_particle_ids = [elem.Id for elem in self.spheres_model_part.Elements if (elem.Calculate(ELECTRIC_FIELD_PROJECTED_TO_PARTICLE, info_particle, self.spheres_model_part.ProcessInfo)==1.0)]
+        self.ion_model_part.AddElements(ion_particle_ids)
 
     def SetAllModelParts(self):
         self.all_model_parts = weakref.proxy(self._GetDEMAnalysis().all_model_parts)
@@ -521,33 +577,146 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
 
     def InitializeSolutionStep(self):
         self.TellTime()
+        if self.time >= self.time_to_calculate_poisson:
+            if self.project_parameters["dem_parameters"]["dem_inlet_option"].GetBool(): 
+                plasma_dynamics_procedures.InitializeVariablesWithNonZeroValues(self.project_parameters, 
+                                                                        self.fluid_model_part, 
+                                                                        self.spheres_model_part)
+            
+            # applying DEM-to-fluid coupling (backward coupling) for ion density
+
+            if self.is_the_first_time:
+                self.is_the_first_time = False
+            else:
+                if self.DEM_to_fluid_counter.Tick() and self.time >= self.interaction_start_time:
+                    #self._GetSolver()._GetProjectionModule().ProjectFromParticles()
+                    self._GetSolver().ProjectFromParticles()  
+                if self.time >= self.time_to_calculate_Boltzmann_electron_density: 
+                    self.DoBackwardCoupling()
+            self.SolveFluid()
+            self.SetElectricPotential()
+            self.time_to_calculate_poisson += self.time_to_calculate_poisson_step
+        
         self._GetDEMAnalysis().InitializeSolutionStep()
-        if self._GetSolver().CannotIgnoreFluidNow():
-            self._GetFluidAnalysis().InitializeSolutionStep()
+        # if self._GetSolver().CannotIgnoreFluidNow():
+        #     self._GetFluidAnalysis().InitializeSolutionStep()
         super(PlasmaDynamicsAnalysis, self).InitializeSolutionStep()
+        
+        #Forward Coupling (before DEM solving)
+        it_is_time_to_forward_couple = (self.time >= self.interaction_start_time
+                                        and self.coupling_level_type)
+
+        alpha = 1.0 - (self.time_to_calculate_poisson - self.time) / self.time_to_calculate_poisson_step
+        #alpha = 1.0
+        
+
+        if it_is_time_to_forward_couple:
+            self.ApplyForwardCoupling(alpha)
+
+
+    def SetElectricPotential(self):
+        for node in self.fluid_model_part.Nodes:
+
+            #Getting the electric potential Phi using the variable TEMPERATURE in the FluidTransportApplication
+            electric_potential = node.GetSolutionStepValue(TEMPERATURE)  #TODO: inverse the way
+            node.SetSolutionStepValue(ELECTRIC_POTENTIAL, electric_potential)
+
+    def DoBackwardCoupling(self):
+        mp.dps=30 #digit precision for calculation of exp, otherwise gives an overflow error
+
+        #Backward Coupling
+        for node in self.fluid_model_part.Nodes:
+
+            #Calculate electron density on each fluid model node TODO: put it in C++
+            #n_0 = 1.0*1e4 # electron density when Phi = 0, n_electron = n_0 * 10^(n_1) TODO: put it in the json
+            #n_1 = 0.0 
+            # e = 1.60*10**(-19) C  Coulomb charge
+            # k = 1.38*10**(-23) J/K  Boltzmann constant
+            # T_e = 58025 K  (= 5eV) Electron temperature TODO: put it in the json
+            # n_e = n_0 * exp(e * Phi / (k * T_e))
+            electric_constant = 0.2  # e / (k * T_e)
+
+            fluid_ion_density = node.GetSolutionStepValue(FLUID_ION_DENSITY)
+
+            electric_potential = node.GetSolutionStepValue(ELECTRIC_POTENTIAL)
+            
+            #Downstream Region
+            if node.Z > 0.01495:
+                if self.downstream_potential >= electric_potential:
+                    fluid_electron_density = self.downstream_electron_density * exp(electric_constant * (electric_potential-self.downstream_potential))
+                else:
+                    fluid_electron_density = self.downstream_electron_density * (1 + electric_constant * (electric_potential-self.downstream_potential))
+                RHS = -1.81*(10**(-8))*(fluid_electron_density-fluid_ion_density)
+                node.SetSolutionStepValue(HEAT_FLUX, RHS)
+            #Grid Region
+            elif node.Z <= 0.01495 and node.Z >= 0.0072:
+                fluid_electron_density = 0
+                RHS = 0.0
+                node.SetSolutionStepValue(HEAT_FLUX, RHS)
+            #Upstream Region
+            else:
+                if self.upstream_potential >= electric_potential:
+                    fluid_electron_density = self.upstream_electron_density * exp(electric_constant * (electric_potential-self.upstream_potential))
+                else:
+                    fluid_electron_density = self.upstream_electron_density * (1 + electric_constant * (electric_potential-self.upstream_potential))
+                RHS = -1.81*(10**(-8))*(fluid_electron_density-fluid_ion_density)
+                node.SetSolutionStepValue(HEAT_FLUX, RHS)
+            #fluid_electron_density = n_0 * exp(electric_constant * electric_potential)
+
+            node.SetSolutionStepValue(FLUID_ELECTRON_DENSITY, fluid_electron_density)
+
+    def SolveFluid(self):
+        self.SolveFluidCounter = 0
+        Say('Solving Fluid... (', self._GetFluidAnalysis()._GetSolver().main_model_part.NumberOfElements(0), 'elements )\n')
+        while self.KeepAdvancingSolutionLoopForFluid() and self.SolveFluidCounter<110:
+            self.fluid_time = self._GetFluidAnalysis()._GetSolver().main_model_part.ProcessInfo.GetValue(TIME)
+            self.fluid_time = self._GetFluidAnalysis()._GetSolver().AdvanceInTime(self.fluid_time)
+            self._GetFluidAnalysis()._GetSolver().main_model_part.ProcessInfo.SetValue(TIME,self.fluid_time)
+            fluid_dt = self._GetFluidAnalysis()._GetSolver().main_model_part.ProcessInfo[DELTA_TIME]
+            self._GetSolver().fluid_step += 1 
+            self.TellFluidTime()
+            self._GetFluidAnalysis().InitializeSolutionStep()
+            self._GetFluidAnalysis()._GetSolver().Predict()
+            is_converged = self._GetFluidAnalysis()._GetSolver().SolveSolutionStep()
+            self._GetFluidAnalysis().CheckIfSolveSolutionStepReturnsAValue(is_converged)
+            self._GetFluidAnalysis().FinalizeSolutionStep()
+            self.SolveFluidCounter += 1
+        #self._GetFluidAnalysis().OutputSolutionStep()
+        #self._GetSolver().fluid_step = 0 
+        self.fluid_time = self.fluid_parameters["problem_data"]["start_time"].GetDouble()
+        self._GetFluidAnalysis()._GetSolver().main_model_part.ProcessInfo.SetValue(TIME,self.fluid_time)
+        self._GetFluidAnalysis()._GetSolver().main_model_part.ProcessInfo.SetValue(DELTA_TIME,
+                                                  self.fluid_parameters["solver_settings"]["time_step"].GetDouble())
+        self._GetFluidAnalysis()._GetSolver().main_model_part.ProcessInfo.SetValue(STEP, 0)
+
+    def KeepAdvancingSolutionLoopForFluid(self):
+        return self.fluid_time < self.fluid_end_time
 
     def TellTime(self):
         Say('DEM time: ', str(self.time) + ', step: ', self._GetSolver().step)
-        Say('fluid time: ', str(self._GetSolver().next_time_to_solve_fluid) + ', step: ', self._GetSolver().fluid_step)
+        Say('ELAPSED TIME = ', self.timer.time() - self.simulation_start_time, '\n')
+
+    def TellFluidTime(self):
+        Say('fluid time: ', str(self.fluid_time) + ', step: ', self._GetSolver().fluid_step)
         Say('ELAPSED TIME = ', self.timer.time() - self.simulation_start_time, '\n')
 
 
     def ApplyForwardCoupling(self, alpha='None'):
-        self._GetSolver().projection_module.ApplyForwardCoupling(alpha)
-        
+        #self._GetSolver()._GetProjectionModule().ApplyForwardCoupling(alpha)
+        self._GetSolver().ApplyForwardCoupling(alpha)
 
 
     def FinalizeSolutionStep(self):
         # printing if required
-        if self._GetSolver().CannotIgnoreFluidNow():
-            self._GetFluidAnalysis().FinalizeSolutionStep() 
+        # if self._GetSolver().CannotIgnoreFluidNow():
+        #     self._GetFluidAnalysis().FinalizeSolutionStep() 
 
         self._GetDEMAnalysis().FinalizeSolutionStep()
 
         # applying DEM-to-fluid coupling (backward coupling)
 
-        if self.DEM_to_fluid_counter.Tick() and self.time >= self.project_parameters["coupling"]["interaction_start_time"].GetDouble():
-            self._GetSolver().projection_module.ProjectFromParticles() 
+        # if self.DEM_to_fluid_counter.Tick() and self.time >= self.project_parameters["coupling"]["interaction_start_time"].GetDouble():
+        #     self._GetSolver().projection_module.ProjectFromParticles() 
 
         # coupling checks (debugging)
         if self.debug_info_counter.Tick():
@@ -567,7 +736,10 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
 
     def ComputePostProcessResults(self):
         if self.project_parameters["coupling"]["coupling_level_type"].GetInt():
-            self._GetSolver().projection_module.ComputePostProcessResults(self.spheres_model_part.ProcessInfo)
+            #self._GetSolver()._GetProjectionModule().ComputePostProcessResults(self.spheres_model_part.ProcessInfo)
+            self._GetSolver().ComputePostProcessResults()
+    def SetInletWatcher(self):
+        self.watcher_analyser.SetInlet(self.DEM_inlet)
 
     def SetInlet(self):
         if self.project_parameters["dem_inlet_option"].GetBool():
@@ -575,9 +747,9 @@ class PlasmaDynamicsAnalysis(AnalysisStage):
             # (must be done AFTER the self.spheres_model_part Initialize)
             # Note that right now only inlets of a single type are possible.
             # This should be generalized.
-            if self.project_parameters["type_of_inlet"].GetString() == 'VelocityImposed':
+            if self.project_parameters["type_of_dem_inlet"].GetString() == 'VelocityImposed':
                 self.DEM_inlet = DEM_Inlet(self.dem_inlet_model_part)
-            elif self.project_parameters["type_of_inlet"].GetString() == 'ForceImposed':
+            elif self.project_parameters["type_of_dem_inlet"].GetString() == 'ForceImposed':
                 self.DEM_inlet = DEM_Force_Based_Inlet(self.dem_inlet_model_part, self.project_parameters["inlet_force_vector"].GetVector())
 
             self._GetDEMAnalysis().DEM_inlet = self.DEM_inlet

@@ -32,6 +32,7 @@ def GetDefaultInputParameters():
             "NeighbourSearchFrequency" : 1,
             "interaction_start_time" : 0.0,
             "do_search_neighbours" : false,
+            "full_PIC_option" : false,
             "do_solve_dem" : true,
 
             "TestType" : "None",
@@ -192,7 +193,9 @@ def GetDefaultInputParameters():
                 },
                 {"density_parameters":{
                     "number_of_particles_in_a_ion_macroparticle": 1,
+                    "number_of_particles_in_a_electron_macroparticle": 1,
                     "particle_ion_density": 4.16e-22,
+                    "particle_electron_density": 1.0,
                     "fluid_neutral_density": 1.0,
                     "fluid_electron_density": 1.0
                     }
@@ -337,6 +340,10 @@ def GetDefaultInputParameters():
             },
 
             "output_interval" : 0.5,
+            "upstream_potential"             : 105,
+            "downstream_potential"           : 0,
+            "downstream_electron_density"    : 0,
+            "upstream_electron_density"      : 0,
 
             "coupling" : {
                 "coupling_level_type" : 1,
@@ -361,7 +368,12 @@ def GetDefaultInputParameters():
 
             "time_stepping" : {
                 "automatic_time_step" : false,
-                "time_step"           : 1e-5
+                "time_step"           : 1e-5,
+                "time_to_calculate_poisson_step": 1e-4,
+                "start_time_to_calculate_poisson": 0.0,
+                "start_time_Boltzmann_electron_density": 4e-6,
+                "electron_time_step"  : 1e-12,
+	            "electron_start_time" : 0.0
             }
 
             }""")

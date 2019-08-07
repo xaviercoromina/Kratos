@@ -23,12 +23,21 @@ class DEMCoupledFluidPlasmaDynamicsAnalysis(FluidTransportAnalysis):
     def AddFluidVariablesByPlasmaDynamicsAlgorithm(self):
         self.vars_man.AddNodalVariables(self.fluid_model_part, self.vars_man.fluid_vars)
 
-    def RunSingleTimeStep(self):
-        self.InitializeSolutionStep()
-        self._GetSolver().Predict()
-        self._GetSolver().SolveSolutionStep()
-        self.FinalizeSolutionStep()
-        self.OutputSolutionStep()
+    def CheckIfSolveSolutionStepReturnsAValue(self, is_converged):
+        """In case the solver does not return the state of convergence
+        (same as the SolvingStrategy does) then issue ONCE a deprecation-warning
+        """
+        if is_converged is None:
+            if not hasattr(self, '_map_ret_val_depr_warnings'):
+                self._map_ret_val_depr_warnings = []
+            solver_class_name = self._GetSolver().__class__.__name__
+            # used to only print the deprecation-warning once
+            if not solver_class_name in self._map_ret_val_depr_warnings:
+                self._map_ret_val_depr_warnings.append(solver_class_name)
+                from KratosMultiphysics.kratos_utilities import IssueDeprecationWarning
+                warn_msg  = 'Solver "{}" does not return '.format(solver_class_name)
+                warn_msg += 'the state of convergence from "SolveSolutionStep" for fluid'
+                IssueDeprecationWarning("PlasmaAnalysis", warn_msg)
 
 if __name__ == '__main__':
     from sys import argv

@@ -18,6 +18,8 @@
 #include "includes/kratos_parameters.h"
 #include "custom_utilities/renumbering_nodes_utility_for_plasma_dynamics.h"
 #include "custom_utilities/binbased_DEM_fluid_coupled_mapping_for_plasma_dynamics.h"
+#include "custom_elements/ion_particle.h"
+#include "custom_elements/electron_particle.h"
 
 
 namespace Kratos
@@ -58,6 +60,14 @@ void  AddCustomUtilitiesToPython(pybind11::module& m)
         .def("AddFluidVariableToBeTimeFiltered", &BinBasedDEMFluidCoupledMappingForPlasmaDynamics ::AddFluidVariableToBeTimeFiltered)
         ;
 
+    py::class_<IonParticle> (m, "IonParticle")
+        .def("Calculate", &IonParticle ::Calculate)
+        ;
+
+    py::class_<ElectronParticle> (m, "ElectronParticle")
+        .def("Calculate", &ElectronParticle ::Calculate)
+        ;
+    
 
 
 }
