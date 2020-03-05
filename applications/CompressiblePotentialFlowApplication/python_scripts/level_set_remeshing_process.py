@@ -9,6 +9,12 @@ def Factory(settings, Model):
         raise Exception("expected input shall be a Parameters object, encapsulating a json string")
     return LevelSetRemeshingProcess(Model, settings["Parameters"])
 
+    # def RotateModelPart(origin, angle, model_part):
+    # ox,oy=origin
+    # for node in model_part.Nodes:
+    #     node.X = ox+math.cos(angle)*(node.X - ox)-math.sin(angle)*(node.Y - oy)
+    #     node.Y = oy+math.sin(angle)*(node.X - ox)+math.cos(angle)*(node.Y - oy)
+
 ## All the processes python should be derived from "Process"
 class LevelSetRemeshingProcess(KratosMultiphysics.Process):
     def __init__(self, Model, settings ):
@@ -18,9 +24,11 @@ class LevelSetRemeshingProcess(KratosMultiphysics.Process):
                 "model_part_name": "insert_model_part",
                 "skin_model_part_name": "insert_skin_model_part",
                 "maximum_iterations": 1,
+                "problem_name": "",
                 "update_coefficient": 0.5,
                 "remeshing_flag": false,
                 "ray_casting_tolerance": 1e-9,
+                "initial_angle_of_attack" : 0.0,
                 "moving_parameters":    {
                     "origin"                        : [0.0,0.0,0.0],
                     "rotation_angle"                : 0.0,
@@ -61,6 +69,7 @@ class LevelSetRemeshingProcess(KratosMultiphysics.Process):
         self.step = 0
         self.max_iter = settings["maximum_iterations"].GetInt()
         self.update_coefficient = settings["update_coefficient"].GetDouble()
+        self.problem_name = settings["problem_name"].GetString()
 
         self.moving_parameters = settings["moving_parameters"]
         # Synchronizing parameters for the wake process
@@ -68,7 +77,7 @@ class LevelSetRemeshingProcess(KratosMultiphysics.Process):
             self.main_model_part.ProcessInfo.SetValue(CompressiblePotentialFlow.WAKE_ORIGIN, self.moving_parameters["rotation_point"].GetVector())
         else:
             self.main_model_part.ProcessInfo.SetValue(CompressiblePotentialFlow.WAKE_ORIGIN, self.moving_parameters["origin"].GetVector())
-        self.main_model_part.ProcessInfo.SetValue(CompressiblePotentialFlow.ROTATION_ANGLE, self.moving_parameters["rotation_angle"].GetDouble())
+        self.main_model_part.ProcessInfo.SetValue(CompressiblePotentialFlow.ROTATION_ANGLE, self.moving_parameters["rotation_angle"].GetDouble()+settings["initial_angle_of_attack"].GetDouble())
 
         self.metric_parameters = settings["metric_parameters"]
         self.distance_modification_parameters = settings["distance_modification_parameters"]
@@ -77,16 +86,52 @@ class LevelSetRemeshingProcess(KratosMultiphysics.Process):
     def ExecuteInitialize(self):
         KratosMultiphysics.Logger.PrintInfo('LevelSetRemeshing','Executing Initialize Geometry')
         self._InitializeSkinModelPart()
-        self._CalculateDistance()
 
         ini_time=time.time()
-        while self.step < self.max_iter and self.do_remeshing:
-            self.step += 1
-            KratosMultiphysics.Logger.PrintInfo('LevelSetRemeshing','##### Executing refinement #', self.step, ' #####')
-            self._ExtendDistance()
-            self._RefineMesh()
+        try:
+            distance_values = [float(line.split(' ')[0]) for line in open('distance_field_'+self.problem_name+'.dat').readlines()]
+            for line, node in zip(distance_values, self.main_model_part.Nodes):
+                node.SetSolutionStepValue(KratosMultiphysics.DISTANCE,line)
+            elemental_distance_values = [[float(line.split(' ')[i]) for i in range(0,3)] for line in open('elemental_distance_'+self.problem_name+'.dat').readlines()]
+            for elemental_values, elem in zip(elemental_distance_values, self.main_model_part.Elements):
+                distances = KratosMultiphysics.Vector(elemental_values)
+                elem.SetValue(KratosMultiphysics.ELEMENTAL_DISTANCES, distances)
+        except FileNotFoundError:
+            distance_values = []
+            elemental_distance_values = []
+        if len(distance_values) != self.main_model_part.NumberOfNodes() or len(elemental_distance_values) != self.main_model_part.NumberOfElements():
+            print(len(distance_values))
+            print(self.main_model_part.NumberOfNodes())
             self._CalculateDistance()
-            self._UpdateParameters()
+
+            ini_time=time.time()
+            while self.step < self.max_iter and self.do_remeshing:
+                self.step += 1
+                KratosMultiphysics.Logger.PrintInfo('LevelSetRemeshing','##### Executing refinement #', self.step, ' #####')
+                self._ExtendDistance()
+                self._RefineMesh()
+                self._CalculateDistance()
+                self._UpdateParameters()
+            with open('distance_field_'+self.problem_name+'.dat','w') as dat_file:
+                for node in self.main_model_part.Nodes:
+                    dat_file.write('%.15f \n' % (node.GetSolutionStepValue(KratosMultiphysics.DISTANCE)))
+            with open('elemental_distance_'+self.problem_name+'.dat','w') as dat_file:
+                for elem in self.main_model_part.Elements:
+                    distances = elem.GetValue(KratosMultiphysics.ELEMENTAL_DISTANCES)
+                    dat_file.write('%.15f %.15f %.15f\n' % (distances[0], distances[1], distances[2]))
+
+        # for elem in model_part.Elements:
+            # for node in elem.GetNodes():
+        # self.main_model_part.GetElement(153952).SetValue(KratosMultiphysics.SPLIT_ELEMENT,True)
+        # self.main_model_part.GetElement(141908).SetValue(KratosMultiphysics.SPLIT_ELEMENT,True)
+
+        # refiner = KratosMultiphysics.MeshingApplication.LocalRefineTriangleMesh(self.main_model_part)
+
+        # refine_on_reference = False
+        # interpolate_internal_variables = False
+        # refiner.LocalRefineMesh( refine_on_reference, interpolate_internal_variables)
+        # self._CalculateDistance()
+
         self._ModifyFinalDistance()
         self._CopyAndDeleteDefaultDistance()
         KratosMultiphysics.Logger.PrintInfo('LevelSetRemeshing','Elapsed time: ',time.time()-ini_time)
@@ -95,6 +140,9 @@ class LevelSetRemeshingProcess(KratosMultiphysics.Process):
         ''' This function loads and moves the skin_model_part in the main_model_part to the desired initial point (origin).
             It also rotates the skin model part around the origin point according to the rotation_angle'''
         self.skin_model_part=self.model.CreateModelPart("skin")
+        self.skin_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.NORMAL)
+        self.skin_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.NORMAL_SENSITIVITY)
+        self.skin_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.SHAPE_SENSITIVITY)
 
         ini_time=time.time()
         # Reading skin model part
@@ -118,7 +166,7 @@ class LevelSetRemeshingProcess(KratosMultiphysics.Process):
             remesh the background mesh.'''
         ini_time=time.time()
         # Construct the variational distance calculation process
-        maximum_iterations = 2 #TODO: Make this user-definable
+        maximum_iterations = 4 #TODO: Make this user-definable
 
         ###Defining linear solver to be used by the variational distance process###
         from KratosMultiphysics import python_linear_solver_factory #Linear solver for variational distance process
@@ -159,8 +207,32 @@ class LevelSetRemeshingProcess(KratosMultiphysics.Process):
 
         KratosMultiphysics.VariableUtils().SetNonHistoricalVariableToZero(KratosMultiphysics.MeshingApplication.METRIC_TENSOR_2D,self.main_model_part.Nodes)
 
+        # minimal_size=self.metric_parameters["minimal_size"].GetDouble()
+        # self.metric_parameters["sizing_parameters"]["boundary_layer_max_distance"].SetDouble(minimal_size*15.0)
+
         metric_process = MeshingApplication.ComputeLevelSetSolMetricProcess2D(self.main_model_part,  KratosMultiphysics.DISTANCE_GRADIENT, self.metric_parameters)
         metric_process.Execute()
+
+        # bound_layer = 0.01
+        # distance_to_te = 1000.0
+        # distance_to_le = 1000.0
+        # base_multiplier = 25
+        # for node in self.skin_model_part.GetSubModelPart("TrailingEdgeNode").Nodes:
+        #     te_node = node
+        #     break
+        # for node in self.skin_model_part.GetSubModelPart("LeadingEdgeNode").Nodes:
+        #     le_node = node
+        #     break
+        # for node in self.main_model_part.Nodes:
+        #     distance_to_te = math.sqrt((node.X-te_node.X)**2+(node.Y-te_node.Y)**2)
+        #     distance_to_le = math.sqrt((node.X-le_node.X)**2+(node.Y-le_node.Y)**2)
+        #     final_distance = min(distance_to_le, distance_to_te)
+        #     if final_distance <= bound_layer:
+        #         multiplier =  base_multiplier - final_distance * base_multiplier / bound_layer + 1.0
+        #         metric_tensor_2d = node.GetValue(KratosMultiphysics.MeshingApplication.METRIC_TENSOR_2D)
+        #         node.SetValue(KratosMultiphysics.MeshingApplication.METRIC_TENSOR_2D, multiplier*metric_tensor_2d)
+
+
 
         mmg_parameters = KratosMultiphysics.Parameters("""
         {
@@ -193,4 +265,4 @@ class LevelSetRemeshingProcess(KratosMultiphysics.Process):
         to zero the default one.
         '''
         KratosMultiphysics.VariableUtils().CopyScalarVar(KratosMultiphysics.DISTANCE,CompressiblePotentialFlow.GEOMETRY_DISTANCE, self.main_model_part.Nodes)
-        KratosMultiphysics.VariableUtils().SetHistoricalVariableToZero(KratosMultiphysics.DISTANCE, self.main_model_part.Nodes)
+        # KratosMultiphysics.VariableUtils().SetHistoricalVariableToZero(KratosMultiphysics.DISTANCE, self.main_model_part.Nodes)

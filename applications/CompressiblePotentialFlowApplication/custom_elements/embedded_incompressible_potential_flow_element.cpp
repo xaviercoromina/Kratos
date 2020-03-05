@@ -57,14 +57,21 @@ void EmbeddedIncompressiblePotentialFlowElement<Dim, NumNodes>::CalculateLocalSy
     const int wake = r_this.GetValue(WAKE);
     const int kutta = r_this.GetValue(KUTTA);
 
-    BoundedVector<double,NumNodes> distances;
-    for(unsigned int i_node = 0; i_node<NumNodes; i_node++) {
-        if ((kutta == 1) && (this->GetGeometry()[i_node].GetValue(TRAILING_EDGE)))
-            distances(i_node) = this->GetGeometry()[i_node].GetValue(TEMPERATURE);
-        else
-            distances(i_node) = this->GetGeometry()[i_node].GetSolutionStepValue(GEOMETRY_DISTANCE);
-    }
-    const bool is_embedded = PotentialFlowUtilities::CheckIfElementIsCutByDistance<Dim,NumNodes>(distances);
+    Vector distances = r_this.GetValue(GEOMETRY_ELEMENTAL_DISTANCES);
+    bool is_embedded = PotentialFlowUtilities::CheckIfElementIsCutByDistance<Dim,NumNodes>(distances);
+
+    // Vector wake_elemental_distances = r_this.GetValue(WAKE_ELEMENTAL_DISTANCES);
+    // const bool is_wake = PotentialFlowUtilities::CheckIfElementIsCutByDistance<Dim,NumNodes>(wake_elemental_distances);
+
+    // if (!is_embedded && is_wake && wake==0) {
+    //     std::cout <<"Converting elem #" << this->Id() << ": "<<distances << wake_elemental_distances << std::endl;
+    //     is_embedded = true;
+    //     if (kutta == 1)
+    //         this->SetValue(GEOMETRY_ELEMENTAL_DISTANCES, -1*wake_elemental_distances);
+    //     else
+    //         this->SetValue(GEOMETRY_ELEMENTAL_DISTANCES, wake_elemental_distances);
+    // }
+
 
     if (is_embedded && wake == 0){
         CalculateEmbeddedLocalSystem(rLeftHandSideMatrix,rRightHandSideVector,rCurrentProcessInfo);
@@ -89,16 +96,43 @@ void EmbeddedIncompressiblePotentialFlowElement<Dim, NumNodes>::CalculateEmbedde
     rLeftHandSideMatrix.clear();
 
     array_1d<double, NumNodes> potential;
-    Vector distances(NumNodes);
+    // Vector distances(NumNodes);
     const EmbeddedIncompressiblePotentialFlowElement& r_this = *this;
     const int kutta = r_this.GetValue(KUTTA);
-    for(unsigned int i_node = 0; i_node<NumNodes; i_node++) {
-        if ((kutta == 1) && (this->GetGeometry()[i_node].GetValue(TRAILING_EDGE)))
-            distances(i_node) = this->GetGeometry()[i_node].GetValue(TEMPERATURE);
-        else
-            distances(i_node) = this->GetGeometry()[i_node].GetSolutionStepValue(GEOMETRY_DISTANCE);
-    }
+    // for(unsigned int i_node = 0; i_node<NumNodes; i_node++) {
+    //     if ((kutta == 1) && (this->GetGeometry()[i_node].GetValue(TRAILING_EDGE)))
+    //         distances(i_node) = this->GetGeometry()[i_node].GetValue(TEMPERATURE);
+    //     else
+    //         distances(i_node) = this->GetGeometry()[i_node].GetSolutionStepValue(GEOMETRY_DISTANCE);
+    // }
 
+    Vector distances = r_this.GetValue(GEOMETRY_ELEMENTAL_DISTANCES);
+
+    // Vector wake_distances(NumNodes);
+    // std::size_t npos=0;
+    // std::size_t nneg=0;
+    // auto elemental_wake_distances = this->GetValue(WAKE_ELEMENTAL_DISTANCES);
+    // for(unsigned int i_node = 0; i_node<NumNodes; i_node++) {
+    //     if (elemental_wake_distances[i_node] > 0) {
+    //         npos++;
+    //     } else {
+    //         nneg++;
+    //     }
+    //     wake_distances(i_node) = elemental_wake_distances[i_node];
+    // }
+    // if (npos>0 && nneg >0 && kutta == 1) {
+    //     for(unsigned int i_node = 0; i_node<NumNodes; i_node++) {
+    //         if (kutta==0) {
+
+    //             distances(i_node) = wake_distances[i_node];
+    //         }
+    //         else {
+    //             distances(i_node) = -wake_distances[i_node];
+    //         }
+
+    //     }
+    //     std::cout <<"Elem #" << this->Id() << ": "<<distances << std::endl;
+    // }
     // Vector nodal_distances(NumNodes);
     // for(unsigned int i_node = 0; i_node<NumNodes; i_node++) {
     //     nodal_distances(i_node) = this->GetGeometry()[i_node].GetSolutionStepValue(GEOMETRY_DISTANCE);
@@ -153,16 +187,18 @@ void EmbeddedIncompressiblePotentialFlowElement<Dim, NumNodes>::CalculateEmbedde
     }
     bool is_projection = false;
     if (std::abs(projection)>0.5 && is_te)
-    // if (is_te)
     // if ((std::abs(projection)>0.5 && is_te) || (is_te))
+    // if ((std::abs(projection)>0.5 && is_te) || (is_te && kutta == 1) || is_neighbour)
     // if ((std::abs(projection)>0.5 && is_te) || (is_neighbour && kutta == 1))
-    // if ((std::abs(projection)>0.5 && is_te) || (is_neighbour && kutta == 0))
+    // // if ((std::abs(projection)>0.5 && is_te) || (is_neighbour && kutta == 0))
     // if ((std::abs(projection)>0.5 && is_te) || (is_neighbour))
     // if ((std::abs(projection)>0.5 && is_te) || (is_neighbour) || (kutta==1 && is_te))
     // if ((std::abs(projection)>0.5 && is_te) || (kutta==1 && is_te))
     {
-        n_kutta = n_angle;
+        std::cout<< "Is projection elem #"<<this->Id()<< std::endl;
+        //n_kutta = n_angle;
         is_projection = true;
+        potential = 0.0*potential;
     }
 
     // PotentialFlowUtilities::ElementalData<NumNodes, Dim> data;
@@ -193,7 +229,7 @@ void EmbeddedIncompressiblePotentialFlowElement<Dim, NumNodes>::CalculateEmbedde
     {
         // if (this->GetGeometry()[i].GetValue(TRAILING_EDGE) && !is_projection)
         // if (this->GetGeometry()[i].FastGetSolutionStepValue(GEOMETRY_DISTANCE) < 0.0 && !is_projection)
-        // if (!is_projection and this->GetGeometry()[i].GetValue(TRAILING_EDGE) )
+        //if (is_projection and this->GetGeometry()[i].GetValue(TRAILING_EDGE) )
         if (this->GetGeometry()[i].GetValue(TRAILING_EDGE))
         {
             for (unsigned int j = 0; j < NumNodes; ++j)
@@ -232,14 +268,12 @@ void EmbeddedIncompressiblePotentialFlowElement<Dim, NumNodes>::AddPotentialGrad
 
         for (const auto r_elem : neighbour_elem){
 
-            BoundedVector<double,NumNodes> neighbour_distances;
-            for(unsigned int i = 0; i<NumNodes; i++){
-                neighbour_distances[i] = r_elem.GetGeometry()[i].GetSolutionStepValue(GEOMETRY_DISTANCE);
-            }
+            BoundedVector<double,NumNodes> neighbour_distances = r_elem.GetValue(GEOMETRY_ELEMENTAL_DISTANCES);
             const bool is_neighbour_embedded = PotentialFlowUtilities::CheckIfElementIsCutByDistance<Dim,NumNodes>(neighbour_distances);
             const bool is_trailing_edge = PotentialFlowUtilities::CheckIfElementIsTrailingEdge(r_elem);
+             if((!is_neighbour_embedded && r_elem.Is(ACTIVE)) || (!is_trailing_edge)) {
 
-            if((!is_neighbour_embedded && r_elem.Is(ACTIVE)) || (r_elem.Is(ACTIVE) && is_trailing_edge)) {
+            //if((!is_neighbour_embedded && r_elem.Is(ACTIVE)) || (r_elem.Is(ACTIVE) && is_trailing_edge)) {
                 auto r_geometry = r_elem.GetGeometry();
                 const auto& r_integration_method = r_geometry.GetDefaultIntegrationMethod();
                 const auto& r_integration_points = r_geometry.IntegrationPoints(r_integration_method);
@@ -285,8 +319,10 @@ void EmbeddedIncompressiblePotentialFlowElement<Dim, NumNodes>::AddPotentialGrad
     averaged_nodal_gradient.clear();
     int number_of_positive_nodes = 0;
 
+    auto geometry_elemental_distances = this->GetValue(GEOMETRY_ELEMENTAL_DISTANCES);
+
     for (IndexType i_node=0; i_node<NumNodes; i_node++){
-        if (this->GetGeometry()[i_node].FastGetSolutionStepValue(GEOMETRY_DISTANCE)>0.0){
+        if (geometry_elemental_distances[i_node]>0.0){
             number_of_positive_nodes += 1;
             averaged_nodal_gradient += nodal_gradient_vector[i_node];
         }

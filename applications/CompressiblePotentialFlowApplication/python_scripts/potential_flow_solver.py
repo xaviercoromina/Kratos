@@ -140,6 +140,8 @@ class PotentialFlowSolver(FluidSolver):
         # Degrees of freedom
         self.main_model_part.AddNodalSolutionStepVariable(KCPFApp.VELOCITY_POTENTIAL)
         self.main_model_part.AddNodalSolutionStepVariable(KCPFApp.AUXILIARY_VELOCITY_POTENTIAL)
+        self.main_model_part.AddNodalSolutionStepVariable(KCPFApp.POTENTIAL_LAGRANGE_MULTIPLIER_0)
+        self.main_model_part.AddNodalSolutionStepVariable(KCPFApp.POTENTIAL_LAGRANGE_MULTIPLIER_1)
 
         # Add variables that the user defined in the ProjectParameters
         for i in range(self.settings["auxiliary_variables_list"].size()):
@@ -152,6 +154,8 @@ class PotentialFlowSolver(FluidSolver):
     def AddDofs(self):
         KratosMultiphysics.VariableUtils().AddDof(KCPFApp.VELOCITY_POTENTIAL, self.main_model_part)
         KratosMultiphysics.VariableUtils().AddDof(KCPFApp.AUXILIARY_VELOCITY_POTENTIAL, self.main_model_part)
+        KratosMultiphysics.VariableUtils().AddDof(KCPFApp.POTENTIAL_LAGRANGE_MULTIPLIER_0, self.main_model_part)
+        KratosMultiphysics.VariableUtils().AddDof(KCPFApp.POTENTIAL_LAGRANGE_MULTIPLIER_1, self.main_model_part)
 
     def Initialize(self):
         self._ComputeNodalNeighbours()

@@ -86,6 +86,10 @@ class ApplyPotentialFlowHessianRemeshingProcess(KratosMultiphysics.Process):
         self.main_model_part.RemoveSubModelPart('wake_sub_model_part')
         self.main_model_part.RemoveSubModelPart('trailing_edge_sub_model_part')
         self.main_model_part.RemoveSubModelPart('fluid_computational_model_part')
+        for elem in self.main_model_part.Elements:
+            elem.Set(KratosMultiphysics.TO_SPLIT, False)
+            elem.Set(KratosMultiphysics.MARKER, False)
+            elem.Set(KratosMultiphysics.SELECTED, False)
 
     def __ExecuteRefinement(self):
 

@@ -106,10 +106,7 @@ namespace Kratos
             rOutput.resize(NumNodes, column_size, false);
         rOutput.clear();
 
-        BoundedVector<double,NumNodes> distances;
-        for(unsigned int i_node = 0; i_node<NumNodes; i_node++){
-            distances[i_node] = this->GetGeometry()[i_node].GetSolutionStepValue(GEOMETRY_DISTANCE);
-        }
+        BoundedVector<double,NumNodes> distances = this->GetValue(GEOMETRY_ELEMENTAL_DISTANCES);
         const bool is_embedded = PotentialFlowUtilities::CheckIfElementIsCutByDistance<Dim,NumNodes>(distances);
 
         // Calculate sensitivity matrix in elements that are cut and active.
@@ -127,11 +124,17 @@ namespace Kratos
                 // Apply F.D in all cut nodes that are not trailing edge nodes.
                 if (!r_geometry[i_node].GetValue(TRAILING_EDGE)){
                     // Perturbate distance
-                    pPrimalElement->GetGeometry()[i_node].GetSolutionStepValue(GEOMETRY_DISTANCE) = distances[i_node]+delta;
+                    auto elemental_distances = pPrimalElement->GetValue(GEOMETRY_ELEMENTAL_DISTANCES);
+                    elemental_distances[i_node] += delta;
+                    pPrimalElement->SetValue(GEOMETRY_ELEMENTAL_DISTANCES, elemental_distances);
+                    // pPrimalElement->GetGeometry()[i_node].GetSolutionStepValue(GEOMETRY_DISTANCE) = distances[i_node]+delta;
                     // Compute perturbated RHS
                     pPrimalElement->CalculateRightHandSide(RHS_perturbed, process_info);
                     // Recover distance value
-                    pPrimalElement->GetGeometry()[i_node].GetSolutionStepValue(GEOMETRY_DISTANCE) = distances[i_node];
+                    // pPrimalElement->GetGeometry()[i_node].GetSolutionStepValue(GEOMETRY_DISTANCE) = distances[i_node];
+
+                    elemental_distances[i_node] -= delta;
+                    pPrimalElement->SetValue(GEOMETRY_ELEMENTAL_DISTANCES, elemental_distances);
 
                     for (unsigned int i_dof =0;i_dof<RHS.size();i_dof++) {
                         rOutput(i_node,i_dof) = (RHS_perturbed(i_dof)-RHS(i_dof))/delta;
