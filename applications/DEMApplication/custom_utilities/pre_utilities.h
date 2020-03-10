@@ -355,7 +355,7 @@ class PreUtilities
        */
     }
 
-    void MarkToEraseParticlesOutsideRadius(ModelPart& r_model_part, const double max_radius, const array_1d<double, 3>& center, const double tolerance_for_erasing) {
+    void MarkToEraseParticlesOutsideRadius(ModelPart& r_model_part, const double max_radius, const array_1d<double, 3>& center) { //, const double tolerance_for_erasing) {
         auto& pNodes = r_model_part.GetCommunicator().LocalMesh().Nodes();
 
         #pragma omp parallel for
@@ -366,13 +366,13 @@ class PreUtilities
             noalias(vector_distance_to_center) = coords - center;
             const double distance_to_center = MathUtils<double>::Norm3(vector_distance_to_center);
             const double radius = it->FastGetSolutionStepValue(RADIUS);
-            if (distance_to_center + radius > max_radius + tolerance_for_erasing) {
+            if (distance_to_center > max_radius - radius) {
                 it->Set(TO_ERASE, true);
             }
         }
     }
 
-    void MarkToEraseParticlesOutsideDomain(ModelPart& r_model_part, const double max_radius, const array_1d<double, 3>& center, const double tolerance_for_erasing) {
+    void MarkToEraseParticlesOutsideDomain(ModelPart& r_model_part, const double max_radius, const array_1d<double, 3>& center) { //, const double tolerance_for_erasing) {
 
         auto& pNodes = r_model_part.GetCommunicator().LocalMesh().Nodes();
 
@@ -385,7 +385,7 @@ class PreUtilities
             const double radius = it->FastGetSolutionStepValue(RADIUS);
             const double total_x_distance = fabs(vector_distance_to_center[0]);
             const double total_y_distance = fabs(vector_distance_to_center[1]);
-            const double reference_distance = max_radius + 0.5 * radius;
+            const double reference_distance = max_radius - radius;
 
             if ((total_x_distance > reference_distance) || (total_y_distance > reference_distance)) {
                 it->Set(TO_ERASE, true);
@@ -422,7 +422,7 @@ class PreUtilities
         }
     }
 
-    void SetSkinParticlesInnerBoundary(ModelPart& r_model_part, const double inner_radius) {
+    void SetSkinParticlesInnerBoundary(ModelPart& r_model_part, const double inner_radius, const array_1d<double, 3>& center) {
 
         auto& pNodes = r_model_part.GetCommunicator().LocalMesh().Nodes();
 
@@ -431,16 +431,17 @@ class PreUtilities
             auto it = pNodes.begin() + k;
             const array_1d<double, 3>& coords = it->Coordinates();
             array_1d<double, 3> vector_distance_to_center;
-            noalias(vector_distance_to_center) = coords; // TODO: Substract center coordinates
+            noalias(vector_distance_to_center) = coords - center; // TODO: Substract center coordinates
             const double distance_to_center = MathUtils<double>::Norm3(vector_distance_to_center);
             const double radius = it->FastGetSolutionStepValue(RADIUS);
-            if (distance_to_center < inner_radius + 1.5 * radius) {
+            const double security_factor = 1.5;
+            if (distance_to_center < inner_radius + security_factor * radius) {
                 it->FastGetSolutionStepValue(SKIN_SPHERE) = 1.0;
             }
         }
     }
 
-    void SetSkinParticlesOuterBoundary(ModelPart& r_model_part, const double outer_radius) {
+    void SetSkinParticlesOuterBoundary(ModelPart& r_model_part, const double outer_radius, const array_1d<double, 3>& center) {
         auto& pNodes = r_model_part.GetCommunicator().LocalMesh().Nodes();
 
         #pragma omp parallel for
@@ -448,16 +449,17 @@ class PreUtilities
             auto it = pNodes.begin() + k;
             const array_1d<double, 3>& coords = it->Coordinates();
             array_1d<double, 3> vector_distance_to_center;
-            noalias(vector_distance_to_center) = coords; // TODO: Substract center coordinates
+            noalias(vector_distance_to_center) = coords - center; // TODO: Substract center coordinates
             const double distance_to_center = MathUtils<double>::Norm3(vector_distance_to_center);
             const double radius = it->FastGetSolutionStepValue(RADIUS);
-            if (distance_to_center > outer_radius - 1.5 * radius) {
+            const double security_factor = 2.0;
+            if (distance_to_center > outer_radius - security_factor * radius) {
                 it->FastGetSolutionStepValue(SKIN_SPHERE) = 1.0;
             }
         }
     }
 
-    void SetSkinParticlesOuterBoundaryBlind(ModelPart& r_model_part, const double outer_radius) {
+    void SetSkinParticlesOuterBoundaryBlind(ModelPart& r_model_part, const double outer_radius, const array_1d<double, 3>& center) {
         auto& pNodes = r_model_part.GetCommunicator().LocalMesh().Nodes();
 
         #pragma omp parallel for
@@ -465,11 +467,12 @@ class PreUtilities
             auto it = pNodes.begin() + k;
             const array_1d<double, 3>& coords = it->Coordinates();
             array_1d<double, 3> vector_distance_to_center;
-            noalias(vector_distance_to_center) = coords; // TODO: Substract center coordinates
+            noalias(vector_distance_to_center) = coords - center; // TODO: Substract center coordinates
             const double total_x_distance = fabs(vector_distance_to_center[0]);
             const double total_y_distance = fabs(vector_distance_to_center[1]);
             const double radius = it->FastGetSolutionStepValue(RADIUS);
-            const double reference_distance = outer_radius - 1.5 * radius;
+            const double security_factor = 2.0;
+            const double reference_distance = outer_radius - security_factor * radius;
 
             if ((total_x_distance > reference_distance) || (total_y_distance > reference_distance)) {
                 it->FastGetSolutionStepValue(SKIN_SPHERE) = 1.0;

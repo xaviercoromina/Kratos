@@ -18,9 +18,12 @@ def ComputeMeanRadiusOfThisParticle(x, y, z, fine_radius, specimen_type):
         max_distance_for_fine_radius = 0.04035
 
     #TODO: Make this depend on each of the 3 existing test types
-    if specimen_type == 2:
-        slope = 0.023
-    if specimen_type == 3:
+
+    if specimen_type == 1:
+        slope = 0.015
+    elif specimen_type == 2:
+        slope = 0.044
+    else: #specimen_type == 3:
         slope = 0.035
 
     if distance_to_origin < max_distance_for_fine_radius:
@@ -73,7 +76,7 @@ class ElementSizeModifier(DEMAnalysisStage):
         project_parameters["MaxTimeStep"].SetDouble(self.size_modifier_parameters["time_step"].GetDouble())
         #
         # TEST TYPE
-        self.specimen_type = 3
+        self.specimen_type = 2
         super(ElementSizeModifier, self).__init__(model, project_parameters)
 
     def Initialize(self):
@@ -110,8 +113,8 @@ class ElementSizeModifier(DEMAnalysisStage):
         super(ElementSizeModifier, self).Finalize()
 
     def _GetDeviationFromMeanSizeOfAllParticles(self):
-        min_radius = (self.size_modifier_parameters["min_diameter_of_particles"].GetDouble())/ 2.0
-        max_radius = (self.size_modifier_parameters["max_diameter_of_particles"].GetDouble())/ 2.0
+        min_radius = (self.size_modifier_parameters["min_diameter_of_particles"].GetDouble()) / 2.0
+        max_radius = (self.size_modifier_parameters["max_diameter_of_particles"].GetDouble()) / 2.0
         radius_standard_deviation = self.size_modifier_parameters["standard_deviation"].GetDouble() / 2.0
 
         distribution = stats.truncnorm(min_radius / radius_standard_deviation, max_radius / radius_standard_deviation, loc=0.0, scale=radius_standard_deviation)
@@ -136,8 +139,7 @@ class ElementSizeModifier(DEMAnalysisStage):
             radius_defined_by_function = ComputeMeanRadiusOfThisParticle(x, y, z, mean_diameter_of_particles/2.0, self.specimen_type)
             deviation_for_mean_radius = node.GetValue(DEM.DEVIATION)
             initial_radius = node.GetValue(DEM.INITIAL_RADIUS)
-            #actual_deviation_for_current_radius = deviation_for_mean_radius * radius_defined_by_function / initial_radius
-            actual_deviation_for_current_radius = 0.0
+            actual_deviation_for_current_radius = deviation_for_mean_radius * radius_defined_by_function / initial_radius
             intended_radius_at_end = radius_defined_by_function + actual_deviation_for_current_radius
             portion_of_process = (self.time - self.size_modifier_parameters["initiation_time"].GetDouble()) / self.size_modifier_parameters["process_duration"].GetDouble()
             intended_radius_at_current_time = initial_radius + portion_of_process * (intended_radius_at_end - initial_radius)
@@ -154,19 +156,19 @@ class ElementSizeModifier(DEMAnalysisStage):
                 center[0] = center[1] = center[2] = 0.0
                 self.PreUtilities.ResetSkinParticles(self.spheres_model_part)
                 if self.specimen_type <= 2:
-                    self.PreUtilities.MarkToEraseParticlesOutsideRadius(self.spheres_model_part, max_radius, center, tolerance)
+                    self.PreUtilities.MarkToEraseParticlesOutsideRadius(self.spheres_model_part, max_radius, center) #, tolerance)
                 else:
-                    self.PreUtilities.MarkToEraseParticlesOutsideDomain(self.spheres_model_part, max_radius, center, tolerance)
+                    self.PreUtilities.MarkToEraseParticlesOutsideDomain(self.spheres_model_part, max_radius, center) #, tolerance)
                 inner_radius = self.size_modifier_parameters["geometry_settings"]["inner_radius"].GetDouble()
                 radius_at_inner_boundary = mean_diameter_of_particles/2.0
-                self.PreUtilities.SetSkinParticlesInnerBoundary(self.spheres_model_part, inner_radius)
+                self.PreUtilities.SetSkinParticlesInnerBoundary(self.spheres_model_part, inner_radius, center)
                 radius_at_outer_boundary = ComputeMeanRadiusOfThisParticle(max_radius, 0.0, 0.0, mean_diameter_of_particles/2.0, self.specimen_type)
                 portion_of_process = (self.time - self.size_modifier_parameters["initiation_time"].GetDouble()) / self.size_modifier_parameters["process_duration"].GetDouble()
                 radius_at_outer_boundary_at_current_time = mean_diameter_of_particles/2.0 + portion_of_process * (radius_at_outer_boundary - mean_diameter_of_particles/2.0)
                 if self.specimen_type <= 2:
-                    self.PreUtilities.SetSkinParticlesOuterBoundary(self.spheres_model_part, max_radius) #, 1.4 * radius_at_outer_boundary_at_current_time)
+                    self.PreUtilities.SetSkinParticlesOuterBoundary(self.spheres_model_part, max_radius, center) #, 1.4 * radius_at_outer_boundary_at_current_time)
                 else:
-                    self.PreUtilities.SetSkinParticlesOuterBoundaryBlind(self.spheres_model_part, max_radius) #, 1.4 * radius_at_outer_boundary_at_current_time)
+                    self.PreUtilities.SetSkinParticlesOuterBoundaryBlind(self.spheres_model_part, max_radius, center) #, 1.4 * radius_at_outer_boundary_at_current_time)
         else:
             self.eraser_counter += 1
 
