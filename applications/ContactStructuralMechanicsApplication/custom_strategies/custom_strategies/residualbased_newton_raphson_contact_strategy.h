@@ -114,9 +114,10 @@ public:
     typedef std::size_t                                                                 IndexType;
 
     // DEFINITION OF FLAGS TO CONTROL THE BEHAVIOUR
-    KRATOS_DEFINE_LOCAL_FLAG(FINALIZE_WAS_PERFORMED); /// If finalize was performed
+    KRATOS_DEFINE_LOCAL_FLAG(FINALIZE_WAS_PERFORMED);     /// If finalize was performed
+    KRATOS_DEFINE_LOCAL_FLAG(PERFORM_FRICTIONAL_PREDICT); /// If frictional predict is performed
     
-    /**
+    /** 
      * @brief Default constructor
      * @param rModelPart The model part of the problem
      * @param p_scheme The integration scheme
@@ -220,14 +221,15 @@ public:
 
         // Set to zero the weighted gap
         ModelPart& r_model_part = StrategyBaseType::GetModelPart();
-        NodesArrayType& nodes_array = r_model_part.GetSubModelPart("Contact").Nodes();
+        NodesArrayType& r_nodes_array = r_model_part.GetSubModelPart("Contact").Nodes();
+        const auto it_node_begin = r_nodes_array.begin();
         const bool frictional = r_model_part.Is(SLIP);
 
         // We predict contact pressure in case of contact problem
-        if (nodes_array.begin()->SolutionStepsDataHas(WEIGHTED_GAP)) {
-            VariableUtils().SetVariable(WEIGHTED_GAP, 0.0, nodes_array);
+        if (it_node_begin->SolutionStepsDataHas(WEIGHTED_GAP)) {
+            VariableUtils().SetVariable(WEIGHTED_GAP, 0.0, r_nodes_array);
             if (frictional) {
-                VariableUtils().SetVariable(WEIGHTED_SLIP, zero_array, nodes_array);
+                VariableUtils().SetVariable(WEIGHTED_SLIP, zero_array, r_nodes_array);
             }
 
             // Compute the current gap
@@ -239,30 +241,35 @@ public:
 
             if (step == 1) {
                 #pragma omp parallel for
-                for(int i = 0; i < static_cast<int>(nodes_array.size()); ++i) {
-                    auto it_node = nodes_array.begin() + i;
+                for(int i = 0; i < static_cast<int>(r_nodes_array.size()); ++i) {
+                    auto it_node = it_node_begin + i;
                     noalias(it_node->Coordinates()) += it_node->FastGetSolutionStepValue(DISPLACEMENT);
 
                 }
             } else {
                 #pragma omp parallel for
-                for(int i = 0; i < static_cast<int>(nodes_array.size()); ++i) {
-                    auto it_node = nodes_array.begin() + i;
+                for(int i = 0; i < static_cast<int>(r_nodes_array.size()); ++i) {
+                    auto it_node = it_node_begin + i;
                     noalias(it_node->Coordinates()) += (it_node->FastGetSolutionStepValue(DISPLACEMENT) - it_node->FastGetSolutionStepValue(DISPLACEMENT, 1));
 
                 }
             }
+        }
+        
+        // We perform the firctional predict if necessary
+        if (mOptions.Is(PERFORM_FRICTIONAL_PREDICT)) {
+            // TODO: Add stuff
         }
 
 //         BaseType::Predict();  // NOTE: May cause problems in dynamics!!!
 //
 //         // Set to zero the weighted gap // NOTE: This can be done during the search if the predict is deactivated
 //         ModelPart& r_model_part = StrategyBaseType::GetModelPart();
-//         NodesArrayType& nodes_array = r_model_part.GetSubModelPart("Contact").Nodes();
+//         NodesArrayType& r_nodes_array = r_model_part.GetSubModelPart("Contact").Nodes();
 //
 //         // We predict contact pressure in case of contact problem
-//         if (nodes_array.begin()->SolutionStepsDataHas(WEIGHTED_GAP)) {
-//             VariableUtils().SetVariable(WEIGHTED_GAP, 0.0, nodes_array);
+//         if (r_nodes_array.begin()->SolutionStepsDataHas(WEIGHTED_GAP)) {
+//             VariableUtils().SetVariable(WEIGHTED_GAP, 0.0, r_nodes_array);
 //
 //             // Compute the current gap
 //             ContactUtilities::ComputeExplicitContributionConditions(r_model_part.GetSubModelPart("ComputingContact"));
@@ -272,11 +279,11 @@ public:
 //             const double initial_penalty_parameter = r_process_info[INITIAL_PENALTY];
 //
 //             // We iterate over the nodes
-//             bool is_components = nodes_array.begin()->SolutionStepsDataHas(LAGRANGE_MULTIPLIER_CONTACT_PRESSURE) ? false : true;
+//             bool is_components = r_nodes_array.begin()->SolutionStepsDataHas(LAGRANGE_MULTIPLIER_CONTACT_PRESSURE) ? false : true;
 //
 //             #pragma omp parallel for
-//             for(int i = 0; i < static_cast<int>(nodes_array.size()); ++i) {
-//                 auto it_node = nodes_array.begin() + i;
+//             for(int i = 0; i < static_cast<int>(r_nodes_array.size()); ++i) {
+//                 auto it_node = r_nodes_array.begin() + i;
 //
 //                 const double current_gap = it_node->FastGetSolutionStepValue(WEIGHTED_GAP);
 //
@@ -312,6 +319,16 @@ public:
         ModelPart& r_model_part = StrategyBaseType::GetModelPart();
         ProcessInfo& r_process_info = r_model_part.GetProcessInfo();
         r_process_info[NL_ITERATION_NUMBER] = 1;
+        
+        // We decide if frictional prediction is performed
+        mOptions.Set(PERFORM_FRICTIONAL_PREDICT, false);
+        if (mThisParameters["perform_frictional_predict"].GetBool()) {
+            if (r_model_part.Is(SLIP)) {
+                if (r_model_part.HasNodalSolutionStepVariable(VECTOR_LAGRANGE_MULTIPLIER)) {
+                     mOptions.Set(PERFORM_FRICTIONAL_PREDICT, true);
+                }
+            }
+        }
 
         KRATOS_CATCH("");
     }
@@ -698,11 +715,11 @@ protected:
                     if (StrategyBaseType::MoveMeshFlag())
                         UnMoveMesh();
 
-                    NodesArrayType& nodes_array = r_model_part.Nodes();
+                    NodesArrayType& r_nodes_array = r_model_part.Nodes();
 
                     #pragma omp parallel for
-                    for(int i = 0; i < static_cast<int>(nodes_array.size()); ++i) {
-                        auto it_node = nodes_array.begin() + i;
+                    for(int i = 0; i < static_cast<int>(r_nodes_array.size()); ++i) {
+                        auto it_node = r_nodes_array.begin() + i;
 
                         it_node->OverwriteSolutionStepData(1, 0);
 //                         it_node->OverwriteSolutionStepData(2, 1);
@@ -712,11 +729,11 @@ protected:
 
                     FinalizeSolutionStep();
                 } else {
-                    NodesArrayType& nodes_array = r_model_part.Nodes();
+                    NodesArrayType& r_nodes_array = r_model_part.Nodes();
 
                     #pragma omp parallel for
-                    for(int i = 0; i < static_cast<int>(nodes_array.size()); ++i)
-                        (nodes_array.begin() + i)->CloneSolutionStepData();
+                    for(int i = 0; i < static_cast<int>(r_nodes_array.size()); ++i)
+                        (r_nodes_array.begin() + i)->CloneSolutionStepData();
 
                     r_process_info.CloneSolutionStepInfo();
                     r_process_info.ClearHistory(r_model_part.GetBufferSize());
@@ -900,6 +917,7 @@ protected:
     {
         Parameters default_parameters = Parameters(R"(
         {
+            "perform_frictional_predict"       : true,
             "adaptative_strategy"              : false,
             "split_factor"                     : 10.0,
             "max_number_splits"                : 3,
@@ -1034,6 +1052,8 @@ private:
 
 template<class TSparseSpace, class TDenseSpace, class TLinearSolver>
 const Kratos::Flags ResidualBasedNewtonRaphsonContactStrategy<TSparseSpace, TDenseSpace, TLinearSolver>::FINALIZE_WAS_PERFORMED(Kratos::Flags::Create(0));
+template<class TSparseSpace, class TDenseSpace, class TLinearSolver>
+const Kratos::Flags ResidualBasedNewtonRaphsonContactStrategy<TSparseSpace, TDenseSpace, TLinearSolver>::PERFORM_FRICTIONAL_PREDICT(Kratos::Flags::Create(1));
 
 ///@}
 ///@name Input and output
