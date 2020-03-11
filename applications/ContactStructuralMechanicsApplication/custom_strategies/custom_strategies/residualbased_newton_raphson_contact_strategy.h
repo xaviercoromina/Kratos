@@ -65,7 +65,6 @@ template<class TSparseSpace,
          class TDenseSpace, // = DenseSpace<double>,
          class TLinearSolver //= LinearSolver<TSparseSpace,TDenseSpace>
          >
-
 class ResidualBasedNewtonRaphsonContactStrategy :
     public ResidualBasedNewtonRaphsonStrategy< TSparseSpace, TDenseSpace, TLinearSolver >
 {
@@ -114,6 +113,9 @@ public:
 
     typedef std::size_t                                                                 IndexType;
 
+    // DEFINITION OF FLAGS TO CONTROL THE BEHAVIOUR
+    KRATOS_DEFINE_LOCAL_FLAG(FINALIZE_WAS_PERFORMED); /// If finalize was performed
+    
     /**
      * @brief Default constructor
      * @param rModelPart The model part of the problem
@@ -460,6 +462,8 @@ protected:
 
     Parameters mThisParameters;        /// The configuration parameters
 
+    Flags mOptions;                    /// Local flags
+    
     // ADAPTATIVE STRATEGY PARAMETERS
     bool mFinalizeWasPerformed;        /// If the FinalizeSolutionStep has been already permformed
     ProcessesListType mpMyProcesses;   /// The processes list
@@ -841,7 +845,6 @@ protected:
      * @param CurrentTime The current time
      * @return The destination time
      */
-
     double SplitTimeStep(
         double& AuxDeltaTime,
         double& CurrentTime
@@ -872,14 +875,15 @@ protected:
     {
         KRATOS_TRY;
 
-        if (StrategyBaseType::GetModelPart().NodesBegin()->SolutionStepsDataHas(DISPLACEMENT_X) == false)
-            KRATOS_ERROR << "It is impossible to move the mesh since the DISPLACEMENT var is not in the model_part. Either use SetMoveMeshFlag(False) or add DISPLACEMENT to the list of variables" << std::endl;
+        KRATOS_ERROR_IF_NOT(StrategyBaseType::GetModelPart().NodesBegin()->SolutionStepsDataHas(DISPLACEMENT_X)) << "It is impossible to move the mesh since the DISPLACEMENT var is not in the model_part. Either use SetMoveMeshFlag(False) or add DISPLACEMENT to the list of variables" << std::endl;
 
-        NodesArrayType& nodes_array = StrategyBaseType::GetModelPart().Nodes();
+        // Iterate over nodes
+        NodesArrayType& r_nodes_array = StrategyBaseType::GetModelPart().Nodes();
+        const auto it_node_begin = r_nodes_array.begin();
 
         #pragma omp parallel for
-        for(int i = 0; i < static_cast<int>(nodes_array.size()); ++i) {
-            auto it_node = nodes_array.begin() + i;
+        for(int i = 0; i < static_cast<int>(r_nodes_array.size()); ++i) {
+            auto it_node = it_node_begin + i;
 
             noalias(it_node->Coordinates()) = it_node->GetInitialPosition().Coordinates();
             noalias(it_node->Coordinates()) += it_node->FastGetSolutionStepValue(DISPLACEMENT, 1);
@@ -1028,6 +1032,10 @@ private:
 ///@}
 ///@name Type Definitions
 ///@{
+
+template<class TSparseSpace, class TDenseSpace, class TLinearSolver>
+const Kratos::Flags ResidualBasedNewtonRaphsonContactStrategy<TSparseSpace, TDenseSpace, TLinearSolver>::FINALIZE_WAS_PERFORMED(Kratos::Flags::Create(0));
+
 ///@}
 ///@name Input and output
 ///@{
