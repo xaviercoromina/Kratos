@@ -306,7 +306,7 @@ public:
         KRATOS_TRY;
 
         BaseType::Initialize();
-        mFinalizeWasPerformed = false;
+        mOptions.Set(FINALIZE_WAS_PERFORMED, false);
 
         // Initializing NL_ITERATION_NUMBER
         ModelPart& r_model_part = StrategyBaseType::GetModelPart();
@@ -347,7 +347,7 @@ public:
         BaseType::InitializeSolutionStep();
         BaseType::mpConvergenceCriteria->SetEchoLevel(mConvergenceCriteriaEchoLevel);
 
-        mFinalizeWasPerformed = false;
+        mOptions.Set(FINALIZE_WAS_PERFORMED, false);
     }
 
     /**
@@ -359,11 +359,11 @@ public:
     {
         KRATOS_TRY;
 
-        if (mFinalizeWasPerformed == false) {
+        if (mOptions.IsNot(FINALIZE_WAS_PERFORMED)) {
             BaseType::FinalizeSolutionStep();
 
             // To avoid compute twice the FinalizeSolutionStep
-            mFinalizeWasPerformed = true;
+            mOptions.Set(FINALIZE_WAS_PERFORMED, true);
         }
 
         KRATOS_CATCH("");
@@ -465,7 +465,6 @@ protected:
     Flags mOptions;                    /// Local flags
     
     // ADAPTATIVE STRATEGY PARAMETERS
-    bool mFinalizeWasPerformed;        /// If the FinalizeSolutionStep has been already permformed
     ProcessesListType mpMyProcesses;   /// The processes list
     ProcessesListType mpPostProcesses; /// The post processes list
 
@@ -733,7 +732,7 @@ protected:
 
                 // In order to initialize again everything
                 BaseType::mInitializeWasPerformed = false;
-                mFinalizeWasPerformed = false;
+                mOptions.Set(FINALIZE_WAS_PERFORMED, false);
 
                 // We repeat the solve with the new DELTA_TIME
                 this->Initialize();
