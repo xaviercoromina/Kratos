@@ -256,9 +256,31 @@ public:
             }
         }
         
-        // We perform the firctional predict if necessary
+        // We perform the firctional predict if necessary (a NL without moving the mesh)
         if (mOptions.Is(PERFORM_FRICTIONAL_PREDICT)) {
-            // TODO: Add stuff
+            auto p_scheme = this->GetScheme();
+            auto p_builder_and_solver = this->GetBuilderAndSolver();
+            auto& r_dof_set = p_builder_and_solver->GetDofSet();
+
+            TSystemMatrixType& rA  = *BaseType::mpA;
+            TSystemVectorType& rDx = *BaseType::mpDx;
+            TSystemVectorType& rb  = *BaseType::mpb;
+            
+            p_scheme->InitializeNonLinIteration(r_model_part, rA, rDx, rb);
+            BaseType::mpConvergenceCriteria->InitializeNonLinearIteration(r_model_part, r_dof_set, rA, rDx, rb);
+            BaseType::mpConvergenceCriteria->PreCriteria(r_model_part, r_dof_set, rA, rDx, rb);
+            
+            p_builder_and_solver->BuildAndSolve(p_scheme, r_model_part, rA, rDx, rb);
+            
+            // Updating the results stored in the database
+            this->UpdateDatabase(rA, rDx, rb, false);
+
+            p_scheme->FinalizeNonLinIteration(r_model_part, rA, rDx, rb);
+            BaseType::mpConvergenceCriteria->FinalizeNonLinearIteration(r_model_part, r_dof_set, rA, rDx, rb);
+            
+            BaseType::mpConvergenceCriteria->PostCriteria(r_model_part, r_dof_set, rA, rDx, rb);
+            
+            // TODO: Update
         }
 
 //         BaseType::Predict();  // NOTE: May cause problems in dynamics!!!
