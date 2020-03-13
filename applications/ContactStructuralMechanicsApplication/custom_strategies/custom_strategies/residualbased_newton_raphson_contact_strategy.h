@@ -254,10 +254,16 @@ public:
             NodesArrayType& r_all_nodes_array = r_model_part.Nodes();
             const auto it_all_node_begin = r_all_nodes_array.begin();
             
-            #pragma omp parallel for
+            array_1d<double, 3> auxiliar_disp = ZeroVector(3);
+            
+            #pragma omp parallel for firstprivate(auxiliar_disp)
             for(int i = 0; i < static_cast<int>(r_all_nodes_array.size()); ++i) {
                 auto it_node = it_all_node_begin + i;
-                noalias(it_node->FastGetSolutionStepValue(DISPLACEMENT)) = it_node->FastGetSolutionStepValue(DISPLACEMENT, 1);
+                array_1d<double, 3>& disp = it_node->FastGetSolutionStepValue(DISPLACEMENT);
+                noalias(auxiliar_disp) = it_node->FastGetSolutionStepValue(DISPLACEMENT, 1);
+                if (!it_node->IsFixed(DISPLACEMENT_X)) disp[0] = auxiliar_disp[0];
+                if (!it_node->IsFixed(DISPLACEMENT_Y)) disp[1] = auxiliar_disp[1];
+                if (!it_node->IsFixed(DISPLACEMENT_Z)) disp[2] = auxiliar_disp[2];
             }
         }
         
