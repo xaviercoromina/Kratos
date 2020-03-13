@@ -25,6 +25,7 @@ def  AuxiliarContactSettings():
             "max_number_splits"                                       : 3,
             "inner_loop_iterations"                                   : 5,
             "inner_loop_adaptive"                                     : false,
+            "perform_frictional_predict"                              : true,
             "contact_displacement_relative_tolerance"                 : 1.0e-4,
             "contact_displacement_absolute_tolerance"                 : 1.0e-9,
             "contact_residual_relative_tolerance"                     : 1.0e-4,
@@ -323,6 +324,7 @@ def  AuxiliarNewton(computing_model_part, mechanical_scheme, linear_solver, mech
     newton_parameters.AddValue("split_factor", contact_settings["split_factor"])
     newton_parameters.AddValue("max_number_splits", contact_settings["max_number_splits"])
     newton_parameters.AddValue("inner_loop_iterations", contact_settings["inner_loop_iterations"])
+    newton_parameters.AddValue("perform_frictional_predict", contact_settings["perform_frictional_predict"])
     return CSMA.ResidualBasedNewtonRaphsonContactStrategy(computing_model_part,
                                                             mechanical_scheme,
                                                             linear_solver,
