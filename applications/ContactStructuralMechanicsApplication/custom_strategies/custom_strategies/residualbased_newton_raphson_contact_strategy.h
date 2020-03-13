@@ -216,11 +216,45 @@ public:
     {
         KRATOS_TRY
 
+        // Getting model part
+        ModelPart& r_model_part = StrategyBaseType::GetModelPart();
+        
+        // We perform the firctional predict if necessary (a NL without moving the mesh)
+        if (mOptions.Is(PERFORM_FRICTIONAL_PREDICT)) {
+            auto p_scheme = this->GetScheme();
+            auto p_builder_and_solver = this->GetBuilderAndSolver();
+            auto& r_dof_set = p_builder_and_solver->GetDofSet();
+
+            TSystemMatrixType& rA  = *BaseType::mpA;
+            TSystemVectorType& rDx = *BaseType::mpDx;
+            TSystemVectorType& rb  = *BaseType::mpb;
+            
+            BaseType::mpConvergenceCriteria->SetEchoLevel(0);
+            
+            p_scheme->InitializeNonLinIteration(r_model_part, rA, rDx, rb);
+            BaseType::mpConvergenceCriteria->InitializeNonLinearIteration(r_model_part, r_dof_set, rA, rDx, rb);
+            BaseType::mpConvergenceCriteria->PreCriteria(r_model_part, r_dof_set, rA, rDx, rb);
+            
+            p_builder_and_solver->BuildAndSolve(p_scheme, r_model_part, rA, rDx, rb);
+            
+            // Updating the results stored in the database
+            this->UpdateDatabase(rA, rDx, rb, false);
+
+            p_scheme->FinalizeNonLinIteration(r_model_part, rA, rDx, rb);
+            BaseType::mpConvergenceCriteria->FinalizeNonLinearIteration(r_model_part, r_dof_set, rA, rDx, rb);
+            
+            const bool is_converged = BaseType::mpConvergenceCriteria->PostCriteria(r_model_part, r_dof_set, rA, rDx, rb);
+            
+            KRATOS_INFO_IF("ResidualBasedNewtonRaphsonContactStrategy", !is_converged) << "Active/slip set updated after predict" << std::endl;
+            
+            // Revert the echo level
+            BaseType::mpConvergenceCriteria->SetEchoLevel(mConvergenceCriteriaEchoLevel);
+        }
+        
         // Auxiliar zero array
         const array_1d<double, 3> zero_array = ZeroVector(3);
-
+        
         // Set to zero the weighted gap
-        ModelPart& r_model_part = StrategyBaseType::GetModelPart();
         NodesArrayType& r_nodes_array = r_model_part.GetSubModelPart("Contact").Nodes();
         const auto it_node_begin = r_nodes_array.begin();
         const bool frictional = r_model_part.Is(SLIP);
@@ -254,33 +288,6 @@ public:
 
                 }
             }
-        }
-        
-        // We perform the firctional predict if necessary (a NL without moving the mesh)
-        if (mOptions.Is(PERFORM_FRICTIONAL_PREDICT)) {
-            auto p_scheme = this->GetScheme();
-            auto p_builder_and_solver = this->GetBuilderAndSolver();
-            auto& r_dof_set = p_builder_and_solver->GetDofSet();
-
-            TSystemMatrixType& rA  = *BaseType::mpA;
-            TSystemVectorType& rDx = *BaseType::mpDx;
-            TSystemVectorType& rb  = *BaseType::mpb;
-            
-            p_scheme->InitializeNonLinIteration(r_model_part, rA, rDx, rb);
-            BaseType::mpConvergenceCriteria->InitializeNonLinearIteration(r_model_part, r_dof_set, rA, rDx, rb);
-            BaseType::mpConvergenceCriteria->PreCriteria(r_model_part, r_dof_set, rA, rDx, rb);
-            
-            p_builder_and_solver->BuildAndSolve(p_scheme, r_model_part, rA, rDx, rb);
-            
-            // Updating the results stored in the database
-            this->UpdateDatabase(rA, rDx, rb, false);
-
-            p_scheme->FinalizeNonLinIteration(r_model_part, rA, rDx, rb);
-            BaseType::mpConvergenceCriteria->FinalizeNonLinearIteration(r_model_part, r_dof_set, rA, rDx, rb);
-            
-            BaseType::mpConvergenceCriteria->PostCriteria(r_model_part, r_dof_set, rA, rDx, rb);
-            
-            // TODO: Update
         }
 
 //         BaseType::Predict();  // NOTE: May cause problems in dynamics!!!
