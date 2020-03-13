@@ -249,6 +249,16 @@ public:
             
             // Revert the echo level
             BaseType::mpConvergenceCriteria->SetEchoLevel(mConvergenceCriteriaEchoLevel);
+            
+            // Revert solution of the displacement
+            NodesArrayType& r_all_nodes_array = r_model_part.Nodes();
+            const auto it_all_node_begin = r_all_nodes_array.begin();
+            
+            #pragma omp parallel for
+            for(int i = 0; i < static_cast<int>(r_all_nodes_array.size()); ++i) {
+                auto it_node = it_all_node_begin + i;
+                noalias(it_node->FastGetSolutionStepValue(DISPLACEMENT)) = it_node->FastGetSolutionStepValue(DISPLACEMENT, 1);
+            }
         }
         
         // Auxiliar zero array
