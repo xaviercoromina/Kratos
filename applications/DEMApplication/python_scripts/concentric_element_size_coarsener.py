@@ -76,7 +76,7 @@ class ElementSizeModifier(DEMAnalysisStage):
         project_parameters["MaxTimeStep"].SetDouble(self.size_modifier_parameters["time_step"].GetDouble())
         #
         # TEST TYPE
-        self.specimen_type = 2
+        self.specimen_type = 3
         super(ElementSizeModifier, self).__init__(model, project_parameters)
 
     def Initialize(self):

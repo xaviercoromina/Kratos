@@ -12,7 +12,7 @@ class DEMAnalysisStage2DSpRigidFem(DEMAnalysisStage):
         # 2: CTW10
         # 3. CTW13
         # 4: BLIND
-        self.test_number = 1
+        self.test_number = 4
 
     def Initialize(self):
         super(DEMAnalysisStage2DSpRigidFem, self).Initialize()
@@ -28,7 +28,7 @@ class DEMAnalysisStage2DSpRigidFem(DEMAnalysisStage):
         if self.test_number == 1:
             self.zone_radius_to_measure_2d_sp = 0.02 # In meters.
         elif self.test_number == 2:
-            self.zone_radius_to_measure_2d_sp = 0.03
+            self.zone_radius_to_measure_2d_sp = 0.02 # Maybe too much before, it was 0.03...
         elif self.test_number == 3:
             self.zone_radius_to_measure_2d_sp = 0.02 # In meters.
         else: #self.test_number == 4:
@@ -74,13 +74,13 @@ class DEMAnalysisStage2DSpRigidFem(DEMAnalysisStage):
 
         self.radius = 0.0
         if self.test_number == 1:
-            self.radius = 0.0036195; #95% of the real hole. CTW16 specimen
+            self.radius = 0.0015; #0.0036195; #95% of the real hole. CTW16 specimen
         elif self.test_number == 2:
-            self.radius = 0.012065;  #95% of the real hole. CTW10 specimen
+            self.radius = 0.005; #0.012065;  #95% of the real hole. CTW10 specimen
         elif self.test_number == 3:
             self.radius = 0.0060325; #95% of the real hole. CTW13 specimen
         else: #self.test_number == 4:
-            self.radius = 0.036195;  #95% of the real hole. Blind Test
+            self.radius = 0.015; #0.036195;  #95% of the real hole. Blind Test
 
     def AdditionalFinalizeOperations(self):
 
