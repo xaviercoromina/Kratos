@@ -415,10 +415,8 @@ private:
         int length_of_vector = mVectorOfLastStresses.size();
         if (length_of_vector == 0) { //only the first time
             int number_of_steps_for_stress_averaging = (int) (mStressAveragingTime / mrModelPart.GetProcessInfo()[DELTA_TIME]);
-            KRATOS_WATCH(mStressAveragingTime)
             if(number_of_steps_for_stress_averaging < 1) number_of_steps_for_stress_averaging = 1;
             mVectorOfLastStresses.resize(number_of_steps_for_stress_averaging);
-            KRATOS_WATCH(number_of_steps_for_stress_averaging)
         }
 
         length_of_vector = mVectorOfLastStresses.size();

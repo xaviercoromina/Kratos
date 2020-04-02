@@ -140,6 +140,7 @@ class ElementSizeModifier(DEMAnalysisStage):
             deviation_for_mean_radius = node.GetValue(DEM.DEVIATION)
             initial_radius = node.GetValue(DEM.INITIAL_RADIUS)
             actual_deviation_for_current_radius = deviation_for_mean_radius * radius_defined_by_function / initial_radius
+            actual_deviation_for_current_radius = 0.0 #TODO: Check why it seems that the previous line is not working so we overwrite this to zero
             intended_radius_at_end = radius_defined_by_function + actual_deviation_for_current_radius
             portion_of_process = (self.time - self.size_modifier_parameters["initiation_time"].GetDouble()) / self.size_modifier_parameters["process_duration"].GetDouble()
             intended_radius_at_current_time = initial_radius + portion_of_process * (intended_radius_at_end - initial_radius)

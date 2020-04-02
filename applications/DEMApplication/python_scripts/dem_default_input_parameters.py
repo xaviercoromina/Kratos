@@ -174,6 +174,7 @@ def GetDefaultInputParameters():
             "LoadingVelocityBot"               : 0.0,
 
             "problem_name" : "dummy_name.Provide_a_real_one",
+            "test_number"                         : 2,
             "processes" : {}
             }""")
 
