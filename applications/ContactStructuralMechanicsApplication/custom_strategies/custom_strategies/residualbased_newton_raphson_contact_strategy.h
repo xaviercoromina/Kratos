@@ -116,8 +116,8 @@ public:
     // DEFINITION OF FLAGS TO CONTROL THE BEHAVIOUR
     KRATOS_DEFINE_LOCAL_FLAG(FINALIZE_WAS_PERFORMED);     /// If finalize was performed
     KRATOS_DEFINE_LOCAL_FLAG(PERFORM_FRICTIONAL_PREDICT); /// If frictional predict is performed
-    
-    /** 
+
+    /**
      * @brief Default constructor
      * @param rModelPart The model part of the problem
      * @param p_scheme The integration scheme
@@ -218,9 +218,17 @@ public:
 
         // Getting model part
         ModelPart& r_model_part = StrategyBaseType::GetModelPart();
-        
+
+        // Auxiliar zero array
+        const array_1d<double, 3> zero_array = ZeroVector(3);
+
+        // Set to zero the weighted gap
+        NodesArrayType& r_nodes_array = r_model_part.GetSubModelPart("Contact").Nodes();
+        const auto it_node_begin = r_nodes_array.begin();
+        const bool frictional = r_model_part.Is(SLIP);
+
         // We perform the firctional predict if necessary (a NL without moving the mesh)
-        if (mOptions.Is(PERFORM_FRICTIONAL_PREDICT)) {
+        if (mOptions.Is(PERFORM_FRICTIONAL_PREDICT) && frictional) {
             auto p_scheme = this->GetScheme();
             auto p_builder_and_solver = this->GetBuilderAndSolver();
             auto& r_dof_set = p_builder_and_solver->GetDofSet();
@@ -228,34 +236,40 @@ public:
             TSystemMatrixType& rA  = *BaseType::mpA;
             TSystemVectorType& rDx = *BaseType::mpDx;
             TSystemVectorType& rb  = *BaseType::mpb;
-            
+
             BaseType::mpConvergenceCriteria->SetEchoLevel(0);
-            
+
             p_scheme->InitializeNonLinIteration(r_model_part, rA, rDx, rb);
             BaseType::mpConvergenceCriteria->InitializeNonLinearIteration(r_model_part, r_dof_set, rA, rDx, rb);
             BaseType::mpConvergenceCriteria->PreCriteria(r_model_part, r_dof_set, rA, rDx, rb);
-            
+
             p_builder_and_solver->BuildAndSolve(p_scheme, r_model_part, rA, rDx, rb);
-            
+
             // Updating the results stored in the database
             this->UpdateDatabase(rA, rDx, rb, false);
 
             p_scheme->FinalizeNonLinIteration(r_model_part, rA, rDx, rb);
             BaseType::mpConvergenceCriteria->FinalizeNonLinearIteration(r_model_part, r_dof_set, rA, rDx, rb);
-            
+
+            VariableUtils().SetVariable(WEIGHTED_GAP, 0.0, r_nodes_array);
+            VariableUtils().SetVariable(WEIGHTED_SLIP, zero_array, r_nodes_array);
+
+            // Compute the current gap
+            ContactUtilities::ComputeExplicitContributionConditions(r_model_part.GetSubModelPart("ComputingContact"));
+
             const bool is_converged = BaseType::mpConvergenceCriteria->PostCriteria(r_model_part, r_dof_set, rA, rDx, rb);
-            
+
             KRATOS_INFO_IF("ResidualBasedNewtonRaphsonContactStrategy", !is_converged) << "Active/slip set updated after predict" << std::endl;
-            
+
             // Revert the echo level
             BaseType::mpConvergenceCriteria->SetEchoLevel(mConvergenceCriteriaEchoLevel);
-            
+
             // Revert solution of the displacement
             NodesArrayType& r_all_nodes_array = r_model_part.Nodes();
             const auto it_all_node_begin = r_all_nodes_array.begin();
-            
+
             array_1d<double, 3> auxiliar_disp = ZeroVector(3);
-            
+
             #pragma omp parallel for firstprivate(auxiliar_disp)
             for(int i = 0; i < static_cast<int>(r_all_nodes_array.size()); ++i) {
                 auto it_node = it_all_node_begin + i;
@@ -265,18 +279,7 @@ public:
                 if (!it_node->IsFixed(DISPLACEMENT_Y)) disp[1] = auxiliar_disp[1];
                 if (!it_node->IsFixed(DISPLACEMENT_Z)) disp[2] = auxiliar_disp[2];
             }
-        }
-        
-        // Auxiliar zero array
-        const array_1d<double, 3> zero_array = ZeroVector(3);
-        
-        // Set to zero the weighted gap
-        NodesArrayType& r_nodes_array = r_model_part.GetSubModelPart("Contact").Nodes();
-        const auto it_node_begin = r_nodes_array.begin();
-        const bool frictional = r_model_part.Is(SLIP);
-
-        // We predict contact pressure in case of contact problem
-        if (it_node_begin->SolutionStepsDataHas(WEIGHTED_GAP)) {
+        } else if (it_node_begin->SolutionStepsDataHas(WEIGHTED_GAP)) {
             VariableUtils().SetVariable(WEIGHTED_GAP, 0.0, r_nodes_array);
             if (frictional) {
                 VariableUtils().SetVariable(WEIGHTED_SLIP, zero_array, r_nodes_array);
@@ -284,9 +287,12 @@ public:
 
             // Compute the current gap
             ContactUtilities::ComputeExplicitContributionConditions(r_model_part.GetSubModelPart("ComputingContact"));
+        }
 
+        // We predict contact pressure in case of contact problem
+        if (it_node_begin->SolutionStepsDataHas(WEIGHTED_GAP)) {
             // We predict a contact pressure
-            ProcessInfo& r_process_info = r_model_part.GetProcessInfo();
+            const ProcessInfo& r_process_info = r_model_part.GetProcessInfo();
             const std::size_t step = r_process_info[STEP];
 
             if (step == 1) {
@@ -364,7 +370,7 @@ public:
         ModelPart& r_model_part = StrategyBaseType::GetModelPart();
         ProcessInfo& r_process_info = r_model_part.GetProcessInfo();
         r_process_info[NL_ITERATION_NUMBER] = 1;
-        
+
         // We decide if frictional prediction is performed
         mOptions.Set(PERFORM_FRICTIONAL_PREDICT, false);
         if (mThisParameters["perform_frictional_predict"].GetBool()) {
@@ -525,7 +531,7 @@ protected:
     Parameters mThisParameters;        /// The configuration parameters
 
     Flags mOptions;                    /// Local flags
-    
+
     // ADAPTATIVE STRATEGY PARAMETERS
     ProcessesListType mpMyProcesses;   /// The processes list
     ProcessesListType mpPostProcesses; /// The post processes list
