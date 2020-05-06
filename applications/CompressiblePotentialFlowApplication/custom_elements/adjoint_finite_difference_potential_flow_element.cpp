@@ -122,7 +122,7 @@ namespace Kratos
 
             for(unsigned int i_node = 0; i_node<NumNodes; i_node++){
                 // Apply F.D in all cut nodes that are not trailing edge nodes.
-                if (!r_geometry[i_node].GetValue(TRAILING_EDGE)){
+                if (!r_geometry[i_node].GetValue(WING_TIP)){
                     // Perturbate distance
                     auto elemental_distances = pPrimalElement->GetValue(GEOMETRY_ELEMENTAL_DISTANCES);
                     elemental_distances[i_node] += delta;

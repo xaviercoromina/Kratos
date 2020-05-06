@@ -183,14 +183,12 @@ private:
     void GetEquationIdVectorNormalElement(EquationIdVectorType& rResult) const;
 
     void GetEquationIdVectorKuttaElement(EquationIdVectorType& rResult) const;
-    void GetEquationIdVectorUpperElement(EquationIdVectorType& rResult) const;
 
     void GetEquationIdVectorWakeElement(EquationIdVectorType& rResult) const;
 
     void GetDofListNormalElement(DofsVectorType& rElementalDofList) const;
 
     void GetDofListKuttaElement(DofsVectorType& rElementalDofList) const;
-    void GetDofListUpperElement(DofsVectorType& rElementalDofList) const;
 
     void GetDofListWakeElement(DofsVectorType& rElementalDofList) const;
 
@@ -219,12 +217,6 @@ private:
     void AssignLocalSystemWakeElement(MatrixType& rLeftHandSideMatrix,
                                       BoundedMatrix<double, NumNodes, NumNodes>& lhs_total,
                                       const ElementalData<NumNodes, Dim>& data) const;
-    void AssignLocalSystemKuttaWakeNode(MatrixType& rLeftHandSideMatrix,
-                                   BoundedMatrix<double, NumNodes, NumNodes>& lhs_total,
-                                   BoundedMatrix<double, NumNodes, NumNodes>& lhs_positive,
-                                   BoundedMatrix<double, NumNodes, NumNodes>& lhs_negative,
-                                   const ElementalData<NumNodes, Dim>& data,
-                                   unsigned int& row) const;
 
     void AssignLocalSystemWakeNode(MatrixType& rLeftHandSideMatrix,
                                    BoundedMatrix<double, NumNodes, NumNodes>& lhs_total,

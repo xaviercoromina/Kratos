@@ -1,3 +1,5 @@
+from __future__ import print_function, absolute_import, division  # makes KratosMultiphysics backward compatible with python 2.6 and 2.7
+
 # Importing the Kratos Library
 import KratosMultiphysics
 import KratosMultiphysics.CompressiblePotentialFlowApplication as KCPFApp
@@ -25,8 +27,6 @@ class PotentialFlowFormulation(object):
                 self._SetUpIncompressiblePerturbationElement(formulation_settings)
             elif element_type == "perturbation_compressible":
                 self._SetUpCompressiblePerturbationElement(formulation_settings)
-            elif element_type == "perturbation_transonic":
-                self._SetUpTransonicPerturbationElement(formulation_settings)
         else:
             raise RuntimeError("Argument \'element_type\' not found in formulation settings.")
 
@@ -82,7 +82,8 @@ class PotentialFlowFormulation(object):
     def _SetUpEmbeddedIncompressibleElement(self, formulation_settings):
         default_settings = KratosMultiphysics.Parameters(r"""{
             "element_type": "embedded_incompressible",
-            "penalty_coefficient": 0.0
+            "penalty_coefficient": 0.0,
+            "stabilization_factor": 0.0
 
         }""")
         formulation_settings.ValidateAndAssignDefaults(default_settings)

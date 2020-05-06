@@ -161,13 +161,8 @@ namespace Kratos
         for (auto elem_it = mrModelPart.Elements().ptr_begin(); elem_it != mrModelPart.Elements().ptr_end(); ++elem_it)
         {
             if ((*elem_it)->Is(STRUCTURE)){
-                auto& r_geometry = (*elem_it)->GetGeometry();
-                for(IndexType i = 0; i < r_geometry.size(); ++i) {
-                    if (r_geometry[i].GetValue(TRAILING_EDGE)){
-                        mpNeighboringElement = (*elem_it);
-                        return;
-                    }
-                }
+                mpNeighboringElement = (*elem_it);
+                return;
             }
         }
         KRATOS_ERROR << "No neighboring element is available for the traced node." << std::endl;

@@ -99,7 +99,7 @@ class LevelSetRemeshingProcess(KratosMultiphysics.Process):
         except FileNotFoundError:
             distance_values = []
             elemental_distance_values = []
-        if len(distance_values) != self.main_model_part.NumberOfNodes() or len(elemental_distance_values) != self.main_model_part.NumberOfElements():
+        if len(distance_values) != self.main_model_part.NumberOfNodes() or len(elemental_distance_values) != self.main_model_part.NumberOfElements() or self.do_remeshing:
             print(len(distance_values))
             print(self.main_model_part.NumberOfNodes())
             self._CalculateDistance()

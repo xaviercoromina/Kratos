@@ -62,12 +62,67 @@ class ApplyPotentialFlowHessianRemeshingProcess(KratosMultiphysics.Process):
 
         self.__ExecuteRefinement()
 
+        from KratosMultiphysics.gid_output_process import GiDOutputProcess
+        gid_output = GiDOutputProcess(
+                self.main_model_part,
+                "refined",
+                KratosMultiphysics.Parameters("""
+                    {
+                        "result_file_configuration" : {
+                            "gidpost_flags": {
+                                "GiDPostMode": "GiD_PostBinary",
+                                "MultiFileFlag": "SingleFile"
+                            },
+                            "gauss_point_results" : ["VELOCITY"],
+                            "nodal_nonhistorical_results": ["METRIC_TENSOR_2D","VELOCITY","AUXILIAR_GRADIENT","AUXILIAR_HESSIAN","TEMPERATURE"],
+                            "elemental_conditional_flags_results": ["MARKER"]
+
+                        }
+                    }
+                    """)
+                )
+        gid_output.ExecuteInitialize()
+        gid_output.ExecuteBeforeSolutionLoop()
+        gid_output.ExecuteInitializeSolutionStep()
+        gid_output.PrintOutput()
+        gid_output.ExecuteFinalizeSolutionStep()
+        gid_output.ExecuteFinalize()
+
     def __ComputeNodalVelocity(self):
 
         nodal_velocity_process = CPFApp.ComputeNodalValueProcess(self.main_model_part, ["VELOCITY"])
         nodal_velocity_process.Execute()
 
     def __ComputeHessianMetric(self):
+
+        from KratosMultiphysics.gid_output_process import GiDOutputProcess
+        gid_output = GiDOutputProcess(
+                self.main_model_part,
+                "pre_metric_tensor_hessian",
+                KratosMultiphysics.Parameters("""
+                    {
+                        "result_file_configuration" : {
+                            "gidpost_flags": {
+                                "GiDPostMode": "GiD_PostBinary",
+                                "MultiFileFlag": "SingleFile"
+                            },
+                            "gauss_point_results" : ["VELOCITY"],
+                            "nodal_results"       : ["VELOCITY_POTENTIAL","AUXILIARY_VELOCITY_POTENTIAL"],
+                            "nodal_nonhistorical_results": ["METRIC_TENSOR_2D","VELOCITY","AUXILIAR_GRADIENT","AUXILIAR_HESSIAN","TEMPERATURE"],
+                            "elemental_conditional_flags_results": ["MARKER"]
+
+                        }
+                    }
+                    """)
+                )
+        gid_output.ExecuteInitialize()
+        gid_output.ExecuteBeforeSolutionLoop()
+        gid_output.ExecuteInitializeSolutionStep()
+        gid_output.PrintOutput()
+        gid_output.ExecuteFinalizeSolutionStep()
+        gid_output.ExecuteFinalize()
+
+        # KratosMultiphysics.VariableUtils().SetNonHistoricalVariableToZero(KratosMultiphysics.MeshingApplication.METRIC_TENSOR_2D, self.main_model_part.Nodes)
 
         find_nodal_h = KratosMultiphysics.FindNodalHNonHistoricalProcess(self.main_model_part)
         find_nodal_h.Execute()
@@ -81,15 +136,66 @@ class ApplyPotentialFlowHessianRemeshingProcess(KratosMultiphysics.Process):
             metric_z = KratosMeshing.ComputeHessianSolMetricProcess(self.main_model_part, KratosMultiphysics.VELOCITY_Z, self.metric_parameters)
             metric_z.Execute()
 
+        # for elem in self.main_model_part.Elements:
+        #     if elem.IsNot(KratosMultiphysics.ACTIVE):
+        #         elem.Set(KratosMultiphysics.ACTIVE, True)
+        #         elem.Set(KratosMultiphysics.MARKER, True)
+        # for node in self.main_model_part.Nodes:
+        #     norm_hessian = node.GetValue(KratosMeshing.AUXILIAR_HESSIAN)
+        #     norm_hessian = norm_hessian.norm_2()
+        #     node.SetValue(KratosMultiphysics.TEMPERATURE, norm_hessian)
+
+        from KratosMultiphysics.gid_output_process import GiDOutputProcess
+        gid_output = GiDOutputProcess(
+                self.main_model_part,
+                "metric_tensor_hessian",
+                KratosMultiphysics.Parameters("""
+                    {
+                        "result_file_configuration" : {
+                            "gidpost_flags": {
+                                "GiDPostMode": "GiD_PostBinary",
+                                "MultiFileFlag": "SingleFile"
+                            },
+                            "gauss_point_results" : ["VELOCITY"],
+                            "nodal_results"       : ["VELOCITY_POTENTIAL","AUXILIARY_VELOCITY_POTENTIAL"],
+                            "nodal_nonhistorical_results": ["METRIC_TENSOR_2D","VELOCITY","AUXILIAR_GRADIENT","AUXILIAR_HESSIAN","TEMPERATURE"],
+                            "elemental_conditional_flags_results": ["MARKER"]
+
+                        }
+                    }
+                    """)
+                )
+        gid_output.ExecuteInitialize()
+        gid_output.ExecuteBeforeSolutionLoop()
+        gid_output.ExecuteInitializeSolutionStep()
+        gid_output.PrintOutput()
+        gid_output.ExecuteFinalizeSolutionStep()
+        gid_output.ExecuteFinalize()
+
     def __RemoveSubModelParts(self):
 
         self.main_model_part.RemoveSubModelPart('wake_sub_model_part')
         self.main_model_part.RemoveSubModelPart('trailing_edge_sub_model_part')
         self.main_model_part.RemoveSubModelPart('fluid_computational_model_part')
-        for elem in self.main_model_part.Elements:
-            elem.Set(KratosMultiphysics.TO_SPLIT, False)
-            elem.Set(KratosMultiphysics.MARKER, False)
-            elem.Set(KratosMultiphysics.SELECTED, False)
+        # self.main_model_part.RemoveSubModelPart('upper_surface_sub_model_part')
+        # self.main_model_part.RemoveSubModelPart('lower_surface_sub_model_part')
+        # self.main_model_part.RemoveSubModelPart('skin')
+        # for elem in self.main_model_part.Elements:
+        #     elem.Set(KratosMultiphysics.TO_SPLIT, False)
+        #     elem.Set(KratosMultiphysics.MARKER, False)
+        #     elem.Set(KratosMultiphysics.SELECTED, False)
+        #     elem.Set(KratosMultiphysics.BOUNDARY, False)
+        #     elem.Set(KratosMultiphysics.INSIDE, False)
+        #     elem.Set(KratosMultiphysics.TO_ERASE, False)
+        #     elem.Set(KratosMultiphysics.SOLID, False)
+        # for node in self.main_model_part.Nodes:
+        #     node.Set(KratosMultiphysics.TO_SPLIT, False)
+        #     node.Set(KratosMultiphysics.MARKER, False)
+        #     node.Set(KratosMultiphysics.SELECTED, False)
+        #     node.Set(KratosMultiphysics.BOUNDARY, False)
+        #     node.Set(KratosMultiphysics.INSIDE, False)
+        #     node.Set(KratosMultiphysics.TO_ERASE, False)
+        #     node.Set(KratosMultiphysics.SOLID, False)
 
     def __ExecuteRefinement(self):
 

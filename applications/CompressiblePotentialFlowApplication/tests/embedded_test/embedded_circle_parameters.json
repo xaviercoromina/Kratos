@@ -95,7 +95,7 @@
             "help"                  : "",
             "process_name"          : "FromJsonCheckResultProcess",
             "Parameters"            : {
-                "check_variables"  : ["VELOCITY_POTENTIAL", "AUXILIARY_VELOCITY_POTENTIAL"],
+                "check_variables"  : ["VELOCITY_POTENTIAL"],
                 "input_file_name"  : "embedded_circle_velocity_potential_test_results.json",
                 "model_part_name"  : "MainModelPart.Parts_Parts_Auto1",
                 "tolerance"            : 1e-9,

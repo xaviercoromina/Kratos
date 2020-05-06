@@ -15,12 +15,10 @@
         },
         "formulation": {
             "element_type":"embedded_incompressible",
-            "penalty_coefficient": 0.1
+            "penalty_coefficient": 1.0
          },
         "maximum_iterations"     : 10,
-        "relative_tolerance": 1e-6,
-        "absolute_tolerance": 1e-6,
-        "echo_level"             : 3,
+        "echo_level"             : 0,
         "volume_model_part_name" : "Parts_Parts_Auto1",
         "skin_parts"             : ["PotentialWallCondition2D_Far_field_Auto1"],
         "linear_solver_settings": {

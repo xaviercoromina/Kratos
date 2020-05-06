@@ -127,6 +127,8 @@ class ComputeLiftProcess(KratosMultiphysics.Process):
 
         node_velocity_potential_te = self.te.GetSolutionStepValue(CPFApp.VELOCITY_POTENTIAL)
         node_auxiliary_velocity_potential_te = self.te.GetSolutionStepValue(CPFApp.AUXILIARY_VELOCITY_POTENTIAL)
+        print(node_velocity_potential_te)
+        print(node_auxiliary_velocity_potential_te)
         if(self.te.GetValue(CPFApp.WAKE_DISTANCE) > 0.0):
             potential_jump_phi_minus_psi_te = node_velocity_potential_te - node_auxiliary_velocity_potential_te
         else:

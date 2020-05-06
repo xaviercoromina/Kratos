@@ -16,7 +16,6 @@
 #include "includes/define.h"
 #include "includes/model_part.h"
 #include "processes/process.h"
-#include "modified_shape_functions/triangle_2d_3_modified_shape_functions.h"
 
 namespace Kratos
 {
@@ -29,9 +28,6 @@ public:
 
     /// Pointer definition of Process
     KRATOS_CLASS_POINTER_DEFINITION(DefineEmbeddedWakeProcess);
-
-    typedef Node<3> NodeType;
-    typedef Geometry<NodeType>::Pointer GeomPointerType;
 
     // Constructor for DefineEmbeddedWakeProcess Process
     DefineEmbeddedWakeProcess(ModelPart& rModelPart, ModelPart& rWakeModelPart);
@@ -91,9 +87,6 @@ private:
     void ComputeTrailingEdgeNode();
 
     void MarkKuttaWakeElements();
-
-    ModifiedShapeFunctions::Pointer pGetModifiedShapeFunctions(const GeomPointerType pGeometry, const Vector& rDistances) const;
-
 
 }; // Class Process
 } // namespace Kratos

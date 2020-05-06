@@ -95,14 +95,11 @@ void IncompressiblePotentialFlowElement<Dim, NumNodes>::EquationIdVector(
             rResult.resize(NumNodes, false);
 
         const int kutta = r_this.GetValue(KUTTA);
-        const int upper = r_this.GetValue(UPPER_WAKE);
 
-        if (kutta == 0 && upper == 0)
+        if (kutta == 0)
             GetEquationIdVectorNormalElement(rResult);
-        else if (kutta == 1)
-            GetEquationIdVectorKuttaElement(rResult);
         else
-            GetEquationIdVectorUpperElement(rResult);
+            GetEquationIdVectorKuttaElement(rResult);
     }
     else // Wake element
     {
@@ -126,14 +123,11 @@ void IncompressiblePotentialFlowElement<Dim, NumNodes>::GetDofList(DofsVectorTyp
             rElementalDofList.resize(NumNodes);
 
         const int kutta = r_this.GetValue(KUTTA);
-        const int upper = r_this.GetValue(UPPER_WAKE);
 
-        if (kutta == 0 && upper==0)
+        if (kutta == 0)
             GetDofListNormalElement(rElementalDofList);
-        else if (kutta == 1)
-            GetDofListKuttaElement(rElementalDofList);
         else
-            GetDofListUpperElement(rElementalDofList);
+            GetDofListKuttaElement(rElementalDofList);
     }
     else // wake element
     {
@@ -258,9 +252,6 @@ void IncompressiblePotentialFlowElement<Dim, NumNodes>::GetValueOnIntegrationPoi
         for (unsigned int k = 0; k < Dim; k++)
             v[k] = vaux[k];
         rValues[0] = v;
-    }else if (rVariable == NORMAL)
-    {
-        rValues[0] =this->GetValue(VELOCITY_LOWER);
     }
     else if (rVariable == PERTURBATION_VELOCITY)
     {
@@ -327,20 +318,6 @@ void IncompressiblePotentialFlowElement<Dim, NumNodes>::GetEquationIdVectorKutta
 }
 
 template <int Dim, int NumNodes>
-void IncompressiblePotentialFlowElement<Dim, NumNodes>::GetEquationIdVectorUpperElement(EquationIdVectorType& rResult) const
-{
-    // Kutta elements have only negative part
-    for (unsigned int i = 0; i < NumNodes; i++)
-    {
-        if (!GetGeometry()[i].GetValue(TRAILING_EDGE))
-            rResult[i] = GetGeometry()[i].GetDof(AUXILIARY_VELOCITY_POTENTIAL).EquationId();
-        else
-            rResult[i] = GetGeometry()[i].GetDof(VELOCITY_POTENTIAL).EquationId();
-    }
-}
-
-
-template <int Dim, int NumNodes>
 void IncompressiblePotentialFlowElement<Dim, NumNodes>::GetEquationIdVectorWakeElement(EquationIdVectorType& rResult) const
 {
     array_1d<double, NumNodes> distances;
@@ -389,20 +366,6 @@ void IncompressiblePotentialFlowElement<Dim, NumNodes>::GetDofListKuttaElement(D
 }
 
 template <int Dim, int NumNodes>
-void IncompressiblePotentialFlowElement<Dim, NumNodes>::GetDofListUpperElement(DofsVectorType& rElementalDofList) const
-{
-    // Kutta elements have only negative part
-    for (unsigned int i = 0; i < NumNodes; i++)
-    {
-        if (!GetGeometry()[i].GetValue(TRAILING_EDGE))
-            rElementalDofList[i] = GetGeometry()[i].pGetDof(AUXILIARY_VELOCITY_POTENTIAL);
-        else
-            rElementalDofList[i] = GetGeometry()[i].pGetDof(VELOCITY_POTENTIAL);
-    }
-}
-
-
-template <int Dim, int NumNodes>
 void IncompressiblePotentialFlowElement<Dim, NumNodes>::GetDofListWakeElement(DofsVectorType& rElementalDofList) const
 {
     array_1d<double, NumNodes> distances;
@@ -448,37 +411,33 @@ void IncompressiblePotentialFlowElement<Dim, NumNodes>::CalculateLocalSystemNorm
     noalias(rLeftHandSideMatrix) =
         data.vol * free_stream_density * prod(data.DN_DX, trans(data.DN_DX));
 
-    BoundedMatrix<double, 2, 1 > n_kutta;
-    double angle_in_deg = rCurrentProcessInfo[ROTATION_ANGLE];
-    n_kutta(0,0)=sin(angle_in_deg*Globals::Pi/180);
-    n_kutta(1,0)=cos(angle_in_deg*Globals::Pi/180);
-
-    Matrix test=prod(data.DN_DX,n_kutta);
-    BoundedMatrix<double, NumNodes, NumNodes> lhs_kutta = ZeroMatrix(NumNodes, NumNodes);
-    noalias(lhs_kutta) = free_stream_density * data.vol * prod(test,trans(test));
-    // auto penalty = rCurrentProcessInfo[INITIAL_PENALTY];
-    // lhs_kutta = penalty*(lhs_kutta);
-
-
-    const IncompressiblePotentialFlowElement& r_this = *this;
-
-    const int kutta = r_this.GetValue(KUTTA);
-
-    // if (kutta == 1){
-    //     for (unsigned int i = 0; i < NumNodes; ++i)
-    //     {
-    //         if (this->GetGeometry()[i].GetValue(WING_TIP))
-    //         {
-    //             for (unsigned int j = 0; j < NumNodes; ++j)
-    //             {
-    //                 rLeftHandSideMatrix(i, j) = lhs_kutta(i, j);
-    //             }
-    //         }
-    //     }
-    // }
-
-
     data.potentials = PotentialFlowUtilities::GetPotentialOnNormalElement<Dim,NumNodes>(*this);
+
+    // n_kutta(0,0)=cut_normal[0][0]/norm_normal;
+    // n_kutta(1,0)=cut_normal[0][1]/norm_normal;
+    BoundedMatrix<double, 2, 1 > n_angle;
+    double angle_in_deg = rCurrentProcessInfo[ROTATION_ANGLE];
+    n_angle(0,0)=sin(angle_in_deg*Globals::Pi/180);
+    n_angle(1,0)=cos(angle_in_deg*Globals::Pi/180);
+
+    BoundedMatrix<double, NumNodes, NumNodes> lhs_kutta = ZeroMatrix(NumNodes, NumNodes);
+
+    Matrix test=prod(data.DN_DX,n_angle);
+    noalias(lhs_kutta) = data.vol*free_stream_density * prod(test,trans(test));
+
+    auto penalty = rCurrentProcessInfo[TEMPERATURE];
+
+    for (unsigned int i = 0; i < NumNodes; ++i)
+    {
+        if (this->GetGeometry()[i].GetValue(WING_TIP))
+        {
+            for (unsigned int j = 0; j < NumNodes; ++j)
+            {
+                rLeftHandSideMatrix(i, j) += penalty*lhs_kutta(i, j);
+                // rLeftHandSideMatrix(i, j) = lhs_kutta(i, j);
+            }
+        }
+    }
     noalias(rRightHandSideVector) = -prod(rLeftHandSideMatrix, data.potentials);
 }
 
@@ -602,13 +561,14 @@ void IncompressiblePotentialFlowElement<Dim, NumNodes>::CalculateLocalSystemSubd
 
     // lhs_positive += penalty*(lhs_kutta_positive+lhs_kutta_negative);
     // lhs_negative += penalty*(lhs_kutta_negative+lhs_kutta_positive);
+    lhs_positive = penalty*(lhs_kutta_positive+lhs_kutta_negative);
+    lhs_negative = penalty*(lhs_kutta_negative+lhs_kutta_positive);
     // lhs_positive += penalty*(lhs_kutta_positive);
     // lhs_negative += penalty*(lhs_kutta_negative);
     // lhs_positive += penalty*(lhs_positive+lhs_negative);
     // lhs_negative += penalty*(lhs_negative+lhs_positive);
-    lhs_positive += penalty*(lhs_positive);
-    lhs_negative += penalty*(lhs_negative);
-
+    // lhs_positive += penalty*(lhs_positive);
+    // lhs_negative += penalty*(lhs_negative);
 }
 
 template <int Dim, int NumNodes>
@@ -628,39 +588,28 @@ void IncompressiblePotentialFlowElement<Dim, NumNodes>::AssignLocalSystemSubdivi
     BoundedMatrix<double, NumNodes, NumNodes>& lhs_total,
     const ElementalData<NumNodes, Dim>& data) const
 {
-    array_1d<double, NumNodes> distances;
-    GetWakeDistances(distances);
     for (unsigned int i = 0; i < NumNodes; ++i)
     {
         // The TE node takes the contribution of the subdivided element and
         // we do not apply the wake condition on the TE node
-        // if (GetGeometry()[i].GetValue(WING_TIP) || GetGeometry()[i].GetValue(TRAILING_EDGE))
-        // if (GetGeometry()[i].GetValue(WING_TIP))
-        // if (GetGeometry()[i].GetValue(TRAILING_EDGE))
-        if (true)
+
+        if (GetGeometry()[i].GetValue(AIRFOIL))
+        // if (false)
         {
-
-            // Positive part
-            // AssignLocalSystemKuttaWakeNode(rLeftHandSideMatrix, lhs_total, lhs_positive, lhs_negative, data, i);
-            if (distances[i] > 0.0) {
-                for (unsigned int j = 0; j < NumNodes; ++j)
-                {
-                    rLeftHandSideMatrix(i, j) = lhs_positive(i, j);
-                    rLeftHandSideMatrix(i + NumNodes, j + NumNodes) = lhs_negative(i,j);//0.0;// lhs_negative(i, j);//lhs_negative(i, j);
-                }
-            }
-            else {
-                // AssignLocalSystemWakeNode(rLeftHandSideMatrix, lhs_total, data, i);
-                for (unsigned int j = 0; j < NumNodes; ++j)
-                {
-                rLeftHandSideMatrix(i, j) = lhs_positive(i,j);//0.0;//lhs_positive(i, j);
+            for (unsigned int j = 0; j < NumNodes; ++j)
+            {
+                rLeftHandSideMatrix(i, j) = lhs_positive(i, j);
                 rLeftHandSideMatrix(i + NumNodes, j + NumNodes) = lhs_negative(i, j);
-                }
-
             }
         }
         else
             AssignLocalSystemWakeNode(rLeftHandSideMatrix, lhs_total, data, i);
+
+        // for (unsigned int j = 0; j < NumNodes; ++j)
+        // {
+        //     rLeftHandSideMatrix(i, j) += lhs_positive(i, j);
+        //     rLeftHandSideMatrix(i+ NumNodes, j+ NumNodes) += lhs_negative(i, j) ;
+        // }
     }
 }
 
@@ -672,31 +621,6 @@ void IncompressiblePotentialFlowElement<Dim, NumNodes>::AssignLocalSystemWakeEle
 {
     for (unsigned int row = 0; row < NumNodes; ++row)
         AssignLocalSystemWakeNode(rLeftHandSideMatrix, lhs_total, data, row);
-}
-
-template <int Dim, int NumNodes>
-void IncompressiblePotentialFlowElement<Dim, NumNodes>::AssignLocalSystemKuttaWakeNode(
-    MatrixType& rLeftHandSideMatrix,
-    BoundedMatrix<double, NumNodes, NumNodes>& lhs_total,
-    BoundedMatrix<double, NumNodes, NumNodes>& lhs_positive,
-    BoundedMatrix<double, NumNodes, NumNodes>& lhs_negative,
-    const ElementalData<NumNodes, Dim>& data,
-    unsigned int& row) const
-{
-    // Filling the diagonal blocks (i.e. decoupling upper and lower dofs)
-    for (unsigned int column = 0; column < NumNodes; ++column)
-    {
-        rLeftHandSideMatrix(row, column) = lhs_total(row, column);
-        rLeftHandSideMatrix(row + NumNodes, column + NumNodes) = lhs_total(row, column);
-    }
-
-    // Applying wake condition on the AUXILIARY_VELOCITY_POTENTIAL dofs
-    if (data.distances[row] < 0.0)
-        for (unsigned int column = 0; column < NumNodes; ++column)
-            rLeftHandSideMatrix(row, column + NumNodes) = -lhs_total(row, column); // Side 1
-    else if (data.distances[row] > 0.0)
-        for (unsigned int column = 0; column < NumNodes; ++column)
-            rLeftHandSideMatrix(row + NumNodes, column) = -lhs_total(row, column); // Side 2
 }
 
 template <int Dim, int NumNodes>

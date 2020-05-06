@@ -16,7 +16,7 @@ import os
 
 # Check other applications dependency
 hdf5_is_available = kratos_utilities.CheckIfApplicationsAvailable("HDF5Application")
-eignsolver_is_available = kratos_utilities.CheckIfApplicationsAvailable("EigenSolversApplication")
+eigensolver_is_available = kratos_utilities.CheckIfApplicationsAvailable("EigenSolversApplication")
 meshing_is_available = kratos_utilities.CheckIfApplicationsAvailable("MeshingApplication")
 try:
     import stl
@@ -65,7 +65,7 @@ class PotentialFlowTests(UnitTest.TestCase):
                     kratos_utilities.DeleteFileIfExisting(file_name)
 
     def test_Naca0012SmallCompressible(self):
-        if not eignsolver_is_available:
+        if not eigensolver_is_available:
             self.skipTest("Missing required application: EigenSolversApplication")
         file_name = "naca0012_small_compressible"
         settings_file_name = file_name + "_parameters.json"
@@ -83,7 +83,7 @@ class PotentialFlowTests(UnitTest.TestCase):
                     kratos_utilities.DeleteFileIfExisting(file_name)
 
     def test_Naca0012SmallTransonic(self):
-        if not eignsolver_is_available:
+        if not eigensolver_is_available:
             self.skipTest("Missing required application: EigenSolversApplication")
         file_name = "naca0012_small_transonic"
         settings_file_name = file_name + "_parameters.json"
@@ -99,7 +99,7 @@ class PotentialFlowTests(UnitTest.TestCase):
         kratos_utilities.DeleteTimeFiles(work_folder)
 
     def test_Naca0012SmallPerturbationCompressible(self):
-        if not eignsolver_is_available:
+        if not eigensolver_is_available:
             self.skipTest("Missing required application: EigenSolversApplication")
         file_name = "naca0012_small_perturbation_compressible"
         settings_file_name = file_name + "_parameters.json"
@@ -131,20 +131,20 @@ class PotentialFlowTests(UnitTest.TestCase):
         if not meshing_is_available:
             self.skipTest("Missing required application: MeshingApplication")
         settings_file_name = "embedded_circle_parameters.json"
-        # settings_adjoint_file_name = "embedded_circle_adjoint_parameters.json"
+        settings_adjoint_file_name = "embedded_circle_adjoint_parameters.json"
         settings_penalty_file_name = "embedded_circle_penalty_parameters.json"
         work_folder = "embedded_test"
 
         with WorkFolderScope(work_folder):
             self._runTest(settings_file_name)
-            self._check_results(self.main_model_part.ProcessInfo[CPFApp.LIFT_COEFFICIENT], -2.009219171714117, 0.0, 1e-9)
-            self._check_results(self.main_model_part.ProcessInfo[CPFApp.LIFT_COEFFICIENT_JUMP], -1.3996725107297763, 0.0, 1e-9)
-            self._check_results(self.main_model_part.ProcessInfo[CPFApp.LIFT_COEFFICIENT_FAR_FIELD], -1.7658430286986406, 0.0, 1e-9)
-            # self._runTest(settings_adjoint_file_name)
+            self._check_results(self.main_model_part.ProcessInfo[CPFApp.LIFT_COEFFICIENT], -0.08769331821378197, 0.0, 1e-9)
+            self._check_results(self.main_model_part.ProcessInfo[CPFApp.LIFT_COEFFICIENT_JUMP], -0.5405047994795951, 0.0, 1e-9)
+            self._check_results(self.main_model_part.ProcessInfo[CPFApp.LIFT_COEFFICIENT_FAR_FIELD], -0.04198874676923284, 0.0, 1e-9)
+            self._runTest(settings_adjoint_file_name)
             self._runTest(settings_penalty_file_name)
-            self._check_results(self.main_model_part.ProcessInfo[CPFApp.LIFT_COEFFICIENT], -1.7711094881544223, 0.0, 1e-9)
-            self._check_results(self.main_model_part.ProcessInfo[CPFApp.LIFT_COEFFICIENT_JUMP], -1.296637367142278, 0.0, 1e-9)
-            self._check_results(self.main_model_part.ProcessInfo[CPFApp.LIFT_COEFFICIENT_FAR_FIELD], -1.622088362945524, 0.0, 1e-9)
+            self._check_results(self.main_model_part.ProcessInfo[CPFApp.LIFT_COEFFICIENT], 0.12976919914058177, 0.0, 1e-9)
+            self._check_results(self.main_model_part.ProcessInfo[CPFApp.LIFT_COEFFICIENT_JUMP], -0.4636936459965071, 0.0, 1e-9)
+            self._check_results(self.main_model_part.ProcessInfo[CPFApp.LIFT_COEFFICIENT_FAR_FIELD], 0.08091879125682809, 0.0, 1e-9)
 
             for file_name in os.listdir(os.getcwd()):
                 if file_name.endswith(".h5"):
