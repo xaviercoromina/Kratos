@@ -32,6 +32,7 @@ class DEMAnalysisStage2DSpRigidFem(DEMAnalysisStage):
         self.SettingGeometricalSPValues()
         self.CreateSPMeasuringRingSubmodelpart(self.spheres_model_part)
         self.SetSkinManually()
+        self.PreUtilities.SkinParticlesCounter(self.spheres_model_part)
 
         sandstone_target_porosity, actual_porosity, sp_porosity_multiplier = self.ComputePorosityParameters(self.spheres_model_part)
         porosity_message = "\nPorosity in sandstones should be around %.2f and the obtained value is %.2f" % (sandstone_target_porosity, actual_porosity) + \
@@ -102,13 +103,17 @@ class DEMAnalysisStage2DSpRigidFem(DEMAnalysisStage):
 
     def SetSkinManually(self):
 
-        if not self.automatic_skin_computation and not self.respect_preprocessor_marked_skin:
+        if self.respect_preprocessor_marked_skin:
+            return
+
+        if not self.automatic_skin_computation:
             self.PreUtilities.ResetSkinParticles(self.spheres_model_part)
-            self.PreUtilities.SetSkinParticlesInnerCircularBoundary(self.spheres_model_part, self.inner_radius, self.inner_skin_factor * 0.5 * self.inner_mesh_diameter)
-            if self.test_number < 5: # CTWs
-                self.PreUtilities.SetSkinParticlesOuterCircularBoundary(self.spheres_model_part, self.outer_radius, self.outer_skin_factor * 0.5 * self.outer_mesh_diameter)
-            else: # Blind
-                self.PreUtilities.SetSkinParticlesOuterSquaredBoundary(self.spheres_model_part, self.outer_radius, self.center, self.outer_skin_factor * 0.5 * self.outer_mesh_diameter)
+
+        self.PreUtilities.SetSkinParticlesInnerCircularBoundary(self.spheres_model_part, self.inner_radius, self.inner_skin_factor * 0.5 * self.inner_mesh_diameter)
+        if self.test_number < 5: # CTWs
+            self.PreUtilities.SetSkinParticlesOuterCircularBoundary(self.spheres_model_part, self.outer_radius, self.outer_skin_factor * 0.5 * self.outer_mesh_diameter)
+        else: # Blind
+            self.PreUtilities.SetSkinParticlesOuterSquaredBoundary(self.spheres_model_part, self.outer_radius, self.center, self.outer_skin_factor * 0.5 * self.outer_mesh_diameter)
 
     def CreateSPMeasuringRingSubmodelpart(self, spheres_model_part):
 

@@ -293,6 +293,7 @@ void AddCustomUtilitiesToPython(pybind11::module& m) {
         .def("MarkToEraseParticlesOutsideRadius", &PreUtilities::MarkToEraseParticlesOutsideRadius)
         .def("ApplyConcentricForceOnParticles", &PreUtilities::ApplyConcentricForceOnParticles)
         .def("ResetSkinParticles", &PreUtilities::ResetSkinParticles)
+        .def("SkinParticlesCounter", &PreUtilities::SkinParticlesCounter)
         .def("SetSkinParticlesInnerCircularBoundary", &PreUtilities::SetSkinParticlesInnerCircularBoundary)
         .def("SetSkinParticlesOuterCircularBoundary", &PreUtilities::SetSkinParticlesOuterCircularBoundary)
         .def("SetSkinParticlesOuterSquaredBoundary", &PreUtilities::SetSkinParticlesOuterSquaredBoundary)

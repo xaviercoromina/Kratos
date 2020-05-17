@@ -72,6 +72,8 @@ namespace Kratos {
             if (automatic_skin_computation) {
                 ComputeSkin(r_model_part, factor_radius);
                 SetCoordinationNumber(r_model_part);
+                // Added
+                ComputeSkin(r_model_part, factor_radius);
             }
         }
 
@@ -312,6 +314,10 @@ namespace Kratos {
                 sum_of_vectors_from_element_to_neighbours += vector_from_element_to_neighbour;
             }
             const double sum_modulus = DEM_MODULUS_3(sum_of_vectors_from_element_to_neighbours);
+            //if (p_sphere->GetGeometry()[0].Id()==2213) {
+            //    KRATOS_WATCH(element_radius)
+            //    KRATOS_WATCH(sum_modulus)
+            //}
 
             if ((number_of_neighbors < minimum_bonds_to_check_if_a_particle_is_skin) || (sum_modulus > factor_radius * element_radius)) {
                 p_sphere->GetGeometry()[0].FastGetSolutionStepValue(SKIN_SPHERE) = 1.0;

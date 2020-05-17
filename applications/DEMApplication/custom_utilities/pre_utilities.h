@@ -115,7 +115,6 @@ class PreUtilities
 
     }
 
-
     void FillAnalyticSubModelPartUtility(ModelPart& rSpheresModelPart, ModelPart& rAnalyticSpheresModelPart){
         ElementsArrayType& pElements = rSpheresModelPart.GetCommunicator().LocalMesh().Elements();
         std::vector<std::vector<std::size_t> > thread_vectors_of_ids;
@@ -156,7 +155,30 @@ class PreUtilities
         }
     }
 
-    void SetSkinParticlesInnerCircularBoundary(ModelPart& r_model_part, const double inner_radius, const double detection_radius) {
+    void SkinParticlesCounter(ModelPart& r_model_part) {
+
+        const auto pNodes = r_model_part.GetCommunicator().LocalMesh().Nodes();
+        unsigned int total_number_of_particles = 0;
+        unsigned int total_number_of_skin_particles = 0;
+        double percentage_of_skin_particles = 0;
+
+        #pragma omp parallel for
+        for (int k = 0; k < (int) pNodes.size(); k++) {
+            const auto it = pNodes.begin() + k;
+            total_number_of_particles++;
+            if (it->FastGetSolutionStepValue(SKIN_SPHERE)) total_number_of_skin_particles++;
+        }
+
+        std::string const filename = "skin_info.dat";
+        std::ofstream outputfile(filename, std::ios_base::out | std::ios_base::trunc);
+        outputfile << "Total number of particles: " << total_number_of_particles << "\n";
+        outputfile << "Total number of skin particles: " << total_number_of_skin_particles << "\n";
+        if (total_number_of_particles) percentage_of_skin_particles = 100.0 * total_number_of_skin_particles / total_number_of_particles;
+        outputfile << "Percentage of skin particles: " << percentage_of_skin_particles << "\n";
+        outputfile.close();
+    }
+
+    void SetSkinParticlesInnerCircularBoundary(ModelPart& r_model_part, const double inner_radius, const double extra_distance) {
         auto& pNodes = r_model_part.GetCommunicator().LocalMesh().Nodes();
 
         #pragma omp parallel for
@@ -166,13 +188,13 @@ class PreUtilities
             array_1d<double, 3> vector_distance_to_center;
             noalias(vector_distance_to_center) = coords;
             const double distance_to_center = MathUtils<double>::Norm3(vector_distance_to_center);
-            if(distance_to_center < inner_radius + detection_radius) {
+            if (distance_to_center < inner_radius + extra_distance) {
                 it->FastGetSolutionStepValue(SKIN_SPHERE) = 1.0;
             }
         }
     }
 
-    void SetSkinParticlesOuterCircularBoundary(ModelPart& r_model_part, const double outer_radius, const double detection_radius) {
+    void SetSkinParticlesOuterCircularBoundary(ModelPart& r_model_part, const double outer_radius, const double extra_distance) {
         auto& pNodes = r_model_part.GetCommunicator().LocalMesh().Nodes();
 
         #pragma omp parallel for
@@ -182,14 +204,13 @@ class PreUtilities
             array_1d<double, 3> vector_distance_to_center;
             noalias(vector_distance_to_center) = coords;
             const double distance_to_center = MathUtils<double>::Norm3(vector_distance_to_center);
-            const double radius = it->FastGetSolutionStepValue(RADIUS);
-            if (distance_to_center + radius > outer_radius - detection_radius) {
+            if (distance_to_center > outer_radius - extra_distance) {
                 it->FastGetSolutionStepValue(SKIN_SPHERE) = 1.0;
             }
         }
     }
 
-    void SetSkinParticlesOuterSquaredBoundary(ModelPart& r_model_part, const double outer_radius, const array_1d<double, 3>& center, const double detection_radius) {
+    void SetSkinParticlesOuterSquaredBoundary(ModelPart& r_model_part, const double outer_radius, const array_1d<double, 3>& center, const double extra_distance) {
 
         auto& pNodes = r_model_part.GetCommunicator().LocalMesh().Nodes();
 
@@ -201,9 +222,8 @@ class PreUtilities
             noalias(vector_distance_to_center) = coords - center;
             const double total_x_distance = fabs(vector_distance_to_center[0]);
             const double total_y_distance = fabs(vector_distance_to_center[1]);
-            const double radius = it->FastGetSolutionStepValue(RADIUS);
 
-            if ((total_x_distance + radius > outer_radius - detection_radius) || (total_y_distance + radius > outer_radius - detection_radius)) {
+            if ((total_x_distance > outer_radius - extra_distance) || (total_y_distance > outer_radius - extra_distance)) {
                 it->FastGetSolutionStepValue(SKIN_SPHERE) = 1.0;
             }
         }
