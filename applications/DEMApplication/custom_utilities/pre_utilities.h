@@ -162,7 +162,7 @@ class PreUtilities
         unsigned int total_number_of_skin_particles = 0;
         double percentage_of_skin_particles = 0;
 
-        #pragma omp parallel for
+        //#pragma omp parallel for
         for (int k = 0; k < (int) pNodes.size(); k++) {
             const auto it = pNodes.begin() + k;
             total_number_of_particles++;
