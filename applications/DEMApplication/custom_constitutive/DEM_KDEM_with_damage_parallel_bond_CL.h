@@ -77,7 +77,8 @@ namespace Kratos {
             SphericContinuumParticle* element2,
             int i_neighbour_count,
             int time_steps,
-            const ProcessInfo& r_process_info) override;
+            const ProcessInfo& r_process_info,
+            double LocalCoordSystem[3][3]);
 
         void CalculateTangentialForces(double OldLocalElasticContactForce[3],
             double LocalElasticContactForce[3],

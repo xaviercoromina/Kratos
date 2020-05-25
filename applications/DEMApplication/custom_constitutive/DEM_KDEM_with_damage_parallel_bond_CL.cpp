@@ -110,7 +110,8 @@ namespace Kratos {
                 element2,
                 i_neighbour_count,
                 time_steps,
-                r_process_info);
+                r_process_info,
+                LocalCoordSystem);
 
         CalculateViscoDampingCoeff(equiv_visco_damp_coeff_normal,
                                    equiv_visco_damp_coeff_tangential,
@@ -185,7 +186,8 @@ namespace Kratos {
             SphericContinuumParticle* element2,
             int i_neighbour_count,
             int time_steps,
-            const ProcessInfo& r_process_info) {
+            const ProcessInfo& r_process_info,
+            double LocalCoordSystem[3][3]) {
 
         KRATOS_TRY
 
@@ -241,10 +243,17 @@ namespace Kratos {
         double returned_by_mapping_force = current_normal_force_module;
 
         double BondedLocalElasticContactForce2 = 0.0;
+        double equiv_poisson = ComputeEquivalentPoissonRatio(element1, element2);
 
         if (indentation >= 0.0) { //COMPRESSION
             if (!failure_type) {
+
                 BondedLocalElasticContactForce2 = kn_updated * indentation;
+                //Poisson contribution modifications
+                AddPoissonContribution(equiv_poisson, LocalCoordSystem, BondedLocalElasticContactForce2,
+                                       calculation_area, element1->mSymmStressTensor, element1,
+                                       element2, r_process_info, i_neighbour_count, indentation);
+
             } else {
                 BondedLocalElasticContactForce2 = 0.0;
             }
@@ -255,8 +264,14 @@ namespace Kratos {
                 const double initial_limit_force = tension_limit * calculation_area;
                 limit_force = (1.0 - mDamageNormal) * initial_limit_force;
                 BondedLocalElasticContactForce2 = kn_updated * indentation;
+                //Poisson contribution modifications
+                AddPoissonContribution(equiv_poisson, LocalCoordSystem, BondedLocalElasticContactForce2,
+                                       calculation_area, element1->mSymmStressTensor, element1,
+                                       element2, r_process_info, i_neighbour_count, indentation);
 
-                if (current_normal_force_module > limit_force) {
+                //Poisson contribution modifications
+                //if (current_normal_force_module > limit_force) {
+                if (fabs(BondedLocalElasticContactForce2) > limit_force) {
 
                     if (!mDamageEnergyCoeff) { // there is no damage energy left
                         failure_type = 4; // failure by traction

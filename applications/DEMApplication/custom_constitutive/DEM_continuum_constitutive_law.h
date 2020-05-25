@@ -189,6 +189,9 @@ namespace Kratos {
 
         virtual bool CheckRequirementsOfStressTensor();
 
+        virtual double ComputeEquivalentPoissonRatio(SphericContinuumParticle* element,
+                                                     SphericContinuumParticle* neighbor);
+
     private:
 
         friend class Serializer;

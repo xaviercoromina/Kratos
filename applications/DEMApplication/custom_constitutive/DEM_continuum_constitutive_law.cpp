@@ -176,4 +176,19 @@ namespace Kratos {
 
     }
 
+    double DEMContinuumConstitutiveLaw::ComputeEquivalentPoissonRatio(SphericContinuumParticle* element, SphericContinuumParticle* neighbor) {
+
+        const double my_Poisson = element->GetPoisson();
+        const double other_Poisson = neighbor->GetPoisson();
+        double equiv_poisson;
+
+        if (my_Poisson + other_Poisson) {
+            equiv_poisson = 2.0 * my_Poisson * other_Poisson / (my_Poisson + other_Poisson); }
+        else {
+            equiv_poisson = 0.0;
+        }
+
+        return equiv_poisson;
+    }
+
 } //kratos
