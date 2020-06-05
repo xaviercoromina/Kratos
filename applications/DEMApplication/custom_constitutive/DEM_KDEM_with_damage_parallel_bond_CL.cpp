@@ -234,64 +234,42 @@ namespace Kratos {
 
         int& failure_type = element1->mIniNeighbourFailureId[i_neighbour_count];
         double kn_updated = (1.0 - mDamageNormal) * kn_el;
-        double current_normal_force_module = fabs(kn_updated * indentation);
-        double delta_accumulated = 0.0;
-        if (kn_updated) {
-            delta_accumulated = current_normal_force_module / kn_updated;
-        }
-
-        double returned_by_mapping_force = current_normal_force_module;
-
-        double BondedLocalElasticContactForce2 = 0.0;
+        double bonded_local_elastic_contact_force = 0.0;
         double equiv_poisson = ComputeEquivalentPoissonRatio(element1, element2);
+        bonded_local_elastic_contact_force = kn_updated * indentation;
+        double aux_BondedLocalElasticContactForce2 = bonded_local_elastic_contact_force;
 
-        if (indentation >= 0.0) { //COMPRESSION
-            if (!failure_type) {
+        AddPoissonContribution(equiv_poisson, LocalCoordSystem, bonded_local_elastic_contact_force,
+                                calculation_area, element1->mSymmStressTensor, element1,
+                                element2, r_process_info, i_neighbour_count, indentation);
 
-                BondedLocalElasticContactForce2 = kn_updated * indentation;
-                //Poisson contribution modifications
-                AddPoissonContribution(equiv_poisson, LocalCoordSystem, BondedLocalElasticContactForce2,
-                                       calculation_area, element1->mSymmStressTensor, element1,
-                                       element2, r_process_info, i_neighbour_count, indentation);
+        const double poisson_contribution = bonded_local_elastic_contact_force - aux_BondedLocalElasticContactForce2;
+        double delta_accumulated = 0.0;
+        double returned_by_mapping_force = 0.0;
 
-            } else {
-                BondedLocalElasticContactForce2 = 0.0;
-            }
+        if (bonded_local_elastic_contact_force >= 0.0) { //COMPRESSION
+            if (failure_type) { bonded_local_elastic_contact_force = 0.0; }
         } else { //tension
-
             if (!failure_type) {
-
                 const double initial_limit_force = tension_limit * calculation_area;
                 limit_force = (1.0 - mDamageNormal) * initial_limit_force;
-                BondedLocalElasticContactForce2 = kn_updated * indentation;
-                //Poisson contribution modifications
-                AddPoissonContribution(equiv_poisson, LocalCoordSystem, BondedLocalElasticContactForce2,
-                                       calculation_area, element1->mSymmStressTensor, element1,
-                                       element2, r_process_info, i_neighbour_count, indentation);
 
-                //Poisson contribution modifications
-                //if (current_normal_force_module > limit_force) {
-                if (fabs(BondedLocalElasticContactForce2) > limit_force) {
+                if (-bonded_local_elastic_contact_force > limit_force) {
 
                     if (!mDamageEnergyCoeff) { // there is no damage energy left
                         failure_type = 4; // failure by traction
                     } else { // the material can sustain further damage, not failure yet
-                        const double delta_at_undamaged_peak = initial_limit_force / kn_el;
 
+                        const double delta_at_undamaged_peak = initial_limit_force / kn_el;
                         if (kn_updated) {
-                            delta_accumulated = current_normal_force_module / kn_updated;
+                            delta_accumulated = std::abs(bonded_local_elastic_contact_force) / kn_updated;
                         } else {
                             delta_accumulated = delta_at_undamaged_peak + initial_limit_force / k_unload;
                         }
 
                         returned_by_mapping_force = initial_limit_force - k_unload * (delta_accumulated - delta_at_undamaged_peak);
-
-                        if (returned_by_mapping_force < 0.0) {
-                            returned_by_mapping_force = 0.0;
-                        }
-
-                        BondedLocalElasticContactForce2 = -returned_by_mapping_force;
-
+                        if (returned_by_mapping_force < 0.0) { returned_by_mapping_force = 0.0; }
+                        bonded_local_elastic_contact_force = -returned_by_mapping_force;
                         mDamageNormal = 1.0 - (returned_by_mapping_force / delta_accumulated) / kn_el;
                         if (mDamageNormal > mDamageThresholdTolerance) {
                             failure_type = 4; // failure by traction
@@ -299,7 +277,7 @@ namespace Kratos {
                     }
                 }
             } else {
-                BondedLocalElasticContactForce2 = 0.0;
+                bonded_local_elastic_contact_force = 0.0;
             }
         }
 
@@ -307,7 +285,7 @@ namespace Kratos {
             mUnbondedLocalElasticContactForce2 = mUnbondedNormalElasticConstant * indentation;
         }
 
-        LocalElasticContactForce[2] = BondedLocalElasticContactForce2 + mUnbondedLocalElasticContactForce2;
+        LocalElasticContactForce[2] = bonded_local_elastic_contact_force - poisson_contribution + mUnbondedLocalElasticContactForce2;
 
         if (mDebugPrintingOption) {
             unsigned int sphere_id = 22222222;
@@ -316,7 +294,7 @@ namespace Kratos {
                 static std::ofstream normal_forces_file("normal_forces_damage.txt", std::ios_base::out | std::ios_base::app);
                 normal_forces_file << r_process_info[TIME] << " " << indentation << " " << LocalElasticContactForce[2] << " " << limit_force << " "
                                 << delta_accumulated << " " << returned_by_mapping_force << " " << kn_updated << " " << mDamageNormal << " "
-                                << failure_type << " " << current_normal_force_module << " " << mDamageTangential << " " << BondedLocalElasticContactForce2 << " "
+                                << failure_type << " " << " " << mDamageTangential << " " << bonded_local_elastic_contact_force << " "
                                 << mUnbondedLocalElasticContactForce2 << '\n';
                 normal_forces_file.flush();
             }

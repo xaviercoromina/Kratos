@@ -31,7 +31,7 @@ class DEMAnalysisStage2DSpRigidFem(DEMAnalysisStage):
 
         self.SettingGeometricalSPValues()
         self.CreateSPMeasuringRingSubmodelpart(self.spheres_model_part)
-        self.SetSkinManually()
+        #self.SetSkinManually()
         self.PreUtilities.SkinParticlesCounter(self.spheres_model_part)
 
         sandstone_target_porosity, actual_porosity, sp_porosity_multiplier = self.ComputePorosityParameters(self.spheres_model_part)
