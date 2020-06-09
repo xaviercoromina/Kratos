@@ -25,7 +25,6 @@
 #include "utilities/compare_elements_and_conditions_utility.h"
 #include "custom_utilities/pmmg_utilities.h"
 #include "meshing_application_variables.h"
-#include "mpi/utilities/parallel_fill_communicator.h"
 
 // NOTE: The following contains the license of the PMMG library
 /* =============================================================================
@@ -1625,10 +1624,14 @@ void ParMmgUtilities<PMMGLibrary::PMMG3D>::GenerateParallelInterfaces(
     )
 {
     auto& neighbour_indices = rModelPart.GetCommunicator().NeighbourIndices();
-    PMMG_Set_numberOfNodeCommunicators(mParMmgMesh, neighbour_indices.size());
+    std::size_t icomm,ncomm;
 
-    KRATOS_WATCH(neighbour_indices)
+    ncomm = 0;
+    for(std::size_t i = 0; i < neighbour_indices.size(); i++)
+        if ((neighbour_indices[i]) >= 0) ncomm++;
+    PMMG_Set_numberOfNodeCommunicators(mParMmgMesh, ncomm);
 
+    icomm = 0;
     for(std::size_t i = 0; i < neighbour_indices.size(); i++) {
         std::vector<int> globalId(0);
         std::vector<int> localId(0);
@@ -1645,8 +1648,8 @@ void ParMmgUtilities<PMMGLibrary::PMMG3D>::GenerateParallelInterfaces(
                 globalId.push_back(node.Id());
                 localId.push_back(local_node_id[node.Id()]);
             }
-            PMMG_Set_ithNodeCommunicatorSize(mParMmgMesh, i, rModelPart.GetCommunicator().NeighbourIndices()[i], rModelPart.GetCommunicator().LocalMesh(i).NumberOfNodes() + rModelPart.GetCommunicator().GhostMesh(i).NumberOfNodes());
-            PMMG_Set_ithNodeCommunicator_nodes(mParMmgMesh, i, localId.data(), globalId.data(), 1); // Last parameters shoould be 1
+            PMMG_Set_ithNodeCommunicatorSize(mParMmgMesh, icomm, rModelPart.GetCommunicator().NeighbourIndices()[i], rModelPart.GetCommunicator().LocalMesh(i).NumberOfNodes() + rModelPart.GetCommunicator().GhostMesh(i).NumberOfNodes());
+            PMMG_Set_ithNodeCommunicator_nodes(mParMmgMesh, icomm++, localId.data(), globalId.data(), 1); // Last parameters shoould be 1
         }
     }
 }
@@ -2089,8 +2092,6 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
         std::copy(node_ids.begin(), node_ids.end(), std::back_inserter(vector_ids));
         r_sub_model_part.AddNodes(vector_ids);
     }
-    // rModelPart.GetCommunicator().SetLocalMesh(rModelPart.pGetMesh());
-    ParallelFillCommunicator(rModelPart.GetRootModelPart()).Execute();
 }
 
 /***********************************************************************************/
@@ -2108,7 +2109,7 @@ void ParMmgUtilities<TPMMGLibrary>::WriteSolDataToModelPart(ModelPart& rModelPar
     // Auxilia metric
     TensorArrayType metric;
 
-    #pragma omp parallel for firstprivate(metric)
+    // #pragma omp parallel for firstprivate(metric)
     for(int i = 0; i < static_cast<int>(r_nodes_array.size()); ++i) {
         auto it_node = it_node_begin + i;
 
