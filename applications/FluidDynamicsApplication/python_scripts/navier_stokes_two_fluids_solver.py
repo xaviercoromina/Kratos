@@ -181,73 +181,45 @@ class NavierStokesTwoFluidsSolver(FluidSolver):
             self._GetSolutionStrategy().FinalizeSolutionStep()
             self._GetAccelerationLimitationUtility().Execute()
 
-    # TODO: Remove this method as soon as the subproperties are available
-    def _SetPhysicalProperties(self):
-        warn_msg  = '\nThe materials import mechanism used in the two fluids solver is DEPRECATED!\n'
-        warn_msg += 'It will be removed to use the base fluid_solver.py one as soon as the subproperties are available.\n'
-        KratosMultiphysics.Logger.PrintWarning('\n\x1b[1;31mDEPRECATION-WARNING\x1b[0m', warn_msg)
-
-        # Check if the fluid properties are provided using a .json file
-        materials_filename = self.settings["material_import_settings"]["materials_filename"].GetString()
-        if (materials_filename != ""):
-            with open(materials_filename,'r') as materials_file:
-                materials = KratosMultiphysics.Parameters(materials_file.read())
-
-            # Create and read an auxiliary materials file for each one of the fields
-            for i_material in materials["properties"]:
-                aux_materials = KratosMultiphysics.Parameters()
-                aux_materials.AddEmptyArray("properties")
-                aux_materials["properties"].Append(i_material)
-                prop_id = i_material["properties_id"].GetInt()
-
-                aux_materials_filename = materials_filename + "_" + str(prop_id) + ".json"
-                with open(aux_materials_filename,'w') as aux_materials_file:
-                    aux_materials_file.write(aux_materials.WriteJsonString())
-                    aux_materials_file.close()
-
-                aux_material_settings = KratosMultiphysics.Parameters("""{"Parameters": {"materials_filename": ""}} """)
-                aux_material_settings["Parameters"]["materials_filename"].SetString(aux_materials_filename)
-                KratosMultiphysics.ReadMaterialsUtility(aux_material_settings, self.model)
-                KratosUtilities.DeleteFileIfExisting(aux_materials_filename)
-
-            materials_imported = True
-        else:
-            materials_imported = False
-
-        # If the element uses nodal material properties, transfer them to the nodes
-        if self.element_has_nodal_properties:
-            self._SetNodalProperties()
-
-        return materials_imported
-
     def _SetNodalProperties(self):
-        # Get fluid 1 and 2 properties
-        properties_1 = self.main_model_part.Properties[1]
-        properties_2 = self.main_model_part.Properties[2]
+        # Get the computational domain properties from the first element
+        if self.GetComputingModelPart().NumberOfElements() > 0:
+            for elem in self.GetComputingModelPart().Elements:
+                elem_prop = elem.Properties
+                break
+        else:
+            raise Exception("No fluid elements found in the computing model part.")
 
-        rho_1 = properties_1.GetValue(KratosMultiphysics.DENSITY)
-        rho_2 = properties_2.GetValue(KratosMultiphysics.DENSITY)
-        mu_1 = properties_1.GetValue(KratosMultiphysics.DYNAMIC_VISCOSITY)
-        mu_2 = properties_2.GetValue(KratosMultiphysics.DYNAMIC_VISCOSITY)
+        # Get physical values from properties
+        if elem_prop.NumberOfSubproperties() > 2:
+            raise Exception("Two subproperties are expected in Properties {0}. Found {1}".format(elem_prop.NumberOfSubProperties, elem_prop.Id))
 
-        # Check fluid 1 and 2 properties
-        if rho_1 <= 0.0:
-            raise Exception("DENSITY set to {0} in Properties {1}, positive number expected.".format(rho_1, properties_1.Id))
-        if rho_2 <= 0.0:
-            raise Exception("DENSITY set to {0} in Properties {1}, positive number expected.".format(rho_2, properties_2.Id))
-        if mu_1 <= 0.0:
-            raise Exception("DYNAMIC_VISCOSITY set to {0} in Properties {1}, positive number expected.".format(mu_1, properties_1.Id))
-        if mu_2 <= 0.0:
-            raise Exception("DYNAMIC_VISCOSITY set to {0} in Properties {1}, positive number expected.".format(mu_2, properties_2.Id))
+        rho_vect = []
+        dyn_visc_vect = []
+        for sub_prop in elem_prop.GetSubProperties():
+            # Get and check DENSITY
+            aux_rho = sub_prop.GetValue(KratosMultiphysics.DENSITY)
+            if aux_rho <= 0.0:
+                raise Exception("DENSITY set to {0} in Properties {1}, positive number expected.".format(aux_rho, sub_prop.Id))
+            rho_vect.append(aux_rho)
+
+            # Get and check DYNAMIC_VISCOSITY
+            aux_dyn_visc = sub_prop.GetValue(KratosMultiphysics.DYNAMIC_VISCOSITY)
+            if aux_dyn_visc <= 0.0:
+                raise Exception("DYNAMIC_VISCOSITY set to {0} in Properties {1}, positive number expected.".format(aux_dyn_visc, sub_prop.Id))
+            dyn_visc_vect.append(aux_dyn_visc)
 
         # Transfer density and (dynamic) viscostity to the nodes
+        # Note that in here it is assumed that the first subproperty corresponds to the negative distance subdomain
+        # Accordingly, the second subproperty is assumed to correspond to the positive distance subdomain
+        # TODO: Create an auxiliary IS_AIR (or similar) bool variable to be assigned in the properties in order to make this optional
         for node in self.main_model_part.Nodes:
             if node.GetSolutionStepValue(KratosMultiphysics.DISTANCE) <= 0.0:
-                node.SetSolutionStepValue(KratosMultiphysics.DENSITY, rho_1)
-                node.SetSolutionStepValue(KratosMultiphysics.DYNAMIC_VISCOSITY, mu_1)
+                node.SetSolutionStepValue(KratosMultiphysics.DENSITY, rho_vect[0])
+                node.SetSolutionStepValue(KratosMultiphysics.DYNAMIC_VISCOSITY, dyn_visc_vect[0])
             else:
-                node.SetSolutionStepValue(KratosMultiphysics.DENSITY, rho_2)
-                node.SetSolutionStepValue(KratosMultiphysics.DYNAMIC_VISCOSITY, mu_2)
+                node.SetSolutionStepValue(KratosMultiphysics.DENSITY, rho_vect[1])
+                node.SetSolutionStepValue(KratosMultiphysics.DYNAMIC_VISCOSITY, dyn_visc_vect[1])
 
     def __SetDistanceFunction(self):
         ## Set the nodal distance function
