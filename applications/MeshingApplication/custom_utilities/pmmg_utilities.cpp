@@ -1832,49 +1832,8 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
     std::unordered_map<IndexType,Element::Pointer>& rMapPointersRefElement
     )
 {
-    int **idx_node_loc, **owner, **idx_node_glob;
-    int nunique, ntot;
-    int n_node_comm,n_face_comm,*nitem_node_comm,*nitem_face_comm;
-    int *color_node, *color_face,**face_owner,nunique_face,ntot_face;
-    int ier = PMMG_Get_numberOfNodeCommunicators(mParMmgMesh, &n_node_comm);
-
-    color_node      = (int *) malloc(n_node_comm*sizeof(int));
-    nitem_node_comm = (int *) malloc(n_node_comm*sizeof(int));
-    for(IndexType icomm = 0; icomm < n_node_comm; icomm++ )
-        ier = PMMG_Get_ithNodeCommunicatorSize(mParMmgMesh, icomm,
-                                            &color_node[icomm],
-                                            &nitem_node_comm[icomm]);
-
-    idx_node_loc  = (int **) malloc(n_node_comm*sizeof(int *));
-    owner  = (int **) malloc(n_node_comm*sizeof(int *));
-    idx_node_glob  = (int **) malloc(n_node_comm*sizeof(int *));
-    for(IndexType icomm = 0; icomm < n_node_comm; icomm++ ) {
-        idx_node_loc[icomm]  = (int *) malloc(nitem_node_comm[icomm]*sizeof(int));
-        owner[icomm]  = (int *) malloc(nitem_node_comm[icomm]*sizeof(int));
-        idx_node_glob[icomm]  = (int *) malloc(nitem_node_comm[icomm]*sizeof(int));
-
-    }
-
-    int err_node_comm = PMMG_Get_NodeCommunicator_nodes(mParMmgMesh, idx_node_loc);
-    int err_owners = PMMG_Get_NodeCommunicator_owners(mParMmgMesh, owner, idx_node_glob, &nunique, &ntot);
-
     const int rank = rModelPart.GetCommunicator().GetDataCommunicator().Rank();
     const int size = rModelPart.GetCommunicator().GetDataCommunicator().Size();
-    std::vector<int> array_of_local_nodes(size,0);
-    std::vector<int> reduced_array_of_local_nodes(size,0);
-    if (rank!=size) {
-        array_of_local_nodes[rank+1]=rPMMGMeshInfo.NumberOfNodes-nunique;
-    }
-
-    rModelPart.GetCommunicator().GetDataCommunicator().MaxAll(array_of_local_nodes, reduced_array_of_local_nodes);
-
-    KRATOS_WATCH(array_of_local_nodes)
-    KRATOS_WATCH(reduced_array_of_local_nodes)
-    for (int i =1; i<size;i++){
-        reduced_array_of_local_nodes[i] += reduced_array_of_local_nodes[i-1];
-    }
-    KRATOS_WATCH(reduced_array_of_local_nodes)
-
 
     std::map<int,int> local_to_partition_index;
 
@@ -1882,15 +1841,6 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
     for (IndexType i_node = 1; i_node <= rPMMGMeshInfo.NumberOfNodes; ++i_node) {
         errglonum = PMMG_Get_vertexGloNum(mParMmgMesh,&mLocalToGlobal[i_node],&local_to_partition_index[i_node]);
     }
-//    for(IndexType icomm = 0; icomm < n_node_comm; icomm++ ) {
-//        for(IndexType inode = 0; inode < nitem_node_comm[icomm]; inode++ ) {
-//            idx_node_glob[icomm][inode] = mLocalToGlobal[idx_node_loc[icomm][inode]];
-//        }
-//    }
-//    printf("MYRANK %d\n",mParMmgMesh->myrank);
-//    PMMG_printCommunicator(mParMmgMesh, PMMG_APIDISTRIB_nodes, idx_node_loc, idx_node_glob,NULL);
-
-
 
     // Create a new model part // TODO: Use a different kind of element for each submodelpart (in order to be able of remeshing more than one kind o element or condition)
     std::unordered_map<IndexType, IndexVectorType> color_nodes, first_color_cond, second_color_cond, first_color_elem, second_color_elem;

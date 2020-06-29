@@ -536,25 +536,13 @@ void ParMmgProcess<TPMMGLibrary>::ExecuteRemeshing()
     }
     r_old_model_part.AddElements( mrThisModelPart.ElementsBegin(), mrThisModelPart.ElementsEnd() );
     mrThisModelPart.RemoveElementsFromAllLevels(TO_ERASE);
-
-
     KRATOS_INFO_IF("", mEchoLevel > 0) << "HEY 5" << std::endl;
-    mrThisModelPart.GetCommunicator().GetDataCommunicator().Barrier();
-
 
     // Writing the new mesh data on the model part
     mPMmmgUtilities.WriteMeshDataToModelPart(mrThisModelPart, mColors, mDofs, mmg_mesh_info, mpRefCondition, mpRefElement);
-    KRATOS_INFO_IF("", mEchoLevel > 0) << "HEY 6" << std::endl;
-    mrThisModelPart.GetCommunicator().GetDataCommunicator().Barrier();
-
 
     // Writing the new solution data on the model part
     mPMmmgUtilities.WriteSolDataToModelPart(mrThisModelPart);
-
-    KRATOS_INFO_IF("", mEchoLevel > 0) << "HEY 7" << std::endl;
-    mrThisModelPart.GetCommunicator().GetDataCommunicator().Barrier();
-
-
 
     // // In case of prism collapse we extrapolate now (and later extrude)
     // if (collapse_prisms_elements) {
