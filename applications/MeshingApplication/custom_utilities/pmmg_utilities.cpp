@@ -1835,6 +1835,33 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
     const int rank = rModelPart.GetCommunicator().GetDataCommunicator().Rank();
     const int size = rModelPart.GetCommunicator().GetDataCommunicator().Size();
 
+    rModelPart.GetCommunicator().LocalMesh().Nodes().clear();
+    rModelPart.GetCommunicator().LocalMesh().Elements().clear();
+    rModelPart.GetCommunicator().LocalMesh().Conditions().clear();
+    rModelPart.GetCommunicator().InterfaceMesh().Nodes().clear();
+    rModelPart.GetCommunicator().InterfaceMesh().Elements().clear();
+    rModelPart.GetCommunicator().InterfaceMesh().Conditions().clear();
+    rModelPart.GetCommunicator().GhostMesh().Nodes().clear();
+    rModelPart.GetCommunicator().GhostMesh().Elements().clear();
+    rModelPart.GetCommunicator().GhostMesh().Conditions().clear();
+
+    std::vector<int> array_of_local_elements(size,0);
+    std::vector<int> array_of_local_conditions(size,0);
+    std::vector<int> reduced_array_of_local_elements(size,0);
+    std::vector<int> reduced_array_of_local_conditions(size,0);
+    if (rank!=size) {
+        array_of_local_elements[rank+1]=rPMMGMeshInfo.NumberFirstTypeElements() + rPMMGMeshInfo.NumberSecondTypeElements();
+        array_of_local_conditions[rank+1]=rPMMGMeshInfo.NumberFirstTypeConditions() + rPMMGMeshInfo.NumberSecondTypeConditions();
+    }
+
+    rModelPart.GetCommunicator().GetDataCommunicator().MaxAll(array_of_local_elements, reduced_array_of_local_elements);
+    rModelPart.GetCommunicator().GetDataCommunicator().MaxAll(array_of_local_conditions, reduced_array_of_local_conditions);
+
+    for (int i =1; i<size;i++){
+        reduced_array_of_local_elements[i] += reduced_array_of_local_elements[i-1];
+        reduced_array_of_local_conditions[i] += reduced_array_of_local_conditions[i-1];
+    }
+
     std::map<int,int> local_to_partition_index;
 
     int errglonum;
@@ -1854,18 +1881,17 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
 
     /* NODES */ // TODO: ADD OMP
     for (IndexType i_node = 1; i_node <= rPMMGMeshInfo.NumberOfNodes; ++i_node) {
-        int id_to_write = mLocalToGlobal[i_node];
         int partition_index = local_to_partition_index[i_node];
-        // int id_to_write = i_node;
 
-        NodeType::Pointer p_node = CreateNode(rModelPart, id_to_write, ref, is_required);
-        if (id_to_write==2972) {
-            std::cout << "rank id partition: "<<rank << " " <<p_node->Id() << " " <<  partition_index  <<std::endl;
-
-            KRATOS_WATCH(partition_index)
-        }
+        NodeType::Pointer p_node = CreateNode(rModelPart, mLocalToGlobal[i_node], ref, is_required);
 
         p_node->FastGetSolutionStepValue(PARTITION_INDEX) = partition_index;
+
+        if (rank == partition_index) {
+            rModelPart.GetCommunicator().LocalMesh().Nodes().push_back(p_node);
+        }else {
+            rModelPart.GetCommunicator().GhostMesh().Nodes().push_back(p_node);
+        }
 
         KRATOS_ERROR_IF(partition_index<0) << "PARTITION INDEX NEGATIVE: " << partition_index << "FOR NODE: " << p_node->Id() << std::endl;
         KRATOS_ERROR_IF(partition_index>size) << "PARTITION GREATER THAN SIZE: " << partition_index << "FOR NODE: " << p_node->Id() << std::endl;
@@ -1874,7 +1900,7 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
         for (auto it_dof = rDofs.begin(); it_dof != rDofs.end(); ++it_dof)
             p_node->pAddDof(**it_dof);
 
-        if (ref != 0) color_nodes[static_cast<IndexType>(ref)].push_back(id_to_write);// NOTE: ref == 0 is the MainModelPart
+        if (ref != 0) color_nodes[static_cast<IndexType>(ref)].push_back(mLocalToGlobal[i_node]);// NOTE: ref == 0 is the MainModelPart
     }
 
     /* CONDITIONS */ // TODO: ADD OMP
@@ -1892,12 +1918,12 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
                 }
             }
 
-            Condition::Pointer p_condition = CreateFirstTypeCondition(rModelPart, rMapPointersRefCondition, cond_id, ref, is_required, skip_creation);
+            Condition::Pointer p_condition = CreateFirstTypeCondition(rModelPart, rMapPointersRefCondition, cond_id+reduced_array_of_local_conditions[rank], ref, is_required, skip_creation);
 
             if (p_condition.get() != nullptr) {
                 created_conditions_vector.push_back(p_condition);
 //                 rModelPart.AddCondition(p_condition);
-                if (ref != 0) first_color_cond[static_cast<IndexType>(ref)].push_back(cond_id);// NOTE: ref == 0 is the MainModelPart
+                if (ref != 0) first_color_cond[static_cast<IndexType>(ref)].push_back(cond_id+reduced_array_of_local_conditions[rank]);// NOTE: ref == 0 is the MainModelPart
                 cond_id += 1;
             }
         }
@@ -1912,12 +1938,12 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
                     counter_second_cond += 1;
                 }
             }
-            Condition::Pointer p_condition = CreateSecondTypeCondition(rModelPart, rMapPointersRefCondition, cond_id, ref, is_required, skip_creation);
+            Condition::Pointer p_condition = CreateSecondTypeCondition(rModelPart, rMapPointersRefCondition, cond_id+reduced_array_of_local_conditions[rank], ref, is_required, skip_creation);
 
             if (p_condition.get() != nullptr) {
                 created_conditions_vector.push_back(p_condition);
 //                 rModelPart.AddCondition(p_condition);
-                if (ref != 0) second_color_cond[static_cast<IndexType>(ref)].push_back(cond_id);// NOTE: ref == 0 is the MainModelPart
+                if (ref != 0) second_color_cond[static_cast<IndexType>(ref)].push_back(cond_id+reduced_array_of_local_conditions[rank]);// NOTE: ref == 0 is the MainModelPart
                 cond_id += 1;
             }
         }
@@ -1938,12 +1964,12 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
                 }
             }
 
-            Element::Pointer p_element = CreateFirstTypeElement(rModelPart, rMapPointersRefElement, elem_id, ref, is_required, skip_creation);
+            Element::Pointer p_element = CreateFirstTypeElement(rModelPart, rMapPointersRefElement, elem_id+reduced_array_of_local_elements[rank], ref, is_required, skip_creation);
 
             if (p_element.get() != nullptr) {
                 created_elements_vector.push_back(p_element);
 //                 rModelPart.AddElement(p_element);
-                if (ref != 0) first_color_elem[static_cast<IndexType>(ref)].push_back(elem_id);// NOTE: ref == 0 is the MainModelPart
+                if (ref != 0) first_color_elem[static_cast<IndexType>(ref)].push_back(elem_id+reduced_array_of_local_elements[rank]);// NOTE: ref == 0 is the MainModelPart
                 elem_id += 1;
             }
         }
@@ -1959,12 +1985,12 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
                 }
             }
 
-            Element::Pointer p_element = CreateSecondTypeElement(rModelPart, rMapPointersRefElement, elem_id, ref, is_required,skip_creation);
+            Element::Pointer p_element = CreateSecondTypeElement(rModelPart, rMapPointersRefElement, elem_id+reduced_array_of_local_elements[rank], ref, is_required,skip_creation);
 
             if (p_element.get() != nullptr) {
                 created_elements_vector.push_back(p_element);
 //                 rModelPart.AddElement(p_element);
-                if (ref != 0) second_color_elem[static_cast<IndexType>(ref)].push_back(elem_id);// NOTE: ref == 0 is the MainModelPart
+                if (ref != 0) second_color_elem[static_cast<IndexType>(ref)].push_back(elem_id+reduced_array_of_local_elements[rank]);// NOTE: ref == 0 is the MainModelPart
                 elem_id += 1;
             }
         }
