@@ -1867,10 +1867,6 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
     int errglonum;
     for (IndexType i_node = 1; i_node <= rPMMGMeshInfo.NumberOfNodes; ++i_node) {
         errglonum = PMMG_Get_vertexGloNum(mParMmgMesh,&mLocalToGlobal[i_node],&local_to_partition_index[i_node]);
-
-        if (mLocalToGlobal[i_node] == 6319) {
-            std::cout <<"Rank" << rank << " Local Id: " << i_node << " Owner: " << local_to_partition_index[i_node] << std::endl;
-        }
     }
 
     // Create a new model part // TODO: Use a different kind of element for each submodelpart (in order to be able of remeshing more than one kind o element or condition)
