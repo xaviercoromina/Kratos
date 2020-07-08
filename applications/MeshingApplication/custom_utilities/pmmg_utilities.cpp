@@ -1836,14 +1836,14 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
     const int size = rModelPart.GetCommunicator().GetDataCommunicator().Size();
 
     rModelPart.GetCommunicator().LocalMesh().Nodes().clear();
-    rModelPart.GetCommunicator().LocalMesh().Elements().clear();
-    rModelPart.GetCommunicator().LocalMesh().Conditions().clear();
+    // rModelPart.GetCommunicator().LocalMesh().Elements().clear();
+    // rModelPart.GetCommunicator().LocalMesh().Conditions().clear();
     rModelPart.GetCommunicator().InterfaceMesh().Nodes().clear();
-    rModelPart.GetCommunicator().InterfaceMesh().Elements().clear();
-    rModelPart.GetCommunicator().InterfaceMesh().Conditions().clear();
+    // rModelPart.GetCommunicator().InterfaceMesh().Elements().clear();
+    // rModelPart.GetCommunicator().InterfaceMesh().Conditions().clear();
     rModelPart.GetCommunicator().GhostMesh().Nodes().clear();
-    rModelPart.GetCommunicator().GhostMesh().Elements().clear();
-    rModelPart.GetCommunicator().GhostMesh().Conditions().clear();
+    // rModelPart.GetCommunicator().GhostMesh().Elements().clear();
+    // rModelPart.GetCommunicator().GhostMesh().Conditions().clear();
 
     std::vector<int> array_of_local_elements(size,0);
     std::vector<int> array_of_local_conditions(size,0);
@@ -1867,6 +1867,10 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
     int errglonum;
     for (IndexType i_node = 1; i_node <= rPMMGMeshInfo.NumberOfNodes; ++i_node) {
         errglonum = PMMG_Get_vertexGloNum(mParMmgMesh,&mLocalToGlobal[i_node],&local_to_partition_index[i_node]);
+
+        if (mLocalToGlobal[i_node] == 6319) {
+            std::cout <<"Rank" << rank << " Local Id: " << i_node << " Owner: " << local_to_partition_index[i_node] << std::endl;
+        }
     }
 
     // Create a new model part // TODO: Use a different kind of element for each submodelpart (in order to be able of remeshing more than one kind o element or condition)
@@ -1881,17 +1885,17 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
 
     /* NODES */ // TODO: ADD OMP
     for (IndexType i_node = 1; i_node <= rPMMGMeshInfo.NumberOfNodes; ++i_node) {
-        int partition_index = local_to_partition_index[i_node];
 
         NodeType::Pointer p_node = CreateNode(rModelPart, mLocalToGlobal[i_node], ref, is_required);
 
+        int partition_index = local_to_partition_index[i_node];
         p_node->FastGetSolutionStepValue(PARTITION_INDEX) = partition_index;
 
-        if (rank == partition_index) {
-            rModelPart.GetCommunicator().LocalMesh().Nodes().push_back(p_node);
-        }else {
-            rModelPart.GetCommunicator().GhostMesh().Nodes().push_back(p_node);
-        }
+        // if (rank == partition_index) {
+        //     rModelPart.GetCommunicator().LocalMesh().Nodes().push_back(p_node);
+        // }else {
+        //     rModelPart.GetCommunicator().GhostMesh().Nodes().push_back(p_node);
+        // }
 
         KRATOS_ERROR_IF(partition_index<0) << "PARTITION INDEX NEGATIVE: " << partition_index << "FOR NODE: " << p_node->Id() << std::endl;
         KRATOS_ERROR_IF(partition_index>size) << "PARTITION GREATER THAN SIZE: " << partition_index << "FOR NODE: " << p_node->Id() << std::endl;
@@ -2000,34 +2004,34 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
     rModelPart.AddConditions(created_conditions_vector.begin(), created_conditions_vector.end());
     rModelPart.AddElements(created_elements_vector.begin(), created_elements_vector.end());
 
-    // We add nodes, conditions and elements to the sub model parts
-    for (auto& r_color_list : rColors) {
-        const IndexType key = r_color_list.first;
+    // // We add nodes, conditions and elements to the sub model parts
+    // for (auto& r_color_list : rColors) {
+    //     const IndexType key = r_color_list.first;
 
-        if (key != 0) {// NOTE: key == 0 is the MainModelPart
-            for (auto sub_model_part_name : r_color_list.second) {
-                ModelPart& r_sub_model_part = AssignUniqueModelPartCollectionTagUtility::GetRecursiveSubModelPart(rModelPart, sub_model_part_name);
+    //     if (key != 0) {// NOTE: key == 0 is the MainModelPart
+    //         for (auto sub_model_part_name : r_color_list.second) {
+    //             ModelPart& r_sub_model_part = AssignUniqueModelPartCollectionTagUtility::GetRecursiveSubModelPart(rModelPart, sub_model_part_name);
 
-                if (color_nodes.find(key) != color_nodes.end()) r_sub_model_part.AddNodes(color_nodes[key]);
-                if (first_color_cond.find(key) != first_color_cond.end()) r_sub_model_part.AddConditions(first_color_cond[key]);
-                if (second_color_cond.find(key) != second_color_cond.end()) r_sub_model_part.AddConditions(second_color_cond[key]);
-                if (first_color_elem.find(key) != first_color_elem.end()) r_sub_model_part.AddElements(first_color_elem[key]);
-                if (second_color_elem.find(key) != second_color_elem.end()) r_sub_model_part.AddElements(second_color_elem[key]);
-            }
-        } else if (mDiscretization == DiscretizationOption::ISOSURFACE) {
-            if (rModelPart.HasSubModelPart("AUXILIAR_ISOSURFACE_MODEL_PART")) {
-                auto& r_sub_model_part = rModelPart.GetSubModelPart("AUXILIAR_ISOSURFACE_MODEL_PART");
-                r_sub_model_part.AddConditions(first_color_cond[0]);
-                r_sub_model_part.AddConditions(second_color_cond[0]);
-            } else {
-                if (first_color_cond[0].size() + second_color_cond[0].size() > 0) {
-                auto& r_sub_model_part = rModelPart.CreateSubModelPart("AUXILIAR_ISOSURFACE_MODEL_PART");
-                    r_sub_model_part.AddConditions(first_color_cond[0]);
-                    r_sub_model_part.AddConditions(second_color_cond[0]);
-                }
-            }
-        }
-    }
+    //             if (color_nodes.find(key) != color_nodes.end()) r_sub_model_part.AddNodes(color_nodes[key]);
+    //             if (first_color_cond.find(key) != first_color_cond.end()) r_sub_model_part.AddConditions(first_color_cond[key]);
+    //             if (second_color_cond.find(key) != second_color_cond.end()) r_sub_model_part.AddConditions(second_color_cond[key]);
+    //             if (first_color_elem.find(key) != first_color_elem.end()) r_sub_model_part.AddElements(first_color_elem[key]);
+    //             if (second_color_elem.find(key) != second_color_elem.end()) r_sub_model_part.AddElements(second_color_elem[key]);
+    //         }
+    //     } else if (mDiscretization == DiscretizationOption::ISOSURFACE) {
+    //         if (rModelPart.HasSubModelPart("AUXILIAR_ISOSURFACE_MODEL_PART")) {
+    //             auto& r_sub_model_part = rModelPart.GetSubModelPart("AUXILIAR_ISOSURFACE_MODEL_PART");
+    //             r_sub_model_part.AddConditions(first_color_cond[0]);
+    //             r_sub_model_part.AddConditions(second_color_cond[0]);
+    //         } else {
+    //             if (first_color_cond[0].size() + second_color_cond[0].size() > 0) {
+    //             auto& r_sub_model_part = rModelPart.CreateSubModelPart("AUXILIAR_ISOSURFACE_MODEL_PART");
+    //                 r_sub_model_part.AddConditions(first_color_cond[0]);
+    //                 r_sub_model_part.AddConditions(second_color_cond[0]);
+    //             }
+    //         }
+    //     }
+    // }
 
     // In case of need to remove regions we remove the unused elements
     if (mRemoveRegions) {
