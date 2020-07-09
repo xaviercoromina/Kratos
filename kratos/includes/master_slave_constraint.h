@@ -25,6 +25,8 @@
 #include "containers/variable_component.h"
 #include "containers/vector_component_adaptor.h"
 #include "includes/process_info.h"
+#include "utilities/indexed_object.h"
+
 namespace Kratos
 {
 ///@name Kratos Globals
@@ -221,7 +223,7 @@ public:
      * @param Constant The constant in the master slave relation
      * @return A Pointer to the new constraint
      */
-    virtual MasterSlaveConstraint::Pointer Create(
+    KRATOS_DEPRECATED_MESSAGE("This is legacy version, please remove it") virtual MasterSlaveConstraint::Pointer Create(
         IndexType Id,
         NodeType& rMasterNode,
         const VariableComponentType& rMasterVariable,

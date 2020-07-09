@@ -29,7 +29,7 @@ Condition::Pointer PenaltyMethodFrictionlessMortarContactCondition<TDim,TNumNode
     NodesArrayType const& rThisNodes,
     PropertiesPointerType pProperties ) const
 {
-    return Kratos::make_intrusive< PenaltyMethodFrictionlessMortarContactCondition<TDim,TNumNodes, TNormalVariation > >( NewId, this->GetGeometry().Create( rThisNodes ), pProperties );
+    return Kratos::make_intrusive< PenaltyMethodFrictionlessMortarContactCondition<TDim,TNumNodes, TNormalVariation, TNumNodesMaster > >( NewId, this->GetParentGeometry().Create( rThisNodes ), pProperties );
 }
 
 /***********************************************************************************/
@@ -41,7 +41,7 @@ Condition::Pointer PenaltyMethodFrictionlessMortarContactCondition<TDim,TNumNode
     GeometryPointerType pGeom,
     PropertiesPointerType pProperties) const
 {
-    return Kratos::make_intrusive<  PenaltyMethodFrictionlessMortarContactCondition<TDim,TNumNodes, TNormalVariation > >( NewId, pGeom, pProperties );
+    return Kratos::make_intrusive<  PenaltyMethodFrictionlessMortarContactCondition<TDim,TNumNodes, TNormalVariation, TNumNodesMaster > >( NewId, pGeom, pProperties );
 }
 
 /***********************************************************************************/
@@ -54,7 +54,7 @@ Condition::Pointer PenaltyMethodFrictionlessMortarContactCondition<TDim,TNumNode
     PropertiesType::Pointer pProperties,
     GeometryType::Pointer pMasterGeom) const
 {
-    return Kratos::make_intrusive<  PenaltyMethodFrictionlessMortarContactCondition<TDim,TNumNodes, TNormalVariation > >( NewId, pGeom, pProperties, pMasterGeom );
+    return Kratos::make_intrusive<  PenaltyMethodFrictionlessMortarContactCondition<TDim,TNumNodes, TNormalVariation, TNumNodesMaster > >( NewId, pGeom, pProperties, pMasterGeom );
 }
 
 /************************************* DESTRUCTOR **********************************/
@@ -68,7 +68,7 @@ PenaltyMethodFrictionlessMortarContactCondition<TDim,TNumNodes, TNormalVariation
 /***********************************************************************************/
 
 template< SizeType TDim, SizeType TNumNodes, bool TNormalVariation, SizeType TNumNodesMaster >
-void PenaltyMethodFrictionlessMortarContactCondition<TDim,TNumNodes,TNormalVariation,TNumNodesMaster>::AddExplicitContribution(ProcessInfo& rCurrentProcessInfo)
+void PenaltyMethodFrictionlessMortarContactCondition<TDim,TNumNodes,TNormalVariation,TNumNodesMaster>::AddExplicitContribution(const ProcessInfo& rCurrentProcessInfo)
 {
     KRATOS_TRY;
 
@@ -85,7 +85,7 @@ template< SizeType TDim, SizeType TNumNodes, bool TNormalVariation, SizeType TNu
 void PenaltyMethodFrictionlessMortarContactCondition<TDim,TNumNodes,TNormalVariation,TNumNodesMaster>::AddExplicitContribution(
     const VectorType& rRHSVector,
     const Variable<VectorType>& rRHSVariable,
-    Variable<double>& rDestinationVariable,
+    const Variable<double>& rDestinationVariable,
     const ProcessInfo& rCurrentProcessInfo
     )
 {
@@ -103,7 +103,7 @@ template< SizeType TDim, SizeType TNumNodes, bool TNormalVariation, SizeType TNu
 void PenaltyMethodFrictionlessMortarContactCondition<TDim,TNumNodes,TNormalVariation,TNumNodesMaster>::AddExplicitContribution(
     const VectorType& rRHSVector,
     const Variable<VectorType>& rRHSVariable,
-    Variable<array_1d<double, 3>>& rDestinationVariable,
+    const Variable<array_1d<double, 3>>& rDestinationVariable,
     const ProcessInfo& rCurrentProcessInfo
     )
 {
@@ -113,7 +113,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<TDim,TNumNodes,TNormalVaria
     if (rRHSVariable == RESIDUAL_VECTOR && rDestinationVariable == FORCE_RESIDUAL) {
         if (this->Is(ACTIVE)) {
             // Getting geometries
-            GeometryType& r_slave_geometry = this->GetGeometry();
+            GeometryType& r_slave_geometry = this->GetParentGeometry();
             GeometryType& r_master_geometry = this->GetPairedGeometry();
 
             for ( IndexType i_master = 0; i_master < TNumNodesMaster; ++i_master ) {
@@ -162,7 +162,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<2, 2, false, 2>::CalculateL
             rLocalLHS(i, j) = 0.0;
 
     // The geometry of the condition
-    const GeometryType& r_geometry = this->GetGeometry();
+    const GeometryType& r_geometry = this->GetParentGeometry();
 
     // Initialize values
     const BoundedMatrix<double, 2, 2>& u1 = rDerivativeData.u1;
@@ -173,7 +173,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<2, 2, false, 2>::CalculateL
     const BoundedMatrix<double, 2, 2>& NormalSlave = rDerivativeData.NormalSlave;
 
     // The Penalty parameters
-    const array_1d<double, 2> DynamicFactor = MortarUtilities::GetVariableVector<2>(this->GetGeometry(), DYNAMIC_FACTOR);
+    const array_1d<double, 2> DynamicFactor = MortarUtilities::GetVariableVector<2>(this->GetParentGeometry(), DYNAMIC_FACTOR);
     const array_1d<double, 2>& PenaltyParameter = rDerivativeData.PenaltyParameter;
 
     // Mortar operators
@@ -572,7 +572,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 3, false, 3>::CalculateL
             rLocalLHS(i, j) = 0.0;
 
     // The geometry of the condition
-    const GeometryType& r_geometry = this->GetGeometry();
+    const GeometryType& r_geometry = this->GetParentGeometry();
 
     // Initialize values
     const BoundedMatrix<double, 3, 3>& u1 = rDerivativeData.u1;
@@ -583,7 +583,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 3, false, 3>::CalculateL
     const BoundedMatrix<double, 3, 3>& NormalSlave = rDerivativeData.NormalSlave;
 
     // The Penalty parameters
-    const array_1d<double, 3> DynamicFactor = MortarUtilities::GetVariableVector<3>(this->GetGeometry(), DYNAMIC_FACTOR);
+    const array_1d<double, 3> DynamicFactor = MortarUtilities::GetVariableVector<3>(this->GetParentGeometry(), DYNAMIC_FACTOR);
     const array_1d<double, 3>& PenaltyParameter = rDerivativeData.PenaltyParameter;
 
     // Mortar operators
@@ -2618,7 +2618,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 4, false, 4>::CalculateL
             rLocalLHS(i, j) = 0.0;
 
     // The geometry of the condition
-    const GeometryType& r_geometry = this->GetGeometry();
+    const GeometryType& r_geometry = this->GetParentGeometry();
 
     // Initialize values
     const BoundedMatrix<double, 4, 3>& u1 = rDerivativeData.u1;
@@ -2629,7 +2629,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 4, false, 4>::CalculateL
     const BoundedMatrix<double, 4, 3>& NormalSlave = rDerivativeData.NormalSlave;
 
     // The Penalty parameters
-    const array_1d<double, 4> DynamicFactor = MortarUtilities::GetVariableVector<4>(this->GetGeometry(), DYNAMIC_FACTOR);
+    const array_1d<double, 4> DynamicFactor = MortarUtilities::GetVariableVector<4>(this->GetParentGeometry(), DYNAMIC_FACTOR);
     const array_1d<double, 4>& PenaltyParameter = rDerivativeData.PenaltyParameter;
 
     // Mortar operators
@@ -7264,7 +7264,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 3, false, 4>::CalculateL
             rLocalLHS(i, j) = 0.0;
 
     // The geometry of the condition
-    const GeometryType& r_geometry = this->GetGeometry();
+    const GeometryType& r_geometry = this->GetParentGeometry();
 
     // Initialize values
     const BoundedMatrix<double, 3, 3>& u1 = rDerivativeData.u1;
@@ -7275,7 +7275,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 3, false, 4>::CalculateL
     const BoundedMatrix<double, 3, 3>& NormalSlave = rDerivativeData.NormalSlave;
 
     // The Penalty parameters
-    const array_1d<double, 3> DynamicFactor = MortarUtilities::GetVariableVector<3>(this->GetGeometry(), DYNAMIC_FACTOR);
+    const array_1d<double, 3> DynamicFactor = MortarUtilities::GetVariableVector<3>(this->GetParentGeometry(), DYNAMIC_FACTOR);
     const array_1d<double, 3>& PenaltyParameter = rDerivativeData.PenaltyParameter;
 
     // Mortar operators
@@ -10093,7 +10093,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 4, false, 3>::CalculateL
             rLocalLHS(i, j) = 0.0;
 
     // The geometry of the condition
-    const GeometryType& r_geometry = this->GetGeometry();
+    const GeometryType& r_geometry = this->GetParentGeometry();
 
     // Initialize values
     const BoundedMatrix<double, 4, 3>& u1 = rDerivativeData.u1;
@@ -10104,7 +10104,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 4, false, 3>::CalculateL
     const BoundedMatrix<double, 4, 3>& NormalSlave = rDerivativeData.NormalSlave;
 
     // The Penalty parameters
-    const array_1d<double, 4> DynamicFactor = MortarUtilities::GetVariableVector<4>(this->GetGeometry(), DYNAMIC_FACTOR);
+    const array_1d<double, 4> DynamicFactor = MortarUtilities::GetVariableVector<4>(this->GetParentGeometry(), DYNAMIC_FACTOR);
     const array_1d<double, 4>& PenaltyParameter = rDerivativeData.PenaltyParameter;
 
     // Mortar operators
@@ -13327,7 +13327,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<2, 2, true, 2>::CalculateLo
             rLocalLHS(i, j) = 0.0;
 
     // The geometry of the condition
-    const GeometryType& r_geometry = this->GetGeometry();
+    const GeometryType& r_geometry = this->GetParentGeometry();
 
     // Initialize values
     const BoundedMatrix<double, 2, 2>& u1 = rDerivativeData.u1;
@@ -13338,7 +13338,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<2, 2, true, 2>::CalculateLo
     const BoundedMatrix<double, 2, 2>& NormalSlave = rDerivativeData.NormalSlave;
 
     // The Penalty parameters
-    const array_1d<double, 2> DynamicFactor = MortarUtilities::GetVariableVector<2>(this->GetGeometry(), DYNAMIC_FACTOR);
+    const array_1d<double, 2> DynamicFactor = MortarUtilities::GetVariableVector<2>(this->GetParentGeometry(), DYNAMIC_FACTOR);
     const array_1d<double, 2>& PenaltyParameter = rDerivativeData.PenaltyParameter;
 
     // Mortar operators
@@ -13759,7 +13759,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 3, true, 3>::CalculateLo
             rLocalLHS(i, j) = 0.0;
 
     // The geometry of the condition
-    const GeometryType& r_geometry = this->GetGeometry();
+    const GeometryType& r_geometry = this->GetParentGeometry();
 
     // Initialize values
     const BoundedMatrix<double, 3, 3>& u1 = rDerivativeData.u1;
@@ -13770,7 +13770,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 3, true, 3>::CalculateLo
     const BoundedMatrix<double, 3, 3>& NormalSlave = rDerivativeData.NormalSlave;
 
     // The Penalty parameters
-    const array_1d<double, 3> DynamicFactor = MortarUtilities::GetVariableVector<3>(this->GetGeometry(), DYNAMIC_FACTOR);
+    const array_1d<double, 3> DynamicFactor = MortarUtilities::GetVariableVector<3>(this->GetParentGeometry(), DYNAMIC_FACTOR);
     const array_1d<double, 3>& PenaltyParameter = rDerivativeData.PenaltyParameter;
 
     // Mortar operators
@@ -15825,7 +15825,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 4, true, 4>::CalculateLo
             rLocalLHS(i, j) = 0.0;
 
     // The geometry of the condition
-    const GeometryType& r_geometry = this->GetGeometry();
+    const GeometryType& r_geometry = this->GetParentGeometry();
 
     // Initialize values
     const BoundedMatrix<double, 4, 3>& u1 = rDerivativeData.u1;
@@ -15836,7 +15836,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 4, true, 4>::CalculateLo
     const BoundedMatrix<double, 4, 3>& NormalSlave = rDerivativeData.NormalSlave;
 
     // The Penalty parameters
-    const array_1d<double, 4> DynamicFactor = MortarUtilities::GetVariableVector<4>(this->GetGeometry(), DYNAMIC_FACTOR);
+    const array_1d<double, 4> DynamicFactor = MortarUtilities::GetVariableVector<4>(this->GetParentGeometry(), DYNAMIC_FACTOR);
     const array_1d<double, 4>& PenaltyParameter = rDerivativeData.PenaltyParameter;
 
     // Mortar operators
@@ -20397,7 +20397,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 3, true, 4>::CalculateLo
             rLocalLHS(i, j) = 0.0;
 
     // The geometry of the condition
-    const GeometryType& r_geometry = this->GetGeometry();
+    const GeometryType& r_geometry = this->GetParentGeometry();
 
     // Initialize values
     const BoundedMatrix<double, 3, 3>& u1 = rDerivativeData.u1;
@@ -20408,7 +20408,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 3, true, 4>::CalculateLo
     const BoundedMatrix<double, 3, 3>& NormalSlave = rDerivativeData.NormalSlave;
 
     // The Penalty parameters
-    const array_1d<double, 3> DynamicFactor = MortarUtilities::GetVariableVector<3>(this->GetGeometry(), DYNAMIC_FACTOR);
+    const array_1d<double, 3> DynamicFactor = MortarUtilities::GetVariableVector<3>(this->GetParentGeometry(), DYNAMIC_FACTOR);
     const array_1d<double, 3>& PenaltyParameter = rDerivativeData.PenaltyParameter;
 
     // Mortar operators
@@ -23231,7 +23231,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 4, true, 3>::CalculateLo
             rLocalLHS(i, j) = 0.0;
 
     // The geometry of the condition
-    const GeometryType& r_geometry = this->GetGeometry();
+    const GeometryType& r_geometry = this->GetParentGeometry();
 
     // Initialize values
     const BoundedMatrix<double, 4, 3>& u1 = rDerivativeData.u1;
@@ -23242,7 +23242,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 4, true, 3>::CalculateLo
     const BoundedMatrix<double, 4, 3>& NormalSlave = rDerivativeData.NormalSlave;
 
     // The Penalty parameters
-    const array_1d<double, 4> DynamicFactor = MortarUtilities::GetVariableVector<4>(this->GetGeometry(), DYNAMIC_FACTOR);
+    const array_1d<double, 4> DynamicFactor = MortarUtilities::GetVariableVector<4>(this->GetParentGeometry(), DYNAMIC_FACTOR);
     const array_1d<double, 4>& PenaltyParameter = rDerivativeData.PenaltyParameter;
 
     // Mortar operators
@@ -26425,7 +26425,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<2, 2, false, 2>::CalculateL
         rLocalRHS[i] = 0.0;
 
     // The geometry of the condition
-    const GeometryType& r_geometry = this->GetGeometry();
+    const GeometryType& r_geometry = this->GetParentGeometry();
 
     // Initialize values
     const BoundedMatrix<double, 2, 2>& u1 = rDerivativeData.u1;
@@ -26436,7 +26436,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<2, 2, false, 2>::CalculateL
     const BoundedMatrix<double, 2, 2>& NormalSlave = rDerivativeData.NormalSlave;
 
     // The Penalty parameters
-    const array_1d<double, 2> DynamicFactor = MortarUtilities::GetVariableVector<2>(this->GetGeometry(), DYNAMIC_FACTOR);
+    const array_1d<double, 2> DynamicFactor = MortarUtilities::GetVariableVector<2>(this->GetParentGeometry(), DYNAMIC_FACTOR);
     const array_1d<double, 2>& PenaltyParameter = rDerivativeData.PenaltyParameter;
 
     // Mortar operators
@@ -26509,7 +26509,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 3, false, 3>::CalculateL
         rLocalRHS[i] = 0.0;
 
     // The geometry of the condition
-    const GeometryType& r_geometry = this->GetGeometry();
+    const GeometryType& r_geometry = this->GetParentGeometry();
 
     // Initialize values
     const BoundedMatrix<double, 3, 3>& u1 = rDerivativeData.u1;
@@ -26520,7 +26520,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 3, false, 3>::CalculateL
     const BoundedMatrix<double, 3, 3>& NormalSlave = rDerivativeData.NormalSlave;
 
     // The Penalty parameters
-    const array_1d<double, 3> DynamicFactor = MortarUtilities::GetVariableVector<3>(this->GetGeometry(), DYNAMIC_FACTOR);
+    const array_1d<double, 3> DynamicFactor = MortarUtilities::GetVariableVector<3>(this->GetParentGeometry(), DYNAMIC_FACTOR);
     const array_1d<double, 3>& PenaltyParameter = rDerivativeData.PenaltyParameter;
 
     // Mortar operators
@@ -26658,7 +26658,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 4, false, 4>::CalculateL
         rLocalRHS[i] = 0.0;
 
     // The geometry of the condition
-    const GeometryType& r_geometry = this->GetGeometry();
+    const GeometryType& r_geometry = this->GetParentGeometry();
 
     // Initialize values
     const BoundedMatrix<double, 4, 3>& u1 = rDerivativeData.u1;
@@ -26669,7 +26669,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 4, false, 4>::CalculateL
     const BoundedMatrix<double, 4, 3>& NormalSlave = rDerivativeData.NormalSlave;
 
     // The Penalty parameters
-    const array_1d<double, 4> DynamicFactor = MortarUtilities::GetVariableVector<4>(this->GetGeometry(), DYNAMIC_FACTOR);
+    const array_1d<double, 4> DynamicFactor = MortarUtilities::GetVariableVector<4>(this->GetParentGeometry(), DYNAMIC_FACTOR);
     const array_1d<double, 4>& PenaltyParameter = rDerivativeData.PenaltyParameter;
 
     // Mortar operators
@@ -26884,7 +26884,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 3, false, 4>::CalculateL
         rLocalRHS[i] = 0.0;
 
     // The geometry of the condition
-    const GeometryType& r_geometry = this->GetGeometry();
+    const GeometryType& r_geometry = this->GetParentGeometry();
 
     // Initialize values
     const BoundedMatrix<double, 3, 3>& u1 = rDerivativeData.u1;
@@ -26895,7 +26895,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 3, false, 4>::CalculateL
     const BoundedMatrix<double, 3, 3>& NormalSlave = rDerivativeData.NormalSlave;
 
     // The Penalty parameters
-    const array_1d<double, 3> DynamicFactor = MortarUtilities::GetVariableVector<3>(this->GetGeometry(), DYNAMIC_FACTOR);
+    const array_1d<double, 3> DynamicFactor = MortarUtilities::GetVariableVector<3>(this->GetParentGeometry(), DYNAMIC_FACTOR);
     const array_1d<double, 3>& PenaltyParameter = rDerivativeData.PenaltyParameter;
 
     // Mortar operators
@@ -27048,7 +27048,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 4, false, 3>::CalculateL
         rLocalRHS[i] = 0.0;
 
     // The geometry of the condition
-    const GeometryType& r_geometry = this->GetGeometry();
+    const GeometryType& r_geometry = this->GetParentGeometry();
 
     // Initialize values
     const BoundedMatrix<double, 4, 3>& u1 = rDerivativeData.u1;
@@ -27059,7 +27059,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 4, false, 3>::CalculateL
     const BoundedMatrix<double, 4, 3>& NormalSlave = rDerivativeData.NormalSlave;
 
     // The Penalty parameters
-    const array_1d<double, 4> DynamicFactor = MortarUtilities::GetVariableVector<4>(this->GetGeometry(), DYNAMIC_FACTOR);
+    const array_1d<double, 4> DynamicFactor = MortarUtilities::GetVariableVector<4>(this->GetParentGeometry(), DYNAMIC_FACTOR);
     const array_1d<double, 4>& PenaltyParameter = rDerivativeData.PenaltyParameter;
 
     // Mortar operators
@@ -27254,7 +27254,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<2, 2, true, 2>::CalculateLo
         rLocalRHS[i] = 0.0;
 
     // The geometry of the condition
-    const GeometryType& r_geometry = this->GetGeometry();
+    const GeometryType& r_geometry = this->GetParentGeometry();
 
     // Initialize values
     const BoundedMatrix<double, 2, 2>& u1 = rDerivativeData.u1;
@@ -27265,7 +27265,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<2, 2, true, 2>::CalculateLo
     const BoundedMatrix<double, 2, 2>& NormalSlave = rDerivativeData.NormalSlave;
 
     // The Penalty parameters
-    const array_1d<double, 2> DynamicFactor = MortarUtilities::GetVariableVector<2>(this->GetGeometry(), DYNAMIC_FACTOR);
+    const array_1d<double, 2> DynamicFactor = MortarUtilities::GetVariableVector<2>(this->GetParentGeometry(), DYNAMIC_FACTOR);
     const array_1d<double, 2>& PenaltyParameter = rDerivativeData.PenaltyParameter;
 
     // Mortar operators
@@ -27342,7 +27342,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 3, true, 3>::CalculateLo
         rLocalRHS[i] = 0.0;
 
     // The geometry of the condition
-    const GeometryType& r_geometry = this->GetGeometry();
+    const GeometryType& r_geometry = this->GetParentGeometry();
 
     // Initialize values
     const BoundedMatrix<double, 3, 3>& u1 = rDerivativeData.u1;
@@ -27353,7 +27353,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 3, true, 3>::CalculateLo
     const BoundedMatrix<double, 3, 3>& NormalSlave = rDerivativeData.NormalSlave;
 
     // The Penalty parameters
-    const array_1d<double, 3> DynamicFactor = MortarUtilities::GetVariableVector<3>(this->GetGeometry(), DYNAMIC_FACTOR);
+    const array_1d<double, 3> DynamicFactor = MortarUtilities::GetVariableVector<3>(this->GetParentGeometry(), DYNAMIC_FACTOR);
     const array_1d<double, 3>& PenaltyParameter = rDerivativeData.PenaltyParameter;
 
     // Mortar operators
@@ -27500,7 +27500,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 4, true, 4>::CalculateLo
         rLocalRHS[i] = 0.0;
 
     // The geometry of the condition
-    const GeometryType& r_geometry = this->GetGeometry();
+    const GeometryType& r_geometry = this->GetParentGeometry();
 
     // Initialize values
     const BoundedMatrix<double, 4, 3>& u1 = rDerivativeData.u1;
@@ -27511,7 +27511,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 4, true, 4>::CalculateLo
     const BoundedMatrix<double, 4, 3>& NormalSlave = rDerivativeData.NormalSlave;
 
     // The Penalty parameters
-    const array_1d<double, 4> DynamicFactor = MortarUtilities::GetVariableVector<4>(this->GetGeometry(), DYNAMIC_FACTOR);
+    const array_1d<double, 4> DynamicFactor = MortarUtilities::GetVariableVector<4>(this->GetParentGeometry(), DYNAMIC_FACTOR);
     const array_1d<double, 4>& PenaltyParameter = rDerivativeData.PenaltyParameter;
 
     // Mortar operators
@@ -27738,7 +27738,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 3, true, 4>::CalculateLo
         rLocalRHS[i] = 0.0;
 
     // The geometry of the condition
-    const GeometryType& r_geometry = this->GetGeometry();
+    const GeometryType& r_geometry = this->GetParentGeometry();
 
     // Initialize values
     const BoundedMatrix<double, 3, 3>& u1 = rDerivativeData.u1;
@@ -27749,7 +27749,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 3, true, 4>::CalculateLo
     const BoundedMatrix<double, 3, 3>& NormalSlave = rDerivativeData.NormalSlave;
 
     // The Penalty parameters
-    const array_1d<double, 3> DynamicFactor = MortarUtilities::GetVariableVector<3>(this->GetGeometry(), DYNAMIC_FACTOR);
+    const array_1d<double, 3> DynamicFactor = MortarUtilities::GetVariableVector<3>(this->GetParentGeometry(), DYNAMIC_FACTOR);
     const array_1d<double, 3>& PenaltyParameter = rDerivativeData.PenaltyParameter;
 
     // Mortar operators
@@ -27911,7 +27911,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 4, true, 3>::CalculateLo
         rLocalRHS[i] = 0.0;
 
     // The geometry of the condition
-    const GeometryType& r_geometry = this->GetGeometry();
+    const GeometryType& r_geometry = this->GetParentGeometry();
 
     // Initialize values
     const BoundedMatrix<double, 4, 3>& u1 = rDerivativeData.u1;
@@ -27922,7 +27922,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 4, true, 3>::CalculateLo
     const BoundedMatrix<double, 4, 3>& NormalSlave = rDerivativeData.NormalSlave;
 
     // The Penalty parameters
-    const array_1d<double, 4> DynamicFactor = MortarUtilities::GetVariableVector<4>(this->GetGeometry(), DYNAMIC_FACTOR);
+    const array_1d<double, 4> DynamicFactor = MortarUtilities::GetVariableVector<4>(this->GetParentGeometry(), DYNAMIC_FACTOR);
     const array_1d<double, 4>& PenaltyParameter = rDerivativeData.PenaltyParameter;
 
     // Mortar operators
@@ -28118,8 +28118,8 @@ void PenaltyMethodFrictionlessMortarContactCondition<3, 4, true, 3>::CalculateLo
 template< SizeType TDim, SizeType TNumNodes, bool TNormalVariation, SizeType TNumNodesMaster >
 void PenaltyMethodFrictionlessMortarContactCondition<TDim,TNumNodes,TNormalVariation,TNumNodesMaster>::EquationIdVector(
     EquationIdVectorType& rResult,
-    ProcessInfo& CurrentProcessInfo
-    )
+    const ProcessInfo& CurrentProcessInfo
+    ) const
 {
     KRATOS_TRY;
 
@@ -28129,12 +28129,12 @@ void PenaltyMethodFrictionlessMortarContactCondition<TDim,TNumNodes,TNormalVaria
     IndexType index = 0;
 
     /* ORDER - [ MASTER, SLAVE ] */
-    GeometryType& r_slave_geometry = this->GetGeometry();
-    GeometryType& r_master_geometry = this->GetPairedGeometry();
+    const GeometryType& r_slave_geometry = this->GetParentGeometry();
+    const GeometryType& r_master_geometry = this->GetPairedGeometry();
 
     // Master Nodes Displacement Equation IDs
     for ( IndexType i_master = 0; i_master < TNumNodesMaster; ++i_master ) { // NOTE: Assuming same number of nodes for master and slave
-        NodeType& r_master_node = r_master_geometry[i_master];
+        const NodeType& r_master_node = r_master_geometry[i_master];
         rResult[index++] = r_master_node.GetDof( DISPLACEMENT_X ).EquationId( );
         rResult[index++] = r_master_node.GetDof( DISPLACEMENT_Y ).EquationId( );
         if (TDim == 3) rResult[index++] = r_master_node.GetDof( DISPLACEMENT_Z ).EquationId( );
@@ -28142,7 +28142,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<TDim,TNumNodes,TNormalVaria
 
     // Slave Nodes Displacement Equation IDs
     for ( IndexType i_slave = 0; i_slave < TNumNodes; ++i_slave ) {
-        NodeType& r_slave_node = r_slave_geometry[i_slave];
+        const NodeType& r_slave_node = r_slave_geometry[i_slave];
         rResult[index++] = r_slave_node.GetDof( DISPLACEMENT_X ).EquationId( );
         rResult[index++] = r_slave_node.GetDof( DISPLACEMENT_Y ).EquationId( );
         if (TDim == 3) rResult[index++] = r_slave_node.GetDof( DISPLACEMENT_Z ).EquationId( );
@@ -28157,8 +28157,8 @@ void PenaltyMethodFrictionlessMortarContactCondition<TDim,TNumNodes,TNormalVaria
 template< SizeType TDim, SizeType TNumNodes, bool TNormalVariation, SizeType TNumNodesMaster >
 void PenaltyMethodFrictionlessMortarContactCondition<TDim,TNumNodes,TNormalVariation,TNumNodesMaster>::GetDofList(
     DofsVectorType& rConditionalDofList,
-    ProcessInfo& rCurrentProcessInfo
-    )
+    const ProcessInfo& rCurrentProcessInfo
+    ) const
 {
     KRATOS_TRY;
 
@@ -28168,12 +28168,12 @@ void PenaltyMethodFrictionlessMortarContactCondition<TDim,TNumNodes,TNormalVaria
     IndexType index = 0;
 
     /* ORDER - [ MASTER, SLAVE ] */
-    GeometryType& r_slave_geometry = this->GetGeometry();
-    GeometryType& r_master_geometry = this->GetPairedGeometry();
+    const GeometryType& r_slave_geometry = this->GetParentGeometry();
+    const GeometryType& r_master_geometry = this->GetPairedGeometry();
 
     // Master Nodes Displacement Equation IDs
     for ( IndexType i_master = 0; i_master < TNumNodesMaster; ++i_master ) { // NOTE: Assuming same number of nodes for master and slave
-        NodeType& r_master_node = r_master_geometry[i_master];
+        const NodeType& r_master_node = r_master_geometry[i_master];
         rConditionalDofList[index++] = r_master_node.pGetDof( DISPLACEMENT_X );
         rConditionalDofList[index++] = r_master_node.pGetDof( DISPLACEMENT_Y );
         if (TDim == 3) rConditionalDofList[index++] = r_master_node.pGetDof( DISPLACEMENT_Z );
@@ -28181,7 +28181,7 @@ void PenaltyMethodFrictionlessMortarContactCondition<TDim,TNumNodes,TNormalVaria
 
     // Slave Nodes Displacement Equation IDs
     for ( IndexType i_slave = 0; i_slave < TNumNodes; ++i_slave ) {
-        NodeType& r_slave_node = r_slave_geometry[i_slave];
+        const NodeType& r_slave_node = r_slave_geometry[i_slave];
         rConditionalDofList[index++] = r_slave_node.pGetDof( DISPLACEMENT_X );
         rConditionalDofList[index++] = r_slave_node.pGetDof( DISPLACEMENT_Y );
         if (TDim == 3) rConditionalDofList[index++] = r_slave_node.pGetDof( DISPLACEMENT_Z );
@@ -28194,23 +28194,12 @@ void PenaltyMethodFrictionlessMortarContactCondition<TDim,TNumNodes,TNormalVaria
 /***********************************************************************************/
 
 template< SizeType TDim, SizeType TNumNodes, bool TNormalVariation, SizeType TNumNodesMaster >
-int PenaltyMethodFrictionlessMortarContactCondition<TDim,TNumNodes,TNormalVariation,TNumNodesMaster>::Check( const ProcessInfo& rCurrentProcessInfo )
+int PenaltyMethodFrictionlessMortarContactCondition<TDim,TNumNodes,TNormalVariation,TNumNodesMaster>::Check(const ProcessInfo& rCurrentProcessInfo) const
 {
     KRATOS_TRY
 
     // Base class checks for positive Jacobian and Id > 0
-    int ierr = BaseType::Check(rCurrentProcessInfo);
-    if(ierr != 0) return ierr;
-
-    // Check that all required variables have been registered
-    KRATOS_CHECK_VARIABLE_KEY(NORMAL)
-
-    // Check that the element's nodes contain all required SolutionStepData and Degrees of freedom
-    GeometryType& r_slave_geometry = this->GetGeometry();
-    for ( IndexType i = 0; i < TNumNodes; ++i ) {
-        NodeType& r_node = r_slave_geometry[i];
-        KRATOS_CHECK_VARIABLE_IN_NODAL_DATA(NORMAL,r_node)
-    }
+    const int ierr = BaseType::Check(rCurrentProcessInfo);
 
     return ierr;
 

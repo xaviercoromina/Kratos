@@ -9,6 +9,8 @@ import KratosMultiphysics.StructuralMechanicsApplication as StructuralMechanicsA
 # Import base class file
 from KratosMultiphysics.StructuralMechanicsApplication.structural_mechanics_solver import MechanicalSolver
 
+from KratosMultiphysics import eigen_solver_factory
+
 def CreateSolver(main_model_part, custom_settings):
     return EigenSolver(main_model_part, custom_settings)
 
@@ -35,7 +37,8 @@ class EigenSolver(MechanicalSolver):
                 "tolerance"             : 1e-6,
                 "number_of_eigenvalues" : 5,
                 "echo_level"            : 1
-            }
+            },
+            "eigensolver_diagonal_values" : { }
         }""")
         this_defaults.AddMissingParameters(super(EigenSolver, cls).GetDefaultSettings())
         return this_defaults
@@ -64,7 +67,6 @@ class EigenSolver(MechanicalSolver):
         This overrides the base class method and replaces the usual linear solver
         with an eigenvalue problem solver.
         """
-        import eigen_solver_factory
         return eigen_solver_factory.ConstructSolver(self.settings["eigensolver_settings"])
 
     def _create_mechanical_solution_strategy(self):
@@ -72,7 +74,27 @@ class EigenSolver(MechanicalSolver):
         builder_and_solver = self.get_builder_and_solver() # The eigensolver is created here.
         computing_model_part = self.GetComputingModelPart()
 
+        solver_type = self.settings["eigensolver_settings"]["solver_type"].GetString()
+        if solver_type == "eigen_eigensystem":
+            mass_matrix_diagonal_value = 0.0
+            stiffness_matrix_diagonal_value = 1.0
+        elif solver_type == "feast":
+            mass_matrix_diagonal_value = 1.0
+            stiffness_matrix_diagonal_value = -1.0
+        else:
+            diag_values = self.settings["eigensolver_diagonal_values"]
+            if not diag_values.Has("mass_matrix_diagonal_value") or not diag_values.Has("stiffness_matrix_diagonal_value"):
+                err_msg  = 'For the used eigensolver "{}" no defaults for '.format(solver_type)
+                err_msg += '"mass_matrix_diagonal_value" and "stiffness_matrix_diagonal_value" exist, '
+                err_msg += 'please specify them under "eigensolver_diagonal_values"'
+                raise Exception(err_msg)
+
+            mass_matrix_diagonal_value = diag_values["mass_matrix_diagonal_value"].GetDouble()
+            stiffness_matrix_diagonal_value = diag_values["stiffness_matrix_diagonal_value"].GetDouble()
+
         return StructuralMechanicsApplication.EigensolverStrategy(computing_model_part,
                                                                   eigen_scheme,
                                                                   builder_and_solver,
+                                                                  mass_matrix_diagonal_value,
+                                                                  stiffness_matrix_diagonal_value,
                                                                   self.settings["compute_modal_decomposition"].GetBool())

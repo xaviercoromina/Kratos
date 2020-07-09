@@ -71,7 +71,7 @@ void  AddCustomUtilitiesToPython(pybind11::module& m)
         .def("SetDtMax",&EstimateDtUtility < 2 > ::SetDtMin)
         .def("SetDtMax",&EstimateDtUtility < 2 > ::SetDtMax)
         .def("EstimateDt",&EstimateDtUtility < 2 > ::EstimateDt)
-        .def("CalculateLocalCFL",&EstimateDtUtility < 2 > ::CalculateLocalCFL)
+        .def_static("CalculateLocalCFL",(void (*)(ModelPart&)) &EstimateDtUtility<2>::CalculateLocalCFL )
         ;
 
     py::class_<EstimateDtUtility < 3 > >(m,"EstimateDtUtility3D")
@@ -81,7 +81,7 @@ void  AddCustomUtilitiesToPython(pybind11::module& m)
         .def("SetDtMax",&EstimateDtUtility < 3 > ::SetDtMin)
         .def("SetDtMax",&EstimateDtUtility < 3 > ::SetDtMax)
         .def("EstimateDt",&EstimateDtUtility < 3 > ::EstimateDt)
-        .def("CalculateLocalCFL",&EstimateDtUtility < 3 > ::CalculateLocalCFL)
+        .def_static("CalculateLocalCFL",(void (*)(ModelPart&)) &EstimateDtUtility<3>::CalculateLocalCFL )
         ;
 
     // Periodic boundary conditions utilities

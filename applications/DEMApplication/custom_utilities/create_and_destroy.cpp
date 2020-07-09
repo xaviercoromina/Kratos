@@ -610,13 +610,13 @@ SphericParticle* ParticleCreatorDestructor::SphereCreatorForBreakableClusters(Mo
 
         if (r_sub_model_part_with_parameters[RANDOM_ORIENTATION]) {
 
-            Orientation = Quaternion<double>(((double) rand() / (RAND_MAX)), ((double) rand() / (RAND_MAX)), ((double) rand() / (RAND_MAX)), ((double) rand() / (RAND_MAX)));
+            Orientation = Quaternion<double>(2.0 * (double) rand() / (RAND_MAX) - 1.0, 2.0 * (double) rand() / (RAND_MAX) - 1.0, 2.0 * (double) rand() / (RAND_MAX) - 1.0, 2.0 * (double) rand() / (RAND_MAX) - 1.0);
         }
         else {
 
             Orientation = Quaternion<double>(r_sub_model_part_with_parameters[ORIENTATION]);
 
-            if (Orientation.w() == 0.0 && Orientation.x() == 0.0 && Orientation.y() == 0.0 && Orientation.z() == 0.0) Orientation = Quaternion<double>::Identity();
+            if (Orientation.W() == 0.0 && Orientation.X() == 0.0 && Orientation.Y() == 0.0 && Orientation.Z() == 0.0) Orientation = Quaternion<double>::Identity();
         }
 
         p_cluster->RigidBodyElement3D::SetOrientation(Orientation);

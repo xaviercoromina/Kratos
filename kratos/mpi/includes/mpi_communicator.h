@@ -29,7 +29,6 @@
 #include "includes/define.h"
 #include "includes/model_part.h"
 #include "includes/mpi_serializer.h"
-#include "mpi/mpi_environment.h"
 #include "mpi/includes/mpi_data_communicator.h"
 
 #define CUSTOMTIMER 1
@@ -272,7 +271,7 @@ template<> struct SendTools< Node<3>::DofsContainerType >
         unsigned int i = 0;
         for (auto i_dof = rValue.begin(); i_dof != rValue.end(); ++i_dof)
         {
-            *(pBuffer + i) = i_dof->EquationId();
+            *(pBuffer + i) = (*i_dof)->EquationId();
             ++i;
         }
     }
@@ -282,7 +281,7 @@ template<> struct SendTools< Node<3>::DofsContainerType >
         unsigned int i = 0;
         for (auto i_dof = rValue.begin(); i_dof != rValue.end(); ++i_dof)
         {
-            i_dof->SetEquationId(*(pBuffer + i));
+            (*i_dof)->SetEquationId(*(pBuffer + i));
             ++i;
         }
     }
@@ -1188,29 +1187,6 @@ public:
     {
         return "MPICommunicator";
     }
-
-    /// Print information about this object.
-
-    void PrintInfo(std::ostream& rOStream) const override
-    {
-        rOStream << Info();
-    }
-
-    /// Print object's data.
-
-    void PrintData(std::ostream& rOStream) const override
-    {
-        for (IndexType i = 0; i < mLocalMeshes.size(); i++)
-        {
-            rOStream << "    Local Mesh " << i << " : " << std::endl;
-            LocalMesh(i).PrintData(rOStream);
-            rOStream << "    Ghost Mesh " << i << " : " << std::endl;
-            GhostMesh(i).PrintData(rOStream);
-            rOStream << "    Interface Mesh " << i << " : " << std::endl;
-            InterfaceMesh(i).PrintData(rOStream);
-        }
-    }
-
 
     ///@}
     ///@name Friends

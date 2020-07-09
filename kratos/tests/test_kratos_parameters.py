@@ -1,7 +1,5 @@
 ﻿from __future__ import print_function, absolute_import, division
 
-import sys
-
 from KratosMultiphysics import Parameters
 from KratosMultiphysics import Vector
 from KratosMultiphysics import Matrix
@@ -14,19 +12,15 @@ import KratosMultiphysics.kratos_utilities as kratos_utils
 # Source: https://pybind11.readthedocs.io/en/stable/advanced/classes.html
 pickle_message = ""
 try:
-    import cickle as pickle
+    import cPickle as pickle
     have_pickle_module = True
 except ImportError:
-    if sys.version_info > (3, 0):
-        try:
-            import pickle
-            have_pickle_module = True
-        except ImportError:
-            have_pickle_module = False
-            pickle_message = "No pickle module found"
-    else:
+    try:
+        import pickle
+        have_pickle_module = True
+    except ImportError:
         have_pickle_module = False
-        pickle_message = "No valid pickle module found"
+        pickle_message = "No pickle module found"
 
 # input string with ugly formatting
 json_string = """
@@ -737,7 +731,7 @@ class TestParameters(KratosUnittest.TestCase):
 
         self.assertEqual(check, loaded_parameters.WriteJsonString())
         kratos_utils.DeleteFileIfExisting(file_name + ".rest")
-    
+
     def test_get_string_array_valid(self):
         tmp = Parameters("""{
             "parameter": ["foo", "bar"]
@@ -746,7 +740,7 @@ class TestParameters(KratosUnittest.TestCase):
         self.assertEqual(len(v), 2)
         self.assertEqual(v[0], "foo")
         self.assertEqual(v[1], "bar")
-    
+
     def test_get_string_array_invalid(self):
         tmp = Parameters("""{
             "parameter": ["foo", true]

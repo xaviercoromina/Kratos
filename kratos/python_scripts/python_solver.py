@@ -2,6 +2,8 @@ from __future__ import print_function, absolute_import, division  # makes Kratos
 
 # Importing Kratos
 import KratosMultiphysics
+from KratosMultiphysics.kratos_utilities import IssueDeprecationWarning
+from KratosMultiphysics.restart_utility import RestartUtility
 
 # Other imports
 import os
@@ -35,7 +37,6 @@ class PythonSolver(object):
         if hasattr(self, '_validate_settings_in_baseclass'):
             self.ValidateSettings()
         else:
-            from KratosMultiphysics.kratos_utilities import IssueDeprecationWarning
             IssueDeprecationWarning('PythonSolver', 'the settings are not validated in the baseclass for solver "%s", please implement it' %(self.__class__.__name__))
 
         self.echo_level = self.settings["echo_level"].GetInt()
@@ -143,7 +144,7 @@ class PythonSolver(object):
         warning_msg  = 'Using "Solve" is deprecated and will be removed in the future!\n'
         warning_msg += 'Use the separate calls to "Initialize", "InitializeSolutionStep", "Predict", '
         warning_msg += '"SolveSolutionStep" and "FinalizeSolutionStep"'
-        KratosMultiphysics.Logger.PrintWarning("::[PythonSolver]::", warning_msg)
+        IssueDeprecationWarning('PythonSolver', warning_msg)
         self.Initialize()
         self.InitializeSolutionStep()
         self.Predict()
@@ -161,39 +162,50 @@ class PythonSolver(object):
 
         if (input_type == "mdpa"):
             problem_path = os.getcwd()
+
+            default_settings = KratosMultiphysics.Parameters("""{
+                "input_filename"                             : "",
+                "skip_timer"                                 : true,
+                "ignore_variables_not_in_solution_step_data" : false,
+                "reorder"                                    : false,
+                "reorder_consecutive"                        : false
+            }""")
+
+            # cannot validate as this might contain other settings too
+            model_part_import_settings.AddMissingParameters(default_settings)
+
             input_filename = model_part_import_settings["input_filename"].GetString()
 
             # Setting some mdpa-import-related flags
             import_flags = KratosMultiphysics.ModelPartIO.READ
-            if model_part_import_settings.Has("ignore_variables_not_in_solution_step_data"):
-                if model_part_import_settings["ignore_variables_not_in_solution_step_data"].GetBool():
-                    import_flags = KratosMultiphysics.ModelPartIO.IGNORE_VARIABLES_ERROR|import_flags
-            skip_timer = True
-            if model_part_import_settings.Has("skip_timer"):
-                skip_timer = model_part_import_settings["skip_timer"].GetBool()
-            if skip_timer:
+
+            if model_part_import_settings["skip_timer"].GetBool():
                 import_flags = KratosMultiphysics.ModelPartIO.SKIP_TIMER|import_flags
+
+            if model_part_import_settings["ignore_variables_not_in_solution_step_data"].GetBool():
+                import_flags = KratosMultiphysics.ModelPartIO.IGNORE_VARIABLES_ERROR|import_flags
 
             # Import model part from mdpa file.
             KratosMultiphysics.Logger.PrintInfo("::[PythonSolver]::", "Reading model part from file: " + os.path.join(problem_path, input_filename) + ".mdpa")
-            if (model_part_import_settings.Has("reorder_consecutive") and model_part_import_settings["reorder_consecutive"].GetBool()):
+
+            if model_part_import_settings["reorder_consecutive"].GetBool():
                 KratosMultiphysics.ReorderConsecutiveModelPartIO(input_filename, import_flags).ReadModelPart(model_part)
             else:
                 KratosMultiphysics.ModelPartIO(input_filename, import_flags).ReadModelPart(model_part)
 
-            if (model_part_import_settings.Has("reorder") and model_part_import_settings["reorder"].GetBool()):
+            if model_part_import_settings["reorder"].GetBool():
                 tmp = KratosMultiphysics.Parameters("{}")
                 KratosMultiphysics.ReorderAndOptimizeModelPartProcess(model_part, tmp).Execute()
+
             KratosMultiphysics.Logger.PrintInfo("::[PythonSolver]::", "Finished reading model part from mdpa file.")
 
         elif (input_type == "rest"):
             KratosMultiphysics.Logger.PrintInfo("::[PythonSolver]::", "Loading model part from restart file.")
-            from restart_utility import RestartUtility
             RestartUtility(model_part, self._GetRestartSettings(model_part_import_settings)).LoadRestart()
             KratosMultiphysics.Logger.PrintInfo("::[PythonSolver]::", "Finished loading model part from restart file.")
 
         elif(input_type == "use_input_model_part"):
-            pass
+            KratosMultiphysics.Logger.PrintInfo("::[PythonSolver]::", "Using already imported model part - no reading necessary.")
 
         else:
             raise Exception("Other model part input options are not yet implemented.")
@@ -214,19 +226,16 @@ class PythonSolver(object):
     #### Auxiliar functions ####
 
     def print_on_rank_zero(self, *args):
-        from KratosMultiphysics.kratos_utilities import IssueDeprecationWarning
         IssueDeprecationWarning('PythonSolver', '"print_on_rank_zero" is deprecated, please use the Logger directly')
         # This function will be overridden in the trilinos-solvers
         KratosMultiphysics.Logger.PrintInfo(" ".join(map(str,args)))
 
     def print_warning_on_rank_zero(self, *args):
-        from KratosMultiphysics.kratos_utilities import IssueDeprecationWarning
         IssueDeprecationWarning('PythonSolver', '"print_warning_on_rank_zero" is deprecated, please use the Logger directly')
         # This function will be overridden in the trilinos-solvers
         KratosMultiphysics.Logger.PrintWarning(" ".join(map(str,args)))
 
     def validate_and_transfer_matching_settings(self, origin_settings, destination_settings):
-        from KratosMultiphysics.kratos_utilities import IssueDeprecationWarning
         IssueDeprecationWarning('PythonSolver', '"validate_and_transfer_matching_settings" is deprecated, please use the functionalities provided by "GetDefaultSettings"')
 
         """Transfer matching settings from origin to destination.
