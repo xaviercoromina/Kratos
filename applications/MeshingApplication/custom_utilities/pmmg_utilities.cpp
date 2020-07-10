@@ -1849,7 +1849,7 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
     std::vector<int> array_of_local_conditions(size,0);
     std::vector<int> reduced_array_of_local_elements(size,0);
     std::vector<int> reduced_array_of_local_conditions(size,0);
-    if (rank!=size) {
+    if (rank != (size-1)) {
         array_of_local_elements[rank+1]=rPMMGMeshInfo.NumberFirstTypeElements() + rPMMGMeshInfo.NumberSecondTypeElements();
         array_of_local_conditions[rank+1]=rPMMGMeshInfo.NumberFirstTypeConditions() + rPMMGMeshInfo.NumberSecondTypeConditions();
     }
@@ -2034,41 +2034,41 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
         rModelPart.RemoveElementsFromAllLevels(TO_ERASE);
     }
 
-    // TODO: Add OMP
-    // NOTE: We add the nodes from the elements and conditions to the respective submodelparts
-    const std::vector<std::string> sub_model_part_names = AssignUniqueModelPartCollectionTagUtility::GetRecursiveSubModelPartNames(rModelPart);
+    // // TODO: Add OMP
+    // // NOTE: We add the nodes from the elements and conditions to the respective submodelparts
+    // const std::vector<std::string> sub_model_part_names = AssignUniqueModelPartCollectionTagUtility::GetRecursiveSubModelPartNames(rModelPart);
 
-    for (auto sub_model_part_name : sub_model_part_names) {
-        ModelPart& r_sub_model_part = AssignUniqueModelPartCollectionTagUtility::GetRecursiveSubModelPart(rModelPart, sub_model_part_name);
+    // for (auto sub_model_part_name : sub_model_part_names) {
+    //     ModelPart& r_sub_model_part = AssignUniqueModelPartCollectionTagUtility::GetRecursiveSubModelPart(rModelPart, sub_model_part_name);
 
-        std::unordered_set<IndexType> node_ids;
+    //     std::unordered_set<IndexType> node_ids;
 
-        auto& r_sub_conditions_array = r_sub_model_part.Conditions();
-        const SizeType sub_num_conditions = r_sub_conditions_array.end() - r_sub_conditions_array.begin();
+    //     auto& r_sub_conditions_array = r_sub_model_part.Conditions();
+    //     const SizeType sub_num_conditions = r_sub_conditions_array.end() - r_sub_conditions_array.begin();
 
-        for(IndexType i = 0; i < sub_num_conditions; ++i)  {
-            auto it_cond = r_sub_conditions_array.begin() + i;
-            auto& r_cond_geom = it_cond->GetGeometry();
+    //     for(IndexType i = 0; i < sub_num_conditions; ++i)  {
+    //         auto it_cond = r_sub_conditions_array.begin() + i;
+    //         auto& r_cond_geom = it_cond->GetGeometry();
 
-            for (SizeType i_node = 0; i_node < r_cond_geom.size(); ++i_node)
-                node_ids.insert(r_cond_geom[i_node].Id());
-        }
+    //         for (SizeType i_node = 0; i_node < r_cond_geom.size(); ++i_node)
+    //             node_ids.insert(r_cond_geom[i_node].Id());
+    //     }
 
-        auto& r_sub_elements_array = r_sub_model_part.Elements();
-        const SizeType sub_num_elements = r_sub_elements_array.end() - r_sub_elements_array.begin();
+    //     auto& r_sub_elements_array = r_sub_model_part.Elements();
+    //     const SizeType sub_num_elements = r_sub_elements_array.end() - r_sub_elements_array.begin();
 
-        for(IndexType i = 0; i < sub_num_elements; ++i) {
-            auto it_elem = r_sub_elements_array.begin() + i;
-            auto& r_elem_geom = it_elem->GetGeometry();
+    //     for(IndexType i = 0; i < sub_num_elements; ++i) {
+    //         auto it_elem = r_sub_elements_array.begin() + i;
+    //         auto& r_elem_geom = it_elem->GetGeometry();
 
-            for (SizeType i_node = 0; i_node < r_elem_geom.size(); ++i_node)
-                node_ids.insert(r_elem_geom[i_node].Id());
-        }
+    //         for (SizeType i_node = 0; i_node < r_elem_geom.size(); ++i_node)
+    //             node_ids.insert(r_elem_geom[i_node].Id());
+    //     }
 
-        IndexVectorType vector_ids;
-        std::copy(node_ids.begin(), node_ids.end(), std::back_inserter(vector_ids));
-        r_sub_model_part.AddNodes(vector_ids);
-    }
+    //     IndexVectorType vector_ids;
+    //     std::copy(node_ids.begin(), node_ids.end(), std::back_inserter(vector_ids));
+    //     r_sub_model_part.AddNodes(vector_ids);
+    // }
 }
 
 /***********************************************************************************/
