@@ -13,14 +13,14 @@ class PrintIterationNumberOperation(CoSimulationCouplingOperation):
 
 
     def InitializeSolutionStep(self):
-        pass
+        self.num_coupling_operations = 0
 
     def FinalizeSolutionStep(self):
-        pass
+        print("the number of coupling operations in this step was:", self.num_coupling_operations)
 
 
     def InitializeCouplingIteration(self):
-        pass
+        self.num_coupling_operations += 1
 
     def FinalizeCouplingIteration(self):
         pass
