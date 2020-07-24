@@ -50,7 +50,7 @@ class FLOWerWrapper(CoSimulationSolverWrapper):
 
             self.ImportCouplingInterface(interface_config)
 
-    def AdvanceInTime(self, current_time):
+    def _InternalAdvanceInTime(self, current_time):
         return 0.0 # TODO find a better solution here... maybe get time from solver through IO
 
     def PrintInfo(self):

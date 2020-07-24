@@ -32,20 +32,16 @@ class PingPongWrapper(CoSimulationSolverWrapper):
         self.mp = self.model[model_part_name]
         self.mp.CreateNewNode(1,0,0,0)
 
-    def Initialize(self):
-        super(PingPongWrapper, self).Initialize()
-
     def Finalize(self):
         super(PingPongWrapper, self).Finalize()
         with self.rv.stdout, open(self.name +'.log', 'w') as file:
             for line in self.rv.stdout:
                 file.write(line.decode("utf-8"))
 
-    def AdvanceInTime(self, current_time):
+    def _InternalAdvanceInTime(self, current_time):
         return 1.0
 
-    def SolveSolutionStep(self):
-        super(PingPongWrapper, self).SolveSolutionStep()
+    def _InternalSolveSolutionStep(self):
         self.__RunExecutable()
 
     def PrintInfo(self):

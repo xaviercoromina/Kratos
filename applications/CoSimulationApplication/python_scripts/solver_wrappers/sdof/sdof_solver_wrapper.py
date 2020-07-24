@@ -28,13 +28,13 @@ class SdofSolverWrapper(CoSimulationSolverWrapper):
     def Initialize(self):
         self._sdof_solver.Initialize()
 
-    def OutputSolutionStep(self):
+    def _InternalOutputSolutionStep(self):
         self._sdof_solver.OutputSolutionStep()
 
-    def AdvanceInTime(self, current_time):
+    def _InternalAdvanceInTime(self, current_time):
         return self._sdof_solver.AdvanceInTime(current_time)
 
-    def SolveSolutionStep(self):
+    def _InternalSolveSolutionStep(self):
         self._sdof_solver.SetSolutionStepValue("ROOT_POINT_DISPLACEMENT", self.mp[KMC.SCALAR_ROOT_POINT_DISPLACEMENT], 0)
         self._sdof_solver.SetSolutionStepValue("LOAD",                    self.mp[KMC.SCALAR_FORCE], 0)
 

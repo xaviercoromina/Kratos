@@ -123,7 +123,7 @@ class CoSimulationCoupledSolver(CoSimulationSolverWrapper):
         for coupling_operation in self.coupling_operations_dict.values():
             coupling_operation.Finalize()
 
-    def AdvanceInTime(self, current_time):
+    def _InternalAdvanceInTime(self, current_time):
         # not all solvers provide time (e.g. external solvers or steady solvers)
         # hence we have to check first if they return time (i.e. time != 0.0)
         # and then if the times are matching, since currently no interpolation in time is possible
@@ -139,14 +139,14 @@ class CoSimulationCoupledSolver(CoSimulationSolverWrapper):
 
         return self.time
 
-    def Predict(self):
+    def _InternalPredict(self):
         for predictor in self.predictors_list:
             predictor.Predict()
 
         for solver in self.solver_wrappers.values():
             solver.Predict()
 
-    def InitializeSolutionStep(self):
+    def _InternalInitializeSolutionStep(self):
         for solver in self.solver_wrappers.values():
             solver.InitializeSolutionStep()
 
@@ -156,7 +156,7 @@ class CoSimulationCoupledSolver(CoSimulationSolverWrapper):
         for coupling_operation in self.coupling_operations_dict.values():
             coupling_operation.InitializeSolutionStep()
 
-    def FinalizeSolutionStep(self):
+    def _InternalFinalizeSolutionStep(self):
         for solver in self.solver_wrappers.values():
             solver.FinalizeSolutionStep()
 
@@ -166,11 +166,11 @@ class CoSimulationCoupledSolver(CoSimulationSolverWrapper):
         for coupling_operation in self.coupling_operations_dict.values():
             coupling_operation.FinalizeSolutionStep()
 
-    def OutputSolutionStep(self):
+    def _InternalOutputSolutionStep(self):
         for solver in self.solver_wrappers.values():
             solver.OutputSolutionStep()
 
-    def SolveSolutionStep(self):
+    def _InternalSolveSolutionStep(self):
         err_msg  = 'Calling "SolveSolutionStep" of the "CoSimulationCoupledSolver"!\n'
         err_msg += 'This function has to be implemented in the derived class!'
         raise Exception(err_msg)

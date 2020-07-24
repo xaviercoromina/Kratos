@@ -37,7 +37,7 @@ class DummySolverWrapper(CoSimulationSolverWrapper):
 
         super(DummySolverWrapper, self).Initialize()
 
-    def AdvanceInTime(self, current_time):
+    def _InternalAdvanceInTime(self, current_time):
         return current_time + self.time_step
 
     def PrintInfo(self):
