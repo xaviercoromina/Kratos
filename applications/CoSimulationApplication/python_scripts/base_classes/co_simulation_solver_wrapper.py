@@ -9,10 +9,12 @@ from KratosMultiphysics.CoSimulationApplication.coupling_interface_data import C
 import KratosMultiphysics.CoSimulationApplication.co_simulation_tools as cs_tools
 import KratosMultiphysics.CoSimulationApplication.colors as colors
 
+from abc import ABCMeta, abstractmethod
+
 def Create(settings, name):
     raise Exception('"CoSimulationSolverWrapper" is a baseclass and cannot be used directly!')
 
-class CoSimulationSolverWrapper(object):
+class CoSimulationSolverWrapper(metaclass=ABCMeta):
     """Baseclass for the solver wrappers used for CoSimulation
     It wraps solvers used in the CoSimulation
     """
@@ -47,6 +49,8 @@ class CoSimulationSolverWrapper(object):
         self.echo_level = self.settings["echo_level"].GetInt()
         self.data_dict = {data_name : CouplingInterfaceData(data_config, self.model, data_name, self.name) for (data_name, data_config) in self.settings["data"].items()}
 
+        self.time_shift = self.settings["time_shift"].GetDouble()
+
         # The IO is only used if the corresponding solver is used in coupling and it initialized from the "higher instance, i.e. the coupling-solver
         self.__io = None
 
@@ -68,25 +72,39 @@ class CoSimulationSolverWrapper(object):
             self.__GetIO().Finalize()
 
     def AdvanceInTime(self, current_time):
-        # in case a solver does not provide time information (e.g. external or steady solvers),
-        # then this solver should return "0.0" here
-        raise Exception('"AdvanceInTime" must be implemented in the derived class!')
+        self.started = current_time >= self.time_shift
+        if self.started:
+            current_solver_time = current_time - self.time_shift
+            new_solver_time = self._InternalAdvanceInTime(current_solver_time)
+            return new_solver_time + self.time_shift
+        else:
+            return 0.0
+
+        # # in case a solver does not provide time information (e.g. external or steady solvers),
+        # # then this solver should return "0.0" here
+        # raise Exception('"AdvanceInTime" must be implemented in the derived class!')
 
     def Predict(self):
-        pass
+        if self.started:
+            self._InternalPredict()
 
     def InitializeSolutionStep(self):
-        pass
+        if self.started:
+            self._InternalInitializeSolutionStep()
 
     def FinalizeSolutionStep(self):
-        pass
+        if self.started:
+            self._InternalFinalizeSolutionStep()
 
     def OutputSolutionStep(self):
-        pass
+        if self.started:
+            self._InternalOutputSolutionStep()
 
     def SolveSolutionStep(self):
-        for data in self.data_dict.values():
-            data.is_outdated = True
+        if self.started:
+            self._InternalSolveSolutionStep()
+            for data in self.data_dict.values():
+                data.is_outdated = True
 
 
     def CreateIO(self, io_echo_level):
@@ -141,6 +159,19 @@ class CoSimulationSolverWrapper(object):
         # TODO check if this method is necessary!
         return False
 
+    @abstractmethod
+    def _InternalAdvanceInTime(self, current_time): pass
+
+    def _InternalPredict(self): pass
+
+    def _InternalInitializeSolutionStep(self): pass
+
+    def _InternalFinalizeSolutionStep(self): pass
+
+    def _InternalOutputSolutionStep(self): pass
+
+    def _InternalSolveSolutionStep(self): pass
+
     @classmethod
     def _ClassName(cls):
         return cls.__name__
@@ -164,5 +195,6 @@ class CoSimulationSolverWrapper(object):
             "solver_wrapper_settings" : {},
             "io_settings"             : {},
             "data"                    : {},
+            "time_shift"              : 0.0,
             "echo_level"              : 0
         }""")
