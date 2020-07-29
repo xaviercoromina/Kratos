@@ -415,10 +415,10 @@ void ParallelFillCommunicator::InitializeParallelCommunicationMeshes(
     rModelPart.GetCommunicator().LocalMesh().Conditions() = rModelPart.Conditions();
 
     // Call the sub model part.
-    for (ModelPart& r_sub_model_part : rModelPart.SubModelParts())
-    {
-        ComputeCommunicationPlan(r_sub_model_part);
-    }
+    // for (ModelPart& r_sub_model_part : rModelPart.SubModelParts())
+    // {
+    //     ComputeCommunicationPlan(r_sub_model_part);
+    // }
 
     KRATOS_CATCH("");
 }
