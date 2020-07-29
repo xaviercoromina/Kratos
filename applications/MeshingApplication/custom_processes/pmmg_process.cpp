@@ -759,10 +759,10 @@ void ParMmgProcess<TPMMGLibrary>::SaveSolutionToFile(const bool PostOutput)
     const std::string file_name = mFilename + "_step=" + std::to_string(step) + (PostOutput ? ".o" : "");
 
     // Automatically save the mesh
-    mPMmmgUtilities.OutputMesh(file_name);
+    // mPMmmgUtilities.OutputMesh(file_name);
 
     // Automatically save the solution
-    mPMmmgUtilities.OutputSol(file_name);
+    // mPMmmgUtilities.OutputSol(file_name);
 
     // The current displacement
 //    if (mDiscretization == DiscretizationOption::LAGRANGIAN) {
