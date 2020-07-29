@@ -76,7 +76,6 @@ ParMmgProcess<TPMMGLibrary>::ParMmgProcess(
 
     // The discretization type
     mDiscretization = DiscretizationOption::STANDARD;
-    KRATOS_WARNING("ParMmgProcess") << "Surface meshes not compatible with Lagrangian motion. Reassign to standard discretization" << std::endl;
 
     mRemoveRegions = false;
 
@@ -539,6 +538,54 @@ void ParMmgProcess<TPMMGLibrary>::ExecuteRemeshing()
     KRATOS_INFO_IF("", mEchoLevel > 0) << "HEY 5" << std::endl;
 
     // Writing the new mesh data on the model part
+    const IndexType rank = mrThisModelPart.GetCommunicator().GetDataCommunicator().Rank();
+    const IndexType size = mrThisModelPart.GetCommunicator().GetDataCommunicator().Size();
+
+    mrThisModelPart.GetCommunicator().GetDataCommunicator().Barrier();
+
+
+    if (rank>0) {
+        mrThisModelPart.GetCommunicator().GetDataCommunicator().Send(mpRefCondition, 0);
+    }
+    else {
+        std::vector<std::unordered_map<IndexType,Condition::Pointer>> ReceiveBuffer(size);
+        ReceiveBuffer[0] = mpRefCondition;
+        for (IndexType i_rank = 1; i_rank<size; i_rank++) {
+            std::unordered_map<IndexType,Condition::Pointer> RecvObject;
+            mrThisModelPart.GetCommunicator().GetDataCommunicator().Recv(RecvObject, i_rank);
+            ReceiveBuffer[i_rank] = RecvObject;
+        }
+
+        for (auto& ref_condition : ReceiveBuffer) {
+            for (auto& t : ref_condition) {
+
+                if (mpRefCondition.find(t.first) == mpRefCondition.end()) {
+                    mpRefCondition[t.first] = t.second;
+                }
+            }
+        }
+    }
+
+    mrThisModelPart.GetCommunicator().GetDataCommunicator().Barrier();
+
+    if (rank==0) {
+        for (IndexType i_rank = 1; i_rank<size; i_rank++) {
+            mrThisModelPart.GetCommunicator().GetDataCommunicator().Send(mpRefCondition, i_rank);
+        }
+    }
+    else {
+        std::unordered_map<IndexType,Condition::Pointer> RecvObject;
+        mrThisModelPart.GetCommunicator().GetDataCommunicator().Recv(RecvObject, 0);
+        mpRefCondition = RecvObject;
+    }
+
+    // std::unordered_map<IndexType,Condition::Pointer> SendRecvObject;
+    // if (rank==0) {
+    //     SendRecvObject = mpRefCondition;
+    // }
+    // mrThisModelPart.GetCommunicator().GetDataCommunicator().Broadcast(SendRecvObject, 0);
+    // mpRefCondition = SendRecvObject;
+
     mPMmmgUtilities.WriteMeshDataToModelPart(mrThisModelPart, mColors, mDofs, mmg_mesh_info, mpRefCondition, mpRefElement);
 
     // Writing the new solution data on the model part
