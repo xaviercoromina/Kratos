@@ -430,6 +430,8 @@ Condition::Pointer ParMmgUtilities<PMMGLibrary::PMMG3D>::CreateFirstTypeConditio
     int vertex_0, vertex_1, vertex_2;
 
     KRATOS_ERROR_IF(PMMG_Get_triangle(mParMmgMesh, &vertex_0, &vertex_1, &vertex_2, &Ref, &IsRequired) != 1 ) << "Unable to get triangle" << std::endl;
+    const int rank = rModelPart.GetCommunicator().GetDataCommunicator().Rank();
+    std::cout  << "GetTriangle Rank: "<< rank << " Id: " << CondId << " Ref: " << Ref<< " Vertices: " << mLocalToGlobal[vertex_0] <<  " "<<  mLocalToGlobal[vertex_1] << " "<<  mLocalToGlobal[vertex_2] <<std::endl;
 
     // Sometimes PMMG creates conditions where there are not, then we skip
     Properties::Pointer p_prop = nullptr;
@@ -437,7 +439,7 @@ Condition::Pointer ParMmgUtilities<PMMGLibrary::PMMG3D>::CreateFirstTypeConditio
 
     if (rMapPointersRefCondition[Ref].get() == nullptr) {
         if (mDiscretization != DiscretizationOption::ISOSURFACE) { // The ISOSURFACE method creates new conditions from scratch, so we allow no previous Properties
-            // KRATOS_WARNING_IF("ParMmgUtilities", mEchoLevel > 1) << "Condition. Null pointer returned" << std::endl;
+            KRATOS_WARNING_IF("ParMmgUtilities", mEchoLevel > 1) << "Condition. Null pointer returned" << std::endl;
             return p_condition;
         } else {
             p_prop = rModelPart.pGetProperties(0);
@@ -1052,6 +1054,8 @@ void ParMmgUtilities<PMMGLibrary::PMMG3D>::SetConditions(
         const IndexType id_3 = rGeometry[2].Id(); // Third node Id
 
         KRATOS_ERROR_IF( PMMG_Set_triangle(mParMmgMesh, id_1, id_2, id_3, Color, Index) != 1 ) << "Unable to set triangle" << std::endl;
+        // const int rank = mrThisModelPart.GetCommunicator().GetDataCommunicator().Rank();
+        std::cout  << "SetTriangle(allranks) Id: "<< Index << " Ref: " << Color<< " Vertices: " << id_1 <<  " "<<  id_2 << " "<<  id_3 <<std::endl;
 
         // Set fixed boundary
         bool blocked_1 = false;
@@ -1088,6 +1092,7 @@ void ParMmgUtilities<PMMGLibrary::PMMG3D>::SetElements(
     const IndexType id_2 = local_node_id[rGeometry[1].Id()]; // Second node Id
     const IndexType id_3 = local_node_id[rGeometry[2].Id()]; // Third node Id
     const IndexType id_4 = local_node_id[rGeometry[3].Id()]; // Fourth node Id
+    std::cout  << "SetTetrahedron(allranks) Id: "<< Index << " Ref: " << Color<< " Vertices: " << id_1 <<  " "<<  id_2 << " "<<  id_3 << " "<<  id_4<<std::endl;
 
     if (rGeometry.GetGeometryType() == GeometryData::KratosGeometryType::Kratos_Tetrahedra3D4) { // Tetrahedron
         KRATOS_ERROR_IF( PMMG_Set_tetrahedron(mParMmgMesh, id_1, id_2, id_3, id_4, Color, Index) != 1 ) << "Unable to set tetrahedron" << std::endl;
@@ -1415,6 +1420,22 @@ void ParMmgUtilities<TPMMGLibrary>::GenerateMeshDataFromModelPart(
     ColorsMapType nodes_colors, cond_colors, elem_colors;
     AssignUniqueModelPartCollectionTagUtility model_part_collections(rModelPart);
     model_part_collections.ComputeTags(nodes_colors, cond_colors, elem_colors, rColors);
+
+    // const int rank = rModelPart.GetCommunicator().GetDataCommunicator().Rank();
+
+    // for (auto& t : nodes_colors)
+    //     std::cout <<rank << " nodes_colors " <<  t.first << " "
+    //             << t.second <<  "\n";
+
+    // for (auto& t : elem_colors)
+    //     std::cout <<rank << " elem_colors " <<  t.first << " "
+    //             << t.second <<  "\n";
+
+    // for (auto& t : cond_colors)
+    //     std::cout <<rank << " cond_colors " <<  t.first << " "
+    //             << t.second <<  "\n";
+
+    // AssignUniqueModelPartCollectionTagUtility::WriteTagsToJson("initial_pmmg_"+std::to_string(rank), rColors);
 
     // The ISOSURFACE has some reserved Ids. We reassign
     if (mDiscretization == DiscretizationOption::ISOSURFACE) {
@@ -1836,14 +1857,8 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
     const int size = rModelPart.GetCommunicator().GetDataCommunicator().Size();
 
     rModelPart.GetCommunicator().LocalMesh().Nodes().clear();
-    // rModelPart.GetCommunicator().LocalMesh().Elements().clear();
-    // rModelPart.GetCommunicator().LocalMesh().Conditions().clear();
     rModelPart.GetCommunicator().InterfaceMesh().Nodes().clear();
-    // rModelPart.GetCommunicator().InterfaceMesh().Elements().clear();
-    // rModelPart.GetCommunicator().InterfaceMesh().Conditions().clear();
     rModelPart.GetCommunicator().GhostMesh().Nodes().clear();
-    // rModelPart.GetCommunicator().GhostMesh().Elements().clear();
-    // rModelPart.GetCommunicator().GhostMesh().Conditions().clear();
 
     std::vector<int> array_of_local_elements(size,0);
     std::vector<int> array_of_local_conditions(size,0);
@@ -1920,10 +1935,11 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
 
             Condition::Pointer p_condition = CreateFirstTypeCondition(rModelPart, rMapPointersRefCondition, cond_id+reduced_array_of_local_conditions[rank], ref, is_required, skip_creation);
 
-            if (p_condition.get() != nullptr) {
+            if ((p_condition.get() != nullptr) && (ref != 0)) {
                 created_conditions_vector.push_back(p_condition);
-//                 rModelPart.AddCondition(p_condition);
-                if (ref != 0) first_color_cond[static_cast<IndexType>(ref)].push_back(cond_id+reduced_array_of_local_conditions[rank]);// NOTE: ref == 0 is the MainModelPart
+                // rModelPart.AddCondition(p_condition);
+                // if (ref != 0)
+                first_color_cond[static_cast<IndexType>(ref)].push_back(cond_id+reduced_array_of_local_conditions[rank]);// NOTE: ref == 0 is the MainModelPart
                 cond_id += 1;
             }
         }
@@ -1965,6 +1981,7 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
             }
 
             Element::Pointer p_element = CreateFirstTypeElement(rModelPart, rMapPointersRefElement, elem_id+reduced_array_of_local_elements[rank], ref, is_required, skip_creation);
+            // std::cout <<"elemFirst " <<rank << " id: " << elem_id+reduced_array_of_local_elements[rank] << " ref: " << ref << std::endl;
 
             if (p_element.get() != nullptr) {
                 created_elements_vector.push_back(p_element);
@@ -1986,6 +2003,7 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
             }
 
             Element::Pointer p_element = CreateSecondTypeElement(rModelPart, rMapPointersRefElement, elem_id+reduced_array_of_local_elements[rank], ref, is_required,skip_creation);
+            // std::cout <<"elemSecond " <<rank << " id: " << elem_id+reduced_array_of_local_elements[rank] << " ref: " << ref << std::endl;
 
             if (p_element.get() != nullptr) {
                 created_elements_vector.push_back(p_element);
@@ -2000,75 +2018,93 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
     rModelPart.AddConditions(created_conditions_vector.begin(), created_conditions_vector.end());
     rModelPart.AddElements(created_elements_vector.begin(), created_elements_vector.end());
 
+    rModelPart.GetCommunicator().GetDataCommunicator().Barrier();
+
     // // We add nodes, conditions and elements to the sub model parts
-    // for (auto& r_color_list : rColors) {
-    //     const IndexType key = r_color_list.first;
 
-    //     if (key != 0) {// NOTE: key == 0 is the MainModelPart
-    //         for (auto sub_model_part_name : r_color_list.second) {
-    //             ModelPart& r_sub_model_part = AssignUniqueModelPartCollectionTagUtility::GetRecursiveSubModelPart(rModelPart, sub_model_part_name);
+    for (auto& r_color_list : rColors) {
+        const IndexType key = r_color_list.first;
 
-    //             if (color_nodes.find(key) != color_nodes.end()) r_sub_model_part.AddNodes(color_nodes[key]);
-    //             if (first_color_cond.find(key) != first_color_cond.end()) r_sub_model_part.AddConditions(first_color_cond[key]);
-    //             if (second_color_cond.find(key) != second_color_cond.end()) r_sub_model_part.AddConditions(second_color_cond[key]);
-    //             if (first_color_elem.find(key) != first_color_elem.end()) r_sub_model_part.AddElements(first_color_elem[key]);
-    //             if (second_color_elem.find(key) != second_color_elem.end()) r_sub_model_part.AddElements(second_color_elem[key]);
-    //         }
-    //     } else if (mDiscretization == DiscretizationOption::ISOSURFACE) {
-    //         if (rModelPart.HasSubModelPart("AUXILIAR_ISOSURFACE_MODEL_PART")) {
-    //             auto& r_sub_model_part = rModelPart.GetSubModelPart("AUXILIAR_ISOSURFACE_MODEL_PART");
-    //             r_sub_model_part.AddConditions(first_color_cond[0]);
-    //             r_sub_model_part.AddConditions(second_color_cond[0]);
-    //         } else {
-    //             if (first_color_cond[0].size() + second_color_cond[0].size() > 0) {
-    //             auto& r_sub_model_part = rModelPart.CreateSubModelPart("AUXILIAR_ISOSURFACE_MODEL_PART");
-    //                 r_sub_model_part.AddConditions(first_color_cond[0]);
-    //                 r_sub_model_part.AddConditions(second_color_cond[0]);
-    //             }
-    //         }
-    //     }
-    // }
+        // std::cout << rank <<  " key_first " << key << std::endl;
+
+        if (key != 0) {// NOTE: key == 0 is the MainModelPart
+            for (auto sub_model_part_name : r_color_list.second) {
+                // std::cout << rank << " key_first " << key << " sub_model_part_name " << sub_model_part_name << " first_color_cond[key]" << first_color_cond[key] << std::endl;
+                ModelPart& r_sub_model_part = AssignUniqueModelPartCollectionTagUtility::GetRecursiveSubModelPart(rModelPart, sub_model_part_name);
+
+                if (color_nodes.find(key) != color_nodes.end())
+                    r_sub_model_part.AddNodes(color_nodes[key]);
+                if (first_color_cond.find(key) != first_color_cond.end())
+                    r_sub_model_part.AddConditions(first_color_cond[key]);
+                if (second_color_cond.find(key) != second_color_cond.end())
+                    r_sub_model_part.AddConditions(second_color_cond[key]);
+                if (first_color_elem.find(key) != first_color_elem.end())
+                    r_sub_model_part.AddElements(first_color_elem[key]);
+                if (second_color_elem.find(key) != second_color_elem.end())
+                    r_sub_model_part.AddElements(second_color_elem[key]);
+            }
+        } else if (mDiscretization == DiscretizationOption::ISOSURFACE) {
+            if (rModelPart.HasSubModelPart("AUXILIAR_ISOSURFACE_MODEL_PART")) {
+                auto& r_sub_model_part = rModelPart.GetSubModelPart("AUXILIAR_ISOSURFACE_MODEL_PART");
+                r_sub_model_part.AddConditions(first_color_cond[0]);
+                r_sub_model_part.AddConditions(second_color_cond[0]);
+            } else {
+                if (first_color_cond[0].size() + second_color_cond[0].size() > 0) {
+                auto& r_sub_model_part = rModelPart.CreateSubModelPart("AUXILIAR_ISOSURFACE_MODEL_PART");
+                    r_sub_model_part.AddConditions(first_color_cond[0]);
+                    r_sub_model_part.AddConditions(second_color_cond[0]);
+                }
+            }
+        }
+    }
 
     // In case of need to remove regions we remove the unused elements
     if (mRemoveRegions) {
         rModelPart.RemoveElementsFromAllLevels(TO_ERASE);
     }
 
-    // // TODO: Add OMP
-    // // NOTE: We add the nodes from the elements and conditions to the respective submodelparts
-    // const std::vector<std::string> sub_model_part_names = AssignUniqueModelPartCollectionTagUtility::GetRecursiveSubModelPartNames(rModelPart);
+    // TODO: Add OMP
+    // NOTE: We add the nodes from the elements and conditions to the respective submodelparts
+    const std::vector<std::string> sub_model_part_names = AssignUniqueModelPartCollectionTagUtility::GetRecursiveSubModelPartNames(rModelPart);
 
-    // for (auto sub_model_part_name : sub_model_part_names) {
-    //     ModelPart& r_sub_model_part = AssignUniqueModelPartCollectionTagUtility::GetRecursiveSubModelPart(rModelPart, sub_model_part_name);
+    for (auto sub_model_part_name : sub_model_part_names) {
+        ModelPart& r_sub_model_part = AssignUniqueModelPartCollectionTagUtility::GetRecursiveSubModelPart(rModelPart, sub_model_part_name);
 
-    //     std::unordered_set<IndexType> node_ids;
+        // std::cout << rank << " " << sub_model_part_name << std::endl;
 
-    //     auto& r_sub_conditions_array = r_sub_model_part.Conditions();
-    //     const SizeType sub_num_conditions = r_sub_conditions_array.end() - r_sub_conditions_array.begin();
+        std::unordered_set<IndexType> node_ids;
 
-    //     for(IndexType i = 0; i < sub_num_conditions; ++i)  {
-    //         auto it_cond = r_sub_conditions_array.begin() + i;
-    //         auto& r_cond_geom = it_cond->GetGeometry();
+        auto& r_sub_conditions_array = r_sub_model_part.Conditions();
+        const SizeType sub_num_conditions = r_sub_conditions_array.end() - r_sub_conditions_array.begin();
 
-    //         for (SizeType i_node = 0; i_node < r_cond_geom.size(); ++i_node)
-    //             node_ids.insert(r_cond_geom[i_node].Id());
-    //     }
+        // std::cout << rank << " " << sub_num_conditions << std::endl;
+        // std::cout << rank << " sub_model_part_name " << sub_model_part_name << " n_cond " << sub_num_conditions << std::endl;
 
-    //     auto& r_sub_elements_array = r_sub_model_part.Elements();
-    //     const SizeType sub_num_elements = r_sub_elements_array.end() - r_sub_elements_array.begin();
+        for(IndexType i = 0; i < sub_num_conditions; ++i)  {
+            auto it_cond = r_sub_conditions_array.begin() + i;
+            auto& r_cond_geom = it_cond->GetGeometry();
 
-    //     for(IndexType i = 0; i < sub_num_elements; ++i) {
-    //         auto it_elem = r_sub_elements_array.begin() + i;
-    //         auto& r_elem_geom = it_elem->GetGeometry();
+            for (SizeType i_node = 0; i_node < r_cond_geom.size(); ++i_node)
+                node_ids.insert(r_cond_geom[i_node].Id());
+        }
 
-    //         for (SizeType i_node = 0; i_node < r_elem_geom.size(); ++i_node)
-    //             node_ids.insert(r_elem_geom[i_node].Id());
-    //     }
+        auto& r_sub_elements_array = r_sub_model_part.Elements();
+        const SizeType sub_num_elements = r_sub_elements_array.end() - r_sub_elements_array.begin();
 
-    //     IndexVectorType vector_ids;
-    //     std::copy(node_ids.begin(), node_ids.end(), std::back_inserter(vector_ids));
-    //     r_sub_model_part.AddNodes(vector_ids);
-    // }
+        // std::cout << rank << " sub_model_part_name " << sub_model_part_name << " n_elem " << sub_num_elements << std::endl;
+
+        for(IndexType i = 0; i < sub_num_elements; ++i) {
+            auto it_elem = r_sub_elements_array.begin() + i;
+            auto& r_elem_geom = it_elem->GetGeometry();
+
+            for (SizeType i_node = 0; i_node < r_elem_geom.size(); ++i_node)
+                node_ids.insert(r_elem_geom[i_node].Id());
+        }
+
+        IndexVectorType vector_ids;
+        std::copy(node_ids.begin(), node_ids.end(), std::back_inserter(vector_ids));
+        r_sub_model_part.AddNodes(vector_ids);
+    }
 }
 
 /***********************************************************************************/

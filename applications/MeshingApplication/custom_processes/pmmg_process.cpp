@@ -202,6 +202,8 @@ void ParMmgProcess<TPMMGLibrary>::ExecuteInitializeSolutionStep()
     // We execute the remeshing
     ExecuteRemeshing();
 
+    const int rank = mrThisModelPart.GetCommunicator().GetDataCommunicator().Rank();
+    AssignUniqueModelPartCollectionTagUtility::WriteTagsToJson("final_pmmg_"+std::to_string(rank), mColors);
     KRATOS_INFO_IF("", mEchoLevel > 0) << "EXECUTING REMESHING FINISHED" << std::endl;
 
 
