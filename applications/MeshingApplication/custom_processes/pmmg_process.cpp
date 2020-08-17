@@ -581,6 +581,43 @@ void ParMmgProcess<TPMMGLibrary>::ExecuteRemeshing()
         mpRefCondition = RecvObject;
     }
 
+    //SYNC ELEMENT POINTER MAP
+    mrThisModelPart.GetCommunicator().GetDataCommunicator().Barrier();
+
+    if (rank>0) {
+        mrThisModelPart.GetCommunicator().GetDataCommunicator().Send(mpRefElement, 0);
+    }
+    else {
+        std::vector<std::unordered_map<IndexType,Element::Pointer>> ReceiveBuffer(size);
+        ReceiveBuffer[0] = mpRefElement;
+        for (IndexType i_rank = 1; i_rank<size; i_rank++) {
+            std::unordered_map<IndexType,Element::Pointer> RecvObject;
+            mrThisModelPart.GetCommunicator().GetDataCommunicator().Recv(RecvObject, i_rank);
+            ReceiveBuffer[i_rank] = RecvObject;
+        }
+
+        for (auto& ref_condition : ReceiveBuffer) {
+            for (auto& t : ref_condition) {
+
+                if (mpRefElement.find(t.first) == mpRefElement.end()) {
+                    mpRefElement[t.first] = t.second;
+                }
+            }
+        }
+    }
+
+    mrThisModelPart.GetCommunicator().GetDataCommunicator().Barrier();
+
+    if (rank==0) {
+        for (IndexType i_rank = 1; i_rank<size; i_rank++) {
+            mrThisModelPart.GetCommunicator().GetDataCommunicator().Send(mpRefElement, i_rank);
+        }
+    }
+    else {
+        std::unordered_map<IndexType,Element::Pointer> RecvObject;
+        mrThisModelPart.GetCommunicator().GetDataCommunicator().Recv(RecvObject, 0);
+        mpRefElement = RecvObject;
+    }
     // std::unordered_map<IndexType,Condition::Pointer> SendRecvObject;
     // if (rank==0) {
     //     SendRecvObject = mpRefCondition;
