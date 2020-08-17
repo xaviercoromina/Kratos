@@ -1049,9 +1049,9 @@ void ParMmgUtilities<PMMGLibrary::PMMG3D>::SetConditions(
     else if (rGeometry.GetGeometryType() == GeometryData::KratosGeometryType::Kratos_Line3D2) { // Line
         KRATOS_ERROR << "Kratos_Line3D2 remeshing pending to be implemented" << std::endl;
     } else if (rGeometry.GetGeometryType() == GeometryData::KratosGeometryType::Kratos_Triangle3D3) {// Triangle
-        const IndexType id_1 = rGeometry[0].Id(); // First node Id
-        const IndexType id_2 = rGeometry[1].Id(); // Second node Id
-        const IndexType id_3 = rGeometry[2].Id(); // Third node Id
+        const IndexType id_1 = local_node_id[rGeometry[0].Id()]; // First node Id
+        const IndexType id_2 = local_node_id[rGeometry[1].Id()]; // Second node Id
+        const IndexType id_3 = local_node_id[rGeometry[2].Id()]; // Third node Id
 
         KRATOS_ERROR_IF( PMMG_Set_triangle(mParMmgMesh, id_1, id_2, id_3, Color, Index) != 1 ) << "Unable to set triangle" << std::endl;
         // const int rank = mrThisModelPart.GetCommunicator().GetDataCommunicator().Rank();
