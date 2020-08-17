@@ -439,7 +439,9 @@ Condition::Pointer ParMmgUtilities<PMMGLibrary::PMMG3D>::CreateFirstTypeConditio
 
     if (rMapPointersRefCondition[Ref].get() == nullptr) {
         if (mDiscretization != DiscretizationOption::ISOSURFACE) { // The ISOSURFACE method creates new conditions from scratch, so we allow no previous Properties
-            KRATOS_WARNING_IF("ParMmgUtilities", mEchoLevel > 1) << "Condition. Null pointer returned" << std::endl;
+            // KRATOS_WARNING_IF("ParMmgUtilities", mEchoLevel > 1) << "Condition. Null pointer returned" << std::endl;
+            std::cout  << "###WARNING### Cond Null pointer Rank: "<< rank  << " Id: " << CondId << " Ref: " << Ref<< std::endl;
+
             return p_condition;
         } else {
             p_prop = rModelPart.pGetProperties(0);
@@ -536,6 +538,8 @@ Element::Pointer ParMmgUtilities<PMMGLibrary::PMMG3D>::CreateFirstTypeElement(
     int vertex_0, vertex_1, vertex_2, vertex_3;
 
     KRATOS_ERROR_IF(PMMG_Get_tetrahedron(mParMmgMesh, &vertex_0, &vertex_1, &vertex_2, &vertex_3, &Ref, &IsRequired) != 1 ) << "Unable to get tetrahedron" << std::endl;
+    auto rank = DataCommunicator::GetDefault().Rank();
+    std::cout  << "GetTetrahedron Rank: "<< rank << " Id: " << ElemId << " Ref: " << Ref<< " Vertices: " << mLocalToGlobal[vertex_0] <<  " "<<  mLocalToGlobal[vertex_1] << " "<<  mLocalToGlobal[vertex_2] <<" "<<  mLocalToGlobal[vertex_3] <<std::endl;
 
     // std::cout << "elem id id id id " << ElemId << " "<< vertex_0 << " "<< vertex_1 << " "<< vertex_2 << " "<< vertex_3 << std::endl;
     // std::cout << "elem id id id id " << ElemId << " "<< mLocalToGlobal[vertex_0] << " "<< mLocalToGlobal[vertex_1] << " "<< mLocalToGlobal[vertex_2] << " "<< mLocalToGlobal[vertex_3] << std::endl;
@@ -574,7 +578,7 @@ Element::Pointer ParMmgUtilities<PMMGLibrary::PMMG3D>::CreateFirstTypeElement(
 
         // Sometimes PMMG creates elements where there are not, then we skip
         if (rMapPointersRefElement[Ref].get() == nullptr) {
-            KRATOS_WARNING_IF("ParMmgUtilities", mEchoLevel > 1) << "Element. Null pointer returned" << std::endl;
+            std::cout  << "###WARNING### Elem Null pointer Rank: "<< rank  << " Id: " << ElemId << " Ref: " << Ref<< std::endl;
             return p_element;
         } else {
             p_base_element = rMapPointersRefElement[Ref];
@@ -1055,7 +1059,8 @@ void ParMmgUtilities<PMMGLibrary::PMMG3D>::SetConditions(
 
         KRATOS_ERROR_IF( PMMG_Set_triangle(mParMmgMesh, id_1, id_2, id_3, Color, Index) != 1 ) << "Unable to set triangle" << std::endl;
         // const int rank = mrThisModelPart.GetCommunicator().GetDataCommunicator().Rank();
-        std::cout  << "SetTriangle(allranks) Id: "<< Index << " Ref: " << Color<< " Vertices: " << id_1 <<  " "<<  id_2 << " "<<  id_3 <<std::endl;
+        auto rank = DataCommunicator::GetDefault().Rank();
+        std::cout  << "SetTriangle rank " << rank << " Id: "<< Index << " Ref: " << Color<< " Vertices: " << id_1 <<  " "<<  id_2 << " "<<  id_3 <<std::endl;
 
         // Set fixed boundary
         bool blocked_1 = false;
@@ -1092,7 +1097,8 @@ void ParMmgUtilities<PMMGLibrary::PMMG3D>::SetElements(
     const IndexType id_2 = local_node_id[rGeometry[1].Id()]; // Second node Id
     const IndexType id_3 = local_node_id[rGeometry[2].Id()]; // Third node Id
     const IndexType id_4 = local_node_id[rGeometry[3].Id()]; // Fourth node Id
-    std::cout  << "SetTetrahedron(allranks) Id: "<< Index << " Ref: " << Color<< " Vertices: " << id_1 <<  " "<<  id_2 << " "<<  id_3 << " "<<  id_4<<std::endl;
+    auto rank = DataCommunicator::GetDefault().Rank();
+    std::cout  << "SetTetrahedron rank " << rank << " Id: "<< Index << " Ref: " << Color<< " Vertices: " << id_1 <<  " "<<  id_2 << " "<<  id_3 << " "<<  id_4<<std::endl;
 
     if (rGeometry.GetGeometryType() == GeometryData::KratosGeometryType::Kratos_Tetrahedra3D4) { // Tetrahedron
         KRATOS_ERROR_IF( PMMG_Set_tetrahedron(mParMmgMesh, id_1, id_2, id_3, id_4, Color, Index) != 1 ) << "Unable to set tetrahedron" << std::endl;
