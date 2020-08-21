@@ -19,7 +19,9 @@
 // External includes
 
 // Project includes
-#include "includes/define.h"
+#include "includes/model_part.h"
+#include "utilities/binbased_fast_point_locator.h"
+#include "utilities/quadrature_points_utility.h"
 #include "particle_mechanics_application_variables.h"
 
 
@@ -50,10 +52,10 @@ namespace MPMParticleGeneratorUtility
     Matrix MP33ShapeFunctions();
 
     /// Get integration weights of the geometry for the given integration method
-    void GetIntegrationPointVolumes(const GeometryType& rGeom, const IntegrationMethod IntegrationMethod, Vector& rIntVolumes);
+    void KRATOS_API(PARTICLE_MECHANICS_APPLICATION) GetIntegrationPointVolumes(const GeometryType& rGeom, const IntegrationMethod IntegrationMethod, Vector& rIntVolumes);
 
     /// Get integration method and shape function values for the given element
-    void DetermineIntegrationMethodAndShapeFunctionValues(const GeometryType& rGeom, const SizeType ParticlesPerElement,
+    void KRATOS_API(PARTICLE_MECHANICS_APPLICATION) DetermineIntegrationMethodAndShapeFunctionValues(const GeometryType& rGeom, const SizeType ParticlesPerElement,
         IntegrationMethod& rIntegrationMethod, Matrix& rN, bool& IsEqualVolumes);
 
     /**
@@ -126,14 +128,14 @@ namespace MPMParticleGeneratorUtility
                     const GeometryData::KratosGeometryType background_geo_type = rBackgroundGridModelPart.ElementsBegin()->GetGeometry().GetGeometryType();
                     const std::size_t domain_size = rBackgroundGridModelPart.GetProcessInfo()[DOMAIN_SIZE];
                     const Geometry< Node < 3 > >& r_geometry = i->GetGeometry(); // current element's geometry
-                    
+
                     // Get integration method and shape function values
                     IntegrationMethod int_method = GeometryData::GI_GAUSS_1;
                     Matrix shape_functions_values;
                     bool is_equal_int_volumes = false;
                     DetermineIntegrationMethodAndShapeFunctionValues(r_geometry, particles_per_element,
                         int_method, shape_functions_values, is_equal_int_volumes);
-                    
+
                     // Get volumes of the material points
                     const unsigned int integration_point_per_elements = shape_functions_values.size1();
                     Vector int_volumes (integration_point_per_elements);
@@ -152,6 +154,12 @@ namespace MPMParticleGeneratorUtility
                         else KRATOS_ERROR << "Element for mixed U-P formulation is only implemented for 2D Triangle Elements." << std::endl;
                     }
                     else if (IsAxisSymmetry && domain_size == 3) KRATOS_ERROR << "Axisymmetric elements must be used in a 2D domain. You specified a 3D domain." << std::endl;
+                    else if (rBackgroundGridModelPart.GetProcessInfo().Has(IS_PQMPM)) {
+                        if (rBackgroundGridModelPart.GetProcessInfo().GetValue(IS_PQMPM)) {
+                            element_type_name = "UpdatedLagrangianPQ";
+                            KRATOS_ERROR_IF(IsAxisSymmetry) << "PQMPM is not implemented for axisymmetric elements yet." << std::endl;
+                        }
+                    }
 
                     // Get new element
                     const Element& new_element = KratosComponents<Element>::Get(element_type_name);
@@ -175,7 +183,10 @@ namespace MPMParticleGeneratorUtility
                                 xg[0][dimension] = xg[0][dimension] + shape_functions_values(PointNumber, j) * r_geometry[j].Coordinates()[dimension];
                             }
                         }
-                        if (IsAxisSymmetry)  mp_mass[0] = mp_volume[0] * 2.0 * Globals::Pi * xg[0][0] * density;
+                        if (IsAxisSymmetry) {
+                            mp_volume[0] *= 2.0 * Globals::Pi * xg[0][0];
+                            mp_mass[0] = mp_volume[0] * density;
+                        }
 
                         typename BinBasedFastPointLocator<TDimension>::ResultIteratorType result_begin = results.begin();
                         Element::Pointer pelem;
@@ -230,7 +241,8 @@ namespace MPMParticleGeneratorUtility
      * @brief Function to Initiate material point condition.
      * @details Generating particle condition using a designated shape functions
      */
-    void GenerateMaterialPointCondition(    ModelPart& rBackgroundGridModelPart,
+    void KRATOS_API(PARTICLE_MECHANICS_APPLICATION) GenerateMaterialPointCondition(
+                                            ModelPart& rBackgroundGridModelPart,
                                             ModelPart& rInitialModelPart,
                                             ModelPart& rMPMModelPart);
 

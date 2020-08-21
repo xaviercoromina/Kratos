@@ -16,9 +16,6 @@
 
 // Project includes
 #include "custom_utilities/mpm_particle_generator_utility.h"
-#include "includes/define.h"
-#include "includes/model_part.h"
-#include "particle_mechanics_application_variables.h"
 #include "custom_utilities/particle_mechanics_math_utilities.h"
 
 
@@ -75,7 +72,7 @@ namespace MPMParticleGeneratorUtility
                 // For regular conditions: straight copy all conditions
                 if (!submodelpart.ConditionsBegin()->Is(BOUNDARY)){
                     if (submodelpart.NodesBegin()->Is(SLIP)){
-                        // Do nothing, this is a slip condition applied directly 
+                        // Do nothing, this is a slip condition applied directly
                         // to the background grid nodes.
                         // Check 'apply_mpm_slip_boundary_process.py'
                     }
@@ -96,6 +93,7 @@ namespace MPMParticleGeneratorUtility
 
                         // Flag whether condition is Neumann or Dirichlet
                         const bool is_neumann_condition = i->GetValue(MPC_IS_NEUMANN);
+                        const int boundary_condition_type = i->GetValue(MPC_BOUNDARY_CONDITION_TYPE);
 
                         // Check number of particles per condition to be created
                         unsigned int particles_per_condition = 0; // Default zero
@@ -331,6 +329,9 @@ namespace MPMParticleGeneratorUtility
                         // Get new condition
                         const Condition& new_condition = KratosComponents<Condition>::Get(condition_type_name);
 
+                        // Check Normal direction
+                        if (flip_normal_direction) mpc_normal *= -1.0;
+
                         // 1. Loop over the conditions to create inner particle condition
                         unsigned int new_condition_id = 0;
                         for ( unsigned int point_number = 0; point_number < integration_point_per_conditions; point_number++ )
@@ -348,8 +349,6 @@ namespace MPMParticleGeneratorUtility
                                 }
                             }
 
-                            // Check Normal direction
-                            if (flip_normal_direction) mpc_normal *= -1.0;
 
                             ProcessInfo process_info = ProcessInfo();
 
@@ -371,8 +370,12 @@ namespace MPMParticleGeneratorUtility
                                 p_condition->SetValuesOnIntegrationPoints(MPC_ACCELERATION, { mpc_acceleration }, process_info);
                                 p_condition->SetValuesOnIntegrationPoints(MPC_IMPOSED_ACCELERATION, { mpc_imposed_acceleration }, process_info);
 
-                                std::vector<double> mpc_penalty_factor_vector = { mpc_penalty_factor };
-                                p_condition->SetValuesOnIntegrationPoints(PENALTY_FACTOR, mpc_penalty_factor_vector, process_info);
+                                if (boundary_condition_type == 1)
+                                {
+                                    std::vector<double> mpc_penalty_factor_vector = { mpc_penalty_factor };
+                                    p_condition->SetValuesOnIntegrationPoints(PENALTY_FACTOR, mpc_penalty_factor_vector, process_info);
+                                }
+                                    
 
                                 if (is_slip)
                                     p_condition->Set(SLIP);
@@ -399,8 +402,6 @@ namespace MPMParticleGeneratorUtility
                             const double denominator = std::sqrt(mpc_normal[0]*mpc_normal[0] + mpc_normal[1]*mpc_normal[1] + mpc_normal[2]*mpc_normal[2]);
                             if (std::abs(denominator) > std::numeric_limits<double>::epsilon() ) mpc_normal *= 1.0 / denominator;
 
-                            // Check Normal direction
-                            if (flip_normal_direction) mpc_normal *= -1.0;
 
                             // Create new material point condition
                             new_condition_id = last_condition_id + j;
@@ -430,8 +431,11 @@ namespace MPMParticleGeneratorUtility
                                 p_condition->SetValuesOnIntegrationPoints(MPC_ACCELERATION, { mpc_acceleration }, process_info);
                                 p_condition->SetValuesOnIntegrationPoints(MPC_IMPOSED_ACCELERATION, { mpc_imposed_acceleration }, process_info);
 
-                                std::vector<double> mpc_penalty_factor_vector = { mpc_penalty_factor };
-                                p_condition->SetValuesOnIntegrationPoints(PENALTY_FACTOR, mpc_penalty_factor_vector, process_info);
+                                 if (boundary_condition_type == 1){
+                                    std::vector<double> mpc_penalty_factor_vector = { mpc_penalty_factor };
+                                    p_condition->SetValuesOnIntegrationPoints(PENALTY_FACTOR, mpc_penalty_factor_vector, process_info);
+                                 }
+                                
 
                                 if (is_slip)
                                     p_condition->Set(SLIP);
