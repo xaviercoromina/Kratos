@@ -1941,11 +1941,10 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
 
             Condition::Pointer p_condition = CreateFirstTypeCondition(rModelPart, rMapPointersRefCondition, cond_id+reduced_array_of_local_conditions[rank], ref, is_required, skip_creation);
 
-            if ((p_condition.get() != nullptr) && (ref != 0)) {
+            if (p_condition.get() != nullptr) {
                 created_conditions_vector.push_back(p_condition);
                 // rModelPart.AddCondition(p_condition);
-                // if (ref != 0)
-                first_color_cond[static_cast<IndexType>(ref)].push_back(cond_id+reduced_array_of_local_conditions[rank]);// NOTE: ref == 0 is the MainModelPart
+                if (ref != 0) first_color_cond[static_cast<IndexType>(ref)].push_back(cond_id+reduced_array_of_local_conditions[rank]);// NOTE: ref == 0 is the MainModelPart
                 cond_id += 1;
             }
         }
