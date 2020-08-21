@@ -404,8 +404,6 @@ Node<3>::Pointer ParMmgUtilities<PMMGLibrary::PMMG3D>::CreateNode(
 
     KRATOS_ERROR_IF(PMMG_Get_vertex(mParMmgMesh, &coord_0, &coord_1, &coord_2, &Ref, &is_corner, &IsRequired) != 1 ) << "Unable to get vertex" << std::endl;
 
-    // std::cout<< iNode << " " << coord_0 <<  " " << coord_1 << " " << coord_2 << " " << Ref << std::endl;
-
     NodeType::Pointer p_node = rModelPart.CreateNewNode(iNode, coord_0, coord_1, coord_2);
 
     return p_node;
@@ -430,8 +428,6 @@ Condition::Pointer ParMmgUtilities<PMMGLibrary::PMMG3D>::CreateFirstTypeConditio
     int vertex_0, vertex_1, vertex_2;
 
     KRATOS_ERROR_IF(PMMG_Get_triangle(mParMmgMesh, &vertex_0, &vertex_1, &vertex_2, &Ref, &IsRequired) != 1 ) << "Unable to get triangle" << std::endl;
-    const int rank = rModelPart.GetCommunicator().GetDataCommunicator().Rank();
-    std::cout  << "GetTriangle Rank: "<< rank << " Id: " << CondId << " Ref: " << Ref<< " Vertices: " << mLocalToGlobal[vertex_0] <<  " "<<  mLocalToGlobal[vertex_1] << " "<<  mLocalToGlobal[vertex_2] <<std::endl;
 
     // Sometimes PMMG creates conditions where there are not, then we skip
     Properties::Pointer p_prop = nullptr;
@@ -439,8 +435,8 @@ Condition::Pointer ParMmgUtilities<PMMGLibrary::PMMG3D>::CreateFirstTypeConditio
 
     if (rMapPointersRefCondition[Ref].get() == nullptr) {
         if (mDiscretization != DiscretizationOption::ISOSURFACE) { // The ISOSURFACE method creates new conditions from scratch, so we allow no previous Properties
-            // KRATOS_WARNING_IF("ParMmgUtilities", mEchoLevel > 1) << "Condition. Null pointer returned" << std::endl;
-            std::cout  << "###WARNING### Cond Null pointer Rank: "<< rank  << " Id: " << CondId << " Ref: " << Ref<< std::endl;
+            KRATOS_WARNING_IF("ParMmgUtilities", mEchoLevel > 1) << "Condition. Null reference-pointer returned. Rank " <<
+                DataCommunicator::GetDefault().Rank() << " Id: " << CondId << " Ref: " << Ref<< std::endl;
 
             return p_condition;
         } else {
@@ -538,11 +534,6 @@ Element::Pointer ParMmgUtilities<PMMGLibrary::PMMG3D>::CreateFirstTypeElement(
     int vertex_0, vertex_1, vertex_2, vertex_3;
 
     KRATOS_ERROR_IF(PMMG_Get_tetrahedron(mParMmgMesh, &vertex_0, &vertex_1, &vertex_2, &vertex_3, &Ref, &IsRequired) != 1 ) << "Unable to get tetrahedron" << std::endl;
-    auto rank = DataCommunicator::GetDefault().Rank();
-    std::cout  << "GetTetrahedron Rank: "<< rank << " Id: " << ElemId << " Ref: " << Ref<< " Vertices: " << mLocalToGlobal[vertex_0] <<  " "<<  mLocalToGlobal[vertex_1] << " "<<  mLocalToGlobal[vertex_2] <<" "<<  mLocalToGlobal[vertex_3] <<std::endl;
-
-    // std::cout << "elem id id id id " << ElemId << " "<< vertex_0 << " "<< vertex_1 << " "<< vertex_2 << " "<< vertex_3 << std::endl;
-    // std::cout << "elem id id id id " << ElemId << " "<< mLocalToGlobal[vertex_0] << " "<< mLocalToGlobal[vertex_1] << " "<< mLocalToGlobal[vertex_2] << " "<< mLocalToGlobal[vertex_3] << std::endl;
 
     if (mDiscretization == DiscretizationOption::ISOSURFACE) {
         // The existence of a _nullptr_ indicates an element that was removed. This is not an alarming indicator.
@@ -578,7 +569,6 @@ Element::Pointer ParMmgUtilities<PMMGLibrary::PMMG3D>::CreateFirstTypeElement(
 
         // Sometimes PMMG creates elements where there are not, then we skip
         if (rMapPointersRefElement[Ref].get() == nullptr) {
-            std::cout  << "###WARNING### Elem Null pointer Rank: "<< rank  << " Id: " << ElemId << " Ref: " << Ref<< std::endl;
             return p_element;
         } else {
             p_base_element = rMapPointersRefElement[Ref];
@@ -2040,15 +2030,10 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
     for (auto sub_model_part_name : sub_model_part_names) {
         ModelPart& r_sub_model_part = AssignUniqueModelPartCollectionTagUtility::GetRecursiveSubModelPart(rModelPart, sub_model_part_name);
 
-        // std::cout << rank << " " << sub_model_part_name << std::endl;
-
         std::unordered_set<IndexType> node_ids;
 
         auto& r_sub_conditions_array = r_sub_model_part.Conditions();
         const SizeType sub_num_conditions = r_sub_conditions_array.end() - r_sub_conditions_array.begin();
-
-        // std::cout << rank << " " << sub_num_conditions << std::endl;
-        // std::cout << rank << " sub_model_part_name " << sub_model_part_name << " n_cond " << sub_num_conditions << std::endl;
 
         for(IndexType i = 0; i < sub_num_conditions; ++i)  {
             auto it_cond = r_sub_conditions_array.begin() + i;
@@ -2060,8 +2045,6 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
 
         auto& r_sub_elements_array = r_sub_model_part.Elements();
         const SizeType sub_num_elements = r_sub_elements_array.end() - r_sub_elements_array.begin();
-
-        // std::cout << rank << " sub_model_part_name " << sub_model_part_name << " n_elem " << sub_num_elements << std::endl;
 
         for(IndexType i = 0; i < sub_num_elements; ++i) {
             auto it_elem = r_sub_elements_array.begin() + i;

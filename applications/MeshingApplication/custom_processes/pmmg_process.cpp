@@ -197,15 +197,8 @@ void ParMmgProcess<TPMMGLibrary>::ExecuteInitializeSolutionStep()
     // Save to file
      if (safe_to_file) SaveSolutionToFile(false);
 
-
-    KRATOS_INFO_IF("", mEchoLevel > 0) << "EXECUTING REMESHING" << std::endl;
     // We execute the remeshing
     ExecuteRemeshing();
-
-    const int rank = mrThisModelPart.GetCommunicator().GetDataCommunicator().Rank();
-    AssignUniqueModelPartCollectionTagUtility::WriteTagsToJson("final_pmmg_"+std::to_string(rank), mColors);
-    KRATOS_INFO_IF("", mEchoLevel > 0) << "EXECUTING REMESHING FINISHED" << std::endl;
-
 
     /* We print the resulting model part */
     KRATOS_INFO_IF("", mEchoLevel > 0) <<
@@ -459,25 +452,16 @@ void ParMmgProcess<TPMMGLibrary>::ExecuteRemeshing()
         r_old_auxiliar_model_part.AddNodes( r_auxiliar_model_part.NodesBegin(), r_auxiliar_model_part.NodesEnd() );
         r_old_auxiliar_model_part.AddElements( r_auxiliar_model_part.ElementsBegin(), r_auxiliar_model_part.ElementsEnd() );
     }
-    KRATOS_INFO_IF("", mEchoLevel > 0) << "HEY 1" << std::endl;
 
     // Calling the library functions
     mPMmmgUtilities.PMMGLibCallMetric(mThisParameters);
 
-    KRATOS_INFO_IF("", mEchoLevel > 0) << "HEY 2" << std::endl;
-
-
     /* Save to file */
      if (save_to_file) SaveSolutionToFile(true);
-
-    KRATOS_INFO_IF("", mEchoLevel > 0) << "HEY 3" << std::endl;
 
     // Some information
     PMMGMeshInfo<TPMMGLibrary> mmg_mesh_info;
     mPMmmgUtilities.PrintAndGetParMmgMeshInfo(mmg_mesh_info);
-
-    KRATOS_INFO_IF("", mEchoLevel > 0) << "HEY 4" << std::endl;
-
 
     // We clear the OLD_ENTITY flag
     if (collapse_prisms_elements) {
@@ -537,7 +521,6 @@ void ParMmgProcess<TPMMGLibrary>::ExecuteRemeshing()
     }
     r_old_model_part.AddElements( mrThisModelPart.ElementsBegin(), mrThisModelPart.ElementsEnd() );
     mrThisModelPart.RemoveElementsFromAllLevels(TO_ERASE);
-    KRATOS_INFO_IF("", mEchoLevel > 0) << "HEY 5" << std::endl;
 
     // Writing the new mesh data on the model part
     const IndexType rank = mrThisModelPart.GetCommunicator().GetDataCommunicator().Rank();
