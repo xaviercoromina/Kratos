@@ -1009,11 +1009,8 @@ void ParMmgUtilities<PMMGLibrary::PMMG3D>::PMMGLibCallMetric(Parameters Configur
 
     // Actually computing remesh
     int ier;
-    KRATOS_INFO_IF("", mEchoLevel > 0) << "HEY 1.1" << std::endl;
 
     ier = PMMG_parmmglib_distributed(mParMmgMesh);
-
-    KRATOS_INFO_IF("", mEchoLevel > 0) << "HEY 1.2" << std::endl;
 
     if ( ier == PMMG_STRONGFAILURE )
         KRATOS_ERROR << "ERROR: BAD ENDING OF PMMG3DLIB: UNABLE TO SAVE MESH. ier: " << ier << std::endl;
@@ -1058,9 +1055,6 @@ void ParMmgUtilities<PMMGLibrary::PMMG3D>::SetConditions(
         const IndexType id_3 = local_node_id[rGeometry[2].Id()]; // Third node Id
 
         KRATOS_ERROR_IF( PMMG_Set_triangle(mParMmgMesh, id_1, id_2, id_3, Color, Index) != 1 ) << "Unable to set triangle" << std::endl;
-        // const int rank = mrThisModelPart.GetCommunicator().GetDataCommunicator().Rank();
-        auto rank = DataCommunicator::GetDefault().Rank();
-        std::cout  << "SetTriangle rank " << rank << " Id: "<< Index << " Ref: " << Color<< " Vertices: " << id_1 <<  " "<<  id_2 << " "<<  id_3 <<std::endl;
 
         // Set fixed boundary
         bool blocked_1 = false;
@@ -1097,8 +1091,6 @@ void ParMmgUtilities<PMMGLibrary::PMMG3D>::SetElements(
     const IndexType id_2 = local_node_id[rGeometry[1].Id()]; // Second node Id
     const IndexType id_3 = local_node_id[rGeometry[2].Id()]; // Third node Id
     const IndexType id_4 = local_node_id[rGeometry[3].Id()]; // Fourth node Id
-    auto rank = DataCommunicator::GetDefault().Rank();
-    std::cout  << "SetTetrahedron rank " << rank << " Id: "<< Index << " Ref: " << Color<< " Vertices: " << id_1 <<  " "<<  id_2 << " "<<  id_3 << " "<<  id_4<<std::endl;
 
     if (rGeometry.GetGeometryType() == GeometryData::KratosGeometryType::Kratos_Tetrahedra3D4) { // Tetrahedron
         KRATOS_ERROR_IF( PMMG_Set_tetrahedron(mParMmgMesh, id_1, id_2, id_3, id_4, Color, Index) != 1 ) << "Unable to set tetrahedron" << std::endl;
@@ -1426,22 +1418,6 @@ void ParMmgUtilities<TPMMGLibrary>::GenerateMeshDataFromModelPart(
     ColorsMapType nodes_colors, cond_colors, elem_colors;
     AssignUniqueModelPartCollectionTagUtility model_part_collections(rModelPart);
     model_part_collections.ComputeTags(nodes_colors, cond_colors, elem_colors, rColors);
-
-    // const int rank = rModelPart.GetCommunicator().GetDataCommunicator().Rank();
-
-    // for (auto& t : nodes_colors)
-    //     std::cout <<rank << " nodes_colors " <<  t.first << " "
-    //             << t.second <<  "\n";
-
-    // for (auto& t : elem_colors)
-    //     std::cout <<rank << " elem_colors " <<  t.first << " "
-    //             << t.second <<  "\n";
-
-    // for (auto& t : cond_colors)
-    //     std::cout <<rank << " cond_colors " <<  t.first << " "
-    //             << t.second <<  "\n";
-
-    // AssignUniqueModelPartCollectionTagUtility::WriteTagsToJson("initial_pmmg_"+std::to_string(rank), rColors);
 
     // The ISOSURFACE has some reserved Ids. We reassign
     if (mDiscretization == DiscretizationOption::ISOSURFACE) {
@@ -1908,14 +1884,8 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
         int partition_index = local_to_partition_index[i_node];
         p_node->FastGetSolutionStepValue(PARTITION_INDEX) = partition_index;
 
-        // if (rank == partition_index) {
-        //     rModelPart.GetCommunicator().LocalMesh().Nodes().push_back(p_node);
-        // }else {
-        //     rModelPart.GetCommunicator().GhostMesh().Nodes().push_back(p_node);
-        // }
-
-        KRATOS_ERROR_IF(partition_index<0) << "PARTITION INDEX NEGATIVE: " << partition_index << "FOR NODE: " << p_node->Id() << std::endl;
-        KRATOS_ERROR_IF(partition_index>size) << "PARTITION GREATER THAN SIZE: " << partition_index << "FOR NODE: " << p_node->Id() << std::endl;
+        KRATOS_ERROR_IF(partition_index<0) << "Negative partition index:: " << partition_index << " at node: " << p_node->Id() << std::endl;
+        KRATOS_ERROR_IF(partition_index>size-1) << "Partition index is gretear than greater than the MPI-Size: " << partition_index << " at node: " << p_node->Id() << std::endl;
 
         // Set the DOFs in the nodes
         for (auto it_dof = rDofs.begin(); it_dof != rDofs.end(); ++it_dof)
@@ -1986,11 +1956,9 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
             }
 
             Element::Pointer p_element = CreateFirstTypeElement(rModelPart, rMapPointersRefElement, elem_id+reduced_array_of_local_elements[rank], ref, is_required, skip_creation);
-            // std::cout <<"elemFirst " <<rank << " id: " << elem_id+reduced_array_of_local_elements[rank] << " ref: " << ref << std::endl;
 
             if (p_element.get() != nullptr) {
                 created_elements_vector.push_back(p_element);
-//                 rModelPart.AddElement(p_element);
                 if (ref != 0) first_color_elem[static_cast<IndexType>(ref)].push_back(elem_id+reduced_array_of_local_elements[rank]);// NOTE: ref == 0 is the MainModelPart
                 elem_id += 1;
             }
@@ -2008,7 +1976,6 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
             }
 
             Element::Pointer p_element = CreateSecondTypeElement(rModelPart, rMapPointersRefElement, elem_id+reduced_array_of_local_elements[rank], ref, is_required,skip_creation);
-            // std::cout <<"elemSecond " <<rank << " id: " << elem_id+reduced_array_of_local_elements[rank] << " ref: " << ref << std::endl;
 
             if (p_element.get() != nullptr) {
                 created_elements_vector.push_back(p_element);
@@ -2030,11 +1997,9 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
     for (auto& r_color_list : rColors) {
         const IndexType key = r_color_list.first;
 
-        // std::cout << rank <<  " key_first " << key << std::endl;
 
         if (key != 0) {// NOTE: key == 0 is the MainModelPart
             for (auto sub_model_part_name : r_color_list.second) {
-                // std::cout << rank << " key_first " << key << " sub_model_part_name " << sub_model_part_name << " first_color_cond[key]" << first_color_cond[key] << std::endl;
                 ModelPart& r_sub_model_part = AssignUniqueModelPartCollectionTagUtility::GetRecursiveSubModelPart(rModelPart, sub_model_part_name);
 
                 if (color_nodes.find(key) != color_nodes.end())
