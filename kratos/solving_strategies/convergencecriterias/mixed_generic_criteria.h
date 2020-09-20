@@ -21,6 +21,7 @@
 #include "includes/define.h"
 #include "includes/model_part.h"
 #include "convergence_criteria.h"
+#include "utilities/convergence_criteria_utilities.h"
 
 // Application includes
 
@@ -80,7 +81,7 @@ public:
      * @param ThisParameters The configuration parameters
      */
     explicit MixedGenericCriteria(Kratos::Parameters ThisParameters)
-        : MixedGenericCriteria(GenerateConvergenceVariableListFromParameters(ThisParameters))
+        : MixedGenericCriteria(ConvergenceCriteriaUtilities::GenerateConvergenceVariableListFromParameters(ThisParameters))
     {
     }
 
@@ -93,44 +94,10 @@ public:
     MixedGenericCriteria(const ConvergenceVariableListType& rConvergenceVariablesList)
         : BaseType()
         , mVariableSize([&] (const ConvergenceVariableListType& rList) -> int {return rList.size();} (rConvergenceVariablesList))
-        , mVariableDataVector([&] (const ConvergenceVariableListType& rList) -> std::vector<const VariableData*> {
-            int i = 0;
-            std::vector<const VariableData*> aux_vect(mVariableSize);
-            for (const auto &r_tup : rList) {
-                aux_vect[i++] = std::get<0>(r_tup);
-            }
-            return aux_vect;
-        } (rConvergenceVariablesList))
-        , mRatioToleranceVector([&] (const ConvergenceVariableListType& rList) -> std::vector<TDataType> {
-            int i = 0;
-            std::vector<TDataType> aux_vect(mVariableSize);
-            for (const auto &r_tup : rList) {
-                aux_vect[i++] = std::get<1>(r_tup);
-            }
-            return aux_vect;
-        } (rConvergenceVariablesList))
-        , mAbsToleranceVector([&] (const ConvergenceVariableListType& rList) -> std::vector<TDataType> {
-            int i = 0;
-            std::vector<TDataType> aux_vect(mVariableSize);
-            for (const auto &r_tup : rList) {
-                aux_vect[i++] = std::get<2>(r_tup);
-            }
-            return aux_vect;
-        } (rConvergenceVariablesList))
-        , mLocalKeyMap([&] (const ConvergenceVariableListType& rList) -> std::unordered_map<KeyType, KeyType> {
-            KeyType local_key = 0;
-            std::unordered_map<KeyType, KeyType> aux_map;
-            for (const auto &r_tup : rList) {
-                const auto *p_var_data = std::get<0>(r_tup);
-                if (aux_map.find(p_var_data->Key()) != aux_map.end()) {
-                    KRATOS_ERROR << "Convergence variable " << p_var_data->Name() << " is repeated. Check the input convergence variable list." << std::endl;
-                } else {
-                    KRATOS_ERROR_IF(p_var_data->IsComponent()) << "Trying to check convergence with the " << p_var_data->Name() << " component variable. Use the corresponding vector one." << std::endl;
-                    aux_map[p_var_data->Key()] = local_key++;
-                }
-            }
-            return aux_map;
-        } (rConvergenceVariablesList))
+        , mVariableDataVector(ConvergenceCriteriaUtilities::GenerateVariableDataVector(rConvergenceVariablesList))
+        , mRatioToleranceVector(ConvergenceCriteriaUtilities::GenerateRatioToleranceVector(rConvergenceVariablesList))
+        , mAbsToleranceVector(ConvergenceCriteriaUtilities::GenerateAbsToleranceVector(rConvergenceVariablesList))
+        , mLocalKeyMap(ConvergenceCriteriaUtilities::GenerateLocalKeyMap(rConvergenceVariablesList))
     {}
 
     /// Destructor.
@@ -180,7 +147,7 @@ public:
             OutputConvergenceStatus(convergence_norms);
 
             // Check convergence
-            return CheckConvergence(convergence_norms);
+            return ConvergenceCriteriaUtilities::CheckConvergence(convergence_norms, mVariableSize, mVariableDataVector, mRatioToleranceVector, mAbsToleranceVector, mLocalKeyMap, this->GetEchoLevel());
         } else {
             // Case in which all the DOFs are constrained!
             return true;
@@ -350,53 +317,9 @@ protected:
      * This method prints the convergence status to the screen for each one of the checked variables
      * @param rConvergenceNorms Tuple containing the absolute and relative convergence values
      */
-    virtual void OutputConvergenceStatus(
-        const std::tuple<std::vector<TDataType>,
-        std::vector<TDataType>>& rConvergenceNorms)
+    virtual void OutputConvergenceStatus(const std::tuple<std::vector<TDataType>,std::vector<TDataType>>& rConvergenceNorms)
     {
-        const auto& var_ratio = std::get<0>(rConvergenceNorms);
-        const auto& var_abs = std::get<1>(rConvergenceNorms);
-
-        if (this->GetEchoLevel() > 0) {
-            std::ostringstream stringbuf;
-            stringbuf << "CONVERGENCE CHECK:\n";
-            for(int i = 0; i < mVariableSize; i++) {
-                const auto r_var_data = mVariableDataVector[i];
-                const int key_map = mLocalKeyMap[r_var_data->Key()];
-                stringbuf << " " << r_var_data->Name() << " : ratio = " << var_ratio[key_map] << "; exp.ratio = " << mRatioToleranceVector[key_map] << " abs = " << var_abs[key_map] << " exp.abs = " << mAbsToleranceVector[key_map] << "\n";
-            }
-            KRATOS_INFO("") << stringbuf.str();
-        }
-    }
-
-    /**
-     * @brief Method to check convergence
-     * This method checks the convergence of the provided norms with the user-defined tolerances
-     * @param rConvergenceNorms Tuple containing the absolute and relative convergence values
-     * @return true Convergence is satisfied
-     * @return false Convergence is not satisfied
-     */
-    bool CheckConvergence(
-        const std::tuple<std::vector<TDataType>,
-        std::vector<TDataType>>& rConvergenceNorms)
-    {
-        bool is_converged = true;
-        const auto& var_ratio = std::get<0>(rConvergenceNorms);
-        const auto& var_abs = std::get<1>(rConvergenceNorms);
-
-        for (int i = 0; i < mVariableSize; i++) {
-            const auto r_var_data = mVariableDataVector[i];
-            const int key_map = mLocalKeyMap[r_var_data->Key()];
-            is_converged &= var_ratio[key_map] <= mRatioToleranceVector[key_map] || var_abs[key_map] <= mAbsToleranceVector[key_map];
-        }
-
-        // Note that this check ensures that all the convergence variables fulfil either the relative or the absolute criterion
-        if (is_converged) {
-            KRATOS_INFO_IF("", this->GetEchoLevel() > 0) << "*** CONVERGENCE IS ACHIEVED ***" << std::endl;
-            return true;
-        } else {
-            return false;
-        }
+        ConvergenceCriteriaUtilities::OutputConvergenceStatus(rConvergenceNorms, mVariableSize, mVariableDataVector, mRatioToleranceVector, mAbsToleranceVector, mLocalKeyMap, this->GetEchoLevel());
     }
 
     ///@}
@@ -504,36 +427,6 @@ private:
                 }
             }
         }
-    }
-
-    /**
-     * @brief This method generates the list of variables from Parameters
-     * @param ThisParameters Input parameters
-     * @return List of variables considered as input
-     */
-    static ConvergenceVariableListType GenerateConvergenceVariableListFromParameters(Kratos::Parameters ThisParameters)
-    {
-      // Iterate over variables
-      ConvergenceVariableListType aux_list;
-      if (!ThisParameters.Has("convergence_variables_list")) return aux_list;
-      Kratos::Parameters convergence_variables_list = ThisParameters["convergence_variables_list"];
-      for (auto param : convergence_variables_list) {
-          if (param.Has("variable")) {
-              const std::string& r_variable_name = param["variable"].GetString();
-
-              // Variable pointer
-              const VariableData* p_variable = KratosComponents<Variable<double>>::Has(r_variable_name) ? dynamic_cast<const VariableData*>(&KratosComponents<Variable<double>>::Get(r_variable_name)) : dynamic_cast<const VariableData*>(&KratosComponents<Variable<array_1d<double, 3>>>::Get(r_variable_name));
-
-              // Tolerances
-              const double rel_tol = param.Has("relative_tolerance") ? param["relative_tolerance"].GetDouble() : 1.0e-4;
-              const double abs_tol = param.Has("absolute_tolerance") ? param["absolute_tolerance"].GetDouble() : 1.0e-9;
-
-              // Push back list
-              aux_list.push_back(std::make_tuple(p_variable, rel_tol, abs_tol));
-          }
-      }
-
-      return aux_list;
     }
 
     ///@}
