@@ -396,7 +396,7 @@ protected:
 
         rDofNum = dofs_count;
         #pragma omp parallel for
-        for (int i = 0; i < number_of_dof; ++i) {
+        for (int i = 0; i < mVariableSize; ++i) {
             rResidualSolutionNorm[i] = std::sqrt(residual_solution_norm[i]);
         }
     }
