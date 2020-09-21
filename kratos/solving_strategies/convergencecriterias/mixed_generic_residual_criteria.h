@@ -151,22 +151,23 @@ public:
      * @brief Compute relative and absolute error.
      * @param rModelPart Reference to the ModelPart containing the fluid problem.
      * @param rDofSet Reference to the container of the problem's degrees of freedom (stored by the BuilderAndSolver)
-     * @param A System matrix (unused)
-     * @param Dx Vector of results (variations on nodal variables)
-     * @param b RHS vector (residual)
+     * @param rA System matrix (unused)
+     * @param rDx Vector of results (variations on nodal variables)
+     * @param rb RHS vector (residual)
      * @return true if convergence is achieved, false otherwise
      */
     bool PostCriteria(
         ModelPart& rModelPart,
         DofsArrayType& rDofSet,
-        const TSystemMatrixType& A,
-        const TSystemVectorType& Dx,
-        const TSystemVectorType& b) override
+        const TSystemMatrixType& rA,
+        const TSystemVectorType& rDx,
+        const TSystemVectorType& rb
+        ) override
     {
         // Check if we are solving for something
-        if (TSparseSpace::Size(Dx) != 0) {
+        if (TSparseSpace::Size(rb) != 0) {
             // Calculate the convergence ratio and absolute norms
-            const auto convergence_norms = CalculateConvergenceNorms(rModelPart, rDofSet, Dx);
+            const auto convergence_norms = CalculateConvergenceNorms(rModelPart, rDofSet, rb);
 
             // Output convergence status
             OutputConvergenceStatus(convergence_norms);
@@ -320,9 +321,9 @@ protected:
     /**
      * @brief Get the Local Key Map object
      * Returns a reference to the variable key local map
-     * @return std::unordered_map<KeyType, KeyType>& Reference to the local key map
+     * @return std::unordered_map<IndexType, IndexType>& Reference to the local key map
      */
-    std::unordered_map<KeyType, KeyType>& GetLocalKeyMap()
+    std::unordered_map<IndexType, IndexType>& GetLocalKeyMap()
     {
         return mLocalKeyMap;
     }
@@ -332,13 +333,14 @@ protected:
      * This method calculates the convergence norms for all the variables to be checked
      * @param rModelPart Reference to the ModelPart containing the fluid problem.
      * @param rDofSet Reference to the container of the problem's degrees of freedom (stored by the BuilderAndSolver)
-     * @param rDx Vector of results (variations on nodal variables)
+     * @param rb RHS vector (residual)
      * @return std::tuple<std::vector<TDataType>, std::vector<TDataType>> Tuple containing the absolute and relative convergence values
      */
     std::tuple<std::vector<TDataType>, std::vector<TDataType>> CalculateConvergenceNorms(
         const ModelPart& rModelPart,
         const DofsArrayType& rDofSet,
-        const TSystemVectorType& rDx)
+        const TSystemVectorType& rb
+        )
     {
         // Initialize
         std::vector<int> dofs_count(mVariableSize, 0);
@@ -346,7 +348,7 @@ protected:
         std::vector<TDataType> increase_norms_vector(mVariableSize, 0.0);
 
         // Accumulate the norm values
-        GetNormValues(rModelPart, rDofSet, rDx, dofs_count, solution_norms_vector, increase_norms_vector);
+        GetNormValues(rModelPart, rDofSet, rb, dofs_count, solution_norms_vector, increase_norms_vector);
 
         // Synchronize the norm values
         const auto& r_data_comm = rModelPart.GetCommunicator().GetDataCommunicator();
@@ -442,7 +444,7 @@ private:
      * Note that these arrays are assumed to be already initialized to zero.
      * @param rModelPart Reference to the ModelPart containing the fluid problem.
      * @param rDofSet Reference to the container of the problem's degrees of freedom (stored by the BuilderAndSolver)
-     * @param rDx Vector of results (variations on nodal variables)
+     * @param rb RHS vector (residual)
      * @param rDofsCount Array containing the number of DOFs per variable
      * @param rSolutionNormsVector Array containing the solution norms accumulated values for each variable checked
      * @param rIncreaseNormsVector Array containing the correction norms accumulated values for each variable checked
@@ -450,49 +452,51 @@ private:
     virtual void GetNormValues(
         const ModelPart& rModelPart,
         const DofsArrayType& rDofSet,
-        const TSystemVectorType& rDx,
+        const TSystemVectorType& rb,
         std::vector<int>& rDofsCount,
         std::vector<TDataType>& rSolutionNormsVector,
         std::vector<TDataType>& rIncreaseNormsVector)
     {
-        int n_dofs = rDofSet.size();
+        const int n_dofs = rDofSet.size();
 
         // Loop over Dofs
-#pragma omp parallel
+        #pragma omp parallel
         {
             // Local thread variables
             int dof_id;
-            TDataType dof_dx;
+            TDataType dof_rhs;
             TDataType dof_value;
 
             // Local reduction variables
             std::vector<TDataType> var_solution_norm_reduction(mVariableSize);
             std::vector<TDataType> var_correction_norm_reduction(mVariableSize);
             std::vector<int> dofs_counter_reduction(mVariableSize);
-            for (int i = 0; i < mVariableSize; i++) {
+            for (int i = 0; i < mVariableSize; ++i) {
                 var_solution_norm_reduction[i] = 0.0;
                 var_correction_norm_reduction[i] = 0.0;
                 dofs_counter_reduction[i] = 0;
             }
 
-#pragma omp for
-            for (int i = 0; i < n_dofs; i++) {
-                auto it_dof = rDofSet.begin() + i;
+            const auto it_dof_begin = rDofSet.begin();
+
+            #pragma omp for
+            for (int i = 0; i < n_dofs; ++i) {
+                auto it_dof = it_dof_begin + i;
                 if (it_dof->IsFree()) {
                     dof_id = it_dof->EquationId();
                     dof_value = it_dof->GetSolutionStepValue(0);
-                    dof_dx = TSparseSpace::GetValue(rDx, dof_id);
+                    dof_rhs = TSparseSpace::GetValue(rb, dof_id);
 
                     const auto &r_current_variable = it_dof->GetVariable();
                     int var_local_key = mLocalKeyMap[r_current_variable.IsComponent() ? r_current_variable.GetSourceVariable().Key() : r_current_variable.Key()];
 
                     var_solution_norm_reduction[var_local_key] += dof_value * dof_value;
-                    var_correction_norm_reduction[var_local_key] += dof_dx * dof_dx;
+                    var_correction_norm_reduction[var_local_key] += dof_rhs * dof_rhs;
                     dofs_counter_reduction[var_local_key]++;
                 }
             }
 
-#pragma omp critical
+            #pragma omp critical
             {
                 for (int i = 0; i < mVariableSize; i++) {
                     rDofsCount[i] += dofs_counter_reduction[i];
