@@ -56,21 +56,32 @@ public:
 
     KRATOS_CLASS_POINTER_DEFINITION(MixedGenericResidualCriteria);
 
+    /// The definition of the base ConvergenceCriteria
     typedef ConvergenceCriteria< TSparseSpace, TDenseSpace > BaseType;
 
+    /// The definition of the current class
     typedef MixedGenericResidualCriteria< TSparseSpace, TDenseSpace > ClassType;
 
+    /// The data type
     typedef typename BaseType::TDataType TDataType;
 
+    /// The dofs array type
     typedef typename BaseType::DofsArrayType DofsArrayType;
 
+    /// The sparse matrix type
     typedef typename BaseType::TSystemMatrixType TSystemMatrixType;
 
+    /// The dense vector type
     typedef typename BaseType::TSystemVectorType TSystemVectorType;
 
+    /// The convergence variable list type
     typedef std::vector<std::tuple<const VariableData*, TDataType, TDataType>> ConvergenceVariableListType;
 
-    typedef std::size_t KeyType;
+    /// Definition of the IndexType
+    typedef std::size_t IndexType;
+
+    /// Definition of the size type
+    typedef std::size_t SizeType;
 
     ///@}
     ///@name Life Cycle
