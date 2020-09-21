@@ -410,39 +410,28 @@ protected:
      * @return std::tuple<std::vector<TDataType>, std::vector<TDataType>> Tuple containing the absolute and relative convergence values
      */
     std::tuple<std::vector<TDataType>, std::vector<TDataType>> CalculateConvergenceNorms(
-        const ModelPart& rModelPart,
-        const DofsArrayType& rDofSet,
+        ModelPart& rModelPart,
+        DofsArrayType& rDofSet,
         const TSystemVectorType& rb
         )
     {
-        // Initialize
-        std::vector<int> dofs_count(mVariableSize, 0);
-        std::vector<TDataType> solution_norms_vector(mVariableSize, 0.0);
-        std::vector<TDataType> increase_norms_vector(mVariableSize, 0.0);
-
-        // Accumulate the norm values
-        GetNormValues(rModelPart, rDofSet, rb, dofs_count, solution_norms_vector, increase_norms_vector);
-
-        // Synchronize the norm values
-        const auto& r_data_comm = rModelPart.GetCommunicator().GetDataCommunicator();
-        auto global_solution_norms_vector = r_data_comm.SumAll(solution_norms_vector);
-        auto global_increase_norms_vector = r_data_comm.SumAll(increase_norms_vector);
-        auto global_dofs_count = r_data_comm.SumAll(dofs_count);
-
-        // Check division by zero in global solution norms
-        const double zero_tol = 1.0e-12;
-        for(int i = 0; i < mVariableSize; ++i) {
-            if (global_solution_norms_vector[i] < zero_tol) {
-                global_solution_norms_vector[i] = 1.0;
-            }
-        }
-
         // Calculate the norm values
         std::vector<TDataType> var_ratio(mVariableSize, 0.0);
         std::vector<TDataType> var_abs(mVariableSize, 0.0);
-        for(int i = 0; i < mVariableSize; ++i) {
-            var_ratio[i] = std::sqrt(global_increase_norms_vector[i] / global_solution_norms_vector[i]);
-            var_abs[i] = std::sqrt(global_increase_norms_vector[i]) / static_cast<TDataType>(global_dofs_count[i]);
+
+        std::vector<SizeType> size_residual(mVariableSize, 0);
+        CalculateResidualNorm(rModelPart, mCurrentResidualNormVector, size_residual, rDofSet, rb);
+
+        #pragma omp parallel for
+        for (int i = 0; i < mVariableSize; ++i) {
+            if(mInitialResidualNormVector[i] < std::numeric_limits<TDataType>::epsilon()) {
+                var_ratio[i] = 0.0;
+            } else {
+                var_ratio[i] = mCurrentResidualNormVector[i]/mInitialResidualNormVector[i];
+            }
+
+            const TDataType float_size_residual = static_cast<TDataType>(size_residual[i]);
+            var_abs[i] = (mCurrentResidualNormVector[i]/float_size_residual);
         }
 
         // Output the ratio and absolute norms as a tuple
@@ -510,75 +499,6 @@ private:
     ///@}
     ///@name Private Operations
     ///@{
-
-    /**
-     * @brief Get the Norm Values
-     * This function accumulates the solution and increment norm values in the provided arrays.
-     * Note that these arrays are assumed to be already initialized to zero.
-     * @param rModelPart Reference to the ModelPart containing the fluid problem.
-     * @param rDofSet Reference to the container of the problem's degrees of freedom (stored by the BuilderAndSolver)
-     * @param rb RHS vector (residual)
-     * @param rDofsCount Array containing the number of DOFs per variable
-     * @param rSolutionNormsVector Array containing the solution norms accumulated values for each variable checked
-     * @param rIncreaseNormsVector Array containing the correction norms accumulated values for each variable checked
-     */
-    virtual void GetNormValues(
-        const ModelPart& rModelPart,
-        const DofsArrayType& rDofSet,
-        const TSystemVectorType& rb,
-        std::vector<int>& rDofsCount,
-        std::vector<TDataType>& rSolutionNormsVector,
-        std::vector<TDataType>& rIncreaseNormsVector)
-    {
-        const int n_dofs = rDofSet.size();
-
-        // Loop over Dofs
-        #pragma omp parallel
-        {
-            // Local thread variables
-            int dof_id;
-            TDataType dof_rhs;
-            TDataType dof_value;
-
-            // Local reduction variables
-            std::vector<TDataType> var_solution_norm_reduction(mVariableSize);
-            std::vector<TDataType> var_correction_norm_reduction(mVariableSize);
-            std::vector<int> dofs_counter_reduction(mVariableSize);
-            for (int i = 0; i < mVariableSize; ++i) {
-                var_solution_norm_reduction[i] = 0.0;
-                var_correction_norm_reduction[i] = 0.0;
-                dofs_counter_reduction[i] = 0;
-            }
-
-            const auto it_dof_begin = rDofSet.begin();
-
-            #pragma omp for
-            for (int i = 0; i < n_dofs; ++i) {
-                auto it_dof = it_dof_begin + i;
-                if (it_dof->IsFree()) {
-                    dof_id = it_dof->EquationId();
-                    dof_value = it_dof->GetSolutionStepValue(0);
-                    dof_rhs = TSparseSpace::GetValue(rb, dof_id);
-
-                    const auto& r_current_variable = it_dof->GetVariable();
-                    const IndexType var_local_key = mLocalKeyMap[r_current_variable.IsComponent() ? r_current_variable.GetSourceVariable().Key() : r_current_variable.Key()];
-
-                    var_solution_norm_reduction[var_local_key] += dof_value * dof_value;
-                    var_correction_norm_reduction[var_local_key] += dof_rhs * dof_rhs;
-                    dofs_counter_reduction[var_local_key]++;
-                }
-            }
-
-            #pragma omp critical
-            {
-                for (int i = 0; i < mVariableSize; ++i) {
-                    rDofsCount[i] += dofs_counter_reduction[i];
-                    rSolutionNormsVector[i] += var_solution_norm_reduction[i];
-                    rIncreaseNormsVector[i] += var_correction_norm_reduction[i];
-                }
-            }
-        }
-    }
 
     ///@}
     ///@name Private  Access
