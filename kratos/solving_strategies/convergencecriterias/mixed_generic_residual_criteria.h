@@ -25,6 +25,7 @@
 #include "includes/define.h"
 #include "includes/model_part.h"
 #include "convergence_criteria.h"
+#include "utilities/constraint_utilities.h"
 #include "utilities/convergence_criteria_utilities.h"
 
 namespace Kratos
@@ -173,12 +174,49 @@ public:
     }
 
     /**
+     * @brief This function initialize the convergence criteria
+     * @param rModelPart Reference to the ModelPart containing the problem. (unused)
+     */
+    void Initialize(ModelPart& rModelPart) override
+    {
+        BaseType::Initialize(rModelPart);
+        KRATOS_ERROR_IF(rModelPart.IsDistributed() && rModelPart.NumberOfMasterSlaveConstraints() > 0) << "This Criteria does not yet support constraints in MPI!" << std::endl;
+    }
+
+    /**
+     * @brief This function initializes the solution step
+     * @param rModelPart Reference to the ModelPart containing the problem.
+     * @param rDofSet Reference to the container of the problem's degrees of freedom (stored by the BuilderAndSolver)
+     * @param rA System matrix (unused)
+     * @param rDx Vector of results (variations on nodal variables)
+     * @param rb RHS vector (residual + reactions)
+     */
+    void InitializeSolutionStep(
+        ModelPart& rModelPart,
+        DofsArrayType& rDofSet,
+        const TSystemMatrixType& rA,
+        const TSystemVectorType& rDx,
+        const TSystemVectorType& rb
+        ) override
+    {
+        BaseType::InitializeSolutionStep(rModelPart, rDofSet, rA, rDx, rb);
+
+        // Filling mActiveDofs when MPC exist
+        if (rModelPart.NumberOfMasterSlaveConstraints() > 0) {
+            ConstraintUtilities::ComputeActiveDofs(rModelPart, mActiveDofs, rDofSet);
+        }
+
+//         SizeType size_residual;
+//         CalculateResidualNorm(rModelPart, mInitialResidualNorm, size_residual, rDofSet, rb);
+    }
+
+    /**
      * @brief Returns the name of the class as used in the settings (snake_case format)
      * @return The name of the class
      */
     static std::string Name()
     {
-        return "mixed_generic_criteria";
+        return "mixed_generic_residual_criteria";
     }
 
     ///@}
