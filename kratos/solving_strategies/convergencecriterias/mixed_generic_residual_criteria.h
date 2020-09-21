@@ -498,7 +498,7 @@ private:
 
     std::vector<TDataType> mReferenceDispNormVector;            /// The norm at the beginning of the iterations
 
-    std::unordered_map<IndexType, IndexType> mLocalKeyMap;          /// The map containing the local keys
+    std::unordered_map<IndexType, IndexType> mLocalKeyMap;      /// The map containing the local keys
 
     std::vector<int> mActiveDofs;                               /// This vector contains the dofs that are active
 
