@@ -91,9 +91,9 @@ namespace Testing
             aux_dof_set.push_back(r_node.pGetDof(TEMPERATURE));
         }
         aux_dof_set.Sort();
-        typename MixedGenericResidualCriteriaType::TSystemMatrixType A; // Only required to match the API
-        typename MixedGenericResidualCriteriaType::TSystemVectorType b; // Only required to match the API
-        typename MixedGenericResidualCriteriaType::TSystemVectorType Dx(20);
+        typename MixedGenericResidualCriteriaType::TSystemMatrixType A;  // Only required to match the API
+        typename MixedGenericResidualCriteriaType::TSystemVectorType b(20);
+        typename MixedGenericResidualCriteriaType::TSystemVectorType Dx; // Only required to match the API
 
         // Set the auxiliary fake data to check the convergence for
         unsigned int i = 0;
@@ -102,9 +102,9 @@ namespace Testing
             const double aux_val = r_node.Id() * aux_constant;
             r_node.FastGetSolutionStepValue(PRESSURE) = aux_val;
             r_node.FastGetSolutionStepValue(TEMPERATURE) = aux_val;
-            Dx[2 * i] = aux_val / 100.0;
-            Dx[2 * i + 1] = 2.0 * aux_val / 100.0;
-            i++;
+            b[2 * i] = aux_val / 100.0;
+            b[2 * i + 1] = 2.0 * aux_val / 100.0;
+            ++i;
         }
 
         // Check convergence
@@ -151,9 +151,9 @@ namespace Testing
             aux_dof_set.push_back(r_node.pGetDof(VELOCITY_Y));
         }
         aux_dof_set.Sort();
-        typename MixedGenericResidualCriteriaType::TSystemMatrixType A; // Only required to match the API
-        typename MixedGenericResidualCriteriaType::TSystemVectorType b; // Only required to match the API
-        typename MixedGenericResidualCriteriaType::TSystemVectorType Dx(30);
+        typename MixedGenericResidualCriteriaType::TSystemMatrixType A;  // Only required to match the API
+        typename MixedGenericResidualCriteriaType::TSystemVectorType b(30);
+        typename MixedGenericResidualCriteriaType::TSystemVectorType Dx; // Only required to match the API
 
         // Set the auxiliary fake data to check the convergence for
         unsigned int i = 0;
@@ -165,10 +165,10 @@ namespace Testing
             aux_vel[1] = 3.0 * aux_val;
             r_node.FastGetSolutionStepValue(PRESSURE) = aux_val;
             r_node.FastGetSolutionStepValue(VELOCITY) = aux_vel;
-            Dx[3 * i] = aux_val / 100.0;
-            Dx[3 * i + 1] = 2.0 * aux_val / 100.0;
-            Dx[3 * i + 2] = 3.0 * aux_val / 100.0;
-            i++;
+            b[3 * i] = aux_val / 100.0;
+            b[3 * i + 1] = 2.0 * aux_val / 100.0;
+            b[3 * i + 2] = 3.0 * aux_val / 100.0;
+            ++i;
         }
 
         // Check convergence
@@ -225,9 +225,9 @@ namespace Testing
             aux_dof_set.push_back(r_node.pGetDof(VELOCITY_Y));
         }
         aux_dof_set.Sort();
-        typename MixedGenericResidualCriteriaType::TSystemMatrixType A; // Only required to match the API
-        typename MixedGenericResidualCriteriaType::TSystemVectorType b; // Only required to match the API
-        typename MixedGenericResidualCriteriaType::TSystemVectorType Dx(30);
+        typename MixedGenericResidualCriteriaType::TSystemMatrixType A;  // Only required to match the API
+        typename MixedGenericResidualCriteriaType::TSystemVectorType b(30);
+        typename MixedGenericResidualCriteriaType::TSystemVectorType Dx; // Only required to match the API
 
         // Set the auxiliary fake data to check the convergence for
         unsigned int i = 0;
@@ -239,10 +239,10 @@ namespace Testing
             aux_vel[1] = 3.0 * aux_val;
             r_node.FastGetSolutionStepValue(PRESSURE) = aux_val;
             r_node.FastGetSolutionStepValue(VELOCITY) = aux_vel;
-            Dx[3 * i] = aux_val / 100.0;
-            Dx[3 * i + 1] = 2.0 * aux_val / 100.0;
-            Dx[3 * i + 2] = 3.0 * aux_val / 100.0;
-            i++;
+            b[3 * i] = aux_val / 100.0;
+            b[3 * i + 1] = 2.0 * aux_val / 100.0;
+            b[3 * i + 2] = 3.0 * aux_val / 100.0;
+            ++i;
         }
 
         // Check convergence
