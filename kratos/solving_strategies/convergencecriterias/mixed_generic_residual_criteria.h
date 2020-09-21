@@ -118,7 +118,13 @@ public:
         , mRatioToleranceVector(ConvergenceCriteriaUtilities::GenerateRatioToleranceVector(rConvergenceVariablesList))
         , mAbsToleranceVector(ConvergenceCriteriaUtilities::GenerateAbsToleranceVector(rConvergenceVariablesList))
         , mLocalKeyMap(ConvergenceCriteriaUtilities::GenerateLocalKeyMap(rConvergenceVariablesList))
-    {}
+    {
+        mInitialResidualNormVector = std::vector<TDataType>(mVariableSize, 0.0);
+        mCurrentResidualNormVector = std::vector<TDataType>(mVariableSize, 0.0);
+        mReferenceDispNormVector   = std::vector<TDataType>(mVariableSize, 0.0);
+
+        this->mActualizeRHSIsNeeded = true;
+    }
 
     /// Destructor.
     ~MixedGenericResidualCriteria() override
@@ -403,11 +409,23 @@ private:
     ///@name Private Member Variables
     ///@{
 
-    const int mVariableSize;
-    const std::vector<const VariableData*> mVariableDataVector;
-    const std::vector<TDataType> mRatioToleranceVector;
-    const std::vector<TDataType> mAbsToleranceVector;
-    std::unordered_map<KeyType, KeyType> mLocalKeyMap;
+    const int mVariableSize;                                    /// The size of the number of variables
+
+    const std::vector<const VariableData*> mVariableDataVector; /// The variables to be checked
+
+    const std::vector<TDataType> mRatioToleranceVector;         /// The ratio threshold for the norm of the residual
+
+    const std::vector<TDataType> mAbsToleranceVector;           /// The absolute value threshold for the norm of the residual
+
+    std::vector<TDataType> mInitialResidualNormVector;          /// The reference norm of the residual
+
+    std::vector<TDataType> mCurrentResidualNormVector;          /// The current norm of the residual
+
+    std::vector<TDataType> mReferenceDispNormVector;            /// The norm at the beginning of the iterations
+
+    std::unordered_map<IndexType, IndexType> mLocalKeyMap;          /// The map containing the local keys
+
+    std::vector<int> mActiveDofs;                               /// This vector contains the dofs that are active
 
     ///@}
     ///@name Private Operators
