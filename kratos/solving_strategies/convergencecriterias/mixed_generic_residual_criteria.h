@@ -91,6 +91,7 @@ public:
         : BaseType(),
           mVariableSize(0)
     {
+        this->mActualizeRHSIsNeeded = true;
     }
 
     /**
@@ -100,6 +101,7 @@ public:
     explicit MixedGenericResidualCriteria(Kratos::Parameters ThisParameters)
         : MixedGenericResidualCriteria(ConvergenceCriteriaUtilities::GenerateConvergenceVariableListFromParameters(ThisParameters))
     {
+        this->mActualizeRHSIsNeeded = true;
     }
 
     /**
