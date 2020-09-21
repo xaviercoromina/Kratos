@@ -213,8 +213,8 @@ public:
             ConstraintUtilities::ComputeActiveDofs(rModelPart, mActiveDofs, rDofSet);
         }
 
-//         SizeType size_residual;
-//         CalculateResidualNorm(rModelPart, mInitialResidualNorm, size_residual, rDofSet, rb);
+        SizeType size_residual;
+        CalculateResidualNorm(rModelPart, mInitialResidualNormVector, size_residual, rDofSet, rb);
     }
 
     /**
@@ -326,6 +326,77 @@ protected:
     std::unordered_map<IndexType, IndexType>& GetLocalKeyMap()
     {
         return mLocalKeyMap;
+    }
+
+    /**
+     * @brief This method computes the norm of the residual
+     * @details It checks if the dof is fixed
+     * @param rModelPart Reference to the ModelPart containing the problem.
+     * @param rResidualSolutionNorm The norm of the residual
+     * @param rDofNum The number of DoFs
+     * @param rDofSet Reference to the container of the problem's degrees of freedom (stored by the BuilderAndSolver)
+     * @param rb RHS vector (residual + reactions)
+     */
+    virtual void CalculateResidualNorm(
+        ModelPart& rModelPart,
+        std::vector<TDataType>& rResidualSolutionNorm,
+        SizeType& rDofNum,
+        DofsArrayType& rDofSet,
+        const TSystemVectorType& rb
+        )
+    {
+        // Initialize
+        std::vector<TDataType> residual_solution_norm = std::vector<TDataType>(mVariableSize, 0.0);
+        SizeType dof_num = 0;
+
+        // Auxiliar values
+        TDataType residual_dof_value = 0.0;
+        const auto it_dof_begin = rDofSet.begin();
+        const int number_of_dof = static_cast<int>(rDofSet.size());
+
+        // Loop over Dofs
+        if (rModelPart.NumberOfMasterSlaveConstraints() > 0) {
+            #pragma omp parallel for firstprivate(residual_dof_value) reduction(+:dof_num)
+            for (int i = 0; i < number_of_dof; ++i) {
+                auto it_dof = it_dof_begin + i;
+
+                const IndexType dof_id = it_dof->EquationId();
+
+                if (mActiveDofs[dof_id] == 1) {
+                    residual_dof_value = TSparseSpace::GetValue(rb,dof_id);
+
+                    const auto& r_current_variable = it_dof->GetVariable();
+                    const IndexType var_local_key = mLocalKeyMap[r_current_variable.IsComponent() ? r_current_variable.GetSourceVariable().Key() : r_current_variable.Key()];
+
+                    #pragma omp atomic
+                    residual_solution_norm[var_local_key] += std::pow(residual_dof_value, 2);
+                    ++dof_num;
+                }
+            }
+        } else {
+            #pragma omp parallel for firstprivate(residual_dof_value) reduction(+:dof_num)
+            for (int i = 0; i < number_of_dof; ++i) {
+                auto it_dof = it_dof_begin + i;
+
+                if (!it_dof->IsFixed()) {
+                    const IndexType dof_id = it_dof->EquationId();
+                    residual_dof_value = TSparseSpace::GetValue(rb,dof_id);
+
+                    const auto& r_current_variable = it_dof->GetVariable();
+                    const IndexType var_local_key = mLocalKeyMap[r_current_variable.IsComponent() ? r_current_variable.GetSourceVariable().Key() : r_current_variable.Key()];
+
+                    #pragma omp atomic
+                    residual_solution_norm[var_local_key] += std::pow(residual_dof_value, 2);
+                    ++dof_num;
+                }
+            }
+        }
+
+        rDofNum = dof_num;
+        #pragma omp parallel for
+        for (int i = 0; i < number_of_dof; ++i) {
+            rResidualSolutionNorm[i] = std::sqrt(residual_solution_norm[i]);
+        }
     }
 
     /**
