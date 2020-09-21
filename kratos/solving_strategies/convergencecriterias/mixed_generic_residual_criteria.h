@@ -213,7 +213,7 @@ public:
             ConstraintUtilities::ComputeActiveDofs(rModelPart, mActiveDofs, rDofSet);
         }
 
-        SizeType size_residual;
+        std::vector<SizeType> size_residual;
         CalculateResidualNorm(rModelPart, mInitialResidualNormVector, size_residual, rDofSet, rb);
     }
 
@@ -340,14 +340,14 @@ protected:
     virtual void CalculateResidualNorm(
         ModelPart& rModelPart,
         std::vector<TDataType>& rResidualSolutionNorm,
-        SizeType& rDofNum,
+        std::vector<SizeType>& rDofNum,
         DofsArrayType& rDofSet,
         const TSystemVectorType& rb
         )
     {
         // Initialize
+        std::vector<SizeType> dofs_count(mVariableSize, 0);
         std::vector<TDataType> residual_solution_norm = std::vector<TDataType>(mVariableSize, 0.0);
-        SizeType dof_num = 0;
 
         // Auxiliar values
         TDataType residual_dof_value = 0.0;
@@ -356,7 +356,7 @@ protected:
 
         // Loop over Dofs
         if (rModelPart.NumberOfMasterSlaveConstraints() > 0) {
-            #pragma omp parallel for firstprivate(residual_dof_value) reduction(+:dof_num)
+            #pragma omp parallel for firstprivate(residual_dof_value)
             for (int i = 0; i < number_of_dof; ++i) {
                 auto it_dof = it_dof_begin + i;
 
@@ -370,11 +370,12 @@ protected:
 
                     #pragma omp atomic
                     residual_solution_norm[var_local_key] += std::pow(residual_dof_value, 2);
-                    ++dof_num;
+                    #pragma omp atomic
+                    dofs_count[var_local_key] += 1;
                 }
             }
         } else {
-            #pragma omp parallel for firstprivate(residual_dof_value) reduction(+:dof_num)
+            #pragma omp parallel for firstprivate(residual_dof_value)
             for (int i = 0; i < number_of_dof; ++i) {
                 auto it_dof = it_dof_begin + i;
 
@@ -387,12 +388,13 @@ protected:
 
                     #pragma omp atomic
                     residual_solution_norm[var_local_key] += std::pow(residual_dof_value, 2);
-                    ++dof_num;
+                    #pragma omp atomic
+                    dofs_count[var_local_key] += 1;
                 }
             }
         }
 
-        rDofNum = dof_num;
+        rDofNum = dofs_count;
         #pragma omp parallel for
         for (int i = 0; i < number_of_dof; ++i) {
             rResidualSolutionNorm[i] = std::sqrt(residual_solution_norm[i]);
