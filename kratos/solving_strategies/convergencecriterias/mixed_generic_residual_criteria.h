@@ -487,8 +487,8 @@ private:
                     dof_value = it_dof->GetSolutionStepValue(0);
                     dof_rhs = TSparseSpace::GetValue(rb, dof_id);
 
-                    const auto &r_current_variable = it_dof->GetVariable();
-                    int var_local_key = mLocalKeyMap[r_current_variable.IsComponent() ? r_current_variable.GetSourceVariable().Key() : r_current_variable.Key()];
+                    const auto& r_current_variable = it_dof->GetVariable();
+                    const IndexType var_local_key = mLocalKeyMap[r_current_variable.IsComponent() ? r_current_variable.GetSourceVariable().Key() : r_current_variable.Key()];
 
                     var_solution_norm_reduction[var_local_key] += dof_value * dof_value;
                     var_correction_norm_reduction[var_local_key] += dof_rhs * dof_rhs;
