@@ -498,7 +498,7 @@ private:
 
             #pragma omp critical
             {
-                for (int i = 0; i < mVariableSize; i++) {
+                for (int i = 0; i < mVariableSize; ++i) {
                     rDofsCount[i] += dofs_counter_reduction[i];
                     rSolutionNormsVector[i] += var_solution_norm_reduction[i];
                     rIncreaseNormsVector[i] += var_correction_norm_reduction[i];
