@@ -2057,6 +2057,37 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
         IndexVectorType vector_ids;
         std::copy(node_ids.begin(), node_ids.end(), std::back_inserter(vector_ids));
         r_sub_model_part.AddNodes(vector_ids);
+
+        std::unordered_map<IndexType, std::vector<IndexType>> pi_to_vector_node;
+        //get nodes we need from other ranks
+        IndexType rank =  DataCommunicator::GetDefault().Rank();
+        for(int i_node = 0; i_node < static_cast<int>(r_sub_model_part.Nodes().size()); ++i_node ){
+            auto it_node = r_sub_model_part.NodesBegin() + i_node;
+            IndexType partition_index = it_node->FastGetSolutionStepValue(PARTITION_INDEX);
+            if (partition_index != rank) {
+                pi_to_vector_node[partition_index].push_back(it_node->Id());
+            }
+        }
+
+        std::vector<IndexType> receive_nodes_all_ranks;
+        for (IndexType i_rank=0; i_rank < DataCommunicator::GetDefault().Size(); i_rank++ ) {
+            std::vector<IndexType> receive_nodes;
+            if (i_rank != rank){
+               receive_nodes = rModelPart.GetCommunicator().GetDataCommunicator().SendRecv(pi_to_vector_node[i_rank], i_rank, i_rank);
+               receive_nodes_all_ranks.insert(receive_nodes_all_ranks.end(), receive_nodes.begin(), receive_nodes.end());
+            }
+        }
+
+        for (IndexType i_node = 0; i_node<receive_nodes_all_ranks.size(); i_node++)
+        {
+            if (r_sub_model_part.Nodes().find(receive_nodes_all_ranks[i_node]) != r_sub_model_part.Nodes().end()) {
+                receive_nodes_all_ranks.erase(receive_nodes_all_ranks.begin() + i_node);
+            }
+        }
+
+        r_sub_model_part.AddNodes(receive_nodes_all_ranks);
+
+
     }
 }
 
