@@ -32,6 +32,23 @@ void ComputeNodalGradientProcess<THistorical>::Execute()
     // Set to zero
     ClearGradient();
 
+    if (mrModelPart.NumberOfElements() != 0) {
+        ComputeElementalContributionsAndVolume();
+    }
+
+    SynchronizeGradientAndVolume();
+
+    PonderateGradient();
+
+    KRATOS_CATCH("")
+}
+
+/***********************************************************************************/
+/***********************************************************************************/
+
+template<bool THistorical>
+void ComputeNodalGradientProcess<THistorical>::ComputeElementalContributionsAndVolume() {
+
     // Auxiliar containers
     Matrix DN_DX, J0, InvJ0;
     Vector N, values;
@@ -119,11 +136,8 @@ void ComputeNodalGradientProcess<THistorical>::Execute()
         }
     }
 
-    PonderateGradient();
-
     delete p_variable_retriever;
 
-    KRATOS_CATCH("")
 }
 
 /***********************************************************************************/
@@ -359,6 +373,26 @@ void ComputeNodalGradientProcess<ComputeNodalGradientProcessSettings::SaveAsNonH
             rNode.GetValue(*mpGradientVariable) /=
                 rNode.GetValue(*mpAreaVariable);
         });
+}
+
+/***********************************************************************************/
+/***********************************************************************************/
+
+template <>
+void ComputeNodalGradientProcess<ComputeNodalGradientProcessSettings::SaveAsHistoricalVariable>::SynchronizeGradientAndVolume()
+{
+    mrModelPart.GetCommunicator().AssembleCurrentData(*mpGradientVariable);
+    mrModelPart.GetCommunicator().AssembleNonHistoricalData(*mpAreaVariable);
+}
+
+/***********************************************************************************/
+/***********************************************************************************/
+
+template <>
+void ComputeNodalGradientProcess<ComputeNodalGradientProcessSettings::SaveAsNonHistoricalVariable>::SynchronizeGradientAndVolume()
+{
+    mrModelPart.GetCommunicator().AssembleNonHistoricalData(*mpGradientVariable);
+    mrModelPart.GetCommunicator().AssembleNonHistoricalData(*mpAreaVariable);
 }
 
 /***********************************************************************************/

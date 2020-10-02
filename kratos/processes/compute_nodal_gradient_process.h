@@ -297,9 +297,21 @@ private:
         );
 
     /**
+     * @brief This function computes the elemental gradient of the origin variable and
+     * adds it to its corresponding nodes. It also computes the contribution of the element
+     * to the nodal volume.
+     */
+    void ComputeElementalContributionsAndVolume();
+
+    /**
      * @brief This divides the gradient value by the nodal area
      */
     void PonderateGradient();
+
+    /**
+     * @brief This synchronizes the nodal contributions in parallel runs. Only needed in MPI.
+     */
+    void SynchronizeGradientAndVolume();
 
     ///@}
     ///@name Private  Access
