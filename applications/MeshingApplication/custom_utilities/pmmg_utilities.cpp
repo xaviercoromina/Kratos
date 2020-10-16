@@ -428,7 +428,6 @@ Condition::Pointer ParMmgUtilities<PMMGLibrary::PMMG3D>::CreateFirstTypeConditio
     int vertex_0, vertex_1, vertex_2;
 
     KRATOS_ERROR_IF(PMMG_Get_triangle(mParMmgMesh, &vertex_0, &vertex_1, &vertex_2, &Ref, &IsRequired) != 1 ) << "Unable to get triangle" << std::endl;
-    std::cout << "PMMG_Get_triangle Rank Ref Vertices: " << DataCommunicator::GetDefault().Rank()  << " " <<  Ref<< " " << mLocalToGlobal[vertex_0]<< " " << mLocalToGlobal[vertex_1]<< " " << mLocalToGlobal[vertex_2]<< std::endl;
     // Sometimes PMMG creates conditions where there are not, then we skip
     Properties::Pointer p_prop = nullptr;
     Condition::Pointer p_base_condition = nullptr;
@@ -702,7 +701,7 @@ void ParMmgUtilities<PMMGLibrary::PMMG3D>::InitAPIModeParameter(const IndexType 
 template<>
 void ParMmgUtilities<PMMGLibrary::PMMG3D>::InitNodeGloNumParameter(const IndexType nodeGloNum)
 {
-    KRATOS_ERROR_IF( !PMMG_Set_iparameter(mParMmgMesh,PMMG_IPARAM_nodeGloNum, nodeGloNum) ) << "Unable to set node global numbering" << std::endl;
+    KRATOS_ERROR_IF( !PMMG_Set_iparameter(mParMmgMesh,PMMG_IPARAM_globalNum, nodeGloNum) ) << "Unable to set node global numbering" << std::endl;
 }
 
 /***********************************************************************************/
@@ -968,7 +967,7 @@ void ParMmgUtilities<PMMGLibrary::PMMG3D>::PMMGLibCallMetric(Parameters Configur
         KRATOS_ERROR << "Unable to set initialize parallel library through interface faces or nodes" << std::endl;
 
     // Node global numbering: Forced to "1" all the time
-    if ( PMMG_Set_iparameter(mParMmgMesh,PMMG_IPARAM_nodeGloNum,1) != 1 )
+    if ( PMMG_Set_iparameter(mParMmgMesh,PMMG_IPARAM_globalNum,1) != 1 )
         KRATOS_ERROR << "Unable to set initialize parallel library with node global numbering" << std::endl;
 
     // Set the angle detection
@@ -1856,42 +1855,6 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
         errglonum = PMMG_Get_vertexGloNum(mParMmgMesh,&mLocalToGlobal[i_node],&local_to_partition_index[i_node]);
     }
 
-
-
-    int **idx_node_loc, **owner, **idx_glob;
-    int nunique, ntot;
-    int n_node_comm,n_face_comm,*nitem_node_comm,*nitem_face_comm;
-    int *color_node, *color_face,**face_owner,nunique_face,ntot_face;
-    int ier = PMMG_Get_numberOfFaceCommunicators(mParMmgMesh, &n_node_comm);
-
-    color_node      = (int *) malloc(n_node_comm*sizeof(int));
-    nitem_node_comm = (int *) malloc(n_node_comm*sizeof(int));
-    for(IndexType icomm = 0; icomm < n_node_comm; icomm++ )
-        ier = PMMG_Get_ithFaceCommunicatorSize(mParMmgMesh, icomm,
-                                            &color_node[icomm],
-                                            &nitem_node_comm[icomm]);
-
-    idx_node_loc  = (int **) malloc(n_node_comm*sizeof(int *));
-    idx_glob  = (int **) malloc(n_node_comm*sizeof(int *));
-    for(IndexType icomm = 0; icomm < n_node_comm; icomm++ ) {
-        idx_node_loc[icomm]  = (int *) malloc(nitem_node_comm[icomm]*sizeof(int));
-        idx_glob[icomm]  = (int *) malloc(nitem_node_comm[icomm]*sizeof(int));
-
-    }
-    errglonum = PMMG_Get_FaceCommunicator_owners(mParMmgMesh, NULL,idx_glob , NULL, NULL);
-    errglonum = PMMG_Get_FaceCommunicator_faces(mParMmgMesh, idx_node_loc);
-
-    for(IndexType icomm = 0; icomm < n_node_comm; icomm++ ) {
-        // KRATOS_WATCH(nitem_node_comm[icomm])
-        for(IndexType inode = 0; inode < nitem_node_comm[icomm]; inode++ ) {
-
-            std::cout << "rank inode loc glob: " <<DataCommunicator::GetDefault().Rank() <<  " " << inode << " "<< idx_node_loc[icomm][inode] << " " << idx_glob[icomm][inode] << std::endl;
-            // std::cout << "rank glob: " <<DataCommunicator::GetDefault().Rank() <<  " " << idx_node_loc[icomm][inode] << " " << idx_glob[icomm][inode] << std::endl;
-
-        }
-
-    }
-
     // Create a new model part // TODO: Use a different kind of element for each submodelpart (in order to be able of remeshing more than one kind o element or condition)
     std::unordered_map<IndexType, IndexVectorType> color_nodes, first_color_cond, second_color_cond, first_color_elem, second_color_elem;
 
@@ -1937,7 +1900,7 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
 
             Condition::Pointer p_condition = CreateFirstTypeCondition(rModelPart, rMapPointersRefCondition, cond_id+reduced_array_of_local_conditions[rank], ref, is_required, skip_creation);
 
-            if (p_condition.get() != nullptr) {
+            if (p_condition.get() != nullptr && ref != 0) {
                 created_conditions_vector.push_back(p_condition);
                 // rModelPart.AddCondition(p_condition);
                 if (ref != 0) first_color_cond[static_cast<IndexType>(ref)].push_back(cond_id+reduced_array_of_local_conditions[rank]);// NOTE: ref == 0 is the MainModelPart
@@ -1957,7 +1920,7 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
             }
             Condition::Pointer p_condition = CreateSecondTypeCondition(rModelPart, rMapPointersRefCondition, cond_id+reduced_array_of_local_conditions[rank], ref, is_required, skip_creation);
 
-            if (p_condition.get() != nullptr) {
+            if (p_condition.get() != nullptr && ref != 0) {
                 created_conditions_vector.push_back(p_condition);
 //                 rModelPart.AddCondition(p_condition);
                 if (ref != 0) second_color_cond[static_cast<IndexType>(ref)].push_back(cond_id+reduced_array_of_local_conditions[rank]);// NOTE: ref == 0 is the MainModelPart
