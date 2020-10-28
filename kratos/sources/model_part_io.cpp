@@ -3693,6 +3693,10 @@ void ModelPartIO::DivideElementalDataBlock(OutputFilesContainerType& OutputFiles
     {
         DivideVectorialVariableData(OutputFiles, ElementsAllPartitions, "ElementalData");
     }
+    else if(KratosComponents<Variable<Vector> >::Has(variable_name))
+    {
+        DivideVectorialVariableData(OutputFiles, ElementsAllPartitions, "ElementalData");
+    }
     else if(KratosComponents<Variable<Matrix> >::Has(variable_name))
     {
         DivideVectorialVariableData(OutputFiles, ElementsAllPartitions, "ElementalData");

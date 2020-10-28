@@ -139,6 +139,7 @@ void  AddProcessesToPython(pybind11::module& m)
     .def(py::init<ModelPart&, Parameters>())
     .def("OutputMdpa", &MmgProcess<MMGLibrary::MMG2D>::OutputMdpa)
     .def("CleanSuperfluousNodes", &MmgProcess<MMGLibrary::MMG2D>::CleanSuperfluousNodes)
+    .def("GetMmgVersion", &MmgProcess<MMGLibrary::MMG2D>::GetMmgVersion)
     ;
 
     // 3D
@@ -147,6 +148,7 @@ void  AddProcessesToPython(pybind11::module& m)
     .def(py::init<ModelPart&, Parameters>())
     .def("OutputMdpa", &MmgProcess<MMGLibrary::MMG3D>::OutputMdpa)
     .def("CleanSuperfluousNodes", &MmgProcess<MMGLibrary::MMG3D>::CleanSuperfluousNodes)
+    .def("GetMmgVersion", &MmgProcess<MMGLibrary::MMG3D>::GetMmgVersion)
     ;
 
     // 3D surfaces
@@ -155,6 +157,7 @@ void  AddProcessesToPython(pybind11::module& m)
     .def(py::init<ModelPart&, Parameters>())
     .def("OutputMdpa", &MmgProcess<MMGLibrary::MMGS>::OutputMdpa)
     .def("CleanSuperfluousNodes", &MmgProcess<MMGLibrary::MMGS>::CleanSuperfluousNodes)
+    .def("GetMmgVersion", &MmgProcess<MMGLibrary::MMGS>::GetMmgVersion)
     ;
 #endif
     /* PMMG PROCESS */
