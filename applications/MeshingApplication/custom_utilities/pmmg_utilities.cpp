@@ -1888,6 +1888,16 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
         IndexType cond_id = 1;
 
         IndexType counter_first_cond = 0;
+
+        std::map<IndexType,IndexType> local_to_global_triangles;
+        std::map<IndexType,IndexType> local_to_owner_triangles;
+        for (IndexType i_cond = 1; i_cond <= rPMMGMeshInfo.NumberFirstTypeConditions(); ++i_cond) {
+
+            int global_id, owner;
+            KRATOS_ERROR_IF(PMMG_Get_triangleGloNum(mParMmgMesh, &global_id, &owner) !=1)<< "Unable to get triangle global id" << std::endl;
+            local_to_global_triangles[i_cond] = global_id;
+            local_to_owner_triangles[i_cond] = owner;
+        }
         const IndexVectorType first_condition_to_remove = CheckFirstTypeConditions();
         for (IndexType i_cond = 1; i_cond <= rPMMGMeshInfo.NumberFirstTypeConditions(); ++i_cond) {
             bool skip_creation = false;
@@ -1897,13 +1907,14 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
                     counter_first_cond += 1;
                 }
             }
+            IndexType id_to_use = local_to_global_triangles[i_cond];
 
-            Condition::Pointer p_condition = CreateFirstTypeCondition(rModelPart, rMapPointersRefCondition, cond_id+reduced_array_of_local_conditions[rank], ref, is_required, skip_creation);
+            Condition::Pointer p_condition = CreateFirstTypeCondition(rModelPart, rMapPointersRefCondition, id_to_use, ref, is_required, skip_creation);
 
             if (p_condition.get() != nullptr && ref != 0) {
                 created_conditions_vector.push_back(p_condition);
                 // rModelPart.AddCondition(p_condition);
-                if (ref != 0) first_color_cond[static_cast<IndexType>(ref)].push_back(cond_id+reduced_array_of_local_conditions[rank]);// NOTE: ref == 0 is the MainModelPart
+                if (ref != 0) first_color_cond[static_cast<IndexType>(ref)].push_back(id_to_use);// NOTE: ref == 0 is the MainModelPart
                 cond_id += 1;
             }
         }
