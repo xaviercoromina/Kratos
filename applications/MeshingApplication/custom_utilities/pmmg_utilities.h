@@ -725,6 +725,8 @@ public:
      */
     void AssignAndClearAuxiliarSubModelPartForFlags(ModelPart& rModelPart);
 
+    std::map<int, int> GetNodalLocalToGlobalMap();
+
     ///@}
     ///@name Access
     ///@{

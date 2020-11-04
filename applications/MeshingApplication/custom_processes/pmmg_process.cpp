@@ -258,10 +258,10 @@ void ParMmgProcess<TPMMGLibrary>::ExecuteFinalize()
     // Iterate in the nodes
     auto& r_nodes_array = mrThisModelPart.Nodes();
     const auto it_node_begin = r_nodes_array.begin();
+    auto local_to_global_nodes_map = mPMmmgUtilities.GetNodalLocalToGlobalMap();
+    for(int i = 1; i <= static_cast<int>(r_nodes_array.size()); ++i) {
 
-    #pragma omp parallel for
-    for(int i = 0; i < static_cast<int>(r_nodes_array.size()); ++i) {
-        auto it_node = it_node_begin + i;
+        auto it_node = mrThisModelPart.pGetNode(local_to_global_nodes_map[i]);
 
         const bool old_entity = it_node->IsDefined(OLD_ENTITY) ? it_node->Is(OLD_ENTITY) : false;
         if (!old_entity) {

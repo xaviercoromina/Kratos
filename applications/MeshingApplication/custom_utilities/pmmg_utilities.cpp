@@ -2226,6 +2226,11 @@ void ParMmgUtilities<TPMMGLibrary>::AssignAndClearAuxiliarSubModelPartForFlags(M
 /***********************************************************************************/
 /***********************************************************************************/
 
+template<PMMGLibrary TPMMGLibrary>
+std::map<int, int> ParMmgUtilities<TPMMGLibrary>::GetNodalLocalToGlobalMap() {
+    return mLocalToGlobal;
+}
+
 template class ParMmgUtilities<PMMGLibrary::PMMG3D>;
 
 }// namespace Kratos.
