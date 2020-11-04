@@ -404,7 +404,11 @@ Node<3>::Pointer ParMmgUtilities<PMMGLibrary::PMMG3D>::CreateNode(
 
     KRATOS_ERROR_IF(PMMG_Get_vertex(mParMmgMesh, &coord_0, &coord_1, &coord_2, &Ref, &is_corner, &IsRequired) != 1 ) << "Unable to get vertex" << std::endl;
 
-    NodeType::Pointer p_node = rModelPart.CreateNewNode(iNode, coord_0, coord_1, coord_2);
+    NodeType::Pointer p_node = Kratos::make_intrusive<NodeType>(iNode, coord_0, coord_1, coord_2);
+    // Giving model part's variables list to the node
+    p_node->SetSolutionStepVariablesList(rModelPart.pGetNodalSolutionStepVariablesList());
+    //set buffer size
+    p_node->SetBufferSize(rModelPart.GetBufferSize());
 
     return p_node;
 }
@@ -465,7 +469,7 @@ Condition::Pointer ParMmgUtilities<PMMGLibrary::PMMG3D>::CreateFirstTypeConditio
     } else if (mEchoLevel > 2)
         KRATOS_WARNING_IF("ParMmgUtilities", mEchoLevel > 1) << "Condition creation avoided" << std::endl;
 
-    if (p_condition != nullptr) KRATOS_ERROR_IF(p_condition->GetGeometry().Area() < ZeroTolerance) << "Creating a almost zero or negative area condition" << std::endl;
+    if (p_condition != nullptr && Ref != 0) KRATOS_ERROR_IF(p_condition->GetGeometry().Area() < ZeroTolerance) << "Creating a almost zero or negative area condition with area " <<  p_condition->GetGeometry().Area()  << " and vertices: " << mLocalToGlobal[vertex_0] << " " << mLocalToGlobal[vertex_1] << " " << mLocalToGlobal[vertex_2]<< std::endl;
     return p_condition;
 }
 
@@ -1861,12 +1865,15 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
     // The tempotal store of
     ConditionsArrayType created_conditions_vector;
     ElementsArrayType created_elements_vector;
+    NodesArrayType created_nodes_vector;
 
     // Auxiliar values
     int ref, is_required;
 
     /* NODES */ // TODO: ADD OMP
     for (IndexType i_node = 1; i_node <= rPMMGMeshInfo.NumberOfNodes; ++i_node) {
+
+        KRATOS_ERROR_IF(mLocalToGlobal[i_node]==0) << "0 global index at local node: " << i_node <<  std::endl;
 
         NodeType::Pointer p_node = CreateNode(rModelPart, mLocalToGlobal[i_node], ref, is_required);
 
@@ -1880,8 +1887,10 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
         for (auto it_dof = rDofs.begin(); it_dof != rDofs.end(); ++it_dof)
             p_node->pAddDof(**it_dof);
 
+        created_nodes_vector.push_back(p_node);
         if (ref != 0) color_nodes[static_cast<IndexType>(ref)].push_back(mLocalToGlobal[i_node]);// NOTE: ref == 0 is the MainModelPart
     }
+    rModelPart.AddNodes(created_nodes_vector.begin(), created_nodes_vector.end());
 
     /* CONDITIONS */ // TODO: ADD OMP
     if (rMapPointersRefCondition.size() > 0) {
