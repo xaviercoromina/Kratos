@@ -189,12 +189,12 @@ void AssignUniqueModelPartCollectionTagUtility::SetParallelModelPartAndSubModelP
 
     std::vector<std::vector<IndexType>> global_combination_vector_keys;
     if (rank>0) {
-        mrModelPart.GetCommunicator().GetDataCommunicator().Send(local_combination_vector_keys, 0);
+        DataCommunicator::GetDefault().Send(local_combination_vector_keys, 0);
     }
     else {
         for (IndexType i_rank = 1; i_rank<size; i_rank++) {
             std::vector<std::vector<IndexType>> recv_irank_combinations;
-            mrModelPart.GetCommunicator().GetDataCommunicator().Recv(recv_irank_combinations, i_rank);
+            DataCommunicator::GetDefault().Recv(recv_irank_combinations, i_rank);
 
             for (auto& key_combination_vector : recv_irank_combinations) {
                 // Convert vector to set
@@ -204,17 +204,17 @@ void AssignUniqueModelPartCollectionTagUtility::SetParallelModelPartAndSubModelP
                     rCombinations[submodel_part_set] = 0; //creating new key, value does not matter
                 }
             }
-            // Converting back to vector to be broadcasted
-            for(auto& r_key_combination_set : rCombinations) {
-                std::vector<IndexType> key_vector;
-                for (auto it=r_key_combination_set.first.begin(); it != r_key_combination_set.first.end(); ++it)
-                    key_vector.push_back(*it);
-                global_combination_vector_keys.push_back(key_vector);
-            }
+        }
+        // Converting back to vector to be broadcasted
+        for(auto& r_key_combination_set : rCombinations) {
+            std::vector<IndexType> key_vector;
+            for (auto it=r_key_combination_set.first.begin(); it != r_key_combination_set.first.end(); ++it)
+                key_vector.push_back(*it);
+            global_combination_vector_keys.push_back(key_vector);
         }
     }
 
-    mrModelPart.GetCommunicator().GetDataCommunicator().Broadcast(global_combination_vector_keys, 0);
+    DataCommunicator::GetDefault().Broadcast(global_combination_vector_keys, 0);
 
     rCombinations.clear();
 

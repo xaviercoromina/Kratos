@@ -38,7 +38,7 @@ namespace Kratos
         /**
         * Checks the correct work of the sub modelparts list utility
         */
-        KRATOS_TEST_CASE_IN_SUITE(AssignMPIUniqueModelPartCollectionTagUtility, KratosMPICoreFastSuiteTESTING)
+        KRATOS_TEST_CASE_IN_SUITE(AssignMPIUniqueModelPartCollectionTagUtility, KratosMPICoreFastSuite)
         {
             // Creating the reference model part and the relative submodelparts non alphabetically ordered
             auto rank = DataCommunicator::GetDefault().Rank();
@@ -52,9 +52,6 @@ namespace Kratos
 
             r_model_part.AddNodalSolutionStepVariable(PARTITION_INDEX);
             CppTestsUtilities::Create2DGeometry(r_model_part, "Element2D3N");
-
-            r_model_part.pGetNode(6)->FastGetSolutionStepValue(PARTITION_INDEX) = 1;
-            ParallelFillCommunicator(r_model_part).Execute();
 
             r_sub_modelpart_1.AddNode(r_model_part.pGetNode(1));
             r_sub_modelpart_2.AddNode(r_model_part.pGetNode(4));
