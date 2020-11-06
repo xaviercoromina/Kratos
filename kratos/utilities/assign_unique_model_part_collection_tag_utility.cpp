@@ -102,77 +102,6 @@ void AssignUniqueModelPartCollectionTagUtility::ComputeTags(
         if (r_value.size() > 1) combinations[r_value] = 0;
     }
 
-<<<<<<< HEAD
-    const IndexType size = mrModelPart.GetCommunicator().GetDataCommunicator().Size();
-
-    std::vector<std::vector<IndexType>> combinations_keys;
-    for(auto& combination : combinations) {
-        std::vector<IndexType> aux_vector;
-        for (auto it=combination.first.begin(); it != combination.first.end(); ++it)
-            aux_vector.push_back(*it);
-        combinations_keys.push_back(aux_vector);
-    }
-
-    if (rank>0) {
-        std::vector<std::vector<IndexType>> SendObject=combinations_keys;
-
-        mrModelPart.GetCommunicator().GetDataCommunicator().Send(SendObject, 0);
-    }
-    else {
-        std::vector<std::vector<std::vector<IndexType>>> ReceiveBuffer(size);
-        ReceiveBuffer[0] = combinations_keys;
-        for (IndexType i_rank = 1; i_rank<size; i_rank++) {
-            std::vector<std::vector<IndexType>> RecvObject;
-            mrModelPart.GetCommunicator().GetDataCommunicator().Recv(RecvObject, i_rank);
-            ReceiveBuffer[i_rank] = RecvObject;
-        }
-
-        for (auto& combination_keys : ReceiveBuffer) {
-            for (auto& submodel_part_vector : combination_keys) {
-
-                std::set<IndexType> submodel_part_set;
-                for (auto& values : submodel_part_vector) {
-                    submodel_part_set.insert(values);
-                }
-
-                if (combinations.find(submodel_part_set) == combinations.end()) {
-                    combinations[submodel_part_set] = 0; //creating new key, value does not matter
-                }
-            }
-        }
-    }
-    mrModelPart.GetCommunicator().GetDataCommunicator().Barrier();
-
-    std::vector<std::vector<IndexType>> SendRecvObject;
-    if (rank==0) {
-        std::vector<std::vector<IndexType>> final_combination_keys;
-        for(auto& combination : combinations) {
-            std::vector<IndexType> aux_vector;
-            for (auto it=combination.first.begin(); it != combination.first.end(); ++it)
-                aux_vector.push_back(*it);
-            final_combination_keys.push_back(aux_vector);
-        }
-        SendRecvObject = final_combination_keys;
-        for (IndexType i_rank = 1; i_rank<size; i_rank++) {
-            mrModelPart.GetCommunicator().GetDataCommunicator().Send(SendRecvObject, i_rank);
-        }
-    } else {
-        mrModelPart.GetCommunicator().GetDataCommunicator().Recv(SendRecvObject, 0);
-    }
-
-    combinations.clear();
-
-    for (auto& submodel_part_vector : SendRecvObject) {
-        std::set<IndexType> submodel_part_set;
-        for (auto& values : submodel_part_vector) {
-            submodel_part_set.insert(values);
-        }
-        for(IndexType it : submodel_part_set) {
-            rCollections[tag].push_back(rCollections[it][0]);
-        }
-        combinations[submodel_part_set] = tag;
-        ++tag;
-=======
     if (DataCommunicator::GetDefault().IsDistributed()) {
         SetParallelModelPartAndSubModelPartCollectionsAndCombinations(rCollections, combinations, tag);
     } else {
@@ -184,7 +113,6 @@ void AssignUniqueModelPartCollectionTagUtility::ComputeTags(
             combinations[r_key_set] = tag;
             ++tag;
         }
->>>>>>> origin/core/assign-color-mpi-utility
     }
 
     // The final maps are created
