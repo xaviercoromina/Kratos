@@ -82,7 +82,7 @@ void AssignUniqueModelPartCollectionTagUtility::ComputeTags(
     }
 
     // Now detect all the cases in which a node or a cond belongs to more than one part simultaneously
-    std::unordered_map<std::set<IndexType>, IndexType, KeyHasherRange<std::set<IndexType>>, KeyComparorRange<std::set<IndexType>> > combinations;
+   IndexSetIndexMapType combinations;
 
     /* Nodes */
     for(auto& r_aux_node_tag : aux_node_tags) {
@@ -102,6 +102,7 @@ void AssignUniqueModelPartCollectionTagUtility::ComputeTags(
         if (r_value.size() > 1) combinations[r_value] = 0;
     }
 
+<<<<<<< HEAD
     const IndexType size = mrModelPart.GetCommunicator().GetDataCommunicator().Size();
 
     std::vector<std::vector<IndexType>> combinations_keys;
@@ -171,6 +172,19 @@ void AssignUniqueModelPartCollectionTagUtility::ComputeTags(
         }
         combinations[submodel_part_set] = tag;
         ++tag;
+=======
+    if (DataCommunicator::GetDefault().IsDistributed()) {
+        SetParallelModelPartAndSubModelPartCollectionsAndCombinations(rCollections, combinations, tag);
+    } else {
+        /* Combinations */
+        for(auto& combination : combinations) {
+            const std::set<IndexType>& r_key_set = combination.first;
+            for(IndexType it : r_key_set)
+                rCollections[tag].push_back(rCollections[it][0]);
+            combinations[r_key_set] = tag;
+            ++tag;
+        }
+>>>>>>> origin/core/assign-color-mpi-utility
     }
 
     // The final maps are created
@@ -227,6 +241,65 @@ void AssignUniqueModelPartCollectionTagUtility::ComputeTags(
     }
 }
 
+/***********************************************************************************/
+/***********************************************************************************/
+
+void AssignUniqueModelPartCollectionTagUtility::SetParallelModelPartAndSubModelPartCollectionsAndCombinations(
+                                            IndexStringMapType& rCollections,
+                                            IndexSetIndexMapType& rCombinations,
+                                            IndexType& rTag)
+{
+    const IndexType rank = DataCommunicator::GetDefault().Rank();
+    const IndexType size = DataCommunicator::GetDefault().Size();
+
+    std::vector<std::vector<IndexType>> local_combination_vector_keys;
+    for(auto& key_combination_set : rCombinations) {
+        std::vector<IndexType> key_vector;
+        for (auto it=key_combination_set.first.begin(); it != key_combination_set.first.end(); ++it)
+            key_vector.push_back(*it);
+        local_combination_vector_keys.push_back(key_vector);
+    }
+
+    std::vector<std::vector<IndexType>> global_combination_vector_keys;
+    if (rank>0) {
+        mrModelPart.GetCommunicator().GetDataCommunicator().Send(local_combination_vector_keys, 0);
+    }
+    else {
+        for (IndexType i_rank = 1; i_rank<size; i_rank++) {
+            std::vector<std::vector<IndexType>> recv_irank_combinations;
+            mrModelPart.GetCommunicator().GetDataCommunicator().Recv(recv_irank_combinations, i_rank);
+
+            for (auto& key_combination_vector : recv_irank_combinations) {
+                // Convert vector to set
+                const std::set<IndexType> submodel_part_set(key_combination_vector.begin(), key_combination_vector.end());
+                // Check if key exists in the combinations maps, if not, add it
+                if (rCombinations.find(submodel_part_set) == rCombinations.end()) {
+                    rCombinations[submodel_part_set] = 0; //creating new key, value does not matter
+                }
+            }
+            // Converting back to vector to be broadcasted
+            for(auto& r_key_combination_set : rCombinations) {
+                std::vector<IndexType> key_vector;
+                for (auto it=r_key_combination_set.first.begin(); it != r_key_combination_set.first.end(); ++it)
+                    key_vector.push_back(*it);
+                global_combination_vector_keys.push_back(key_vector);
+            }
+        }
+    }
+
+    mrModelPart.GetCommunicator().GetDataCommunicator().Broadcast(global_combination_vector_keys, 0);
+
+    rCombinations.clear();
+
+    // Assigning final maps considering all ranks information
+    for (auto& r_key_vector : global_combination_vector_keys) {
+        const std::set<IndexType> r_key_set(r_key_vector.begin(), r_key_vector.end());
+        for(IndexType it : r_key_set)
+            rCollections[rTag].push_back(rCollections[it][0]);
+        rCombinations[r_key_set] = rTag;
+        ++rTag;
+    }
+}
 /***********************************************************************************/
 /***********************************************************************************/
 
