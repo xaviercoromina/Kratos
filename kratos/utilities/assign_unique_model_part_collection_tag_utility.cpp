@@ -49,7 +49,6 @@ void AssignUniqueModelPartCollectionTagUtility::ComputeTags(
 
     // We compute the list of submodelparts and subsubmodelparts
     const StringVectorType& r_model_part_names = GetRecursiveSubModelPartNames(mrModelPart);
-    const int rank = mrModelPart.GetCommunicator().GetDataCommunicator().Rank();
 
     // Initialize the collections
     IndexType tag = 0;
