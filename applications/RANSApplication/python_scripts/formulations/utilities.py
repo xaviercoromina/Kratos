@@ -20,7 +20,7 @@ else:
     raise Exception("Distributed run requires TrilinosApplication")
 
 
-def GetKratosObjectType(type_name):
+def GetKratosObjectPrototype(type_name):
     type_dict = {
         "LinearSolverFactory": [
             "KratosMultiphysics.python_linear_solver_factory.ConstructSolver",
@@ -49,10 +49,6 @@ def GetKratosObjectType(type_name):
         "BossakRelaxationScalarScheme": [
             "KratosMultiphysics.RANSApplication.BossakRelaxationScalarScheme",
             "KratosMultiphysics.RANSApplication.TrilinosExtension.MPIBossakRelaxationScalarScheme"
-        ],
-        "RansWallDistanceCalculationProcess": [
-            "KratosMultiphysics.RANSApplication.RansWallDistanceCalculationProcess",
-            "KratosMultiphysics.RANSApplication.TrilinosExtension.TrilinosRansWallDistanceCalculationProcess"
         ],
         "ResidualBasedSimpleSteadyScheme": [
             "KratosMultiphysics.FluidDynamicsApplication.ResidualBasedSimpleSteadyScheme",
