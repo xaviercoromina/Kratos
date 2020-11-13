@@ -66,7 +66,6 @@ ModelPartIO::ModelPartIO(std::string const& Filename, const Flags Options)
     // Store the pointer as a regular std::iostream
     mpStream = pFile;
 
-
     if (mOptions.IsNot(IO::SKIP_TIMER)) Timer::SetOuputFile(Filename + ".time");
 }
 
@@ -82,7 +81,6 @@ ModelPartIO::ModelPartIO(Kratos::shared_ptr<std::iostream> Stream, const Flags O
     KRATOS_ERROR_IF(Stream == nullptr || Stream == Kratos::shared_ptr<std::iostream>(NULL)) << "Error: ModelPartIO Stream is invalid " << std::endl;
 
     mpStream = Stream;
-
 }
 
 /// Destructor.
@@ -142,7 +140,7 @@ void ModelPartIO::WriteNodes(NodesContainerType const& rThisNodes)
 {
     (*mpStream) << "Begin Nodes" << std::endl;
     for(NodesContainerType::const_iterator it_node = rThisNodes.begin() ; it_node != rThisNodes.end() ; it_node++)
-        (*mpStream)<< std::fixed << std::setprecision(std::numeric_limits<long double>::digits10 + 1) <<  "\t" << it_node->Id() << "\t" << it_node->X()  << "\t" << it_node->Y() << "\t" << it_node->Z() << std::endl;
+        (*mpStream) << "\t" << it_node->Id() << "\t" << it_node->X()  << "\t" << it_node->Y() << "\t" << it_node->Z() << std::endl;
     (*mpStream) << "End Nodes" << std::endl << std::endl;
 }
 
