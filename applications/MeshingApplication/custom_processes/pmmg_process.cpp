@@ -194,8 +194,7 @@ void ParMmgProcess<TPMMGLibrary>::ExecuteInitializeSolutionStep()
     // Check if the number of given entities match with mesh size
     //mPMmmgUtilities.CheckMeshData(); //not implemented
 
-    // Save to file
-     if (safe_to_file) SaveSolutionToFile(false);
+
 
     // We execute the remeshing
     ExecuteRemeshing();
@@ -337,7 +336,8 @@ void ParMmgProcess<TPMMGLibrary>::InitializeMeshData()
 
     // Actually generate mesh data
     mPMmmgUtilities.GenerateMeshDataFromModelPart(mrThisModelPart, mColors, aux_ref_cond, aux_ref_elem, mFramework, collapse_prisms_elements);
-
+    // Save to file
+    if (false) SaveSolutionToFile(false);
     // Generate Interface data
     mPMmmgUtilities.GenerateParallelInterfaces(mrThisModelPart);
 
@@ -456,8 +456,6 @@ void ParMmgProcess<TPMMGLibrary>::ExecuteRemeshing()
     // Calling the library functions
     mPMmmgUtilities.PMMGLibCallMetric(mThisParameters);
 
-    /* Save to file */
-     if (save_to_file) SaveSolutionToFile(true);
 
     // Some information
     PMMGMeshInfo<TPMMGLibrary> mmg_mesh_info;
@@ -612,6 +610,10 @@ void ParMmgProcess<TPMMGLibrary>::ExecuteRemeshing()
 
     // Writing the new solution data on the model part
     mPMmmgUtilities.WriteSolDataToModelPart(mrThisModelPart);
+
+
+    /* Save to file */
+     if (save_to_file) SaveSolutionToFile(true);
 
     // // In case of prism collapse we extrapolate now (and later extrude)
     // if (collapse_prisms_elements) {
@@ -780,13 +782,9 @@ void ParMmgProcess<TPMMGLibrary>::SaveSolutionToFile(const bool PostOutput)
     // const std::string file_name = mFilename + "_step=" + std::tso_string(step) + (PostOutput ? ".o" : "");
     const std::string file_name = mFilename + std::to_string(rank) + "_step=" + std::to_string(step) + (PostOutput ? ".o" : "");
 
-    // Automatically save the mesh
-    if (!PostOutput or PostOutput) {
-        mPMmmgUtilities.OutputMesh(file_name);
+    mPMmmgUtilities.OutputMesh(file_name);
 
-        // Automatically save the solution
-        mPMmmgUtilities.OutputSol(file_name);
-    }
+    mPMmmgUtilities.OutputSol(file_name);
 
     // The current displacement
 //    if (mDiscretization == DiscretizationOption::LAGRANGIAN) {
@@ -827,7 +825,7 @@ void ParMmgProcess<TPMMGLibrary>::OutputMdpa()
 {
     std::ofstream output_file;
     auto rank = DataCommunicator::GetDefault().Rank();
-    ModelPartIO model_part_io("output_"+std::to_string(rank), IO::WRITE);
+    ModelPartIO model_part_io(mFilename+"_"+std::to_string(rank), IO::WRITE);
     model_part_io.WriteModelPart(mrThisModelPart);
 }
 

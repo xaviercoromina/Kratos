@@ -74,12 +74,15 @@ class TestMPIParMmg(KratosUnittest.TestCase):
         ##PERFORM REMESHING
         pmmg_parameters = KratosMultiphysics.Parameters("""
         {
+            "filename"   : "output",
             "save_external_files"              : true,
             "save_colors_files"                : false,
             "initialize_entities"              : false,
             "preserve_flags"                   : false
         }
         """)
+        pmmg_parameters["filename"].SetString(GetFilePath(pmmg_parameters["filename"].GetString()))
+
         pmmg_process = KratosMultiphysics.MeshingApplication.ParMmgProcess3D(main_model_part.GetRootModelPart(), pmmg_parameters)
         pmmg_process.Execute()
 
