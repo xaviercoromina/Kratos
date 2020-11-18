@@ -826,7 +826,7 @@ void ParMmgUtilities<PMMGLibrary::PMMG3D>::OutputMesh(const std::string& rOutput
      PMMG_Set_outputMeshName(mParMmgMesh,mesh_file);
 
     // // b) function calling
-     KRATOS_INFO_IF("ParMmgUtilities", PMMG_saveMesh_centralized(mParMmgMesh,mesh_file) != 1) << "UNABLE TO SAVE MESH" << std::endl;
+     KRATOS_INFO_IF("ParMmgUtilities", PMMG_saveMesh_distributed(mParMmgMesh,mesh_file) != 1) << "UNABLE TO SAVE MESH" << std::endl;
 }
 
 /***********************************************************************************/
@@ -842,7 +842,7 @@ void ParMmgUtilities<PMMGLibrary::PMMG3D>::OutputSol(const std::string& rOutputN
      PMMG_Set_outputSolsName(mParMmgMesh,  sol_file);
 
     // // b) Function calling
-     KRATOS_INFO_IF("ParMmgUtilities", PMMG_saveMet_centralized(mParMmgMesh, sol_file) != 1)<< "UNABLE TO SAVE SOL" << std::endl;
+     KRATOS_INFO_IF("ParMmgUtilities", PMMG_saveMet_distributed(mParMmgMesh, sol_file) != 1)<< "UNABLE TO SAVE SOL" << std::endl;
 }
 
 /***********************************************************************************/

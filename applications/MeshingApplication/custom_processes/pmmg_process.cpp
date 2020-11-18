@@ -776,13 +776,17 @@ void ParMmgProcess<TPMMGLibrary>::SaveSolutionToFile(const bool PostOutput)
 {
     /* GET RESULTS */
     const int step = mrThisModelPart.GetProcessInfo()[STEP];
-    const std::string file_name = mFilename + "_step=" + std::to_string(step) + (PostOutput ? ".o" : "");
+    auto rank = DataCommunicator::GetDefault().Rank();
+    // const std::string file_name = mFilename + "_step=" + std::tso_string(step) + (PostOutput ? ".o" : "");
+    const std::string file_name = mFilename + std::to_string(rank) + "_step=" + std::to_string(step) + (PostOutput ? ".o" : "");
 
     // Automatically save the mesh
-    // mPMmmgUtilities.OutputMesh(file_name);
+    if (!PostOutput or PostOutput) {
+        mPMmmgUtilities.OutputMesh(file_name);
 
-    // Automatically save the solution
-    // mPMmmgUtilities.OutputSol(file_name);
+        // Automatically save the solution
+        mPMmmgUtilities.OutputSol(file_name);
+    }
 
     // The current displacement
 //    if (mDiscretization == DiscretizationOption::LAGRANGIAN) {
@@ -822,7 +826,8 @@ template<PMMGLibrary TPMMGLibrary>
 void ParMmgProcess<TPMMGLibrary>::OutputMdpa()
 {
     std::ofstream output_file;
-    ModelPartIO model_part_io("output", IO::WRITE);
+    auto rank = DataCommunicator::GetDefault().Rank();
+    ModelPartIO model_part_io("output_"+std::to_string(rank), IO::WRITE);
     model_part_io.WriteModelPart(mrThisModelPart);
 }
 
