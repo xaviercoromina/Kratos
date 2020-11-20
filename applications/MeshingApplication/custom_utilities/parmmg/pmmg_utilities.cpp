@@ -1154,6 +1154,7 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
     std::unordered_map<IndexType,Element::Pointer>& rMapPointersRefElement
     )
 {
+    auto start = std::chrono::steady_clock::now();
     const IndexType rank = rModelPart.GetCommunicator().GetDataCommunicator().Rank();
     const IndexType size = rModelPart.GetCommunicator().GetDataCommunicator().Size();
 
@@ -1178,6 +1179,8 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
     for (IndexType i_node = 1; i_node <= rPMMGMeshInfo.NumberOfNodes; ++i_node) {
         PMMG_Get_vertexGloNum(mParMmgMesh,&mLocalToGlobalNodePostMap[i_node],&local_id_to_partition_index[i_node]);
     }
+    std::chrono::duration<double> elapsed_seconds = std::chrono::steady_clock::now()-start;
+    KRATOS_INFO_IF("WriteMeshModelPart-FirstSync:", GetEchoLevel() > 0) << "Elapsed time: "<< DataCommunicator::GetDefault().MaxAll(elapsed_seconds.count()) << "s\n";
 
     // Create a new model part // TODO: Use a different kind of element for each submodelpart (in order to be able of remeshing more than one kind o element or condition)
     std::unordered_map<IndexType, IndexVectorType> color_nodes, first_color_cond, second_color_cond, first_color_elem, second_color_elem;
@@ -1189,6 +1192,7 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
 
     // Auxiliar values
     int ref, is_required;
+    start = std::chrono::steady_clock::now();
 
     /* NODES */ // TODO: ADD OMP
     for (IndexType i_node = 1; i_node <= rPMMGMeshInfo.NumberOfNodes; ++i_node) {
@@ -1211,6 +1215,9 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
         if (ref != 0) color_nodes[static_cast<IndexType>(ref)].push_back(mLocalToGlobalNodePostMap[i_node]);// NOTE: ref == 0 is the MainModelPart
     }
     rModelPart.AddNodes(created_nodes_vector.begin(), created_nodes_vector.end());
+    elapsed_seconds = std::chrono::steady_clock::now()-start;
+    KRATOS_INFO_IF("WriteMeshModelPart-AddNodes:", GetEchoLevel() > 0) << "Elapsed time: "<< DataCommunicator::GetDefault().MaxAll(elapsed_seconds.count()) << "s\n";
+    start = std::chrono::steady_clock::now();
 
     /* CONDITIONS */ // TODO: ADD OMP
     if (rMapPointersRefCondition.size() > 0) {
@@ -1245,6 +1252,12 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
         }
     }
     rModelPart.AddConditions(created_conditions_vector.begin(), created_conditions_vector.end());
+<<<<<<< Updated upstream
+=======
+    elapsed_seconds = std::chrono::steady_clock::now()-start;
+    KRATOS_INFO_IF("WriteMeshModelPart-AddElements:", GetEchoLevel() > 0) << "Elapsed time: "<< DataCommunicator::GetDefault().MaxAll(elapsed_seconds.count()) << "s\n";
+    start = std::chrono::steady_clock::now();
+>>>>>>> Stashed changes
 
     /* ELEMENTS */ // TODO: ADD OMP
     if (rMapPointersRefElement.size() > 0) {
@@ -1270,9 +1283,21 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
             }
         }
     }
+<<<<<<< Updated upstream
+=======
+
+    // Finally we add the conditions and elements to the main model part
+>>>>>>> Stashed changes
     rModelPart.AddElements(created_elements_vector.begin(), created_elements_vector.end());
 
+
+
+    elapsed_seconds = std::chrono::steady_clock::now()-start;
+    KRATOS_INFO_IF("WriteMeshModelPart-AddConditions:", GetEchoLevel() > 0) << "Elapsed time: "<< DataCommunicator::GetDefault().MaxAll(elapsed_seconds.count()) << "s\n";
+
+
     // We add nodes, conditions and elements to the sub model parts
+    start = std::chrono::steady_clock::now();
 
     for (auto& r_color_list : rColors) {
         const IndexType key = r_color_list.first;
@@ -1362,6 +1387,9 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
 
 
     }
+    elapsed_seconds = std::chrono::steady_clock::now()-start;
+    KRATOS_INFO_IF("WriteMeshModelPart-AddSubModelParts:", GetEchoLevel() > 0) << "Elapsed time: "<< DataCommunicator::GetDefault().MaxAll(elapsed_seconds.count()) << "s\n";
+
 }
 
 /***********************************************************************************/

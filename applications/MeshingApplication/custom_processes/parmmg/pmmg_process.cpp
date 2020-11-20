@@ -87,10 +87,21 @@ void ParMmgProcess<TPMMGLibrary>::Execute()
 {
     KRATOS_TRY;
 
+    auto start = std::chrono::steady_clock::now();
     // We execute all the necessary steps
     ExecuteInitialize();
+    std::chrono::duration<double> elapsed_seconds = std::chrono::steady_clock::now()-start;
+    KRATOS_INFO_IF("ExecuteInitialize:", mEchoLevel > 0) << "Elapsed time: "<< DataCommunicator::GetDefault().MaxAll(elapsed_seconds.count()) << "s\n";
+
+    start = std::chrono::steady_clock::now();
     ExecuteInitializeSolutionStep();
+    elapsed_seconds = std::chrono::steady_clock::now()-start;
+    KRATOS_INFO_IF("ExecuteInitializeSolutionStep:", mEchoLevel > 0) << "Elapsed time: "<< DataCommunicator::GetDefault().MaxAll(elapsed_seconds.count()) << "s\n";
+
+    start = std::chrono::steady_clock::now();
     ExecuteFinalize();
+    elapsed_seconds = std::chrono::steady_clock::now()-start;
+    KRATOS_INFO_IF("ExecuteFinalize:", mEchoLevel > 0) << "Elapsed time: "<< DataCommunicator::GetDefault().MaxAll(elapsed_seconds.count()) << "s\n";
 
     KRATOS_CATCH("");
 }
@@ -140,12 +151,21 @@ void ParMmgProcess<TPMMGLibrary>::ExecuteInitializeSolutionStep()
     std::endl << mrThisModelPart << std::endl;
 
     // We initialize the mesh and solution data
+    auto start = std::chrono::steady_clock::now();
     InitializeMeshData();
+    std::chrono::duration<double> elapsed_seconds = std::chrono::steady_clock::now()-start;
+    KRATOS_INFO_IF("InitializeMeshData:", mEchoLevel > 0) << "Elapsed time: "<< DataCommunicator::GetDefault().MaxAll(elapsed_seconds.count()) << "s\n";
 
+    start = std::chrono::steady_clock::now();
     InitializeSolDataMetric();
+    elapsed_seconds = std::chrono::steady_clock::now()-start;
+    KRATOS_INFO_IF("InitializeSolDataMetric:", mEchoLevel > 0) << "Elapsed time: "<< DataCommunicator::GetDefault().MaxAll(elapsed_seconds.count()) << "s\n";
 
+    start = std::chrono::steady_clock::now();
     // We execute the remeshing
     ExecuteRemeshing();
+    elapsed_seconds = std::chrono::steady_clock::now()-start;
+    KRATOS_INFO_IF("ExecuteRemeshing:", mEchoLevel > 0) << "Elapsed time: "<< DataCommunicator::GetDefault().MaxAll(elapsed_seconds.count()) << "s\n";
 
     /* We print the resulting model part */
     KRATOS_INFO_IF("", mEchoLevel > 0) <<
@@ -365,14 +385,22 @@ void ParMmgProcess<TPMMGLibrary>::ExecuteRemeshing()
     /* Save to file. It is required to call it AFTER writing the model part data */
     if (save_to_file) SaveSolutionToFile(false);
 
+    auto start = std::chrono::steady_clock::now();
     // Calling the library functions
     mPMmgUtilities.PMMGLibCallMetric(mThisParameters);
+    std::chrono::duration<double> elapsed_seconds = std::chrono::steady_clock::now()-start;
+    KRATOS_INFO_IF("PMMGLibCallMetric:", mEchoLevel > 0) << "Elapsed time: "<< DataCommunicator::GetDefault().MaxAll(elapsed_seconds.count()) << "s\n";
 
+    start = std::chrono::steady_clock::now();
     // Some information
     PMMGMeshInfo<TPMMGLibrary> mmg_mesh_info;
     mPMmgUtilities.PrintAndGetParMmgMeshInfo(mmg_mesh_info);
+    elapsed_seconds = std::chrono::steady_clock::now()-start;
+    KRATOS_INFO_IF("PrintAndGetParMmgMeshInfo:", mEchoLevel > 0) << "Elapsed time: "<< DataCommunicator::GetDefault().MaxAll(elapsed_seconds.count()) << "s\n";
 
 
+
+    start = std::chrono::steady_clock::now();
     // First we empty the model part
     auto& r_nodes_array = mrThisModelPart.Nodes();
     const auto it_node_begin = r_nodes_array.begin();
@@ -418,9 +446,13 @@ void ParMmgProcess<TPMMGLibrary>::ExecuteRemeshing()
     }
     r_old_model_part.AddElements( mrThisModelPart.ElementsBegin(), mrThisModelPart.ElementsEnd() );
     mrThisModelPart.RemoveElementsFromAllLevels(TO_ERASE);
+    elapsed_seconds = std::chrono::steady_clock::now()-start;
+    KRATOS_INFO_IF("EmptyModelPart:", mEchoLevel > 0) << "Elapsed time: "<< DataCommunicator::GetDefault().MaxAll(elapsed_seconds.count()) << "s\n";
 
-
+    start = std::chrono::steady_clock::now();
     mPMmgUtilities.WriteMeshDataToModelPart(mrThisModelPart, mColors, mDofs, mmg_mesh_info, mpRefCondition, mpRefElement);
+    elapsed_seconds = std::chrono::steady_clock::now()-start;
+    KRATOS_INFO_IF("WriteMeshDataToModelPart:", mEchoLevel > 0) << "Elapsed time: "<< DataCommunicator::GetDefault().MaxAll(elapsed_seconds.count()) << "s\n";
 
     /* Save to file. It is required to call it AFTER writing the model part data */
     if (save_to_file) SaveSolutionToFile(true);
