@@ -1252,12 +1252,9 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
         }
     }
     rModelPart.AddConditions(created_conditions_vector.begin(), created_conditions_vector.end());
-<<<<<<< Updated upstream
-=======
     elapsed_seconds = std::chrono::steady_clock::now()-start;
     KRATOS_INFO_IF("WriteMeshModelPart-AddElements:", GetEchoLevel() > 0) << "Elapsed time: "<< DataCommunicator::GetDefault().MaxAll(elapsed_seconds.count()) << "s\n";
     start = std::chrono::steady_clock::now();
->>>>>>> Stashed changes
 
     /* ELEMENTS */ // TODO: ADD OMP
     if (rMapPointersRefElement.size() > 0) {
@@ -1283,11 +1280,6 @@ void ParMmgUtilities<TPMMGLibrary>::WriteMeshDataToModelPart(
             }
         }
     }
-<<<<<<< Updated upstream
-=======
-
-    // Finally we add the conditions and elements to the main model part
->>>>>>> Stashed changes
     rModelPart.AddElements(created_elements_vector.begin(), created_elements_vector.end());
 
 
