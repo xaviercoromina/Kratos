@@ -55,7 +55,7 @@ ElasticIsotropic3D::~ElasticIsotropic3D()
 /***********************************************************************************/
 /***********************************************************************************/
 
-void  ElasticIsotropic3D::CalculateMaterialResponsePK2(ConstitutiveLaw::Parameters& rValues)
+void ElasticIsotropic3D::CalculateMaterialResponsePK2(ConstitutiveLaw::Parameters& rValues)
 {
     KRATOS_TRY;
     // b.- Get Values to compute the constitutive law:

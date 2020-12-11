@@ -398,5 +398,8 @@ class TensileTestStructuralTest(StructuralMechanicsTestFactory):
 class Solid2p5DElementTest(StructuralMechanicsTestFactory):
     file_name = "solid_2p5d_test/solid_2p5d"
 
+class Axisym2D4NElementTest(StructuralMechanicsTestFactory):
+    file_name = "axisym_2D4N_test/axisym_2D4N"
+
 if __name__ == '__main__':
     KratosUnittest.main()

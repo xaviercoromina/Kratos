@@ -166,11 +166,14 @@ private:
         Vector& rStrainVector
     ) override;
 
+    void CalculatePK2Stress(const Vector& rStrainVector,
+                            Vector& rStressVector,
+                            ConstitutiveLaw::Parameters& rValues) override;
+
     ///@}
     ///@name Private Operations
     ///@{
     ///@}
-
 
     ///@}
     ///@name Private  Access
@@ -180,6 +183,7 @@ private:
     ///@}
     ///@name Serialization
     ///@{
+        
     friend class Serializer;
 
     void save(Serializer& rSerializer) const override
@@ -191,7 +195,6 @@ private:
     {
         KRATOS_SERIALIZE_LOAD_BASE_CLASS( rSerializer, ConstitutiveLaw)
     }
-
 
 }; // Class AxisymElasticIsotropic
 }  // namespace Kratos.

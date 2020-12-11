@@ -211,6 +211,9 @@ from structural_mechanics_test_factory import RigidSphereFailingExplicit as TRig
 # 2.5D solid element test
 from structural_mechanics_test_factory import Solid2p5DElementTest as TSolid2p5DElementTest
 
+# 2D4N element axisymmetric test
+from structural_mechanics_test_factory import Axisym2D4NElementTest as TAxisym2D4NElementTest
+
 ##### VALIDATION TESTS #####
 # SPRISM tests
 from structural_mechanics_test_factory import SprismPanTests              as TSprismPanTests
@@ -429,6 +432,8 @@ def AssembleTestSuites():
     nightSuite.addTest(TRigidSphereFailingExplicit('test_execution'))
     # 2.5D solid element test
     nightSuite.addTest(TSolid2p5DElementTest('test_execution'))
+    # 2D4N element axisymmetric test
+    nightSuite.addTest(TAxisym2D4NElementTest('test_execution'))
 
     if has_linear_solvers_application:
         from KratosMultiphysics import LinearSolversApplication
@@ -531,7 +536,7 @@ def AssembleTestSuites():
 
 if __name__ == '__main__':
     KratosMultiphysics.Logger.PrintInfo("Unittests", "\nRunning cpp unit tests ...")
-    run_cpp_unit_tests.run()
+    #run_cpp_unit_tests.run()
     KratosMultiphysics.Logger.PrintInfo("Unittests", "Finished running cpp unit tests!")
 
     KratosMultiphysics.Logger.PrintInfo("Unittests", "\nRunning python tests ...")

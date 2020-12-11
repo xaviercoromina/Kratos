@@ -119,6 +119,8 @@ void AxisymSmallDisplacement::ComputeEquivalentF(
     const Vector& rStrainVector
     ) const
 {
+    rF.resize(3,3,false);
+    noalias(rF)=ZeroMatrix(3,3);
     rF(0,0) = 1.0 + rStrainVector[0];
     rF(0,1) = 0.5 * rStrainVector[3];
     rF(0,2) = 0.0;

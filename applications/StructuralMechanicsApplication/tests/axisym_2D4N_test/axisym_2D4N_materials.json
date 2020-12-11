@@ -1,0 +1,17 @@
+{
+    "properties" : [{
+        "model_part_name" : "Structure.Parts_Solid_solid",
+        "properties_id"   : 1,
+        "Material"        : {
+            "constitutive_law" : {
+                "name" : "LinearElasticAxisym2DLaw"
+            },
+            "Variables"        : {
+                "DENSITY"       : 1000.0,
+                "YOUNG_MODULUS" : 10000000.0,
+                "POISSON_RATIO" : 0.2
+            },
+            "Tables"           : {}
+        }
+    }]
+}
