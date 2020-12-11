@@ -462,6 +462,7 @@ class Procedures():
         model_part.AddNodalSolutionStepVariable(EXTERNAL_APPLIED_MOMENT)
         model_part.AddNodalSolutionStepVariable(FORCE_REACTION)
         model_part.AddNodalSolutionStepVariable(MOMENT_REACTION)
+        model_part.AddNodalSolutionStepVariable(PORE_PRESSURE_GRADIENT)
 
         # BASIC PARTICLE PROPERTIES
         model_part.AddNodalSolutionStepVariable(RADIUS)
@@ -568,6 +569,7 @@ class Procedures():
         model_part.AddNodalSolutionStepVariable(PARTICLE_MOMENT)
         model_part.AddNodalSolutionStepVariable(EXTERNAL_APPLIED_FORCE)
         model_part.AddNodalSolutionStepVariable(EXTERNAL_APPLIED_MOMENT)
+        model_part.AddNodalSolutionStepVariable(PORE_PRESSURE_GRADIENT)
 
         # PHYSICAL PROPERTIES
         model_part.AddNodalSolutionStepVariable(PRINCIPAL_MOMENTS_OF_INERTIA)
@@ -1150,7 +1152,7 @@ class Report():
 
     def BeginReport(self, timer):
         label = "DEM: "
-        report = label + "Total number of time s expected in the calculation: " + str(self.total_steps_expected) + "\n\n"
+        report = label + "Total number of time steps expected in the calculation: " + str(self.total_steps_expected) + "\n\n"
         return report
 
     def StepiReport(self, timer, time, step):
@@ -1391,6 +1393,11 @@ class DEMIo():
             self.SeaSurfaceX4 = self.sea_settings["PostVirtualSeaSurfaceX4"].GetDouble()
             self.SeaSurfaceY4 = self.sea_settings["PostVirtualSeaSurfaceY4"].GetDouble()
 
+        if not "PostPorePressureGradientForce" in self.DEM_parameters.keys():
+            self.PostPorePressureGradientForce = False
+        else:
+            self.PostPorePressureGradientForce = self.DEM_parameters["PostPorePressureGradientForce"].GetBool()
+
     def OpenMultiFileLists(self):
         one_level_up_path = os.path.join(self.post_path, "..")
         self.multifiles = (
@@ -1514,6 +1521,8 @@ class DEMIo():
         if "PostPoissonRatio" in self.DEM_parameters.keys():
             if self.DEM_parameters["PostPoissonRatio"].GetBool():
                 self.PushPrintVar(1, POISSON_VALUE, self.spheres_variables)
+
+        self.PushPrintVar(self.PostPorePressureGradientForce, PORE_PRESSURE_GRADIENT, self.spheres_variables)
 
     def AddFEMBoundaryVariables(self):
         self.PushPrintVar(self.PostElasticForces, ELASTIC_FORCES, self.fem_boundary_variables)

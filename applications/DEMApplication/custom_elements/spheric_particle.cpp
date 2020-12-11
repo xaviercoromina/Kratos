@@ -22,7 +22,6 @@
 #include "custom_utilities/discrete_particle_configure.h"
 #include "custom_strategies/schemes/glued_to_wall_scheme.h"
 
-
 namespace Kratos
 {
 // using namespace GeometryFunctions;
@@ -183,12 +182,13 @@ void SphericParticle::Initialize(const ProcessInfo& r_process_info)
 
         array_1d<double, 3>& rotation_angle = node.GetSolutionStepValue(PARTICLE_ROTATION_ANGLE);
         rotation_angle = ZeroVector(3);
-    }
-
-    else {
+    } else {
         array_1d<double, 3>& angular_velocity = node.GetSolutionStepValue(ANGULAR_VELOCITY); //TODO: do we need this when there is no rotation??
         angular_velocity = ZeroVector(3);
     }
+
+    array_1d<double, 3>& pore_pressure_gradient = node.GetSolutionStepValue(PORE_PRESSURE_GRADIENT);
+    pore_pressure_gradient = ZeroVector(3);
 
     if (node.GetDof(VELOCITY_X).IsFixed())         {node.Set(DEMFlags::FIXED_VEL_X,true);}
     else                                           {node.Set(DEMFlags::FIXED_VEL_X,false);}
@@ -1600,30 +1600,35 @@ void SphericParticle::PrepareForPrinting(const ProcessInfo& r_process_info){
     }
 }
 
-void SphericParticle::ComputeAdditionalForces(array_1d<double, 3>& externally_applied_force,
-                                            array_1d<double, 3>& externally_applied_moment,
+void SphericParticle::ComputeAdditionalForces(array_1d<double, 3>& additional_forces,
+                                            array_1d<double, 3>& additionally_applied_moment,
                                             const ProcessInfo& r_process_info,
-                                            const array_1d<double,3>& gravity)
+                                            const array_1d<double, 3>& gravity)
 {
     KRATOS_TRY
 
     if (this->Is(DEMFlags::CUMULATIVE_ZONE)) {
-        const array_1d<double,3> gravity_force = ComputeWeight(gravity, r_process_info);
+        
+        const array_1d<double, 3> gravity_force = ComputeWeight(gravity, r_process_info);
         const double gravity_force_magnitude = DEM_MODULUS_3(gravity_force);
         const array_1d<double, 3>& vel = this->GetGeometry()[0].FastGetSolutionStepValue(VELOCITY);
         const double vel_magnitude = DEM_MODULUS_3(vel);
-        if (vel_magnitude != 0.0){
-            const array_1d<double, 3> unitary_vel =  vel/vel_magnitude;
+        if (vel_magnitude != 0.0) {
+            const array_1d<double, 3> unitary_vel =  vel / vel_magnitude;
             const double inlet_damping_coefficient = 1e3;
             const array_1d<double, 3> damping_force = - inlet_damping_coefficient * GetMass() * vel_magnitude  * vel_magnitude * unitary_vel;
             const array_1d<double, 3> counter_force  = -5.0 * gravity_force_magnitude * unitary_vel;
-            noalias(externally_applied_force)  += damping_force;
-            noalias(externally_applied_force)  += counter_force;}
+            noalias(additional_forces) += damping_force;
+            noalias(additional_forces) += counter_force;
+        }
     } else {
-        noalias(externally_applied_force)  += ComputeWeight(gravity, r_process_info);
-        noalias(externally_applied_force)  += this->GetGeometry()[0].FastGetSolutionStepValue(EXTERNAL_APPLIED_FORCE);
-        noalias(externally_applied_moment) += this->GetGeometry()[0].FastGetSolutionStepValue(EXTERNAL_APPLIED_MOMENT);
+        noalias(additional_forces) += ComputeWeight(gravity, r_process_info);
+        //TODO: Use representative volume
+        noalias(additional_forces) -= CalculateVolume() * this->GetGeometry()[0].FastGetSolutionStepValue(PORE_PRESSURE_GRADIENT);
+        noalias(additional_forces) += this->GetGeometry()[0].FastGetSolutionStepValue(EXTERNAL_APPLIED_FORCE);
+        noalias(additionally_applied_moment) += this->GetGeometry()[0].FastGetSolutionStepValue(EXTERNAL_APPLIED_MOMENT);
     }
+
     KRATOS_CATCH("")
 }
 
