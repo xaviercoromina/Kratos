@@ -124,13 +124,14 @@ for dim, nnodes in zip(dim_vector, nnodes_vector):
     stress = DefineVector('stress',strain_size)
 
     ## Other simbols definition
-    dt  = Symbol('dt', positive = True)         # Time increment
-    nu  = Symbol('nu', positive = True)         # Kinematic viscosity (mu/rho)
-    mu  = Symbol('mu', positive = True)         # Dynamic viscosity
-    h = Symbol('h', positive = True)
-    dyn_tau = Symbol('dyn_tau', positive = True)
-    stab_c1 = Symbol('stab_c1', positive = True)
-    stab_c2 = Symbol('stab_c2', positive = True)
+    dt  = Symbol('dt', positive = True)          # Time increment
+    nu  = Symbol('nu', positive = True)          # Kinematic viscosity (mu/rho)
+    mu  = Symbol('mu', positive = True)          # Dynamic viscosity
+    h = Symbol('h', positive = True)             # Element size
+    dyn_tau = Symbol('dyn_tau', positive = True) # Stabilization dynamic tau value
+    stab_c1 = Symbol('stab_c1', positive = True) # First stabilization constant
+    stab_c2 = Symbol('stab_c2', positive = True) # Second stabilization constant
+    weight = Symbol('weight', positive=True)     # Gauss point weight
 
     ## Backward differences coefficients
     bdf0 = Symbol('bdf0')
@@ -275,7 +276,8 @@ for dim, nnodes in zip(dim_vector, nnodes_vector):
     # included as a symbolic variable, which is assumed to be passed as an argument from the previous iteration database.
     print("Computing " + str(dim) + "D RHS Gauss point contribution\n")
     rhs = Compute_RHS(rv.copy(), testfunc, do_simplifications)
-    rhs_out = OutputVector_CollectingFactors(rhs, "rhs", mode)
+    rhs *= weight # Multiply by the integration point weight
+    rhs_out = OutputVector_CollectingFactors(rhs, "rRHS", mode, initial_tabs=1, assignment_op="+=")
 
     # Compute LHS (RHS(residual) differenctiation w.r.t. the DOFs)
     # Note that the 'stress' (symbolic variable) is substituted by 'C*grad_sym_v' for the LHS differenctiation. Otherwise the velocity terms
@@ -284,7 +286,8 @@ for dim, nnodes in zip(dim_vector, nnodes_vector):
     print("Computing " + str(dim) + "D LHS Gauss point contribution\n")
     SubstituteMatrixValue(rhs, stress, C*grad_sym_v)
     lhs = Compute_LHS(rhs, testfunc, dofs, do_simplifications) # Compute the LHS (considering stress as C*(B*v) to derive w.r.t. v)
-    lhs_out = OutputMatrix_CollectingFactors(lhs, "lhs", mode)
+    lhs *= weight # Multiply by the integration point weight
+    lhs_out = OutputMatrix_CollectingFactors(lhs, "rLHS", mode, initial_tabs=1, assignment_op="+=")
 
     ## Replace the computed RHS and LHS in the template outstring
     outstring = outstring.replace("//substitute_lhs_" + str(dim) + 'D' + str(nnodes) + 'N', lhs_out)

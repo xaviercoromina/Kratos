@@ -202,13 +202,10 @@ void WeaklyCompressibleNavierStokes< WeaklyCompressibleNavierStokesData<2,3> >::
     constexpr double stab_c1 = 4.0;
     constexpr double stab_c2 = 2.0;
 
-    //TODO: Optimize this to directly add to the rLeftHandSideMatrix
-    auto& lhs = rData.lhs;
+    // LHS Gauss point contribution
+    const double weight = rData.Weight;
 
     //substitute_lhs_2D3N
-
-    // Add intermediate results to local system
-    noalias(rLHS) += lhs * rData.Weight;
 }
 
 template <>
@@ -240,13 +237,10 @@ void WeaklyCompressibleNavierStokes<WeaklyCompressibleNavierStokesData<3,4>>::Co
     constexpr double stab_c1 = 4.0;
     constexpr double stab_c2 = 2.0;
 
-    //TODO: Optimize this to directly add to the rLeftHandSideMatrix
-    auto& lhs = rData.lhs;
+    // LHS Gauss point contribution
+    const double weight = rData.Weight;
 
     //substitute_lhs_3D4N
-
-    // Add intermediate results to local system
-    noalias(rLHS) += lhs * rData.Weight;
 }
 
 template <>
@@ -286,12 +280,10 @@ void WeaklyCompressibleNavierStokes<WeaklyCompressibleNavierStokesData<2,3>>::Co
     constexpr double stab_c1 = 4.0;
     constexpr double stab_c2 = 2.0;
 
-    //TODO: Optimize this to directly add to the rRightHandSideVector
-    auto& rhs = rData.rhs;
+    // RHS Gauss point contribution
+    const double weight = rData.Weight;
 
     //substitute_rhs_2D3N
-
-    noalias(rRHS) += rData.Weight * rhs;
 }
 
 template <>
@@ -331,12 +323,10 @@ void WeaklyCompressibleNavierStokes<WeaklyCompressibleNavierStokesData<3,4>>::Co
     constexpr double stab_c1 = 4.0;
     constexpr double stab_c2 = 2.0;
 
-    //TODO: Optimize this to directly add to the rRightHandSideVector
-    auto& rhs = rData.rhs;
+    // RHS Gauss point contribution
+    const double weight = rData.Weight;
 
     //substitute_rhs_3D4N
-
-    noalias(rRHS) += rData.Weight * rhs;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
