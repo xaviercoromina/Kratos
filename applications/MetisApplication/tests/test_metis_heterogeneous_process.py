@@ -5,6 +5,7 @@ import KratosMultiphysics.MetisApplication as KratosMetis
 import KratosMultiphysics.KratosUnittest as KratosUnittest
 
 import pathlib
+import itertools
 
 
 def GetFilePath(file_name):
@@ -24,7 +25,6 @@ class KratosMetisHeterogeneousProcessTests(KratosUnittest.TestCase):
             self.skipTest("Metis partitioning requires MPI parallelism")
 
     def tearDown(self):
-        return
         self.DeleteMDPAs()
 
     @property
@@ -34,17 +34,6 @@ class KratosMetisHeterogeneousProcessTests(KratosUnittest.TestCase):
     @property
     def partitioned_file_name(self):
         return self.GetPartitionedFileName(self.communicator.Rank())
-
-    @property
-    def line_model_properties(self):
-        """Return a dictionary containing the position of all nodes, and the elements defined by node indices."""
-        number_of_nodes = 25
-        return {
-            "number_of_nodes" : number_of_nodes,
-            "number_of_elements" : number_of_nodes - 1,
-            "nodes" : [(float(iNode), 0.0, 0.0) for iNode in range(number_of_nodes)],
-            "elements" : [(iSourceNode + 1, iSourceNode + 2) for iSourceNode in range(number_of_nodes - 1)]
-        }
 
     def DeleteMDPAs(self):
         """Delete all model part files"""
@@ -174,15 +163,22 @@ class KratosMetisHeterogeneousProcessTests(KratosUnittest.TestCase):
             model_part = model.CreateModelPart("Main")
 
             # Generate nodes on a line
-            number_of_nodes = 10
-            for iNode, (x,y,z) in enumerate(self.line_model_properties["nodes"]):
-                model_part.CreateNewNode(iNode + 1, x, y, z)
+            number_of_nodes = 25
+            for iNode in range(number_of_nodes):
+                model_part.CreateNewNode(iNode + 1, iNode, 0.0, 0.0)
 
             model_properties = model_part.CreateNewProperties(0)
 
             # Generate line mesh
-            for iElement, node_indices in enumerate(self.line_model_properties["elements"]):
-                model_part.CreateNewElement("Element2D2N", iElement + 1, node_indices, model_properties)
+            #element_source_node_ids = itertools.chain(
+            #    range(int(number_of_nodes / 2) - 1),
+            #    range(int(number_of_nodes / 2) + 1, number_of_nodes - 1)
+            #)  # <-- this creates a hanging node in the middle
+
+            element_source_node_ids = range(number_of_nodes - 1)
+
+            for iElement, iSourceNode in enumerate(element_source_node_ids):
+                model_part.CreateNewElement("Element2D2N", iElement + 1, (iSourceNode + 1, iSourceNode + 2), model_properties)
                 """
                 NOTE: elements can be created with 0-based Ids,
                 but will be shifted to 1-based Ids in the partitioned model.
