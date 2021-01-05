@@ -11,6 +11,9 @@ import itertools
 def GetFilePath(file_name):
     return str(pathlib.Path( __file__ ).parent / pathlib.Path(file_name))
 
+def GetParentPath(file_name):
+    return str(pathlib.Path(GetFilePath(file_name)))
+
 
 class KratosMetisHeterogeneousProcessTests(KratosUnittest.TestCase):
 
@@ -21,7 +24,7 @@ class KratosMetisHeterogeneousProcessTests(KratosUnittest.TestCase):
         self.export_flags = KratosMultiphysics.IO.WRITE | KratosMultiphysics.ModelPartIO.IGNORE_VARIABLES_ERROR
         self.communicator = KratosMultiphysics.DataCommunicator.GetDefault()
 
-        if (self.communicator.Size() == 1):
+        if self.communicator.Size() == 1:
             self.skipTest("Metis partitioning requires MPI parallelism")
 
     def tearDown(self):
@@ -32,19 +35,28 @@ class KratosMetisHeterogeneousProcessTests(KratosUnittest.TestCase):
         return self.communicator.Rank() == 0
 
     @property
+    def partitioned_files_directory(self):
+        """Relative path to the directory containing the partitioned MDPAs (forced by ModelPartIO)"""
+        return self.file_name + "_partitioned"
+
+    @property
     def partitioned_file_name(self):
         return self.GetPartitionedFileName(self.communicator.Rank())
 
+    def GetPartitionedFileName(self, rank):
+        file_name = pathlib.Path(self.file_name + "_{rank}".format(rank=rank))
+        return str(pathlib.Path(self.partitioned_files_directory) / file_name)
+
     def DeleteMDPAs(self):
         """Delete all model part files"""
+        return
+        # Main model part and timer
         if self.is_main_rank:
             KratosMultiphysics.kratos_utilities.DeleteFileIfExisting(GetFilePath(self.file_name + ".mdpa"))
             KratosMultiphysics.kratos_utilities.DeleteFileIfExisting(GetFilePath(self.file_name + ".time"))
-        KratosMultiphysics.kratos_utilities.DeleteFileIfExisting(GetFilePath(self.partitioned_file_name + ".mdpa"))
-        KratosMultiphysics.kratos_utilities.DeleteFileIfExisting(GetFilePath(self.partitioned_file_name + ".time"))
+            KratosMultiphysics.kratos_utilities.DeleteDirectoryIfExisting(GetFilePath(self.partitioned_files_directory))
 
-    def GetPartitionedFileName(self, rank):
-        return self.file_name + "_rank_{rank}".format(rank=rank)
+        self.communicator.Barrier()
 
     def CheckModel(self):
         """
@@ -192,38 +204,104 @@ class KratosMetisHeterogeneousProcessTests(KratosUnittest.TestCase):
             model_part_output.WriteModelPart(model_part)
         self.communicator.Barrier()
 
-    def test_LineModel(self):
-        """Check metis partitioning on a line mesh."""
-        self.MakeLineModel()
+    def MakeTriangulatedModel(self):
+        """Construct a structured mesh of quads and write it to an mdpa file."""
+        if self.is_main_rank:
+            model = KratosMultiphysics.Model()
+            model_part = model.CreateModelPart("Main")
 
-        model = KratosMultiphysics.Model()
-        model_part = model.CreateModelPart("Main")
+            spatial_domain = KratosMultiphysics.Quadrilateral2D4(
+                KratosMultiphysics.Node(1, 0.0, 0.0, 0.0),
+                KratosMultiphysics.Node(2, 0.0, 1.0, 0.0),
+                KratosMultiphysics.Node(3, 1.0, 1.0, 0.0),
+                KratosMultiphysics.Node(4, 1.0, 0.0, 0.0)
+            )
 
-        # Get arguments for metis
-        model_part_serial_io = KratosMultiphysics.ModelPartIO(
-            GetFilePath(self.file_name), self.import_flags)
-        model_part_io = KratosMultiphysics.ReorderConsecutiveModelPartIO(
-            GetFilePath(self.file_name), self.import_flags)
+            mesh_parameters = KratosMultiphysics.Parameters("{}")
+            mesh_parameters.AddEmptyValue("element_name").SetString("Element2D3N")
+            mesh_parameters.AddEmptyValue("condition_name").SetString("LineCondition2D2N")
+            mesh_parameters.AddEmptyValue("number_of_divisions").SetInt(10)
 
-        number_of_partitions = self.communicator.Size()
-        domain_size = model_part.ProcessInfo[KratosMultiphysics.DOMAIN_SIZE]
-        verbosity = 0
-        synchronize_conditions = True
+            KratosMultiphysics.StructuredMeshGeneratorProcess(
+                spatial_domain, model_part, mesh_parameters).Execute()
 
-        # Partition in memory
-        partitioner = KratosMetis.MetisDivideHeterogeneousInputInMemoryProcess(
-            model_part_io, model_part_serial_io, number_of_partitions, domain_size, verbosity, synchronize_conditions)
-        partitioner.Execute()
-
-        model_part_serial_io.ReadModelPart(model_part)
-
-        # Write partitioned model part to a file
-        KratosMultiphysics.ModelPartIO(
-            GetFilePath(self.partitioned_file_name), self.export_flags).WriteModelPart(model_part)
+            KratosMultiphysics.ModelPartIO(
+                GetFilePath(self.file_name), self.export_flags).WriteModelPart(model_part)
+        
         self.communicator.Barrier()
 
-        self.CheckModel()
-        self.DeleteMDPAs()
+    @property
+    def model_factories(self):
+        return [self.MakeLineModel, self.MakeTriangulatedModel]
+
+    def test_InMemoryProcess(self):
+        """Check metis in-memory partitioning on all model factories"""
+        for model_factory in self.model_factories:
+
+            # Make sure the directory for partitioned files exists
+            pathlib.Path(self.partitioned_files_directory).mkdir(parents=True, exist_ok=True)
+
+            # Write main model part to file, then read it
+            model_factory()
+
+            model = KratosMultiphysics.Model()
+            model_part = model.CreateModelPart("Main")
+
+            # Get arguments for the partitioning process
+            model_part_serial_io = KratosMultiphysics.ModelPartIO(
+                GetFilePath(self.file_name), self.import_flags)
+            model_part_io = KratosMultiphysics.ReorderConsecutiveModelPartIO(
+                GetFilePath(self.file_name), self.import_flags)
+
+            number_of_partitions = self.communicator.Size()
+            domain_size = model_part.ProcessInfo[KratosMultiphysics.DOMAIN_SIZE]
+            verbosity = 0
+            synchronize_conditions = True
+
+            # Partition
+            partitioner = KratosMetis.MetisDivideHeterogeneousInputInMemoryProcess(
+                model_part_io, model_part_serial_io, number_of_partitions, domain_size, verbosity, synchronize_conditions)
+            partitioner.Execute()
+
+            model_part_serial_io.ReadModelPart(model_part)
+
+            # Write partitioned model part to a file
+            KratosMultiphysics.ModelPartIO(
+                GetFilePath(self.partitioned_file_name), self.export_flags).WriteModelPart(model_part)
+            self.communicator.Barrier()
+
+            # Check model and clean up
+            self.CheckModel()
+            self.DeleteMDPAs()
+
+    def test_DefaultProcess(self):
+        """Check metis default partitioning on all model factories"""
+        for model_factory in self.model_factories:
+
+            # Write main model part to file, then read it
+            model_factory()
+
+            model = KratosMultiphysics.Model()
+            model_part = model.CreateModelPart("Main")
+
+            # Get arguments for the partitioning process
+            model_part_io = KratosMultiphysics.ReorderConsecutiveModelPartIO(
+                GetFilePath(self.file_name), self.import_flags)
+
+            number_of_partitions = self.communicator.Size()
+            domain_size = model_part.ProcessInfo[KratosMultiphysics.DOMAIN_SIZE]
+            verbosity = 0
+            synchronize_conditions = True
+
+            # Partition
+            if self.is_main_rank:
+                KratosMetis.MetisDivideHeterogeneousInputProcess(
+                    model_part_io, number_of_partitions, domain_size, verbosity, synchronize_conditions).Execute()
+
+            # Check model and clean up
+            self.CheckModel()
+            self.DeleteMDPAs()
+
 
 
 
