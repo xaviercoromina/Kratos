@@ -49,7 +49,6 @@ class KratosMetisHeterogeneousProcessTests(KratosUnittest.TestCase):
 
     def DeleteMDPAs(self):
         """Delete all model part files"""
-        return
         # Main model part and timer
         if self.is_main_rank:
             KratosMultiphysics.kratos_utilities.DeleteFileIfExisting(GetFilePath(self.file_name + ".mdpa"))
@@ -230,9 +229,48 @@ class KratosMetisHeterogeneousProcessTests(KratosUnittest.TestCase):
         
         self.communicator.Barrier()
 
+    def MakeQuadModel(self):
+        """Construct a cartesian mesh of 2D quads and write it to an mdpa file."""
+        if self.is_main_rank:
+            model = KratosMultiphysics.Model()
+            model_part = model.CreateModelPart("Main")
+
+            number_of_nodes_per_dimension = 5
+
+            # Construct a cartesian grid of nodes
+            counter = 0
+            for jNode in range(number_of_nodes_per_dimension):
+                for iNode in range(number_of_nodes_per_dimension):
+                    model_part.CreateNewNode(counter + 1, iNode, jNode, 0.0)
+                    counter += 1
+
+            model_properties = model_part.CreateNewProperties(0)
+
+            # Construct cartesian mesh of quads
+            counter = 0
+            for jElement in range(number_of_nodes_per_dimension - 1):
+                for iElement in range(number_of_nodes_per_dimension - 1):
+                    model_part.CreateNewElement(
+                        "Element2D4N", counter + 1,
+                        (
+                            jElement*number_of_nodes_per_dimension + iElement + 1,
+                            jElement*number_of_nodes_per_dimension + iElement + 1 + 1,
+                            (jElement+1)*number_of_nodes_per_dimension + iElement + 1,
+                            (jElement+1)*number_of_nodes_per_dimension + iElement + 1 + 1,
+                            
+                        ),
+                        model_properties)
+
+                    counter += 1
+            
+            KratosMultiphysics.ModelPartIO(
+                GetFilePath(self.file_name), self.export_flags).WriteModelPart(model_part)
+
+        self.communicator.Barrier()
+
     @property
     def model_factories(self):
-        return [self.MakeLineModel, self.MakeTriangulatedModel]
+        return [self.MakeLineModel, self.MakeTriangulatedModel, self.MakeQuadModel]
 
     def test_InMemoryProcess(self):
         """Check metis in-memory partitioning on all model factories"""
