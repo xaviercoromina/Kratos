@@ -19,6 +19,7 @@
 
 // Project includes
 #include "vtu_output.h"
+#include "utilities/builtin_timer.h" // already included in vtu_output.h
 
 namespace Kratos {
 
@@ -227,6 +228,12 @@ VtuOutput::VtuOutput(
     const int num_conditions = r_data_comm.SumAll(static_cast<int>(r_local_mesh.NumberOfConditions()));
 
     KRATOS_WARNING_IF("VtuOutput", num_elements > 0 && num_conditions > 0) << r_data_comm << "Modelpart \"" << rModelPart.Name() << "\" has both elements and conditions.\nGiving precedence to elements and writing only elements!" << std::endl;
+    
+    const std::string timing_output_file_name("VTU_TIMING_" + std::to_string(rModelPart.GetCommunicator().MyPID()));
+
+    std::ofstream timing_output_file;
+    timing_output_file.open(timing_output_file_name, std::ios::out | std::ios::trunc);
+    timing_output_file.close();
 }
 
 /***********************************************************************************/
@@ -235,7 +242,9 @@ VtuOutput::VtuOutput(
 void VtuOutput::PrintOutput(const std::string& rOutputFilename)
 {
     KRATOS_TRY;
-
+    
+    BuiltinTimer timer;
+    
     std::vector<double> coordinates;
 
     GetNodalCoordinates(mrModelPart, coordinates, mOutputSettings["write_deformed_configuration"].GetBool());
@@ -266,26 +275,121 @@ void VtuOutput::PrintOutput(const std::string& rOutputFilename)
         GetData(mrModelPart, point_data, var_name);
     }
 
-    const std::string output_file_name = GetOutputFileName(mrModelPart, false, rOutputFilename);
-
+    //const std::string output_file_name = GetOutputFileName(mrModelPart, false, rOutputFilename);
+   
     const int my_pid = mrModelPart.GetCommunicator().MyPID();
     const int total_processes = mrModelPart.GetCommunicator().TotalProcesses();
+    std::string my_time_step = std::to_string(mrModelPart.GetProcessInfo()[STEP]);
+    /*std::string baseName = mrModelPart.Name() + "_ts_" + my_time_step;
+    std::string output_file_name = "";
+    if (mOutputSettings["save_output_files_in_folder"].GetBool()) {
+        output_file_name = mOutputSettings["folder_name"].GetString() + "/"; // Got this from GetOutputFileName
+    }
+    const std::string path_to_file = fs::current_path() / output_file_name;*/
+    
+    std::array<std::string,2> baseName_and_path_to_file = GetOutputFileNameSOFTWARE_LAB(mrModelPart, false, rOutputFilename);
+    const std::string baseName = baseName_and_path_to_file[0];
+    const std::string path_to_file = baseName_and_path_to_file[1];
+
+    //const std::string path_to_file = "/home/cflores/Schreibtisch/SimulationFolder/vtu_output_try_3/"; // CEFF: As it originally was in JS file
+
+    const auto& r_data_comm = mrModelPart.GetCommunicator().GetDataCommunicator();
 
     if (mFileFormat == VtuOutput::FileFormat::VTU_ASCII) {
         auto writer = vtu11::AsciiWriter();
-        vtu11::write(output_file_name, vtu_mesh, point_data, cell_data, writer);
+        if(my_pid == 0)
+        {
+           vtu11::parallelWrite(path_to_file, baseName, vtu_mesh, point_data, cell_data, my_pid, total_processes, writer);
+           WriteProcessTimingFile(my_pid, my_time_step, timer);
+        }
+        r_data_comm.Barrier();
+        if(my_pid == 1) //for all other ranks
+        {
+           vtu11::parallelWrite(path_to_file, baseName, vtu_mesh, point_data, cell_data, my_pid, total_processes, writer);
+           WriteProcessTimingFile(my_pid, my_time_step, timer);
+        }
+        r_data_comm.Barrier();
+        if(my_pid > 1)
+        {
+           vtu11::parallelWrite(path_to_file, baseName, vtu_mesh, point_data, cell_data, my_pid, total_processes, writer);
+           WriteProcessTimingFile(my_pid, my_time_step, timer);
+        }
     } else if (mFileFormat == VtuOutput::FileFormat::VTU_BINARY_RAW) {
         auto writer = vtu11::RawBinaryAppendedWriter();
-        vtu11::write(output_file_name, vtu_mesh, point_data, cell_data, writer);
+        if(my_pid == 0)
+        {    
+           vtu11::parallelWrite(path_to_file, baseName, vtu_mesh, point_data, cell_data, my_pid, total_processes, writer);
+           WriteProcessTimingFile(my_pid, my_time_step, timer);
+        }
+        r_data_comm.Barrier();
+        if(my_pid == 1)
+        {
+           vtu11::parallelWrite(path_to_file, baseName, vtu_mesh, point_data, cell_data, my_pid, total_processes, writer);
+           WriteProcessTimingFile(my_pid, my_time_step, timer);
+        }
+        r_data_comm.Barrier();
+        if(my_pid > 1) //for all other ranks
+        {
+           vtu11::parallelWrite(path_to_file, baseName, vtu_mesh, point_data, cell_data, my_pid, total_processes, writer);
+           WriteProcessTimingFile(my_pid, my_time_step, timer);
+        }
     } else if (mFileFormat == VtuOutput::FileFormat::VTU_BINARY_RAW_COMPRESSED) {
         auto writer = vtu11::CompressedRawBinaryAppendedWriter();
-        vtu11::write(output_file_name, vtu_mesh, point_data, cell_data, writer);
+        if(my_pid == 0)
+        {    
+           vtu11::parallelWrite(path_to_file, baseName, vtu_mesh, point_data, cell_data, my_pid, total_processes, writer);
+           WriteProcessTimingFile(my_pid, my_time_step, timer);
+        }
+        r_data_comm.Barrier();
+        if(my_pid == 1)
+        {
+           vtu11::parallelWrite(path_to_file, baseName, vtu_mesh, point_data, cell_data, my_pid, total_processes, writer);
+           WriteProcessTimingFile(my_pid, my_time_step, timer);
+        }
+        r_data_comm.Barrier();
+        if(my_pid > 1) //for all other ranks
+        {
+           vtu11::parallelWrite(path_to_file, baseName, vtu_mesh, point_data, cell_data, my_pid, total_processes, writer);
+           WriteProcessTimingFile(my_pid, my_time_step, timer);
+        }
     } else if (mFileFormat == VtuOutput::FileFormat::VTU_BINARY_BASE64) {
         auto writer = vtu11::Base64BinaryWriter();
-        vtu11::write(output_file_name, vtu_mesh, point_data, cell_data, writer);
+        if(my_pid == 0)
+        {
+           vtu11::parallelWrite(path_to_file, baseName, vtu_mesh, point_data, cell_data, my_pid, total_processes, writer);
+           WriteProcessTimingFile(my_pid, my_time_step, timer);
+        }
+        r_data_comm.Barrier();
+        if(my_pid == 1)
+        {
+           vtu11::parallelWrite(path_to_file, baseName, vtu_mesh, point_data, cell_data, my_pid, total_processes, writer);
+           WriteProcessTimingFile(my_pid, my_time_step, timer);
+        }
+        r_data_comm.Barrier();
+        if(my_pid > 1) //for all other ranks
+        {
+           vtu11::parallelWrite(path_to_file, baseName, vtu_mesh, point_data, cell_data, my_pid, total_processes, writer);
+           WriteProcessTimingFile(my_pid, my_time_step, timer);
+        }
     } else if (mFileFormat == VtuOutput::FileFormat::VTU_BINARY_BASE64_APPENDED) {
         auto writer = vtu11::Base64BinaryAppendedWriter();
-        vtu11::parallelWrite(output_file_name, vtu_mesh, point_data, cell_data, writer, my_pid, total_processes);
+        if(my_pid == 0)
+        {
+           vtu11::parallelWrite(path_to_file, baseName, vtu_mesh, point_data, cell_data, my_pid, total_processes, writer);
+           WriteProcessTimingFile(my_pid, my_time_step, timer);
+        }
+        r_data_comm.Barrier();
+        if(my_pid == 1)
+        {
+           vtu11::parallelWrite(path_to_file, baseName, vtu_mesh, point_data, cell_data, my_pid, total_processes, writer);
+           WriteProcessTimingFile(my_pid, my_time_step, timer);
+        }
+        r_data_comm.Barrier();
+        if(my_pid > 1) //for all other ranks
+        {
+           vtu11::parallelWrite(path_to_file, baseName, vtu_mesh, point_data, cell_data, my_pid, total_processes, writer);
+           WriteProcessTimingFile(my_pid, my_time_step, timer);
+        }
     }
 
     KRATOS_CATCH("VTU PrintOutput");
@@ -342,5 +446,68 @@ std::string VtuOutput::GetOutputFileName(const ModelPart& rModelPart, const bool
 
     return output_file_name;
 }
+
+void VtuOutput::WriteProcessTimingFile(const int& my_pid, const std::string& my_time_step, const BuiltinTimer& timer)
+{
+    const std::string timing_output_file_name("VTU_TIMING_" + std::to_string(my_pid));
+           
+    std::ofstream timing_output_file;
+    timing_output_file.open(timing_output_file_name, std::ios::out | std::ios::app);
+    timing_output_file << my_time_step;
+    timing_output_file << "\t";
+    timing_output_file << timer.ElapsedSeconds();
+    timing_output_file << "\n";
+    timing_output_file.close();
+}
+
+std::array<std::string,2> VtuOutput::GetOutputFileNameSOFTWARE_LAB(const ModelPart& rModelPart, const bool IsSubModelPart, const std::string& rOutputFilename)
+{
+    // Putting everything together
+    std::string baseName;
+    std::string output_file_name = "";
+    if (mOutputSettings["save_output_files_in_folder"].GetBool()) {
+        output_file_name = mOutputSettings["folder_name"].GetString() + "/";
+    }
+
+    if (rOutputFilename != "")
+    {
+        output_file_name += rOutputFilename;
+    }
+    else
+    {
+        std::string my_time_step = std::to_string(rModelPart.GetProcessInfo()[STEP]);
+        std::string model_part_name;
+
+        if (IsSubModelPart) {
+            model_part_name = rModelPart.GetParentModelPart().Name() + "_" + rModelPart.Name();
+        } else {
+            model_part_name = rModelPart.Name();
+        }
+
+        std::string label;
+        std::stringstream ss;
+        const std::string output_control = mOutputSettings["output_control_type"].GetString();
+        if (output_control == "step") {
+            ss << std::fixed << std::setprecision(mDefaultPrecision)<< std::setfill('0')
+            << rModelPart.GetProcessInfo()[STEP];
+            label = ss.str();
+        } else if(output_control == "time") {
+            ss << std::fixed << std::setprecision(mDefaultPrecision) << std::setfill('0')
+            << rModelPart.GetProcessInfo()[TIME];
+            label = ss.str();
+        } else {
+            KRATOS_ERROR << "Option for \"output_control_type\": " << output_control
+                <<" not recognised!\nPossible output_control_type options "
+                << "are: \"step\", \"time\"" << std::endl;
+        }
+
+        const std::string& r_custom_name_prefix = mOutputSettings["custom_name_prefix"].GetString();
+        const std::string& r_custom_name_postfix = mOutputSettings["custom_name_postfix"].GetString();
+        baseName = r_custom_name_prefix + model_part_name + r_custom_name_postfix + "_ts_" + label;
+    }
+
+    //const std::string path_to_file = fs::current_path() / output_file_name;
+    return {baseName, output_file_name};
+} // VtuOutput::GetOutputFileNameSOFTWARE_LAB
 
 } // namespace Kratos

@@ -17,6 +17,7 @@
 // Project includes
 #include "includes/kratos_parameters.h"
 #include "includes/io.h"
+#include "utilities/builtin_timer.h"
 
 namespace Kratos
 {
@@ -64,6 +65,12 @@ public:
      */
     void PrintOutput(const std::string& rOutputFilename = "");
 
+    /**
+     * @brief Writes a text file with the timing of the processes
+     */
+    void WriteProcessTimingFile(const int& rank, const std::string& time_step, const BuiltinTimer& timer);
+
+
     ///@}
 
     /// Turn back information as a string.
@@ -110,7 +117,7 @@ protected:
     ///@{
 
     std::string GetOutputFileName(const ModelPart& rModelPart, const bool IsSubModelPart, const std::string& rOutputFilename);
-
+    std::array<std::string,2> GetOutputFileNameSOFTWARE_LAB(const ModelPart& rModelPart, const bool IsSubModelPart, const std::string& rOutputFilename);
     ///@}
 };
 
