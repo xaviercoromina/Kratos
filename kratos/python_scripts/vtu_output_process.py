@@ -1,6 +1,7 @@
 import KratosMultiphysics
 import KratosMultiphysics.kratos_utilities as kratos_utils
 import os
+import time
 
 def Factory(settings, model):
     if not isinstance(settings, KratosMultiphysics.Parameters):
@@ -34,7 +35,13 @@ class VtuOutputProcess(KratosMultiphysics.Process):
         self.__ScheduleNextOutput() # required here esp for restart
 
     def PrintOutput(self):
+        my_pid = self.model_part.GetCommunicator().MyPID() # gets rank
+        start_time = time.time() # starts ticking time
         self.vtu_output.PrintOutput()
+        #print("RANK {}: vtu_output_time:".format(my_pid), time.time()-start_time) # hand made modification
+        KratosMultiphysics.Logger.PrintInfoOnAllRanks("VtuOutputProcess", "output time", time.time()-start_time) # Kratos includes logging funcs
+        KratosMultiphysics.Logger.Flush()
+        #self.model_part.GetCommunicator().GetDataCommunicator().Barrier() # this barrier forces MPI to write info after. Slows down computation artificially
 
         self.__ScheduleNextOutput()
 
