@@ -276,22 +276,14 @@ void VtuOutput::PrintOutput(const std::string& rOutputFilename)
     }
 
     //const std::string output_file_name = GetOutputFileName(mrModelPart, false, rOutputFilename);
-   
+
     const int my_pid = mrModelPart.GetCommunicator().MyPID();
     const int total_processes = mrModelPart.GetCommunicator().TotalProcesses();
     std::string my_time_step = std::to_string(mrModelPart.GetProcessInfo()[STEP]);
-    /*std::string baseName = mrModelPart.Name() + "_ts_" + my_time_step;
-    std::string output_file_name = "";
-    if (mOutputSettings["save_output_files_in_folder"].GetBool()) {
-        output_file_name = mOutputSettings["folder_name"].GetString() + "/"; // Got this from GetOutputFileName
-    }
-    const std::string path_to_file = fs::current_path() / output_file_name;*/
-    
+ 
     std::array<std::string,2> baseName_and_path_to_file = GetOutputFileNameSOFTWARE_LAB(mrModelPart, false, rOutputFilename);
     const std::string baseName = baseName_and_path_to_file[0];
     const std::string path_to_file = baseName_and_path_to_file[1];
-
-    //const std::string path_to_file = "/home/cflores/Schreibtisch/SimulationFolder/vtu_output_try_3/"; // CEFF: As it originally was in JS file
 
     const auto& r_data_comm = mrModelPart.GetCommunicator().GetDataCommunicator();
 
@@ -303,13 +295,7 @@ void VtuOutput::PrintOutput(const std::string& rOutputFilename)
            WriteProcessTimingFile(my_pid, my_time_step, timer);
         }
         r_data_comm.Barrier();
-        if(my_pid == 1) //for all other ranks
-        {
-           vtu11::parallelWrite(path_to_file, baseName, vtu_mesh, point_data, cell_data, my_pid, total_processes, writer);
-           WriteProcessTimingFile(my_pid, my_time_step, timer);
-        }
-        r_data_comm.Barrier();
-        if(my_pid > 1)
+        if(my_pid >= 1)
         {
            vtu11::parallelWrite(path_to_file, baseName, vtu_mesh, point_data, cell_data, my_pid, total_processes, writer);
            WriteProcessTimingFile(my_pid, my_time_step, timer);
@@ -322,13 +308,7 @@ void VtuOutput::PrintOutput(const std::string& rOutputFilename)
            WriteProcessTimingFile(my_pid, my_time_step, timer);
         }
         r_data_comm.Barrier();
-        if(my_pid == 1)
-        {
-           vtu11::parallelWrite(path_to_file, baseName, vtu_mesh, point_data, cell_data, my_pid, total_processes, writer);
-           WriteProcessTimingFile(my_pid, my_time_step, timer);
-        }
-        r_data_comm.Barrier();
-        if(my_pid > 1) //for all other ranks
+        if(my_pid >= 1) //for all other ranks
         {
            vtu11::parallelWrite(path_to_file, baseName, vtu_mesh, point_data, cell_data, my_pid, total_processes, writer);
            WriteProcessTimingFile(my_pid, my_time_step, timer);
@@ -341,13 +321,7 @@ void VtuOutput::PrintOutput(const std::string& rOutputFilename)
            WriteProcessTimingFile(my_pid, my_time_step, timer);
         }
         r_data_comm.Barrier();
-        if(my_pid == 1)
-        {
-           vtu11::parallelWrite(path_to_file, baseName, vtu_mesh, point_data, cell_data, my_pid, total_processes, writer);
-           WriteProcessTimingFile(my_pid, my_time_step, timer);
-        }
-        r_data_comm.Barrier();
-        if(my_pid > 1) //for all other ranks
+        if(my_pid >= 1) //for all other ranks
         {
            vtu11::parallelWrite(path_to_file, baseName, vtu_mesh, point_data, cell_data, my_pid, total_processes, writer);
            WriteProcessTimingFile(my_pid, my_time_step, timer);
@@ -360,13 +334,7 @@ void VtuOutput::PrintOutput(const std::string& rOutputFilename)
            WriteProcessTimingFile(my_pid, my_time_step, timer);
         }
         r_data_comm.Barrier();
-        if(my_pid == 1)
-        {
-           vtu11::parallelWrite(path_to_file, baseName, vtu_mesh, point_data, cell_data, my_pid, total_processes, writer);
-           WriteProcessTimingFile(my_pid, my_time_step, timer);
-        }
-        r_data_comm.Barrier();
-        if(my_pid > 1) //for all other ranks
+        if(my_pid >= 1) //for all other ranks
         {
            vtu11::parallelWrite(path_to_file, baseName, vtu_mesh, point_data, cell_data, my_pid, total_processes, writer);
            WriteProcessTimingFile(my_pid, my_time_step, timer);
@@ -379,13 +347,7 @@ void VtuOutput::PrintOutput(const std::string& rOutputFilename)
            WriteProcessTimingFile(my_pid, my_time_step, timer);
         }
         r_data_comm.Barrier();
-        if(my_pid == 1)
-        {
-           vtu11::parallelWrite(path_to_file, baseName, vtu_mesh, point_data, cell_data, my_pid, total_processes, writer);
-           WriteProcessTimingFile(my_pid, my_time_step, timer);
-        }
-        r_data_comm.Barrier();
-        if(my_pid > 1) //for all other ranks
+        if(my_pid >= 1) //for all other ranks
         {
            vtu11::parallelWrite(path_to_file, baseName, vtu_mesh, point_data, cell_data, my_pid, total_processes, writer);
            WriteProcessTimingFile(my_pid, my_time_step, timer);
