@@ -83,9 +83,7 @@ void AMGCLScalarSolve(
                 >
             Solver;
 
-        std::cout << "Debug: Before solve." << std::endl;
         Solver solve(MPI_COMM_WORLD, amgcl::adapter::map(rA), amgclParams);
-        std::cout << "Debug: After solve." << std::endl;
 
         std::size_t n = rA.NumMyRows();
 
