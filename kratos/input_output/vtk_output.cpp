@@ -248,10 +248,14 @@ std::string VtkOutput::GetOutputFileName(const ModelPart& rModelPart, const bool
     if (mOutputSettings["save_output_files_in_folder"].GetBool()) {
         const std::string output_path = mOutputSettings["output_path"].GetString();
 
+        const auto& r_data_comm = rModelPart.GetCommunicator().GetDataCommunicator();
+
         // create folder if it doesn't exist before
-        if (!Kratos::filesystem::is_directory(output_path)) {
+        if (!Kratos::filesystem::is_directory(output_path) && r_data_comm.Rank() == 0) {
             Kratos::filesystem::create_directories(output_path);
         }
+
+        r_data_comm.Barrier();
 
         output_file_name = Kratos::FilesystemExtensions::JoinPaths({output_path, output_file_name});
     }
