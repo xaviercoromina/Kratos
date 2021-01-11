@@ -25,7 +25,7 @@ class VtuOutputProcess(KratosMultiphysics.Process):
                 if not self.model_part.ProcessInfo[KratosMultiphysics.IS_RESTARTED]:
                     kratos_utils.DeleteDirectoryIfExisting(folder_name)
                 if not os.path.isdir(folder_name):
-                    os.mkdir(folder_name)
+                    os.makedirs(folder_name)
             self.model_part.GetCommunicator().GetDataCommunicator().Barrier()
 
         self.output_frequency = settings["output_frequency"].GetDouble()
@@ -38,10 +38,6 @@ class VtuOutputProcess(KratosMultiphysics.Process):
         my_pid = self.model_part.GetCommunicator().MyPID() # gets rank
         start_time = time.time() # starts ticking time
         self.vtu_output.PrintOutput()
-        #print("RANK {}: vtu_output_time:".format(my_pid), time.time()-start_time) # hand made modification
-        KratosMultiphysics.Logger.PrintInfoOnAllRanks("VtuOutputProcess", "output time", time.time()-start_time) # Kratos includes logging funcs
-        KratosMultiphysics.Logger.Flush()
-        #self.model_part.GetCommunicator().GetDataCommunicator().Barrier() # this barrier forces MPI to write info after. Slows down computation artificially
 
         self.__ScheduleNextOutput()
 
