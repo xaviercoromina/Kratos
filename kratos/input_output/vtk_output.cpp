@@ -113,7 +113,7 @@ VtkOutput::VtkOutput(
 
     KRATOS_WARNING_IF("VtkOutput", num_elements > 0 && num_conditions > 0) << r_data_comm << "Modelpart \"" << rModelPart.Name() << "\" has both elements and conditions.\nGiving precedence to elements and writing only elements!" << std::endl;
 
-    const std::string timing_output_file_name("VTU_TIMING_" + mOutputSettings["file_format"].GetString() + "_" + std::to_string(rModelPart.GetCommunicator().MyPID()));
+    const std::string timing_output_file_name("VTK_TIMING_" + mOutputSettings["file_format"].GetString() + "_" + std::to_string(rModelPart.GetCommunicator().MyPID()));
 
 
     std::ofstream timing_output_file;
@@ -163,7 +163,7 @@ void VtkOutput::PrintOutput(const std::string& rOutputFilename)
         }
     }
 
-    const std::string timing_output_file_name("VTU_TIMING_" + mOutputSettings["file_format"].GetString() + "_" + std::to_string(mrModelPart.GetCommunicator().MyPID()));
+    const std::string timing_output_file_name("VTK_TIMING_" + mOutputSettings["file_format"].GetString() + "_" + std::to_string(mrModelPart.GetCommunicator().MyPID()));
 
     std::ofstream timing_output_file;
     timing_output_file.open(timing_output_file_name, std::ios::out |std::ios::app);
