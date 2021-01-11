@@ -228,8 +228,8 @@ VtuOutput::VtuOutput(
     const int num_conditions = r_data_comm.SumAll(static_cast<int>(r_local_mesh.NumberOfConditions()));
 
     KRATOS_WARNING_IF("VtuOutput", num_elements > 0 && num_conditions > 0) << r_data_comm << "Modelpart \"" << rModelPart.Name() << "\" has both elements and conditions.\nGiving precedence to elements and writing only elements!" << std::endl;
-    
-    const std::string timing_output_file_name("VTU_TIMING_" + std::to_string(rModelPart.GetCommunicator().MyPID()));
+
+    const std::string timing_output_file_name("VTU_TIMING_" + mOutputSettings["file_format"].GetString() + "_" + std::to_string(rModelPart.GetCommunicator().MyPID()));
 
     std::ofstream timing_output_file;
     timing_output_file.open(timing_output_file_name, std::ios::out | std::ios::trunc);
@@ -242,9 +242,9 @@ VtuOutput::VtuOutput(
 void VtuOutput::PrintOutput(const std::string& rOutputFilename)
 {
     KRATOS_TRY;
-    
+
     BuiltinTimer timer;
-    
+
     std::vector<double> coordinates;
 
     GetNodalCoordinates(mrModelPart, coordinates, mOutputSettings["write_deformed_configuration"].GetBool());
@@ -280,7 +280,7 @@ void VtuOutput::PrintOutput(const std::string& rOutputFilename)
     const int my_pid = mrModelPart.GetCommunicator().MyPID();
     const int total_processes = mrModelPart.GetCommunicator().TotalProcesses();
     std::string my_time_step = std::to_string(mrModelPart.GetProcessInfo()[STEP]);
- 
+
     std::array<std::string,2> baseName_and_path_to_file = GetOutputFileNameSOFTWARE_LAB(mrModelPart, false, rOutputFilename);
     const std::string baseName = baseName_and_path_to_file[0];
     const std::string path_to_file = baseName_and_path_to_file[1];
@@ -303,7 +303,7 @@ void VtuOutput::PrintOutput(const std::string& rOutputFilename)
     } else if (mFileFormat == VtuOutput::FileFormat::VTU_BINARY_RAW) {
         auto writer = vtu11::RawBinaryAppendedWriter();
         if(my_pid == 0)
-        {    
+        {
            vtu11::parallelWrite(path_to_file, baseName, vtu_mesh, point_data, cell_data, my_pid, total_processes, writer);
            WriteProcessTimingFile(my_pid, my_time_step, timer);
         }
@@ -316,7 +316,7 @@ void VtuOutput::PrintOutput(const std::string& rOutputFilename)
     } else if (mFileFormat == VtuOutput::FileFormat::VTU_BINARY_RAW_COMPRESSED) {
         auto writer = vtu11::CompressedRawBinaryAppendedWriter();
         if(my_pid == 0)
-        {    
+        {
            vtu11::parallelWrite(path_to_file, baseName, vtu_mesh, point_data, cell_data, my_pid, total_processes, writer);
            WriteProcessTimingFile(my_pid, my_time_step, timer);
         }
@@ -411,8 +411,8 @@ std::string VtuOutput::GetOutputFileName(const ModelPart& rModelPart, const bool
 
 void VtuOutput::WriteProcessTimingFile(const int& my_pid, const std::string& my_time_step, const BuiltinTimer& timer)
 {
-    const std::string timing_output_file_name("VTU_TIMING_" + std::to_string(my_pid));
-           
+    const std::string timing_output_file_name("VTU_TIMING_" + mOutputSettings["file_format"].GetString() + "_" + std::to_string(my_pid));
+
     std::ofstream timing_output_file;
     timing_output_file.open(timing_output_file_name, std::ios::out | std::ios::app);
     timing_output_file << my_time_step;
