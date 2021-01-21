@@ -186,7 +186,7 @@ for normalvar in range(normal_combs):
             NormalwGap[node] = Dw1Mw2.row(node).dot(NormalSlave.row(node))
             #gap_time_derivative = - Dx1Mx2.row(node)/delta_time
             gap_time_derivative_non_objective = - DDeltax1MDeltax2.row(node)/delta_time
-            gap_time_derivative_non_objective_w = Dw1Mw2.row(node)/delta_time
+            gap_time_derivative_non_objective_w = - Dw1Mw2.row(node)/delta_time
             gap_time_derivative_objective = DeltaDx1DeltaMx2.row(node)/delta_time
             gap_time_derivative_objective_w = - DeltaDw1DeltaMw2.row(node)/delta_time
 
