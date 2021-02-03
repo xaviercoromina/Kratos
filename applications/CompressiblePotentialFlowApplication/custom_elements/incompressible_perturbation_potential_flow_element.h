@@ -240,6 +240,8 @@ private:
 
     void ComputePotentialJump(const ProcessInfo& rCurrentProcessInfo);
 
+    void AddKuttaConditionPenaltyTerm(MatrixType& rLeftHandSideMatrix, VectorType& rRightHandSideVector, const ProcessInfo& rCurrentProcessInfo);
+
     ///@}
     ///@name Serialization
     ///@{

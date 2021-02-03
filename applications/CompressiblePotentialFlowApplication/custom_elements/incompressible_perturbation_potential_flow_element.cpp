@@ -57,6 +57,10 @@ void IncompressiblePerturbationPotentialFlowElement<Dim, NumNodes>::CalculateLoc
 {
     CalculateRightHandSide(rRightHandSideVector,rCurrentProcessInfo);
     CalculateLeftHandSide(rLeftHandSideMatrix,rCurrentProcessInfo);
+    const auto penalty_coefficient = rCurrentProcessInfo[PENALTY_COEFFICIENT];
+    if (penalty_coefficient > std::numeric_limits<double>::epsilon()) {
+        AddKuttaConditionPenaltyTerm(rLeftHandSideMatrix,rRightHandSideVector,rCurrentProcessInfo);
+    }
 }
 
 template <int Dim, int NumNodes>
@@ -83,6 +87,72 @@ void IncompressiblePerturbationPotentialFlowElement<Dim, NumNodes>::CalculateLef
         CalculateLeftHandSideNormalElement(rLeftHandSideMatrix, rCurrentProcessInfo);
     else // Wake element
         CalculateLeftHandSideWakeElement(rLeftHandSideMatrix, rCurrentProcessInfo);
+}
+
+template <int Dim, int NumNodes>
+void IncompressiblePerturbationPotentialFlowElement<Dim, NumNodes>::AddKuttaConditionPenaltyTerm(
+    MatrixType& rLeftHandSideMatrix, VectorType& rRightHandSideVector, const ProcessInfo& rCurrentProcessInfo)
+{
+    const IncompressiblePerturbationPotentialFlowElement& r_this = *this;
+    const int wake = r_this.GetValue(WAKE);
+    const int kutta = r_this.GetValue(KUTTA);
+
+
+    PotentialFlowUtilities::ElementalData<NumNodes,Dim> data;
+    const double free_stream_density = rCurrentProcessInfo[FREE_STREAM_DENSITY];
+    const auto penalty = rCurrentProcessInfo[PENALTY_COEFFICIENT];
+
+    GeometryUtils::CalculateGeometryData(this->GetGeometry(), data.DN_DX, data.N, data.vol);
+    data.potentials = PotentialFlowUtilities::GetPotentialOnNormalElement<Dim,NumNodes>(*this);
+
+    Vector vector_distances=ZeroVector(NumNodes);
+
+    double angle_in_deg = rCurrentProcessInfo[ROTATION_ANGLE];
+
+    BoundedVector<double, Dim> n_angle;
+    n_angle[0]=sin(angle_in_deg*Globals::Pi/180);
+    n_angle[1]=0;
+    n_angle[2]=cos(angle_in_deg*Globals::Pi/180);
+
+    BoundedMatrix<double, NumNodes, NumNodes> lhs_kutta = ZeroMatrix(NumNodes, NumNodes);
+    BoundedVector<double, NumNodes> test=prod(data.DN_DX, n_angle);
+
+
+    const array_1d<double, 3> free_stream_velocity = rCurrentProcessInfo[FREE_STREAM_VELOCITY];
+    array_1d<double, Dim> velocity = PotentialFlowUtilities::ComputeVelocity<Dim,NumNodes>(*this);
+    for (unsigned int i = 0; i < Dim; i++){
+        velocity[i] += free_stream_velocity[i];
+    }
+
+    noalias(lhs_kutta) = penalty*data.vol*free_stream_density * outer_prod(test, test);
+    BoundedMatrix<double, NumNodes, NumNodes>  n_matrix = outer_prod(n_angle, n_angle);
+    BoundedVector<double, NumNodes> velvector = prod(n_matrix,  velocity);
+    BoundedVector<double, NumNodes> rhs_penalty = prod(data.DN_DX,  velvector);
+    for (unsigned int i = 0; i < NumNodes; ++i)
+    {
+        if (this->GetGeometry()[i].GetValue(TRAILING_EDGE) && kutta==0)
+        {
+            if (wake==0)  {
+                for (unsigned int j = 0; j < NumNodes; ++j)
+                {
+                    rLeftHandSideMatrix(i, j) += lhs_kutta(i, j);
+                    rRightHandSideVector(i) += -penalty*data.vol*free_stream_density *rhs_penalty(i);
+                    // rRightHandSideVector(i) += -lhs_kutta(i, j)*data.potentials(j);
+                }
+            } else {
+                // data.distances = this->GetValue(WAKE_ELEMENTAL_DISTANCES);
+                // BoundedVector<double, 2*NumNodes> split_element_values;
+                // split_element_values = PotentialFlowUtilities::GetPotentialOnWakeElement<Dim, NumNodes>(*this, data.distances);
+                // for (unsigned int j = 0; j < NumNodes; ++j)
+                // {
+                //     rLeftHandSideMatrix(i, j) += lhs_kutta(i, j);
+                //     rLeftHandSideMatrix(i+NumNodes, j+NumNodes) += lhs_kutta(i, j);
+                //     rRightHandSideVector(i) += -lhs_kutta(i, j)*split_element_values(j);
+                //     rRightHandSideVector(i+NumNodes) += -lhs_kutta(i, j)*split_element_values(j+NumNodes);
+                // }
+            }
+        }
+    }
 }
 
 template <int Dim, int NumNodes>
@@ -498,7 +568,7 @@ void IncompressiblePerturbationPotentialFlowElement<Dim, NumNodes>::CalculateLef
     // }
     if (rLeftHandSideMatrix.size1() != 2 * NumNodes ||
         rLeftHandSideMatrix.size2() != 2 * NumNodes)
-        rLeftHandSideMatrix.resize(3 * NumNodes, 3 * NumNodes, false);
+        rLeftHandSideMatrix.resize(2 * NumNodes, 2 * NumNodes, false);
     rLeftHandSideMatrix.clear();
 
     ElementalData<NumNodes, Dim> data;
