@@ -130,15 +130,15 @@ void IncompressiblePerturbationPotentialFlowElement<Dim, NumNodes>::AddKuttaCond
     BoundedVector<double, NumNodes> rhs_penalty = prod(data.DN_DX,  velvector);
     for (unsigned int i = 0; i < NumNodes; ++i)
     {
-        if (this->GetGeometry()[i].GetValue(TRAILING_EDGE) && kutta==0)
+        if (this->GetGeometry()[i].GetValue(TRAILING_EDGE))
         {
             if (wake==0)  {
                 for (unsigned int j = 0; j < NumNodes; ++j)
                 {
                     rLeftHandSideMatrix(i, j) += lhs_kutta(i, j);
-                    rRightHandSideVector(i) += -penalty*data.vol*free_stream_density *rhs_penalty(i);
                     // rRightHandSideVector(i) += -lhs_kutta(i, j)*data.potentials(j);
                 }
+                rRightHandSideVector(i) += -penalty*data.vol*free_stream_density *rhs_penalty(i);
             } else {
                 // data.distances = this->GetValue(WAKE_ELEMENTAL_DISTANCES);
                 // BoundedVector<double, 2*NumNodes> split_element_values;
