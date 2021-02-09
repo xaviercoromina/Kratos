@@ -127,7 +127,7 @@ void IncompressiblePerturbationPotentialFlowElement<Dim, NumNodes>::AddKuttaCond
     noalias(lhs_kutta) = penalty*data.vol*free_stream_density * outer_prod(test, test);
     BoundedMatrix<double, NumNodes, NumNodes>  n_matrix = outer_prod(n_angle, n_angle);
     BoundedVector<double, NumNodes> velvector = prod(n_matrix,  velocity);
-    BoundedVector<double, NumNodes> rhs_penalty = prod(data.DN_DX,  velvector);
+    BoundedVector<double, NumNodes> rhs_penalty = -penalty*data.vol*free_stream_density*prod(data.DN_DX,  velvector);
     for (unsigned int i = 0; i < NumNodes; ++i)
     {
         if (this->GetGeometry()[i].GetValue(TRAILING_EDGE))
@@ -138,18 +138,31 @@ void IncompressiblePerturbationPotentialFlowElement<Dim, NumNodes>::AddKuttaCond
                     rLeftHandSideMatrix(i, j) += lhs_kutta(i, j);
                     // rRightHandSideVector(i) += -lhs_kutta(i, j)*data.potentials(j);
                 }
-                rRightHandSideVector(i) += -penalty*data.vol*free_stream_density *rhs_penalty(i);
+                rRightHandSideVector(i) += rhs_penalty(i);
             } else {
-                // data.distances = this->GetValue(WAKE_ELEMENTAL_DISTANCES);
-                // BoundedVector<double, 2*NumNodes> split_element_values;
-                // split_element_values = PotentialFlowUtilities::GetPotentialOnWakeElement<Dim, NumNodes>(*this, data.distances);
-                // for (unsigned int j = 0; j < NumNodes; ++j)
-                // {
-                //     rLeftHandSideMatrix(i, j) += lhs_kutta(i, j);
-                //     rLeftHandSideMatrix(i+NumNodes, j+NumNodes) += lhs_kutta(i, j);
-                //     rRightHandSideVector(i) += -lhs_kutta(i, j)*split_element_values(j);
-                //     rRightHandSideVector(i+NumNodes) += -lhs_kutta(i, j)*split_element_values(j+NumNodes);
-                // }
+
+                GetWakeDistances(data.distances);
+
+                array_1d<double, Dim> upper_velocity = PotentialFlowUtilities::ComputeVelocityUpperWakeElement<Dim,NumNodes>(*this);
+                array_1d<double, Dim> lower_velocity = PotentialFlowUtilities::ComputeVelocityLowerWakeElement<Dim,NumNodes>(*this);
+                for (unsigned int i = 0; i < Dim; i++){
+                    upper_velocity[i] += free_stream_velocity[i];
+                    lower_velocity[i] += free_stream_velocity[i];
+                }
+                const BoundedVector<double, NumNodes> upper_velocity_vector = prod(n_matrix,  upper_velocity);
+                const BoundedVector<double, NumNodes> lower_velocity_vector = prod(n_matrix,  lower_velocity);
+                double upper_vol = 0.0;
+                double lower_vol = 0.0;
+                CalculateVolumesSubdividedElement(upper_vol, lower_vol, rCurrentProcessInfo);
+                const BoundedVector<double, NumNodes> upper_rhs = -penalty*upper_vol*free_stream_density*prod(data.DN_DX, upper_velocity_vector);
+                const BoundedVector<double, NumNodes> lower_rhs = -penalty*lower_vol*free_stream_density*prod(data.DN_DX, lower_velocity_vector);
+                for (unsigned int j = 0; j < NumNodes; ++j)
+                {
+                    rLeftHandSideMatrix(i, j) += lhs_kutta(i, j);
+                    rLeftHandSideMatrix(i+NumNodes, j+NumNodes) += lhs_kutta(i, j);
+                }
+                rRightHandSideVector(i) += upper_rhs(i);
+                rRightHandSideVector(i + NumNodes) += lower_rhs(i);
             }
         }
     }
