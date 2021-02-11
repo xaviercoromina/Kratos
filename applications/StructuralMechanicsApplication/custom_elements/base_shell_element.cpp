@@ -383,7 +383,7 @@ void BaseShellElement<TCoordinateTransformation>::CalculateMassMatrix(MatrixType
             // rotational mass - neglected for the moment...
         }
     } else {
-
+        KRATOS_ERROR << "Consistent Mass Matrix not yet implemented" << std::endl;
     }
 
 }
