@@ -343,7 +343,49 @@ void BaseShellElement<TCoordinateTransformation>::CalculateRightHandSide(VectorT
 template <class TCoordinateTransformation>
 void BaseShellElement<TCoordinateTransformation>::CalculateMassMatrix(MatrixType& rMassMatrix, const ProcessInfo& rCurrentProcessInfo)
 {
-    // TODO unify implementation and move it to BaseClass
+    // Checking if computing lumped mass matrix
+    const bool compute_lumped_mass_matrix = StructuralMechanicsElementUtilities::ComputeLumpedMassMatrix(GetProperties(), rCurrentProcessInfo);
+
+    const GeometryType& r_geom = GetGeometry();
+    const SizeType num_nodes = r_geom.PointsNumber();
+    const SizeType num_gps = GetNumberOfGPs();
+
+    if ((rMassMatrix.size1() != num_gps) || (rMassMatrix.size2() != num_gps)) {
+        rMassMatrix.resize(num_gps, num_gps, false);
+    }
+    noalias(rMassMatrix) = ZeroMatrix(num_gps, num_gps);
+
+    if (compute_lumped_mass_matrix) {
+        // Compute the local coordinate system.
+        const auto referenceCoordinateSystem(this->mpCoordinateTransformation->CreateReferenceCoordinateSystem());
+
+        // lumped area
+        const double lump_area = referenceCoordinateSystem.Area() / static_cast<double>(num_nodes);
+
+        // Calculate avarage mass per unit area
+        double av_mass_per_unit_area = 0.0;
+        for (SizeType i = 0; i < num_gps; i++) {
+            av_mass_per_unit_area += this->mSections[i]->CalculateMassPerUnitArea(GetProperties());
+        }
+        av_mass_per_unit_area /= static_cast<double>(num_gps);
+
+        const double nodal_mass = av_mass_per_unit_area * lump_area;
+
+        // loop over nodes
+        for (SizeType i=0; i<num_nodes; ++i) {
+            SizeType index = i * 6;
+
+            // translational mass
+            rMassMatrix(index, index)            = nodal_mass;
+            rMassMatrix(index + 1, index + 1)    = nodal_mass;
+            rMassMatrix(index + 2, index + 2)    = nodal_mass;
+
+            // rotational mass - neglected for the moment...
+        }
+    } else {
+
+    }
+
 }
 
 template <class TCoordinateTransformation>
