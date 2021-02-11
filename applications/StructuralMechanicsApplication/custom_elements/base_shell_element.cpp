@@ -343,8 +343,10 @@ void BaseShellElement<TCoordinateTransformation>::CalculateRightHandSide(VectorT
 template <class TCoordinateTransformation>
 void BaseShellElement<TCoordinateTransformation>::CalculateMassMatrix(MatrixType& rMassMatrix, const ProcessInfo& rCurrentProcessInfo)
 {
+    KRATOS_TRY;
+
     // Checking if computing lumped mass matrix
-    const bool compute_lumped_mass_matrix = StructuralMechanicsElementUtilities::ComputeLumpedMassMatrix(GetProperties(), rCurrentProcessInfo);
+    const bool compute_lumped_mass_matrix = true;//StructuralMechanicsElementUtilities::ComputeLumpedMassMatrix(GetProperties(), rCurrentProcessInfo);
 
     const GeometryType& r_geom = GetGeometry();
     const SizeType num_nodes = r_geom.PointsNumber();
@@ -386,6 +388,7 @@ void BaseShellElement<TCoordinateTransformation>::CalculateMassMatrix(MatrixType
         KRATOS_ERROR << "Consistent Mass Matrix not yet implemented" << std::endl;
     }
 
+    KRATOS_CATCH("")
 }
 
 template <class TCoordinateTransformation>
