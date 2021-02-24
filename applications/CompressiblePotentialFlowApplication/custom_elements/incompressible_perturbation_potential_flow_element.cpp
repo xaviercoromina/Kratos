@@ -197,8 +197,8 @@ void IncompressiblePerturbationPotentialFlowElement<Dim, NumNodes>::EquationIdVe
         //     if (rResult.size() != 2 * NumNodes)
         //         rResult.resize(2 * NumNodes, false);
         // }
-        if (rResult.size() != 3 * NumNodes)
-            rResult.resize(3 * NumNodes, false);
+        if (rResult.size() != 2 * NumNodes)
+            rResult.resize(2 * NumNodes, false);
 
         GetEquationIdVectorWakeElement(rResult);
     }
@@ -233,8 +233,8 @@ void IncompressiblePerturbationPotentialFlowElement<Dim, NumNodes>::GetDofList(D
         //     if (rElementalDofList.size() != 2 * NumNodes)
         //         rElementalDofList.resize(2 * NumNodes);
         // }
-        if (rElementalDofList.size() != 3 * NumNodes)
-            rElementalDofList.resize(3 * NumNodes);
+        if (rElementalDofList.size() != 2 * NumNodes)
+            rElementalDofList.resize(2 * NumNodes);
 
         GetDofListWakeElement(rElementalDofList);
     }
@@ -450,9 +450,9 @@ void IncompressiblePerturbationPotentialFlowElement<Dim, NumNodes>::GetEquationI
                 GetGeometry()[i].GetDof(AUXILIARY_VELOCITY_POTENTIAL).EquationId();
     }
 
-    for (unsigned int i = 0; i < NumNodes; i++){
-        rResult[2*NumNodes + i] = GetGeometry()[i].GetDof(LAGRANGE_MULTIPLIER_0).EquationId();
-    }
+    // for (unsigned int i = 0; i < NumNodes; i++){
+    //     rResult[2*NumNodes + i] = GetGeometry()[i].GetDof(LAGRANGE_MULTIPLIER_0).EquationId();
+    // }
 
     // if(this->GetValue(WING_TIP_ELEMENT)){
     //     for (unsigned int i = 0; i < NumNodes; i++){
@@ -509,9 +509,9 @@ void IncompressiblePerturbationPotentialFlowElement<Dim, NumNodes>::GetDofListWa
                 GetGeometry()[i].pGetDof(AUXILIARY_VELOCITY_POTENTIAL);
     }
 
-    for (unsigned int i = 0; i < NumNodes; i++){
-        rElementalDofList[2*NumNodes + i] = GetGeometry()[i].pGetDof(LAGRANGE_MULTIPLIER_0);
-    }
+    // for (unsigned int i = 0; i < NumNodes; i++){
+    //     rElementalDofList[2*NumNodes + i] = GetGeometry()[i].pGetDof(LAGRANGE_MULTIPLIER_0);
+    // }
 
     // if(this->GetValue(WING_TIP_ELEMENT)){
     //     for (unsigned int i = 0; i < NumNodes; i++){
@@ -783,8 +783,8 @@ void IncompressiblePerturbationPotentialFlowElement<Dim, NumNodes>::CalculateRig
     //     if (rRightHandSideVector.size() != 2 * NumNodes)
     //         rRightHandSideVector.resize(2 * NumNodes, false);
     // }
-    if (rRightHandSideVector.size() != 3 * NumNodes)
-            rRightHandSideVector.resize(3 * NumNodes, false);
+    if (rRightHandSideVector.size() != 2 * NumNodes)
+            rRightHandSideVector.resize(2 * NumNodes, false);
 
     rRightHandSideVector.clear();
 
