@@ -17,6 +17,8 @@ class PotentialFlowFormulation(object):
                 self._SetUpIncompressibleElement(formulation_settings)
             elif element_type == "compressible":
                 self._SetUpCompressibleElement(formulation_settings)
+            elif element_type == "incompressible_boundary":
+                self._SetUpIncompressibleBoundaryElement(formulation_settings)
             elif element_type == "embedded_incompressible":
                 self._SetUpEmbeddedIncompressibleElement(formulation_settings)
             elif element_type == "embedded_compressible":
@@ -42,6 +44,19 @@ class PotentialFlowFormulation(object):
 
         self.element_name = "IncompressiblePotentialFlowElement"
         self.condition_name = "PotentialWallCondition"
+
+    def _SetUpIncompressibleBoundaryElement(self, formulation_settings):
+        default_settings = KratosMultiphysics.Parameters(r"""{
+            "element_type": "incompressible_boundary",
+            "penalty_coefficient": 0.0
+
+        }""")
+        formulation_settings.ValidateAndAssignDefaults(default_settings)
+
+        self.element_name = "IncompressibleBoundaryPotentialFlowElement"
+        self.condition_name = "PotentialWallCondition"
+        self.process_info_data[KratosMultiphysics.FluidDynamicsApplication.PENALTY_COEFFICIENT] = formulation_settings["penalty_coefficient"].GetDouble()
+
 
     def _SetUpCompressibleElement(self, formulation_settings):
         default_settings = KratosMultiphysics.Parameters(r"""{

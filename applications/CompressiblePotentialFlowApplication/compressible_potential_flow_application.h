@@ -24,6 +24,7 @@
 #include "includes/variables.h"
 #include "custom_elements/compressible_potential_flow_element.h"
 #include "custom_elements/incompressible_potential_flow_element.h"
+#include "custom_elements/incompressible_boundary_potential_flow_element.h"
 #include "custom_elements/compressible_perturbation_potential_flow_element.h"
 #include "custom_elements/transonic_perturbation_potential_flow_element.h"
 #include "custom_elements/incompressible_perturbation_potential_flow_element.h"
@@ -105,6 +106,7 @@ private:
     ///@{
 
     const IncompressiblePotentialFlowElement<2, 3> mIncompressiblePotentialFlowElement2D3N;
+    const IncompressibleBoundaryPotentialFlowElement<2, 3> mIncompressibleBoundaryPotentialFlowElement2D3N;
     const IncompressiblePotentialFlowElement<3, 4> mIncompressiblePotentialFlowElement3D4N;
     const CompressiblePotentialFlowElement<2, 3> mCompressiblePotentialFlowElement2D3N;
     const CompressiblePotentialFlowElement<3, 4> mCompressiblePotentialFlowElement3D4N;

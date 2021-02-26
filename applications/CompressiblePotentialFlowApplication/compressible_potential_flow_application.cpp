@@ -126,6 +126,7 @@ void KratosCompressiblePotentialFlowApplication::Register()
 
   //Register elements
   KRATOS_REGISTER_ELEMENT("IncompressiblePotentialFlowElement2D3N", mIncompressiblePotentialFlowElement2D3N);
+  KRATOS_REGISTER_ELEMENT("IncompressibleBoundaryPotentialFlowElement2D3N", mIncompressibleBoundaryPotentialFlowElement2D3N);
   KRATOS_REGISTER_ELEMENT("IncompressiblePotentialFlowElement3D4N", mIncompressiblePotentialFlowElement3D4N);
   KRATOS_REGISTER_ELEMENT("CompressiblePotentialFlowElement2D3N", mCompressiblePotentialFlowElement2D3N);
   KRATOS_REGISTER_ELEMENT("CompressiblePotentialFlowElement3D4N", mCompressiblePotentialFlowElement3D4N);
