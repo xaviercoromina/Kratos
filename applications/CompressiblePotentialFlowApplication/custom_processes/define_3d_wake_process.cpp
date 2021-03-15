@@ -139,28 +139,36 @@ void Define3DWakeProcess::SetWakeAndSpanDirections()
 
 void Define3DWakeProcess::MarkTrailingEdgeNodes()
 {
-    KRATOS_ERROR_IF(mrTrailingEdgeModelPart.NumberOfNodes() == 0) << "There are no nodes in the mrTrailingEdgeModelPart!"<< std::endl;
+    // KRATOS_ERROR_IF(mrTrailingEdgeModelPart.NumberOfNodes() == 0) << "There are no nodes in the mrTrailingEdgeModelPart!"<< std::endl;
 
     double max_span_position = std::numeric_limits<double>::lowest();
     double min_span_position = std::numeric_limits<double>::max();
 
-    auto p_right_wing_tip_node = &*mrTrailingEdgeModelPart.NodesBegin();
-    auto p_left_wing_tip_node = &*mrTrailingEdgeModelPart.NodesBegin();
+    auto p_right_wing_tip_node = &*mrBodyModelPart.NodesBegin();
+    auto p_left_wing_tip_node = &*mrBodyModelPart.NodesBegin();
 
-    for (auto& r_node : mrTrailingEdgeModelPart.Nodes()) {
-        r_node.SetValue(TRAILING_EDGE, true);
-        r_node.SetValue(NUMBER_OF_NEIGHBOUR_ELEMENTS, 0.0);
-        r_node.SetValue(TE_ELEMENT_COUNTER, 0);
-        const auto& r_coordinates = r_node.Coordinates();
-        const double distance_projection = inner_prod(r_coordinates, mSpanDirection);
+    auto max_coord_x = -std::numeric_limits<double>::max();
+    for (auto& r_node : mrBodyModelPart.Nodes()) {
+        max_coord_x = std::max(r_node.X(), max_coord_x);
+    }
 
-        if(distance_projection > max_span_position){
-            p_right_wing_tip_node = &r_node;
-            max_span_position = distance_projection;
-        }
-        if(distance_projection < min_span_position){
-            p_left_wing_tip_node = &r_node;
-            min_span_position = distance_projection;
+    // for (auto& r_node : mrTrailingEdgeModelPart.Nodes()) {
+    for (auto& r_node : mrBodyModelPart.Nodes()) {
+        if (std::abs(r_node.X() - max_coord_x) < 1e-5) {
+            r_node.SetValue(TRAILING_EDGE, true);
+            r_node.SetValue(NUMBER_OF_NEIGHBOUR_ELEMENTS, 0.0);
+            r_node.SetValue(TE_ELEMENT_COUNTER, 0);
+            const auto& r_coordinates = r_node.Coordinates();
+            const double distance_projection = inner_prod(r_coordinates, mSpanDirection);
+
+            if(distance_projection > max_span_position){
+                p_right_wing_tip_node = &r_node;
+                max_span_position = distance_projection;
+            }
+            if(distance_projection < min_span_position){
+                p_left_wing_tip_node = &r_node;
+                min_span_position = distance_projection;
+            }
         }
     }
 
@@ -176,7 +184,7 @@ void Define3DWakeProcess::ComputeLowerSurfaceNormals() const
     for (int i = 0; i < static_cast<int>(mrBodyModelPart.Conditions().size()); i++) {
         ModelPart::ConditionIterator it_cond = mrBodyModelPart.ConditionsBegin() + i;
 
-        auto r_geometry = it_cond->GetGeometry();
+        auto& r_geometry = it_cond->GetGeometry();
         auto surface_normal = r_geometry.UnitNormal(0);
         const double projection = inner_prod(surface_normal, mWakeNormal);
 
@@ -229,7 +237,7 @@ void Define3DWakeProcess::MarkWakeElements()
                 wake_elements_ordered_ids.push_back(it_elem->Id());
             }
             auto wake_elemental_distances = it_elem->GetValue(ELEMENTAL_DISTANCES);
-            auto r_geometry = it_elem->GetGeometry();
+            auto& r_geometry = it_elem->GetGeometry();
             for(unsigned int j = 0; j < wake_elemental_distances.size(); j++){
                 if(std::abs(wake_elemental_distances[j] < mTolerance)){
                     if(wake_elemental_distances[j] < 0.0){
