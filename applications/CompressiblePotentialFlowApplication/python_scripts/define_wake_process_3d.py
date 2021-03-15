@@ -101,7 +101,7 @@ class DefineWakeProcess3D(KratosMultiphysics.Process):
         CPFApp.Define3DWakeProcess(self.trailing_edge_model_part, self.body_model_part, self.wake_model_part, self.epsilon, self.wake_normal).ExecuteInitialize()
 
         for i in range(self.refinement_iterations):
-            # Option 1 - Fix domain, remesh elements intersected by wake only wake
+            # Option 1 - Fix domain, remesh elements intersected by wake only
             self._BlockDomain()
             # Option 2 - Fix wake and wing, remesh the rest of the elements (typically to reduce number of nodes)
             # self._BlockWake()
