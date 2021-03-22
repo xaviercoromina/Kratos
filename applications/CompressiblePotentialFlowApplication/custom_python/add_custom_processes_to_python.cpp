@@ -25,6 +25,7 @@
 #include "custom_processes/compute_embedded_lift_process.h"
 #include "custom_processes/define_embedded_wake_process.h"
 #include "custom_processes/compute_nodal_value_process.h"
+#include "custom_processes/compute_distance_sensitivities_process.h"
 
 namespace Kratos {
 namespace Python {
@@ -71,6 +72,11 @@ void  AddCustomProcessesToPython(pybind11::module& m)
     py::class_<ComputeNodalValueProcess, ComputeNodalValueProcess::Pointer, Process>
         (m,"ComputeNodalValueProcess")
         .def(py::init<ModelPart&, const std::vector<std::string>&>())
+    ;
+
+    py::class_<ComputeDistanceSensitivitiesProcess, ComputeDistanceSensitivitiesProcess::Pointer, Process>
+        (m,"ComputeDistanceSensitivitiesProcess")
+        .def(py::init<ModelPart&, Parameters>())
     ;
 }
 
