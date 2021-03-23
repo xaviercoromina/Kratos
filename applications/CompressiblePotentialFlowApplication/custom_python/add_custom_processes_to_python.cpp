@@ -76,7 +76,7 @@ void  AddCustomProcessesToPython(pybind11::module& m)
 
     py::class_<ComputeDistanceSensitivitiesProcess, ComputeDistanceSensitivitiesProcess::Pointer, Process>
         (m,"ComputeDistanceSensitivitiesProcess")
-        .def(py::init<ModelPart&, Parameters>())
+        .def(py::init<ModelPart&, ModelPart&, Parameters>())
     ;
 }
 

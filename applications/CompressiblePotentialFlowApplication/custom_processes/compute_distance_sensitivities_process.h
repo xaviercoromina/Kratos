@@ -15,6 +15,11 @@
 
 #include "includes/kratos_parameters.h"
 #include "processes/process.h"
+#include "processes/calculate_distance_to_skin_process.h"
+#include "processes/calculate_discontinuous_distance_to_skin_process.h"
+#include "modified_shape_functions/triangle_2d_3_modified_shape_functions.h"
+#include "modified_shape_functions/tetrahedra_3d_4_modified_shape_functions.h"
+
 
 namespace Kratos
 {
@@ -29,7 +34,7 @@ public:
     KRATOS_CLASS_POINTER_DEFINITION(ComputeDistanceSensitivitiesProcess);
 
     // Constructor for ComputeDistanceSensitivitiesProcess Process
-    ComputeDistanceSensitivitiesProcess(ModelPart& rModelPart, Parameters ThisParameters);
+    ComputeDistanceSensitivitiesProcess(ModelPart& rModelPart, ModelPart& rSkinModelPart, Parameters ThisParameters);
 
     /// Destructor.
     ~ComputeDistanceSensitivitiesProcess() = default;
@@ -69,13 +74,19 @@ public:
 private:
     ///@name Static Member Variables
     ///@{
+    ModelPart::GeometryType::Pointer SetNewConditionGeometry(const GeometryData::KratosGeometryType &rOriginGeometryType,
+        const Condition::NodesArrayType &rNewNodesArray);
 
+    void ComputeLocalDistanceSensitivity(ModelPart::GeometryType& rVolumeGeometry, ModelPart::GeometryType& rSkinGeometry);
+
+    void InitializeNodalVariables(ModelPart::NodeType::Pointer pNode);
 
     ///@}
     ///@name Member Variables
     ///@{
 
     ModelPart& mrModelPart;
+    ModelPart& mrSkinModelPart;
 
 }; // Class Process
 } // namespace Kratos
