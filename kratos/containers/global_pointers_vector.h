@@ -95,7 +95,7 @@ public:
     ///@{
 
     /// Default constructor.
-    GlobalPointersVector() : mData() {}
+    GlobalPointersVector() : mData(0) {}
 
     GlobalPointersVector(const std::initializer_list<GlobalPointer<TDataType>>& l)
         : mData(l)
