@@ -53,7 +53,7 @@ namespace Kratos
  * @details This is the base class from which we will derive all the explicit strategies (FE, RK4, ...)
  */
 template <class TSparseSpace, class TDenseSpace>
-class ExplicitSolvingStrategy
+class KRATOS_API(KRATOS_CORE) ExplicitSolvingStrategy
 {
 public:
     ///@name Type Definitions
