@@ -17,6 +17,9 @@ class LevelSetRemeshingProcess(KratosMultiphysics.Process):
             {
                 "model_part_name": "insert_model_part",
                 "skin_model_part_name": "insert_skin_model_part",
+                "skin_local_axes":   [[1.0,0.0,0.0],
+                                      [0.0,1.0,0.0],
+                                      [0.0,0.0,1.0]],
                 "maximum_iterations": 1,
                 "update_coefficient": 0.5,
                 "remeshing_flag": false,
@@ -55,6 +58,8 @@ class LevelSetRemeshingProcess(KratosMultiphysics.Process):
         self.model=Model
         self.main_model_part = Model.GetModelPart(settings["model_part_name"].GetString()).GetRootModelPart()
         self.skin_model_part_name=settings["skin_model_part_name"].GetString()
+        self.local_axes=settings["skin_local_axes"].GetMatrix()
+
 
         '''Remeshing loop parameters'''
         self.do_remeshing = settings["remeshing_flag"].GetBool()
@@ -95,6 +100,7 @@ class LevelSetRemeshingProcess(KratosMultiphysics.Process):
         ''' This function loads and moves the skin_model_part in the main_model_part to the desired initial point (origin).
             It also rotates the skin model part around the origin point according to the rotation_angle'''
         self.skin_model_part=self.model.CreateModelPart("skin")
+        self.skin_model_part.ProcessInfo.SetValue(KratosMultiphysics.LOCAL_AXES_MATRIX, self.local_axes)
 
         ini_time=time.time()
         # Reading skin model part
@@ -104,6 +110,10 @@ class LevelSetRemeshingProcess(KratosMultiphysics.Process):
         self.moving_parameters["rotation_angle"].SetDouble(angle)
 
         CompressiblePotentialFlow.MoveModelPartProcess(self.skin_model_part, self.moving_parameters).Execute()
+
+
+        self.local_axes = self.skin_model_part.ProcessInfo.GetValue(KratosMultiphysics.LOCAL_AXES_MATRIX)
+        self.skin_model_part.ProcessInfo.SetValue(KratosMultiphysics.LOCAL_AXES_MATRIX, self.local_axes)
 
         KratosMultiphysics.Logger.PrintInfo('LevelSetRemeshing','InitializeSkin time: ',time.time()-ini_time)
 

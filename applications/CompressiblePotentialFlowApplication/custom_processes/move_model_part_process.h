@@ -82,6 +82,7 @@ private:
     Vector mOrigin;
     Vector mRotationPoint;
     Vector mRotationAxis;
+    bool mSizingMultiplier;
     double mRotationAngle;
     double mSizingMultiplier;
 

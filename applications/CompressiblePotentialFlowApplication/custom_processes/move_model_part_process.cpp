@@ -29,6 +29,7 @@ MoveModelPartProcess::MoveModelPartProcess(ModelPart& rModelPart,
         "origin"                        : [0.0,0.0,0.0],
         "rotation_point"                : [0.0,0.0,0.0],
         "rotation_axis"                 : [0.0,0.0,1.0],
+        "rotate_local_axes"             : true,
         "rotation_angle"                : 0.0,
         "sizing_multiplier"             : 1.0
 
@@ -50,6 +51,7 @@ MoveModelPartProcess::MoveModelPartProcess(ModelPart& rModelPart,
     mRotationAngle = ThisParameters["rotation_angle"].GetDouble();
     mRotationAxis = ThisParameters["rotation_axis"].GetVector();
     mSizingMultiplier = ThisParameters["sizing_multiplier"].GetDouble();
+    mRotateLocalAxes = ThisParameters["rotate_local_axes"].GetBool();
 }
 
 void MoveModelPartProcess::Execute()
@@ -86,6 +88,7 @@ void MoveModelPartProcess::Execute()
         }
     });
 
+    if mRotateLocalAxes
     KRATOS_CATCH("");
 }
 }// Namespace Kratos
