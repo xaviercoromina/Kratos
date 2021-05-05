@@ -262,6 +262,15 @@ void IncompressiblePotentialFlowElement<Dim, NumNodes>::GetValueOnIntegrationPoi
             v[k] = vaux[k] - free_stream_velocity[k];
         rValues[0] = v;
     }
+
+    else if (rVariable == VELOCITY_LOWER)
+    {
+        array_1d<double, 3> v(3, 0.0);
+        array_1d<double, Dim> vaux = this->GetValue(VELOCITY_LOWER);
+        for (unsigned int k = 0; k < Dim; k++)
+            v[k] = vaux[k];
+        rValues[0] = v;
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -412,32 +421,6 @@ void IncompressiblePotentialFlowElement<Dim, NumNodes>::CalculateLocalSystemNorm
         data.vol * free_stream_density * prod(data.DN_DX, trans(data.DN_DX));
 
     data.potentials = PotentialFlowUtilities::GetPotentialOnNormalElement<Dim,NumNodes>(*this);
-
-    // n_kutta(0,0)=cut_normal[0][0]/norm_normal;
-    // n_kutta(1,0)=cut_normal[0][1]/norm_normal;
-    BoundedMatrix<double, 2, 1 > n_angle;
-    double angle_in_deg = rCurrentProcessInfo[ROTATION_ANGLE];
-    n_angle(0,0)=sin(angle_in_deg*Globals::Pi/180);
-    n_angle(1,0)=cos(angle_in_deg*Globals::Pi/180);
-
-    BoundedMatrix<double, NumNodes, NumNodes> lhs_kutta = ZeroMatrix(NumNodes, NumNodes);
-
-    Matrix test=prod(data.DN_DX,n_angle);
-    noalias(lhs_kutta) = data.vol*free_stream_density * prod(test,trans(test));
-
-    auto penalty = rCurrentProcessInfo[TEMPERATURE];
-
-    for (unsigned int i = 0; i < NumNodes; ++i)
-    {
-        if (this->GetGeometry()[i].GetValue(WING_TIP))
-        {
-            for (unsigned int j = 0; j < NumNodes; ++j)
-            {
-                rLeftHandSideMatrix(i, j) += penalty*lhs_kutta(i, j);
-                // rLeftHandSideMatrix(i, j) = lhs_kutta(i, j);
-            }
-        }
-    }
     noalias(rRightHandSideVector) = -prod(rLeftHandSideMatrix, data.potentials);
 }
 
@@ -550,19 +533,19 @@ void IncompressiblePotentialFlowElement<Dim, NumNodes>::CalculateLocalSystemSubd
             noalias(lhs_kutta_negative) += free_stream_density*Volumes[i] * prod(test,trans(test));
         }
     }
-    auto penalty = rCurrentProcessInfo[TEMPERATURE];
-//
-    // lhs_positive = lhs_kutta_positive + lhs_kutta_negative;
-    // lhs_negative = lhs_kutta_negative + lhs_kutta_positive;
+    auto penalty = rCurrentProcessInfo[PENALTY_COEFFICIENT];
+    lhs_positive += penalty*(lhs_kutta_positive+lhs_kutta_negative);
+    lhs_negative += penalty*(lhs_kutta_negative+lhs_kutta_positive);
+
+
+// //
+//     lhs_positive = lhs_kutta_positive + lhs_kutta_negative;
+//     lhs_negative = lhs_kutta_negative + lhs_kutta_positive;
 
     // lhs_positive = lhs_kutta_positive;
     // lhs_negative = lhs_kutta_negative;
     // lhs_positive += lhs_negative;
 
-    // lhs_positive += penalty*(lhs_kutta_positive+lhs_kutta_negative);
-    // lhs_negative += penalty*(lhs_kutta_negative+lhs_kutta_positive);
-    lhs_positive = penalty*(lhs_kutta_positive+lhs_kutta_negative);
-    lhs_negative = penalty*(lhs_kutta_negative+lhs_kutta_positive);
     // lhs_positive += penalty*(lhs_kutta_positive);
     // lhs_negative += penalty*(lhs_kutta_negative);
     // lhs_positive += penalty*(lhs_positive+lhs_negative);
@@ -592,7 +575,8 @@ void IncompressiblePotentialFlowElement<Dim, NumNodes>::AssignLocalSystemSubdivi
     {
         // The TE node takes the contribution of the subdivided element and
         // we do not apply the wake condition on the TE node
-
+        // if (GetGeometry()[i].GetValue(AIRFOIL) || GetGeometry()[i].GetValue(TRAILING_EDGE) )
+        //if (GetGeometry()[i].GetValue(TRAILING_EDGE))
         if (GetGeometry()[i].GetValue(AIRFOIL))
         // if (false)
         {
@@ -604,12 +588,6 @@ void IncompressiblePotentialFlowElement<Dim, NumNodes>::AssignLocalSystemSubdivi
         }
         else
             AssignLocalSystemWakeNode(rLeftHandSideMatrix, lhs_total, data, i);
-
-        // for (unsigned int j = 0; j < NumNodes; ++j)
-        // {
-        //     rLeftHandSideMatrix(i, j) += lhs_positive(i, j);
-        //     rLeftHandSideMatrix(i+ NumNodes, j+ NumNodes) += lhs_negative(i, j) ;
-        // }
     }
 }
 

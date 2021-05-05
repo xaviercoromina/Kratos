@@ -57,49 +57,95 @@ void EmbeddedIncompressiblePotentialFlowElement<Dim, NumNodes>::CalculateLocalSy
     const int wake = r_this.GetValue(WAKE);
     const int kutta = r_this.GetValue(KUTTA);
 
-    Vector distances = r_this.GetValue(GEOMETRY_ELEMENTAL_DISTANCES);
-    bool is_embedded = PotentialFlowUtilities::CheckIfElementIsCutByDistance<Dim,NumNodes>(distances);
+    BoundedVector<double,NumNodes> distances;
+    for(unsigned int i_node = 0; i_node<NumNodes; i_node++) {
+        if ((kutta == 1) && (this->GetGeometry()[i_node].GetValue(TRAILING_EDGE)))
+            distances(i_node) = this->GetGeometry()[i_node].GetValue(TEMPERATURE);
+        else
+            distances(i_node) = this->GetGeometry()[i_node].GetSolutionStepValue(GEOMETRY_DISTANCE);
+    }
+    const bool is_embedded = PotentialFlowUtilities::CheckIfElementIsCutByDistance<Dim,NumNodes>(distances);
 
     if (is_embedded && wake == 0) {
         CalculateEmbeddedLocalSystem(rLeftHandSideMatrix,rRightHandSideVector,rCurrentProcessInfo);
-        if (std::abs(rCurrentProcessInfo[PENALTY_COEFFICIENT]) > std::numeric_limits<double>::epsilon()) {
+        if (std::abs(rCurrentProcessInfo[STABILIZATION_FACTOR]) > std::numeric_limits<double>::epsilon()) {
             AddPotentialGradientStabilizationTerm(rLeftHandSideMatrix,rRightHandSideVector,rCurrentProcessInfo);
         }
     }
     else {
         BaseType::CalculateLocalSystem(rLeftHandSideMatrix, rRightHandSideVector, rCurrentProcessInfo);
-        ElementalData<NumNodes, Dim> data;
+    }
 
-        // // Calculate shape functions
-        // GeometryUtils::CalculateGeometryData(this->GetGeometry(), data.DN_DX, data.N, data.vol);
-        // const double free_stream_density = rCurrentProcessInfo[FREE_STREAM_DENSITY];
+    if (wake==0) {
+    // if (true) {
+        PotentialFlowUtilities::ElementalData<NumNodes,Dim> this_data;
+        const double free_stream_density = rCurrentProcessInfo[FREE_STREAM_DENSITY];
 
-        // auto potential = PotentialFlowUtilities::GetPotentialOnNormalElement<Dim, NumNodes>(*this);
-        // BoundedMatrix<double, 2, 1 > n_angle;
-        // double angle_in_deg = rCurrentProcessInfo[ROTATION_ANGLE];
-        // n_angle(0,0)=sin(angle_in_deg*Globals::Pi/180);
-        // n_angle(1,0)=cos(angle_in_deg*Globals::Pi/180);
+        GeometryUtils::CalculateGeometryData(this->GetGeometry(), this_data.DN_DX, this_data.N, this_data.vol);
+        this_data.potentials = PotentialFlowUtilities::GetPotentialOnNormalElement<Dim,NumNodes>(*this);
 
-        // BoundedMatrix<double, NumNodes, NumNodes> lhs_kutta = ZeroMatrix(NumNodes, NumNodes);
+        Vector vector_distances=ZeroVector(3);
 
-        // Matrix test=prod(data.DN_DX,n_angle);
-        // noalias(lhs_kutta) = data.vol*free_stream_density*prod(test,trans(test));
+        BoundedMatrix<double, 2, 1 > n_angle;
+        // if (is_embedded) {
+        if (false) {
+            for(unsigned int i_node = 0; i_node<NumNodes; i_node++) {
+                if ((kutta == 1) && (this->GetGeometry()[i_node].GetValue(TRAILING_EDGE)))
+                    vector_distances(i_node) = this->GetGeometry()[i_node].GetValue(TEMPERATURE);
+                else
+                    vector_distances(i_node) = this->GetGeometry()[i_node].GetSolutionStepValue(GEOMETRY_DISTANCE);
+            }
+            ModifiedShapeFunctions::Pointer pModifiedShFunc = this->pGetModifiedShapeFunctions(vector_distances);
+            std::vector<Vector> cut_normal;
+            pModifiedShFunc -> ComputePositiveSideInterfaceAreaNormals(cut_normal,GeometryData::GI_GAUSS_1);
+            double norm_normal = sqrt(inner_prod(cut_normal[0],cut_normal[0]));
+            auto unit_normal = cut_normal[0]/norm_normal;
+            // this->SetValue(VELOCITY_LOWER,unit_normal);
+            BoundedMatrix<double, 2, 1 > n_kutta;
+            n_angle(0,0)=cut_normal[0][0]/norm_normal;
+            n_angle(1,0)=cut_normal[0][1]/norm_normal;
+        }
+        else {
 
-        // auto penalty = rCurrentProcessInfo[TEMPERATURE];
-        // bool is_airfoil = false;
-        // for (unsigned int i = 0; i < NumNodes; ++i)
-        // {
-        //     if (this->GetGeometry()[i].GetValue(AIRFOIL))
-        //     {
-        //         for (unsigned int j = 0; j < NumNodes; ++j)
-        //         {
-        //             is_airfoil = true;
-        //             rLeftHandSideMatrix(i, j) += penalty*lhs_kutta(i, j);
-        //         }
-        //     }
-        // }
-        // if(is_airfoil)
-        //     noalias(rRightHandSideVector) -= penalty*prod(lhs_kutta,potential);
+            double angle_in_deg = rCurrentProcessInfo[ROTATION_ANGLE];
+            n_angle(0,0)=sin(angle_in_deg*Globals::Pi/180);
+            n_angle(1,0)=cos(angle_in_deg*Globals::Pi/180);
+        }
+
+
+        BoundedMatrix<double, NumNodes, NumNodes> lhs_kutta = ZeroMatrix(NumNodes, NumNodes);
+
+        // Matrix test=prod(this_data.DN_DX,n_kutta);
+        Matrix test=prod(this_data.DN_DX,n_angle);
+        auto penalty = rCurrentProcessInfo[PENALTY_COEFFICIENT];
+        noalias(lhs_kutta) = penalty*this_data.vol*free_stream_density * prod(test,trans(test));
+
+        for (unsigned int i = 0; i < NumNodes; ++i)
+        {
+            if (this->GetGeometry()[i].GetValue(WING_TIP))
+            {
+                // if (wake==1 && this->GetGeometry()[i].GetValue(TRAILING_EDGE) && this->Is(STRUCTURE))  {
+                if (wake==1)  {
+                    this_data.distances = this->GetValue(WAKE_ELEMENTAL_DISTANCES);
+                    BoundedVector<double, 2*NumNodes> split_element_values;
+                    split_element_values = PotentialFlowUtilities::GetPotentialOnWakeElement<Dim, NumNodes>(*this, this_data.distances);
+                    for (unsigned int j = 0; j < NumNodes; ++j)
+                    {
+                        rLeftHandSideMatrix(i, j) += lhs_kutta(i, j);
+                        rLeftHandSideMatrix(i+NumNodes, j+NumNodes) += lhs_kutta(i, j);
+                        rRightHandSideVector(i) += -lhs_kutta(i, j)*split_element_values(j);
+                        rRightHandSideVector(i+NumNodes) += -lhs_kutta(i, j)*split_element_values(j+NumNodes);
+                    }
+                } else {
+
+                    for (unsigned int j = 0; j < NumNodes; ++j)
+                    {
+                        rLeftHandSideMatrix(i, j) += lhs_kutta(i, j);
+                        rRightHandSideVector(i) += -lhs_kutta(i, j)*this_data.potentials(j);
+                    }
+                }
+            }
+        }
     }
 
 }
@@ -114,11 +160,17 @@ void EmbeddedIncompressiblePotentialFlowElement<Dim, NumNodes>::CalculateEmbedde
         rRightHandSideVector.resize(NumNodes, false);
     rLeftHandSideMatrix.clear();
 
+    array_1d<double, NumNodes> potential;
+    Vector distances(NumNodes);
     const EmbeddedIncompressiblePotentialFlowElement& r_this = *this;
-
-    Vector distances = r_this.GetValue(GEOMETRY_ELEMENTAL_DISTANCES);
-
-    array_1d<double, NumNodes> potential = PotentialFlowUtilities::GetPotentialOnNormalElement<Dim, NumNodes>(*this);
+    const int kutta = r_this.GetValue(KUTTA);
+    for(unsigned int i_node = 0; i_node<NumNodes; i_node++) {
+        if ((kutta == 1) && (this->GetGeometry()[i_node].GetValue(TRAILING_EDGE)))
+            distances(i_node) = this->GetGeometry()[i_node].GetValue(TEMPERATURE);
+        else
+            distances(i_node) = this->GetGeometry()[i_node].GetSolutionStepValue(GEOMETRY_DISTANCE);
+    }
+    potential = PotentialFlowUtilities::GetPotentialOnNormalElement<Dim, NumNodes>(*this);
 
     ModifiedShapeFunctions::Pointer pModifiedShFunc = this->pGetModifiedShapeFunctions(distances);
     Matrix positive_side_sh_func;
@@ -131,45 +183,13 @@ void EmbeddedIncompressiblePotentialFlowElement<Dim, NumNodes>::CalculateEmbedde
         GeometryData::GI_GAUSS_1);
 
     const double free_stream_density = rCurrentProcessInfo[FREE_STREAM_DENSITY];
-    // Computing Normal
-    std::vector<Vector> cut_normal;
-    pModifiedShFunc -> ComputePositiveSideInterfaceAreaNormals(cut_normal,GeometryData::GI_GAUSS_1);
-    double norm_normal = sqrt(inner_prod(cut_normal[0],cut_normal[0]));
-    auto unit_normal = cut_normal[0]/norm_normal;
-    this->SetValue(VELOCITY_LOWER,unit_normal);
-    BoundedMatrix<double, 2, 1 > n_kutta;
-    n_kutta(0,0)=cut_normal[0][0]/norm_normal;
-    n_kutta(1,0)=cut_normal[0][1]/norm_normal;
-    BoundedMatrix<double, 2, 1 > n_angle;
-    double angle_in_deg = rCurrentProcessInfo[ROTATION_ANGLE];
-    n_angle(0,0)=sin(angle_in_deg*Globals::Pi/180);
-    n_angle(1,0)=cos(angle_in_deg*Globals::Pi/180);
-
-    BoundedMatrix<double, NumNodes, NumNodes> lhs_kutta = ZeroMatrix(NumNodes, NumNodes);
 
     BoundedMatrix<double,NumNodes,Dim> DN_DX;
     for (unsigned int i_gauss=0;i_gauss<positive_side_sh_func_gradients.size();i_gauss++){
         DN_DX=positive_side_sh_func_gradients(i_gauss);
-        Matrix test=prod(DN_DX,n_angle);
-        // Matrix test=prod(DN_DX,n_kutta);
         noalias(rLeftHandSideMatrix) += free_stream_density*prod(DN_DX,trans(DN_DX))*positive_side_weights(i_gauss);
-        noalias(lhs_kutta) += free_stream_density * positive_side_weights(i_gauss) * prod(test,trans(test));
     }
 
-
-    auto penalty = rCurrentProcessInfo[PENALTY_COEFFICIENT];
-    // if (r_this.GetValue(KUTTA)==1){
-        for (unsigned int i = 0; i < NumNodes; ++i)
-        {
-            if (this->GetGeometry()[i].GetValue(WING_TIP))
-            {
-                for (unsigned int j = 0; j < NumNodes; ++j)
-                {
-                    rLeftHandSideMatrix(i, j) += penalty*lhs_kutta(i, j);
-                }
-            }
-        }
-    // }
     noalias(rRightHandSideVector) = -prod(rLeftHandSideMatrix, potential);
 }
 
@@ -182,20 +202,21 @@ void EmbeddedIncompressiblePotentialFlowElement<Dim, NumNodes>::AddPotentialGrad
 
     std::vector<array_1d<double, Dim>> nodal_gradient_vector(NumNodes);
     for(std::size_t i_node=0; i_node<NumNodes; ++i_node) {
-        if (this->GetGeometry()[i_node].FastGetSolutionStepValue(GEOMETRY_DISTANCE)>0.0){
-            auto& nodal_gradient = nodal_gradient_vector[i_node];
-            nodal_gradient.clear();
+        auto& nodal_gradient = nodal_gradient_vector[i_node];
+        nodal_gradient.clear();
+        if (this->GetGeometry()[i_node].FastGetSolutionStepValue(GEOMETRY_DISTANCE) > 0.0) {
             double neighbour_elements_total_area = 0.0;
             auto neighbour_elem = this->GetGeometry()[i_node].GetValue(NEIGHBOUR_ELEMENTS);
             KRATOS_ERROR_IF(neighbour_elem.size() == 0) << this->Info() << " neighbour elements were not computed\n";
-
             for (const auto r_elem : neighbour_elem){
 
-                BoundedVector<double,NumNodes> neighbour_distances = r_elem.GetValue(GEOMETRY_ELEMENTAL_DISTANCES);
+                BoundedVector<double,NumNodes> neighbour_distances;
+                for(unsigned int i = 0; i<NumNodes; i++){
+                    neighbour_distances[i] = r_elem.GetGeometry()[i].GetSolutionStepValue(GEOMETRY_DISTANCE);
+                }
                 const bool is_neighbour_embedded = PotentialFlowUtilities::CheckIfElementIsCutByDistance<Dim,NumNodes>(neighbour_distances);
-                const bool is_trailing_edge = PotentialFlowUtilities::CheckIfElementIsTrailingEdge(r_elem);
-
-                if((r_elem.Is(ACTIVE)) ) {
+                // if(!is_neighbour_embedded && r_elem.Is(ACTIVE)) {
+                if(r_elem.Is(ACTIVE)) {
                     auto r_geometry = r_elem.GetGeometry();
                     const auto& r_integration_method = r_geometry.GetDefaultIntegrationMethod();
                     const auto& r_integration_points = r_geometry.IntegrationPoints(r_integration_method);
@@ -226,6 +247,7 @@ void EmbeddedIncompressiblePotentialFlowElement<Dim, NumNodes>::AddPotentialGrad
                         }
 
                         KRATOS_ERROR_IF(neighbour_node_id<0)<<"No neighbour node was found for neighbour element " << r_elem.Id() << " and element " << this-> Id() <<std::endl;
+
                         for(std::size_t k=0; k<Dim; ++k) {
                             nodal_gradient[k] += neighbour_data.N[neighbour_node_id] * gauss_point_volume * neighbour_elemental_gradient[k];
                         }
@@ -243,10 +265,8 @@ void EmbeddedIncompressiblePotentialFlowElement<Dim, NumNodes>::AddPotentialGrad
     averaged_nodal_gradient.clear();
     int number_of_positive_nodes = 0;
 
-    auto geometry_elemental_distances = this->GetValue(GEOMETRY_ELEMENTAL_DISTANCES);
-
     for (IndexType i_node=0; i_node<NumNodes; i_node++){
-        if (geometry_elemental_distances[i_node]>0.0){
+        if (this->GetGeometry()[i_node].FastGetSolutionStepValue(GEOMETRY_DISTANCE)>0.0){
             number_of_positive_nodes += 1;
             averaged_nodal_gradient += nodal_gradient_vector[i_node];
         }
@@ -256,12 +276,11 @@ void EmbeddedIncompressiblePotentialFlowElement<Dim, NumNodes>::AddPotentialGrad
     PotentialFlowUtilities::ElementalData<NumNodes,Dim> data;
     GeometryUtils::CalculateGeometryData(this->GetGeometry(), data.DN_DX, data.N, data.vol);
 
-    auto penalty_term_nodal_gradient = data.vol*prod(data.DN_DX, averaged_nodal_gradient);
-    auto penalty_term_potential = data.vol*prod(data.DN_DX,trans(data.DN_DX));
-    auto penalty_coefficient = rCurrentProcessInfo[PENALTY_COEFFICIENT];
-
-    noalias(rLeftHandSideMatrix) +=  penalty_coefficient*penalty_term_potential;
-    noalias(rRightHandSideVector) += penalty_coefficient*(penalty_term_nodal_gradient-prod(penalty_term_potential, potential));
+    auto stabilization_term_nodal_gradient = data.vol*prod(data.DN_DX, averaged_nodal_gradient);
+    auto stabilization_term_potential = data.vol*prod(data.DN_DX,trans(data.DN_DX));
+    auto stabilization_factor = rCurrentProcessInfo[STABILIZATION_FACTOR];
+    noalias(rLeftHandSideMatrix) +=  stabilization_factor*stabilization_term_potential;
+    noalias(rRightHandSideVector) += stabilization_factor*(stabilization_term_nodal_gradient-prod(stabilization_term_potential, potential));
 }
 
 template <>

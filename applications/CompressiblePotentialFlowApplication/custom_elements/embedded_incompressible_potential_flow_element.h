@@ -30,15 +30,7 @@ class EmbeddedIncompressiblePotentialFlowElement : public IncompressiblePotentia
 public:
    ///@name Type Definitions
     ///@{
-    template <unsigned int TNumNodes, unsigned int TDim>
-    struct ElementalData
-    {
-        array_1d<double, TNumNodes> potentials, distances;
-        double vol;
 
-        BoundedMatrix<double, TNumNodes, TDim> DN_DX;
-        array_1d<double, TNumNodes> N;
-    };
     typedef IncompressiblePotentialFlowElement<Dim,NumNodes> BaseType;
 
     typedef typename BaseType::IndexType IndexType;

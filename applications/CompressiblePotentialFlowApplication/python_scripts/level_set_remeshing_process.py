@@ -239,6 +239,7 @@ class LevelSetRemeshingProcess(KratosMultiphysics.Process):
             "discretization_type"                  : "STANDARD",
             "save_external_files"              : false,
             "initialize_entities"              : false,
+            "preserve_flags"              : false,
             "echo_level"                       : 0
         }
         """)

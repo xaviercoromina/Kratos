@@ -63,8 +63,8 @@ class ApplyFarFieldProcess(KratosMultiphysics.Process):
         self.fluid_model_part.ProcessInfo.SetValue(KratosMultiphysics.SOUND_VELOCITY,self.free_stream_speed_of_sound)
         self.fluid_model_part.ProcessInfo.SetValue(KratosCFD.HEAT_CAPACITY_RATIO,self.heat_capacity_ratio)
         self.fluid_model_part.ProcessInfo.SetValue(CPFApp.MACH_LIMIT,self.mach_number_limit)
-        self.fluid_model_part.ProcessInfo.SetValue(KratosMultiphysics.INITIAL_PENALTY, 100.0)
-        self.fluid_model_part.ProcessInfo.SetValue(KratosMultiphysics.TEMPERATURE, 100.0)
+        self.fluid_model_part.ProcessInfo.SetValue(KratosMultiphysics.INITIAL_PENALTY, 1000.0)
+        self.fluid_model_part.ProcessInfo.SetValue(KratosMultiphysics.TEMPERATURE, 1000.0)
         if self.far_field_model_part.HasNodalSolutionStepVariable(CPFApp.ADJOINT_VELOCITY_POTENTIAL):
             self.fluid_model_part.ProcessInfo.SetValue(KratosMultiphysics.TEMPERATURE, 0.0)
             self.fluid_model_part.ProcessInfo.SetValue(KratosMultiphysics.INITIAL_PENALTY, 0.0)
