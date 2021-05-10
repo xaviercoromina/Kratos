@@ -21,7 +21,9 @@ class AngleOfAttackResponseFunction(ResponseFunctionInterface):
 
     def Initialize(self):
         self.main_model_part = self.model["MainModelPart"]
-        self.free_stream_velocity = self.main_model_part.ProcessInfo[KCPFApp.FREE_STREAM_VELOCITY]
+        # self.free_stream_velocity = self.main_model_part.ProcessInfo[KCPFApp.FREE_STREAM_VELOCITY]
+        self.free_stream_velocity = KratosMultiphysics.Vector(3, 0.0)
+        self.free_stream_velocity[0] = 1.0
         for node in self.model[self.trailing_edge_model_part_name].Nodes:
             self.te_node = node
             break
@@ -171,3 +173,77 @@ class PerimeterResponseFunction(ResponseFunctionInterface):
             gradient[node.Id] = shape_gradient
 
         return gradient
+
+class FixPointResponseFunction(ResponseFunctionInterface):
+
+    def __init__(self, response_id, response_settings, model):
+        self.model = model
+        self.traced_node_id = response_settings["traced_node"].GetInt()
+
+    def Initialize(self):
+        self.body_model_part = self.model["MainModelPart.Body2D_Body"]
+        self.traced_node = self.model["MainModelPart"].GetNode(self.traced_node_id)
+        self.initial_x = self.traced_node.X
+        self.initial_y = self.traced_node.Y
+
+    def CalculateValue(self):
+        self.current_x =  self.traced_node.X
+        self.current_y = self.traced_node.Y
+        # self.value = (self.current_x-self.initial_x)**2 + (self.current_y-self.initial_y)**2
+        self.value = (self.current_x-self.initial_x)**2
+        # self.value = (self.current_y-self.initial_y)**2
+
+    def CalculateGradient(self):
+        self.shape_gradient = KratosMultiphysics.Vector(3, 0.0)
+        self.shape_gradient[0] = 2*(self.current_x-self.initial_x)
+        # self.shape_gradient[1] = 2*(self.current_y-self.initial_y)
+
+        return self.shape_gradient
+
+    def GetValue(self):
+        return self.value
+
+    def GetNodalGradient(self, variable):
+        zero_vector = KratosMultiphysics.Vector(3, 0.0)
+        gradient ={node.Id : zero_vector for node in self.body_model_part.Nodes}
+        gradient[self.traced_node_id] = self.shape_gradient
+        return gradient
+
+
+
+# class FixPointResponseFunction(ResponseFunctionInterface):
+
+#     def __init__(self, response_id, response_settings, model):
+#         self.model = model
+#         self.traced_node_id = response_settings["traced_node"].GetInt()
+#         self.dim = response_settings["dim"].GetInt()
+
+#     def Initialize(self):
+#         self.body_model_part = self.model["MainModelPart.Body2D_Body"]
+#         self.traced_node = self.model["MainModelPart"].GetNode(self.traced_node_id)
+#         if self.dim == 0:
+#             self.initial_value = self.traced_node.X
+#         elif self.dim == 1:
+#             self.initial_value = self.traced_node.Y
+
+#     def CalculateValue(self):
+#         if self.dim == 0:
+#             self.current_value = self.traced_node.X
+#         elif self.dim == 1:
+#             self.current_value = self.traced_node.Y
+#         self.value = (self.current_value-self.initial_value)**2
+
+#     def CalculateGradient(self):
+#         self.shape_gradient = KratosMultiphysics.Vector(3, 0.0)
+#         self.shape_gradient[self.dim] = 2*(self.current_value-self.initial_value)
+
+#         return self.shape_gradient
+
+#     def GetValue(self):
+#         return self.value
+
+#     def GetNodalGradient(self, variable):
+#         zero_vector = KratosMultiphysics.Vector(3, 0.0)
+#         gradient ={node.Id : zero_vector for node in self.body_model_part.Nodes}
+#         gradient[self.traced_node_id] = self.shape_gradient
+#         return gradient
