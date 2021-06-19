@@ -46,10 +46,10 @@ def AssembleTestSuites():
 
 if __name__ == '__main__':
     # Comment this to see Kratos Logger prints
-    KratosMultiphysics.Logger.GetDefaultOutput().SetSeverity(KratosMultiphysics.Logger.Severity.WARNING)
+    # KratosMultiphysics.Logger.GetDefaultOutput().SetSeverity(KratosMultiphysics.Logger.Severity.WARNING)
 
     KratosMultiphysics.Logger.PrintInfo("Unittests", "\nRunning cpp unit tests ...")
-    KratosMultiphysics.Tester.SetVerbosity(KratosMultiphysics.Tester.Verbosity.PROGRESS) # TESTS_OUTPUTS
+    KratosMultiphysics.Tester.SetVerbosity(KratosMultiphysics.Tester.Verbosity.TESTS_OUTPUTS) # TESTS_OUTPUTS
     KratosMultiphysics.Tester.RunTestSuite("CompressiblePotentialApplicationFastSuite")
     KratosMultiphysics.Logger.PrintInfo("Unittests", "Finished running cpp unit tests!")
     KratosMultiphysics.Logger.PrintInfo("Unittests", "\nRunning python tests ...")
