@@ -1,6 +1,13 @@
 # Importing the Kratos Library
 import KratosMultiphysics
-import KratosMultiphysics.MultilevelMonteCarloApplication
+try:
+    import KratosMultiphysics.MultilevelMonteCarloApplication
+    import xmc
+    import exaqute
+    import numpy as np
+    is_xmc_available = True
+except:
+    is_xmc_available = False
 import KratosMultiphysics.CompressiblePotentialFlowApplication as CPFApp
 
 # Import KratosUnittest
@@ -18,15 +25,6 @@ try:
     numpy_stl_is_available = True
 except:
     numpy_stl_is_available = False
-
-try:
-    import KratosMultiphysics.MultilevelMonteCarloApplication
-    import xmc
-    import exaqute
-    import numpy as np
-    is_xmc_available = True
-except:
-    is_xmc_available = False
 
 class WorkFolderScope:
     # TODO use KratosUnittest.WorkFolderScope
