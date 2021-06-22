@@ -63,6 +63,7 @@ void Define2DWakeProcess::InitializeTrailingEdgeSubModelpart() const
         // Creating the trailing_edge_sub_model_part
         root_model_part.CreateSubModelPart("trailing_edge_sub_model_part");
     }
+    VariableUtils().SetNonHistoricalVariableToZero(TRAILING_EDGE, root_model_part.Nodes());
 }
 
 // This function initializes the variables and removes all of the elements of
