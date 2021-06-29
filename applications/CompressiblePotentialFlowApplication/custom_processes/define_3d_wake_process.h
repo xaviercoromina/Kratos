@@ -161,6 +161,16 @@ private:
                                     const Geometry<NodeType>& rGeometry,
                                     moodycamel::ConcurrentQueue<std::size_t> & rTrailingEdgeElementsOrderedIds) const;
 
+    void GetValue(Element& rElement,
+                  const Geometry<NodeType>& rGeometry,
+                  moodycamel::ConcurrentQueue<std::size_t> & rTrailingEdgeElementsOrderedIds,
+                  const unsigned int i) const;
+
+    void SetValue(Element& rElement) const;
+
+    void enqueue(Element& rElement,
+                moodycamel::ConcurrentQueue<std::size_t> & rTrailingEdgeElementsOrderedIds) const;
+
     void AddTrailingEdgeAndWakeElements(std::vector<std::size_t>& rWakeElementsOrderedIds,
                                         std::vector<std::size_t>& rTrailingEdgeElementsOrderedIds) const;
 

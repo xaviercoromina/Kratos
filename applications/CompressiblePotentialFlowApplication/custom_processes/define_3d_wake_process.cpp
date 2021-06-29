@@ -73,7 +73,7 @@ void Define3DWakeProcess::ExecuteInitialize()
         r_nodes.SetValue(UPPER_SURFACE, false);
         r_nodes.SetValue(LOWER_SURFACE, false);
         r_nodes.SetValue(TRAILING_EDGE, false);
-        r_nodes.SetValue(WAKE_DISTANCE, 0.0);
+        // r_nodes.SetValue(WAKE_DISTANCE, 0.0);
     });
     auto& r_elements = root_model_part.Elements();
     VariableUtils().SetNonHistoricalVariable(WAKE, 0, r_elements);
@@ -98,21 +98,21 @@ void Define3DWakeProcess::ExecuteInitialize()
 
     MarkWakeElements();
 
-    RecomputeNodalDistancesToWakeOrWingLowerSurface();
+    // RecomputeNodalDistancesToWakeOrWingLowerSurface();
 
-    MarkKuttaElements();
+    // MarkKuttaElements();
 
-    SaveLocalWakeNormalInElements();
+    // SaveLocalWakeNormalInElements();
 
-    AddWakeNodesToWakeModelPart();
+    // AddWakeNodesToWakeModelPart();
 
-    if(mCountElementsNumber){
-        CountElementsNumber();
-    }
+    // if(mCountElementsNumber){
+    //     CountElementsNumber();
+    // }
 
-    if(mWriteElementsIdsToFile){
-        WriteElementIdsToFile();
-    }
+    // if(mWriteElementsIdsToFile){
+    //     WriteElementIdsToFile();
+    // }
 }
 
 // This function initializes the variables and removes all of the elements and
@@ -528,13 +528,35 @@ void Define3DWakeProcess::CheckIfTrailingEdgeElement(
     // Loop over element nodes
     for (unsigned int i = 0; i < rGeometry.size(); i++)
     {
-        // Elements touching the trailing edge are trailing edge elements
-        if (rGeometry[i].GetValue(TRAILING_EDGE))
-        {
-            rElement.SetValue(TRAILING_EDGE, true);
-            rTrailingEdgeElementsOrderedIds.enqueue(rElement.Id());
-        }
+        GetValue(rElement, rGeometry, rTrailingEdgeElementsOrderedIds, i);
     }
+}
+
+void Define3DWakeProcess::GetValue(
+    Element& rElement,
+    const Geometry<NodeType>& rGeometry,
+    moodycamel::ConcurrentQueue<std::size_t>& rTrailingEdgeElementsOrderedIds,
+    const unsigned int i) const
+{
+    // Elements touching the trailing edge are trailing edge elements
+    if (rGeometry[i].GetValue(TRAILING_EDGE))
+    {
+        // SetValue(rElement);
+        // enqueue(rElement, rTrailingEdgeElementsOrderedIds);
+    }
+}
+
+void Define3DWakeProcess::SetValue(
+    Element& rElement) const
+{
+    rElement.SetValue(TRAILING_EDGE, true);
+}
+
+void Define3DWakeProcess::enqueue(
+    Element& rElement,
+    moodycamel::ConcurrentQueue<std::size_t>& rTrailingEdgeElementsOrderedIds) const
+{
+        rTrailingEdgeElementsOrderedIds.enqueue(rElement.Id());
 }
 
 // This function adds the trailing edge elements in the
