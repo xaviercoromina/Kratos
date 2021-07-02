@@ -9,7 +9,7 @@
 			"interpolation_error": 0.01,
 			"coefficient_interpolation_error": 1.5
 		},
-		"minimal_size": 0.2,
+		"minimal_size": 1.0,
 		"enforce_current": false,
 		"anisotropy_remeshing": true,
 		"enforce_anisotropy_relative_variable": false
