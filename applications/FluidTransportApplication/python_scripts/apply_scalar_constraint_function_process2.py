@@ -1,26 +1,54 @@
 import KratosMultiphysics
 import KratosMultiphysics.FluidTransportApplication as KratosFluidTransport
 import math
+import matplotlib.pyplot as plt
 
 def Factory(settings, Model):
     if(type(settings) != KratosMultiphysics.Parameters):
         raise Exception("expected input shall be a Parameters object, encapsulating a json string")
-    return ApplyScalarConstraintFunctionProcess(Model, settings["Parameters"])
+    return ApplyScalarConstraintFunctionProcess2(Model, settings["Parameters"])
 
 ## All the python processes should be derived from "python_process"
 
-class ApplyScalarConstraintFunctionProcess(KratosMultiphysics.Process):
+class ApplyScalarConstraintFunctionProcess2(KratosMultiphysics.Process):
     def __init__(self, Model, settings ):
         KratosMultiphysics.Process.__init__(self)
 
-        model_part = Model[settings["model_part_name"].GetString()]
+        self.model_part = Model[settings["model_part_name"].GetString()]
 
         self.components_process_list = []
+        self.times = []
+        self.suma_list = []
 
-        for node in model_part.Nodes:
-            temperature = 5.0 / 8.0 * node.X + 3.0
-            node.SetSolutionStepValue(KratosMultiphysics.TEMPERATURE,temperature)
+    def ExecuteFinalizeSolutionStep(self):
+        self.suma = 0
+        time = self.model_part.ProcessInfo[KratosMultiphysics.TIME]
 
+        for node in self.model_part.Nodes:
+            self.suma += node.GetSolutionStepValue(KratosMultiphysics.TEMPERATURE)*node.GetSolutionStepValue(KratosMultiphysics.NODAL_AREA)/3.0
+
+        print ("***************")
+        print ("Suma = ",self.suma)
+        print ("***************")
+        self.times.append (time)
+        self.suma_list.append (self.suma)
+
+    def ExecuteFinalize(self):
+        time = self.model_part.ProcessInfo[KratosMultiphysics.TIME]
+        #f = plt.figure()
+        k = 0.001
+
+        fig, ax1 = plt.subplots()
+
+        color = 'tab:red'
+        ax1.set_xlabel('time (s)')
+        ax1.set_ylabel('Suma nodes', color=color)
+        ax1.plot(self.times, self.suma_list, color=color)
+        ax1.tick_params(axis='y', labelcolor=color)
+
+        fig.tight_layout()  # otherwise the right y-label is slightly clipped
+        fig.savefig('plot_' + 'k_' + str(k) + '.pdf', bbox_inches='tight')
+        plt.show()
         # for node in model_part.Nodes:
         #     radius = math.sqrt((node.X - 1.0) ** 2.0 + (node.Y - 1.0) ** 2.0)
 
