@@ -1,7 +1,7 @@
 from __future__ import print_function, absolute_import, division # makes KratosMultiphysics backward compatible with python 2.6 and 2.7
 
 # Importing the Kratos Library
-import KratosMultiphysics
+import KratosMultiphysics as Kratos
 from KratosMultiphysics.python_solver import PythonSolver
 
 # Import applications
@@ -38,14 +38,14 @@ class FluidTransportSolver(PythonSolver):
         else:
             self.main_model_part = self.model.CreateModelPart(model_part_name)
 
-        self.main_model_part.ProcessInfo.SetValue(KratosMultiphysics.DOMAIN_SIZE,
+        self.main_model_part.ProcessInfo.SetValue(Kratos.DOMAIN_SIZE,
                                                   self.settings["domain_size"].GetInt())
 
-        KratosMultiphysics.Logger.PrintInfo("FluidTransportSolver", "Construction of FluidTransportSolver finished.")
+        Kratos.Logger.PrintInfo("FluidTransportSolver", "Construction of FluidTransportSolver finished.")
 
     @classmethod
     def GetDefaultParameters(cls):
-        this_defaults = KratosMultiphysics.Parameters("""{
+        this_defaults = Kratos.Parameters("""{
             "solver_type": "fluid_transport_solver",
             "model_part_name": "FluidTransportDomain",
             "domain_size": 2,
@@ -74,7 +74,7 @@ class FluidTransportSolver(PythonSolver):
             "residual_absolute_tolerance":        1.0E-9,
             "max_iteration":                      15,
             "linear_solver_settings":             {
-                "solver_type":   "ExternalSolversApplication.super_lu",
+                "solver_type":   "LinearSolversApplication.sparse_lu",
                 "tolerance": 1.0e-6,
                 "max_iteration": 100,
                 "scaling": false,
@@ -97,45 +97,54 @@ class FluidTransportSolver(PythonSolver):
     def AddVariables(self):
 
         ## ConvectionDiffusionSettings
-        thermal_settings = KratosMultiphysics.ConvectionDiffusionSettings()
-        thermal_settings.SetReactionVariable(KratosMultiphysics.ABSORPTION_COEFFICIENT)
-        thermal_settings.SetDiffusionVariable(KratosMultiphysics.CONDUCTIVITY)
+        thermal_settings = Kratos.ConvectionDiffusionSettings()
+
+        self.main_model_part.AddNodalSolutionStepVariable(Kratos.ABSORPTION_COEFFICIENT)
+        thermal_settings.SetReactionVariable(Kratos.ABSORPTION_COEFFICIENT)
+        self.main_model_part.AddNodalSolutionStepVariable(Kratos.CONDUCTIVITY)
+        thermal_settings.SetDiffusionVariable(Kratos.CONDUCTIVITY)
 
         if(self.settings["solution_type"].GetString() == "Steady"):
-            thermal_settings.SetUnknownVariable(KratosMultiphysics.TEMPERATURE)
+            thermal_settings.SetUnknownVariable(Kratos.TEMPERATURE)
         elif(self.settings["scheme_type"].GetString() == "Implicit"):
             thermal_settings.SetUnknownVariable(KratosFluidTransport.PHI_THETA)
         else:
-            thermal_settings.SetUnknownVariable(KratosMultiphysics.TEMPERATURE)
+            thermal_settings.SetUnknownVariable(Kratos.TEMPERATURE)
 
-        thermal_settings.SetSpecificHeatVariable(KratosMultiphysics.SPECIFIC_HEAT)
-        thermal_settings.SetDensityVariable(KratosMultiphysics.DENSITY)
-        thermal_settings.SetVolumeSourceVariable(KratosMultiphysics.HEAT_FLUX)
-        thermal_settings.SetSurfaceSourceVariable(KratosMultiphysics.FACE_HEAT_FLUX)
-        thermal_settings.SetMeshVelocityVariable(KratosMultiphysics.MESH_VELOCITY)
-        thermal_settings.SetVelocityVariable(KratosMultiphysics.VELOCITY)
+        self.main_model_part.AddNodalSolutionStepVariable(Kratos.SPECIFIC_HEAT)
+        thermal_settings.SetSpecificHeatVariable(Kratos.SPECIFIC_HEAT)
+        self.main_model_part.AddNodalSolutionStepVariable(Kratos.DENSITY)
+        thermal_settings.SetDensityVariable(Kratos.DENSITY)
+        self.main_model_part.AddNodalSolutionStepVariable(Kratos.HEAT_FLUX)
+        thermal_settings.SetVolumeSourceVariable(Kratos.HEAT_FLUX)
+        self.main_model_part.AddNodalSolutionStepVariable(Kratos.FACE_HEAT_FLUX)
+        thermal_settings.SetSurfaceSourceVariable(Kratos.FACE_HEAT_FLUX)
+        self.main_model_part.AddNodalSolutionStepVariable(Kratos.MESH_VELOCITY)
+        thermal_settings.SetMeshVelocityVariable(Kratos.MESH_VELOCITY)
+        self.main_model_part.AddNodalSolutionStepVariable(Kratos.VELOCITY)
+        thermal_settings.SetVelocityVariable(Kratos.VELOCITY)
 
         if self.settings["pfem2_convection_settings"]["use_pfem2_convection"].GetBool():
             thermal_settings.SetProjectionVariable(KratosConvDiff.PROJECTED_SCALAR1) # Required by PFEM2 convection
-            self.main_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.YP)
+            self.main_model_part.AddNodalSolutionStepVariable(Kratos.YP)
 
         ## ConvectionDiffusionSettings Variable
-        self.main_model_part.ProcessInfo.SetValue(KratosMultiphysics.CONVECTION_DIFFUSION_SETTINGS, thermal_settings)
+        self.main_model_part.ProcessInfo.SetValue(Kratos.CONVECTION_DIFFUSION_SETTINGS, thermal_settings)
 
         ## Convection Variables
-        self.main_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.VELOCITY)
-        self.main_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.MESH_VELOCITY)
-        self.main_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.NORMAL)
+        self.main_model_part.AddNodalSolutionStepVariable(Kratos.VELOCITY)
+        self.main_model_part.AddNodalSolutionStepVariable(Kratos.MESH_VELOCITY)
+        self.main_model_part.AddNodalSolutionStepVariable(Kratos.NORMAL)
         self.main_model_part.AddNodalSolutionStepVariable(KratosConvDiff.PROJECTED_SCALAR1) # Required by PFEM2 convection
         self.main_model_part.AddNodalSolutionStepVariable(KratosConvDiff.DELTA_SCALAR1) # Required by PFEM2 convection
         self.main_model_part.AddNodalSolutionStepVariable(KratosConvDiff.MEAN_SIZE) # Required by PFEM2 convection
 
         # Add thermal variables
-        self.main_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.TEMPERATURE)
-        self.main_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.REACTION_FLUX)
-        self.main_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.HEAT_FLUX)
-        self.main_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.FACE_HEAT_FLUX)
-        self.main_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.NODAL_AREA)
+        self.main_model_part.AddNodalSolutionStepVariable(Kratos.TEMPERATURE)
+        self.main_model_part.AddNodalSolutionStepVariable(Kratos.REACTION_FLUX)
+        self.main_model_part.AddNodalSolutionStepVariable(Kratos.HEAT_FLUX)
+        self.main_model_part.AddNodalSolutionStepVariable(Kratos.FACE_HEAT_FLUX)
+        self.main_model_part.AddNodalSolutionStepVariable(Kratos.NODAL_AREA)
         self.main_model_part.AddNodalSolutionStepVariable(KratosFluidTransport.PHI_THETA) # Phi variable refering to the n+theta step
         self.main_model_part.AddNodalSolutionStepVariable(KratosFluidTransport.NODAL_PHI_GRADIENT)
         self.main_model_part.AddNodalSolutionStepVariable(KratosFluidTransport.NODAL_ANALYTIC_SOLUTION)
@@ -150,40 +159,40 @@ class FluidTransportSolver(PythonSolver):
     def PrepareModelPart(self):
 
         # Set ProcessInfo variables
-        self.main_model_part.ProcessInfo.SetValue(KratosMultiphysics.TIME,
+        self.main_model_part.ProcessInfo.SetValue(Kratos.TIME,
                                                   self.settings["start_time"].GetDouble())
-        self.main_model_part.ProcessInfo.SetValue(KratosMultiphysics.DELTA_TIME,
+        self.main_model_part.ProcessInfo.SetValue(Kratos.DELTA_TIME,
                                                   self.settings["time_step"].GetDouble())
-        self.main_model_part.ProcessInfo.SetValue(KratosMultiphysics.STEP, 0)
+        self.main_model_part.ProcessInfo.SetValue(Kratos.STEP, 0)
 
-        if not self.main_model_part.ProcessInfo[KratosMultiphysics.IS_RESTARTED]:
+        if not self.main_model_part.ProcessInfo[Kratos.IS_RESTARTED]:
             ## Executes the check and prepare model process (Create computing_model_part and set constitutive law)
             self._ExecuteCheckAndPrepare()
             ## Set buffer size
             self._SetBufferSize()
 
         if self._is_printing_rank:
-            KratosMultiphysics.Logger.PrintInfo("FluidTransportSolver", "Model reading finished.")
+            Kratos.Logger.PrintInfo("FluidTransportSolver", "Model reading finished.")
 
     def AddDofs(self):
 
         for node in self.main_model_part.Nodes:
             ## Fluid dofs
-            #node.AddDof(KratosMultiphysics.VELOCITY_X,KratosMultiphysics.REACTION_X)
-            #node.AddDof(KratosMultiphysics.VELOCITY_Y,KratosMultiphysics.REACTION_Y)
-            #node.AddDof(KratosMultiphysics.VELOCITY_Z,KratosMultiphysics.REACTION_Z)
+            #node.AddDof(Kratos.VELOCITY_X,Kratos.REACTION_X)
+            #node.AddDof(Kratos.VELOCITY_Y,Kratos.REACTION_Y)
+            #node.AddDof(Kratos.VELOCITY_Z,Kratos.REACTION_Z)
 
             ## Thermal dofs
 
             if(self.settings["solution_type"].GetString() == "Steady"):
-                node.AddDof(KratosMultiphysics.TEMPERATURE, KratosMultiphysics.REACTION_FLUX)
+                node.AddDof(Kratos.TEMPERATURE, Kratos.REACTION_FLUX)
             elif(self.settings["scheme_type"].GetString() == "Implicit"):
-                node.AddDof(KratosFluidTransport.PHI_THETA, KratosMultiphysics.REACTION_FLUX)
+                node.AddDof(KratosFluidTransport.PHI_THETA, Kratos.REACTION_FLUX)
             else:
-                node.AddDof(KratosMultiphysics.TEMPERATURE, KratosMultiphysics.REACTION_FLUX)
+                node.AddDof(Kratos.TEMPERATURE, Kratos.REACTION_FLUX)
 
         if self._is_printing_rank:
-            KratosMultiphysics.Logger.PrintInfo("FluidTransportSolver", "DOFs added correctly.")
+            Kratos.Logger.PrintInfo("FluidTransportSolver", "DOFs added correctly.")
 
     def GetMinimumBufferSize(self):
         return self.min_buffer_size
@@ -191,7 +200,7 @@ class FluidTransportSolver(PythonSolver):
     def Initialize(self):
 
         # Set ProcessInfo variables
-        self.main_model_part.ProcessInfo.SetValue(KratosMultiphysics.NL_ITERATION_NUMBER, 1)
+        self.main_model_part.ProcessInfo.SetValue(Kratos.NL_ITERATION_NUMBER, 1)
 
         # Get the computing model parts
         self.computing_model_part = self.GetComputingModelPart()
@@ -223,15 +232,13 @@ class FluidTransportSolver(PythonSolver):
         if self.settings["clear_storage"].GetBool():
             self.Clear()
 
-        self.domain_size = self.main_model_part.ProcessInfo[KratosMultiphysics.DOMAIN_SIZE]
+        self.domain_size = self.main_model_part.ProcessInfo[Kratos.DOMAIN_SIZE]
 
         # Calculate Nodal Area
-        self.nodal_area_process = KratosMultiphysics.CalculateNodalAreaProcess(self.main_model_part, self.domain_size)
+        self.nodal_area_process = Kratos.CalculateNodalAreaProcess(self.main_model_part, self.domain_size)
         self.nodal_area_process.Execute()
 
-        # KratosMultiphysics.BodyNormalCalculationUtils().CalculateBodyNormals(self.main_model_part, self.domain_size)
-
-        KratosMultiphysics.BodyNormalCalculationUtils().CalculateBodyNormals(self.main_model_part, self.domain_size)
+        Kratos.BodyNormalCalculationUtils().CalculateBodyNormals(self.main_model_part, self.domain_size)
 
         # Check if everything is assigned correctly
         self.Solver.Check()
@@ -239,13 +246,13 @@ class FluidTransportSolver(PythonSolver):
 
         self._GetParticlesStage().ExecuteBeforeSolutionLoop()
 
-        KratosMultiphysics.Logger.PrintInfo("FluidTransportSolver", "Solver initialization finished.")
+        Kratos.Logger.PrintInfo("FluidTransportSolver", "Solver initialization finished.")
 
     def GetComputingModelPart(self):
         return self.main_model_part.GetSubModelPart(self.computing_model_part_name)
 
     def ComputeDeltaTime(self):
-        return self.main_model_part.ProcessInfo[KratosMultiphysics.DELTA_TIME]
+        return self.main_model_part.ProcessInfo[Kratos.DELTA_TIME]
 
     def Clear(self):
         self.Solver.Clear()
@@ -258,7 +265,7 @@ class FluidTransportSolver(PythonSolver):
         new_time = current_time + dt
 
         self.main_model_part.CloneTimeStep(new_time)
-        self.main_model_part.ProcessInfo[KratosMultiphysics.STEP] += 1
+        self.main_model_part.ProcessInfo[Kratos.STEP] += 1
 
         return new_time
 
@@ -286,7 +293,7 @@ class FluidTransportSolver(PythonSolver):
             "solver.SolveSolutionStep()\n",
             "solver.FinalizeSolutionStep()\n"]
         )
-        KratosMultiphysics.Logger.PrintWarning("FluidTransportSolver",message)
+        Kratos.Logger.PrintWarning("FluidTransportSolver",message)
 
         if self.settings["clear_storage"].GetBool():
             self.Clear()
@@ -303,7 +310,7 @@ class FluidTransportSolver(PythonSolver):
         self.computing_model_part_name = "fluid_transport_computing_domain"
 
         # Auxiliary Kratos parameters object to be called by the CheckAndPepareModelProcess
-        aux_params = KratosMultiphysics.Parameters("{}")
+        aux_params = Kratos.Parameters("{}")
         aux_params.AddEmptyValue("computing_model_part_name").SetString(self.computing_model_part_name)
         aux_params.AddValue("problem_domain_sub_model_part_list",self.settings["problem_domain_sub_model_part_list"])
         aux_params.AddValue("processes_sub_model_part_list",self.settings["processes_sub_model_part_list"])
@@ -322,17 +329,17 @@ class FluidTransportSolver(PythonSolver):
 
     def _FillBuffer(self):
         buffer_size = self.main_model_part.GetBufferSize()
-        time = self.main_model_part.ProcessInfo[KratosMultiphysics.TIME]
-        delta_time = self.main_model_part.ProcessInfo[KratosMultiphysics.DELTA_TIME]
-        step = self.main_model_part.ProcessInfo[KratosMultiphysics.STEP]
+        time = self.main_model_part.ProcessInfo[Kratos.TIME]
+        delta_time = self.main_model_part.ProcessInfo[Kratos.DELTA_TIME]
+        step = self.main_model_part.ProcessInfo[Kratos.STEP]
 
         step = step - (buffer_size-1)*1
-        self.main_model_part.ProcessInfo.SetValue(KratosMultiphysics.STEP, step)
+        self.main_model_part.ProcessInfo.SetValue(Kratos.STEP, step)
         time = time - (buffer_size-1)*delta_time
-        self.main_model_part.ProcessInfo.SetValue(KratosMultiphysics.TIME, time)
+        self.main_model_part.ProcessInfo.SetValue(Kratos.TIME, time)
         for i in range(buffer_size-1):
             step = step + 1
-            self.main_model_part.ProcessInfo.SetValue(KratosMultiphysics.STEP, step)
+            self.main_model_part.ProcessInfo.SetValue(Kratos.STEP, step)
             time = time + delta_time
             self.main_model_part.CloneTimeStep(time)
 
@@ -345,9 +352,9 @@ class FluidTransportSolver(PythonSolver):
 
         # Creating the builder and solver
         if(block_builder):
-            builder_and_solver = KratosMultiphysics.ResidualBasedBlockBuilderAndSolver(self.linear_solver)
+            builder_and_solver = Kratos.ResidualBasedBlockBuilderAndSolver(self.linear_solver)
         else:
-            builder_and_solver = KratosMultiphysics.ResidualBasedEliminationBuilderAndSolver(self.linear_solver)
+            builder_and_solver = Kratos.ResidualBasedEliminationBuilderAndSolver(self.linear_solver)
 
         return builder_and_solver
 
@@ -355,7 +362,7 @@ class FluidTransportSolver(PythonSolver):
 
         # Creating the builder and solver
         if(solution_type == "Steady"):
-            scheme = KratosMultiphysics.ResidualBasedIncrementalUpdateStaticScheme()
+            scheme = Kratos.ResidualBasedIncrementalUpdateStaticScheme()
         elif(self.settings["scheme_type"].GetString() == "Implicit"):
             theta = self.settings["newmark_theta"].GetDouble()
             scheme = KratosFluidTransport.GeneralizedNewmarkGN11Scheme(theta)
@@ -374,23 +381,23 @@ class FluidTransportSolver(PythonSolver):
         echo_level = self.settings["echo_level"].GetInt()
 
         if(convergence_criterion == "Displacement_criterion"):
-            convergence_criterion = KratosMultiphysics.DisplacementCriteria(D_RT, D_AT)
+            convergence_criterion = Kratos.DisplacementCriteria(D_RT, D_AT)
             convergence_criterion.SetEchoLevel(echo_level)
         elif(convergence_criterion == "Residual_criterion"):
-            convergence_criterion = KratosMultiphysics.ResidualCriteria(R_RT, R_AT)
+            convergence_criterion = Kratos.ResidualCriteria(R_RT, R_AT)
             convergence_criterion.SetEchoLevel(echo_level)
         elif(convergence_criterion == "And_criterion"):
-            Displacement = KratosMultiphysics.DisplacementCriteria(D_RT, D_AT)
+            Displacement = Kratos.DisplacementCriteria(D_RT, D_AT)
             Displacement.SetEchoLevel(echo_level)
-            Residual = KratosMultiphysics.ResidualCriteria(R_RT, R_AT)
+            Residual = Kratos.ResidualCriteria(R_RT, R_AT)
             Residual.SetEchoLevel(echo_level)
-            convergence_criterion = KratosMultiphysics.AndCriteria(Residual, Displacement)
+            convergence_criterion = Kratos.AndCriteria(Residual, Displacement)
         elif(convergence_criterion == "Or_criterion"):
-            Displacement = KratosMultiphysics.DisplacementCriteria(D_RT, D_AT)
+            Displacement = Kratos.DisplacementCriteria(D_RT, D_AT)
             Displacement.SetEchoLevel(echo_level)
-            Residual = KratosMultiphysics.ResidualCriteria(R_RT, R_AT)
+            Residual = Kratos.ResidualCriteria(R_RT, R_AT)
             Residual.SetEchoLevel(echo_level)
-            convergence_criterion = KratosMultiphysics.OrCriteria(Residual, Displacement)
+            convergence_criterion = Kratos.OrCriteria(Residual, Displacement)
 
         return convergence_criterion
 
@@ -402,7 +409,7 @@ class FluidTransportSolver(PythonSolver):
 
         if strategy_type == "Newton-Raphson":
 
-            solver = KratosMultiphysics.ResidualBasedNewtonRaphsonStrategy(self.computing_model_part,
+            solver = Kratos.ResidualBasedNewtonRaphsonStrategy(self.computing_model_part,
                                                                             self.scheme,
                                                                             self.linear_solver,
                                                                             self.convergence_criterion,
@@ -414,7 +421,7 @@ class FluidTransportSolver(PythonSolver):
         else:
             compute_norm_dx_flag = False
 
-            solver = KratosMultiphysics.ResidualBasedLinearStrategy(self.computing_model_part,
+            solver = Kratos.ResidualBasedLinearStrategy(self.computing_model_part,
                                                                         self.scheme,
                                                                         self.linear_solver,
                                                                         builder_and_solver,
@@ -432,7 +439,7 @@ class FluidTransportSolver(PythonSolver):
 
     def _CreateParticlesStage(self):
         if self.settings["pfem2_convection_settings"]["use_pfem2_convection"].GetBool():
-            convection_settings = KratosMultiphysics.Parameters("""{"Parameters" : {}}""")
+            convection_settings = Kratos.Parameters("""{"Parameters" : {}}""")
             convection_settings["Parameters"] = self.settings["pfem2_convection_settings"].Clone()
             convection_settings["Parameters"].RemoveValue("use_pfem2_convection")
             convection_settings["Parameters"].AddValue("model_part_name", self.settings["model_part_name"])
@@ -440,4 +447,4 @@ class FluidTransportSolver(PythonSolver):
             import KratosMultiphysics.FluidTransportApplication.pfem2_fluid_transport_process as module
             return module.Factory(convection_settings, self.model)
         else:
-            return KratosMultiphysics.Process()
+            return Kratos.Process()

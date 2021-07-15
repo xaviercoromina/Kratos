@@ -11,6 +11,7 @@ def Factory(settings, Model):
 
 class PFEM2FluidTransportProcess(MoveParticleUtilityProcess):
     def __init__(self, model, settings):
+        KM.Process.__init__(self)
 
         default_settings = KM.Parameters("""
             {

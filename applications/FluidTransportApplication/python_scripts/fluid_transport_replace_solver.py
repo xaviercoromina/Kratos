@@ -50,7 +50,7 @@ class FluidTransportReplaceSolver(FluidTransportSolver):
             "residual_absolute_tolerance":        1.0E-9,
             "max_iteration":                      15,
             "linear_solver_settings":             {
-                "solver_type":   "ExternalSolversApplication.super_lu",
+                "solver_type":   "LinearSolversApplication.sparse_lu",
                 "tolerance": 1.0e-6,
                 "max_iteration": 100,
                 "scaling": false,
@@ -156,7 +156,7 @@ class FluidTransportReplaceSolver(FluidTransportSolver):
                 var = KratosMultiphysics.KratosGlobals.GetVariable(key)
                 if (self._check_variable_to_set(var)):
                     if value.IsDouble():
-                        KratosMultiphysics.VariableUtils().SetScalarVar(var, value.GetDouble(), model_part.Nodes)
+                        KratosMultiphysics.VariableUtils().SetVariable(var, value.GetDouble(), model_part.Nodes)
                     elif value.IsVector():
                         KratosMultiphysics.VariableUtils().SetVectorVar(var, value.GetVector(), model_part.Nodes)
                     else:
@@ -207,7 +207,9 @@ class FluidTransportReplaceSolver(FluidTransportSolver):
                     if(self.settings["solution_type"].GetString() == "Steady"):
                         self.settings["element_replace_settings"]["element_name"].SetString("SteadyConvectionDiffusionFICElement2D3N")
                     elif(self.settings["scheme_type"].GetString() == "Implicit"):
-                        self.settings["element_replace_settings"]["element_name"].SetString("TransientConvectionDiffusionFICElement2D3N")
+                        # TODO: clean this...
+                        # self.settings["element_replace_settings"]["element_name"].SetString("TransientConvectionDiffusionFICElement2D3N")
+                        self.settings["element_replace_settings"]["element_name"].SetString("TransientConvectionDiffusionPFEM2FICElement2D3N")
                     else:
                         self.settings["element_replace_settings"]["element_name"].SetString("TransientConvectionDiffusionFICExplicitElement2D3N")
                 else:
@@ -223,7 +225,7 @@ class FluidTransportReplaceSolver(FluidTransportSolver):
                     if(self.settings["solution_type"].GetString() == "Steady"):
                         self.settings["element_replace_settings"]["element_name"].SetString("SteadyConvectionDiffusionFICElement3D4N")
                     elif(self.settings["scheme_type"].GetString() == "Implicit"):
-                        self.settings["element_replace_settings"]["element_name"].SetString("TransientConvectionDiffusionFICElement3D4N")
+                        self.settings["element_replace_settings"]["element_name"].SetString("TransientConvectionDiffusionPFEM2FICElement3D4N")
                     else:
                         self.settings["element_replace_settings"]["element_name"].SetString("TransientConvectionDiffusionFICExplicitElement3D4N")
                 else:
