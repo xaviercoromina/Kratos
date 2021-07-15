@@ -25,6 +25,7 @@
 
 #include "custom_python/add_custom_strategies_to_python.h"
 #include "custom_python/add_custom_utilities_to_python.h"
+#include "custom_python/add_custom_processes_to_python.h"
 #include "fluid_transport_application.h"
 
 
@@ -45,6 +46,7 @@ PYBIND11_MODULE(KratosFluidTransportApplication, m)
 
     AddCustomStrategiesToPython(m);
     AddCustomUtilitiesToPython(m);
+    AddCustomProcessesToPython(m);
 
 	//registering variables in python
     KRATOS_REGISTER_IN_PYTHON_VARIABLE(m,PECLET);
