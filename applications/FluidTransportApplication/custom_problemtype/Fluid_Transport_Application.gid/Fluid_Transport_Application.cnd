@@ -3,7 +3,7 @@ BOOK: Parts
 CONDITION: Body_Part
 CONDTYPE: over groups
 CONDMESHTYPE: over body elements
-GROUPALLOW: surfaces volumes
+GROUPALLOW: surfaces volumes nodes elements
 QUESTION: Conductivity
 VALUE: 1.0
 QUESTION: Specific_Heat
@@ -21,7 +21,7 @@ BOOK: Dirichlet_Constraints
 CONDITION: Velocity
 CONDTYPE: over groups
 CONDMESHTYPE: over nodes
-GROUPALLOW: points lines surfaces volumes
+GROUPALLOW: points lines surfaces volumes nodes
 QUESTION: VELOCITY_X#CB#(true,false)
 VALUE: true
 DEPENDENCIES: (false,HIDE,X_Value,0.0,HIDE,Fix_X,false)(true,RESTORE,X_Value,#CURRENT#,RESTORE,Fix_X,#CURRENT#)
@@ -72,7 +72,7 @@ END CONDITION
 CONDITION: Phi_Value
 CONDTYPE: over groups
 CONDMESHTYPE: over nodes
-GROUPALLOW: points lines surfaces volumes
+GROUPALLOW: points lines surfaces volumes nodes
 QUESTION: Phi_Value
 VALUE: 0.0
 HELP: Units in IS:
@@ -93,7 +93,7 @@ BOOK: Loads
 CONDITION: Face_Heat_Flux
 CONDTYPE: over groups
 CONDMESHTYPE: over face elements
-GROUPALLOW: lines surfaces
+GROUPALLOW: lines surfaces nodes faces
 QUESTION: Value
 VALUE: 0.0
 QUESTION: Imposed_Face_Heat_Flux#CB#(Constant,Table_Interpolation)
@@ -106,7 +106,7 @@ END CONDITION
 CONDITION: Q_Source
 CONDTYPE: over groups
 CONDMESHTYPE: over nodes
-GROUPALLOW: surfaces volumes
+GROUPALLOW: surfaces volumes nodes
 QUESTION: Value
 VALUE: 0.0
 QUESTION: Imposed_Q_Source#CB#(Constant,Table_Interpolation)
