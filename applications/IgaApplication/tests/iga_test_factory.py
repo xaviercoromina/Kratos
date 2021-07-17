@@ -98,5 +98,12 @@ class TwoPatchRefinedCouplingLagrangeMembraneTest(IgaTestFactory):
 class TwoPatchRefinedCouplingNitscheMembraneTest(IgaTestFactory):
     file_name = "coupling_condition_tests/two_patch_refined_test/two_patch_refined_test_nitsche_membrane"
 
+# Rotation Coupling
+class TwoPatchCantileverCouplingPenaltyTest(IgaTestFactory):
+    file_name = "coupling_condition_tests/two_patch_cantilever_test/two_patch_cantilever_test_penalty"
+
+class TwoPatchCantileverRefinedCouplingPenaltyTest(IgaTestFactory):
+    file_name = "coupling_condition_tests/two_patch_cantilever_refined_test/two_patch_cantilever_refined_test_penalty"
+
 if __name__ == '__main__':
     KratosUnittest.main()

@@ -33,6 +33,9 @@ from iga_test_factory import TwoPatchCouplingNitscheShell3pTest as TwoPatchCoupl
 from iga_test_factory import TwoPatchRefinedCouplingPenaltyMembraneTest as TwoPatchRefinedCouplingPenaltyMembraneTest
 from iga_test_factory import TwoPatchRefinedCouplingLagrangeMembraneTest as TwoPatchRefinedCouplingLagrangeMembraneTest
 from iga_test_factory import TwoPatchRefinedCouplingNitscheMembraneTest as TwoPatchRefinedCouplingNitscheMembraneTest
+# Rotation Coupling tests
+from iga_test_factory import TwoPatchCantileverCouplingPenaltyTest as TwoPatchCantileverCouplingPenaltyTest
+from iga_test_factory import TwoPatchCantileverRefinedCouplingPenaltyTest as TwoPatchCantileverRefinedCouplingPenaltyTest
 
 # Modelers tests
 from test_modelers import TestModelers as TTestModelers
@@ -67,6 +70,9 @@ def AssembleTestSuites():
         #ScordelisRoofShell5pTest,
         TTestModelers,
         TTestNurbsVolumeElements,
+        # Rotation coupling tests
+        TwoPatchCantileverCouplingPenaltyTest,
+        TwoPatchCantileverRefinedCouplingPenaltyTest,
         # Weak support tests
         SinglePatchRefinedSupportPenaltyTest,
         SinglePatchRefinedSupportLagrangeTest,
