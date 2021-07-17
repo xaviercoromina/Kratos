@@ -26,6 +26,13 @@ from iga_test_factory import ScordelisRoofShell5pTest as ScordelisRoofShell5pTes
 from iga_test_factory import SinglePatchRefinedSupportPenaltyTest as SinglePatchRefinedSupportPenaltyTest
 from iga_test_factory import SinglePatchRefinedSupportLagrangeTest as SinglePatchRefinedSupportLagrangeTest
 from iga_test_factory import SinglePatchRefinedSupportNitscheTest as SinglePatchRefinedSupportNitscheTest
+# Coupling tests
+from iga_test_factory import TwoPatchCouplingPenaltyShell3pTest as TwoPatchCouplingPenaltyShell3pTest
+from iga_test_factory import TwoPatchCouplingLagrangeShell3pTest as TwoPatchCouplingLagrangeShell3pTest
+from iga_test_factory import TwoPatchCouplingNitscheShell3pTest as TwoPatchCouplingNitscheShell3pTest
+from iga_test_factory import TwoPatchRefinedCouplingPenaltyMembraneTest as TwoPatchRefinedCouplingPenaltyMembraneTest
+from iga_test_factory import TwoPatchRefinedCouplingLagrangeMembraneTest as TwoPatchRefinedCouplingLagrangeMembraneTest
+from iga_test_factory import TwoPatchRefinedCouplingNitscheMembraneTest as TwoPatchRefinedCouplingNitscheMembraneTest
 
 # Modelers tests
 from test_modelers import TestModelers as TTestModelers
@@ -62,7 +69,12 @@ def AssembleTestSuites():
         TTestNurbsVolumeElements,
         # Weak support tests
         SinglePatchRefinedSupportPenaltyTest,
-        SinglePatchRefinedSupportLagrangeTest
+        SinglePatchRefinedSupportLagrangeTest,
+        # Coupling tests
+        TwoPatchCouplingPenaltyShell3pTest,
+        TwoPatchCouplingLagrangeShell3pTest,
+        TwoPatchRefinedCouplingPenaltyMembraneTest,
+        TwoPatchRefinedCouplingLagrangeMembraneTest
         ]))
 
     if has_linear_solvers_application:
@@ -70,7 +82,10 @@ def AssembleTestSuites():
         if LinearSolversApplication.HasFEAST():
             smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([
                 # Weak support Nitsche test
-                SinglePatchRefinedSupportNitscheTest
+                SinglePatchRefinedSupportNitscheTest,
+                # Coupling Nitsche tests
+                TwoPatchCouplingNitscheShell3pTest,
+                TwoPatchRefinedCouplingNitscheMembraneTest
                 ]))
         else:
             print("FEAST not available in LinearSolversApplication")
