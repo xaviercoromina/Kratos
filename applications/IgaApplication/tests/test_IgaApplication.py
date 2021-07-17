@@ -37,6 +37,9 @@ from iga_test_factory import TwoPatchRefinedCouplingNitscheMembraneTest as TwoPa
 from iga_test_factory import TwoPatchCantileverCouplingPenaltyTest as TwoPatchCantileverCouplingPenaltyTest
 from iga_test_factory import TwoPatchCantileverRefinedCouplingPenaltyTest as TwoPatchCantileverRefinedCouplingPenaltyTest
 
+# Import python based truss tests
+from truss_element_tests import TrussElementTests as TTrussElementTests
+
 # Modelers tests
 from test_modelers import TestModelers as TTestModelers
 # Nurbs Geometry tests
@@ -60,6 +63,8 @@ def AssembleTestSuites():
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([
         # Import test
         SinglePatchTest,
+        # Truss tests
+        TTrussElementTests,
         # Membrane tests
         MembraneSinglePatchFourPointSailLinearStatic,
         MembraneSinglePatchFourPointSailNonLinearStatic,
