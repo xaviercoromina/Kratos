@@ -160,15 +160,26 @@ class GranulometryUtils():
         self.voids_volume = domain_volume - self.solid_volume
         self.global_porosity = self.voids_volume / domain_volume
 
+        self.PrintCurrentData()
+
     def PrintCurrentData(self):
 
-        Logger.Print("number_of_spheres: ", self.number_of_spheres, label="")
-        Logger.Print("solid volume: ", self.solid_volume, label="")
-        Logger.Print("voids volume: ", self.voids_volume, label="")
-        Logger.Print("global porosity: ", self.global_porosity, label="")
-        Logger.Print("D50: ", self.d_50, label="")
-        Logger.Print("spheres per area unit: ", self.spheres_per_area, label="")
+        Logger.Print("number_of_spheres:", self.number_of_spheres, label="")
+        Logger.Print("solid volume:", self.solid_volume, label="")
+        Logger.Print("voids volume:", self.voids_volume, label="")
+        Logger.Print("global porosity:", self.global_porosity, label="")
+        Logger.Print("D50:", self.d_50, label="")
+        Logger.Print("spheres per area unit:", self.spheres_per_area, label="")
+        Logger.Print("")
 
+        granul_file = open('granulometry_data.txt', 'w')
+        granul_file.write("Number of spheres: " + str(self.number_of_spheres) + '\n')
+        granul_file.write("Solid volume: " + str(self.solid_volume) + '\n')
+        granul_file.write("Voids volume: " + str(self.voids_volume) + '\n')
+        granul_file.write("Global porosity: " + str(self.global_porosity) + '\n')
+        granul_file.write("D50: " + str(self.d_50) + '\n')
+        granul_file.write("Spheres per area unit: " + str(self.spheres_per_area) + '\n')
+        granul_file.close()
 
 class PostUtils():
 
@@ -357,7 +368,6 @@ class Procedures():
 
         # MODEL
         self.domain_size = self.DEM_parameters["Dimension"].GetInt()
-        self.aux = AuxiliaryUtilities()
 
     def Barrier(self):
         pass
@@ -372,8 +382,7 @@ class Procedures():
         elif self.DEM_parameters["TranslationalIntegrationScheme"].GetString() == 'Velocity_Verlet':
             translational_scheme = VelocityVerletScheme()
         else:
-            KratosPrintWarning('Error: selected translational integration scheme not defined. Please select a different scheme')
-            sys.exit("\nExecution was aborted.\n")
+            raise Exception('Error: selected translational integration scheme not defined. Please select a different scheme')
         return translational_scheme
 
     def SetRotationalScheme(self):
@@ -391,8 +400,7 @@ class Procedures():
         elif self.DEM_parameters["RotationalIntegrationScheme"].GetString() == 'Quaternion_Integration':
             rotational_scheme = QuaternionIntegrationScheme()
         else:
-            KratosPrintWarning('Error: selected rotational integration scheme not defined. Please select a different scheme')
-            sys.exit("\nExecution was aborted.\n")
+            raise Exception('Error: selected rotational integration scheme not defined. Please select a different scheme')
         return rotational_scheme
 
     def AddAllVariablesInAllModelParts(self, solver, translational_scheme, rotational_scheme, all_model_parts, DEM_parameters):
@@ -831,15 +839,10 @@ class Procedures():
             return
         if actual_type is not expected_type:
             KratosPrintWarning(
-                "**************************************************************************")
-            KratosPrintWarning(
                 "ERROR: Input parameter of wrong type in file 'DEM_explicit_solver_var.py'.")
             a = str(expected_type)
             b = str(var)
-            KratosPrintWarning("The type expected was " + a + " but " + b + " was read.")
-            KratosPrintWarning(
-                "**************************************************************************")
-            sys.exit()
+            raise Exception("The type expected was " + a + " but " + b + " was read.")
 
     @classmethod
     def Flush(self, a):
@@ -880,8 +883,6 @@ class DEMFEMProcedures():
         self.graphs_path = graphs_path
         self.spheres_model_part = spheres_model_part
         self.rigid_face_model_part = rigid_face_model_part
-        #self.solver = solver
-        self.aux = AuxiliaryUtilities()
 
         self.fem_mesh_nodes = []
 
@@ -1248,6 +1249,10 @@ class MaterialTest():
     def GenerateGraphics(self):
         if self.TestType != "None":
             self.script.GenerateGraphics()
+
+    def PrintCoordinationNumberGraph(self, time, solver):
+        if self.TestType != "None":
+            self.script.PrintCoordinationNumberGraph(time, solver)
 
 
 class MultifileList():
