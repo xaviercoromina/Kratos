@@ -413,6 +413,7 @@ private:
     double mThreshold = 0.0;
     double mUniaxialStress = 0.0;
 
+    Vector mThresholdVector = ZeroVector(VoigtSize);
     ///@}
     ///@name Private Operators
     ///@{
