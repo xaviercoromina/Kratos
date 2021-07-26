@@ -118,14 +118,11 @@ public:
         ModelPart& rBaseModelPart,
         typename TLinearSolver::Pointer pLinearSolver,
         Parameters ThisParameters)
-        : LevelSetConvectionProcess(
-            rBaseModelPart,
-            ThisParameters)
     {
         KRATOS_TRY
 
-        auto p_builder_solver = Kratos::make_shared< ResidualBasedBlockBuilderAndSolver<TSparseSpace,TDenseSpace,TLinearSolver>>(pLinearSolver);
-        InitializeConvectionStrategy(p_builder_solver);
+        mpLinearSystemSolver = pLinearSolver;
+        mParameters = ThisParameters;
 
         KRATOS_CATCH("")
     }
@@ -150,6 +147,36 @@ public:
     ///@}
     ///@name Operations
     ///@{
+
+    void ExecuteInitialize() override
+    {
+        KRATOS_TRY;
+
+        // Validate the common settings as well as the element formulation specific ones
+        mParameters.ValidateAndAssignDefaults(this->GetDefaultParameters());
+        mParameters["element_settings"].ValidateAndAssignDefaults(this->GetConvectionElementDefaultParameters(mParameters["element_type"].GetString()));
+
+        // Checks and assign all the required member variables
+        CheckAndAssignSettings(mParameters);
+
+        // Sets the convection diffusion problem settings
+        SetConvectionProblemSettings();
+
+        if (mIsBfecc || mElementRequiresLevelSetGradient){
+            mpGradientCalculator = Kratos::make_unique<ComputeGradientProcessType>(
+            mrBaseModelPart,
+            *mpLevelSetVar,
+            *mpLevelSetGradientVar,
+            NODAL_AREA,
+            false);
+        }
+
+        auto p_builder_solver = Kratos::make_shared< ResidualBasedBlockBuilderAndSolver<TSparseSpace,TDenseSpace,TLinearSolver>>(mpLinearSystemSolver);
+        InitializeConvectionStrategy(p_builder_solver);
+
+        KRATOS_CATCH("")
+
+    }
 
     /**
      * @brief Perform the level-set convection
@@ -278,6 +305,7 @@ public:
     {
         Parameters default_parameters = Parameters(R"({
             "model_part_name" : "",
+            "new_model_part_name" : "",
             "levelset_variable_name" : "DISTANCE",
             "levelset_convection_variable_name" : "VELOCITY",
             "levelset_gradient_variable_name" : "DISTANCE_GRADIENT",
@@ -382,6 +410,10 @@ protected:
 
     ComputeGradientProcessPointerType mpGradientCalculator = nullptr;
 
+    typename TLinearSolver::Pointer mpLinearSystemSolver = nullptr;
+
+    Parameters mParameters;
+
     ///@}
     ///@name Protected Operators
     ///@{
@@ -389,32 +421,6 @@ protected:
     ///@}
     ///@name Protected Operations
     ///@{
-
-    LevelSetConvectionProcess(
-        ModelPart& rModelPart,
-        Parameters ThisParameters)
-        : mrBaseModelPart(rModelPart)
-        , mrModel(rModelPart.GetModel())
-    {
-        // Validate the common settings as well as the element formulation specific ones
-        ThisParameters.ValidateAndAssignDefaults(GetDefaultParameters());
-        ThisParameters["element_settings"].ValidateAndAssignDefaults(GetConvectionElementDefaultParameters(ThisParameters["element_type"].GetString()));
-
-        // Checks and assign all the required member variables
-        CheckAndAssignSettings(ThisParameters);
-
-        // Sets the convection diffusion problem settings
-        SetConvectionProblemSettings();
-
-        if (mIsBfecc || mElementRequiresLevelSetGradient){
-            mpGradientCalculator = Kratos::make_unique<ComputeGradientProcessType>(
-            mrBaseModelPart,
-            *mpLevelSetVar,
-            *mpLevelSetGradientVar,
-            NODAL_AREA,
-            false);
-        }
-    }
 
     /**
      * @brief Set the level set convection formulation settings
@@ -465,7 +471,9 @@ protected:
 
         mpDistanceModelPart->SetProcessInfo(rBaseModelPart.pGetProcessInfo());
         mpDistanceModelPart->SetBufferSize(base_buffer_size);
-        mpDistanceModelPart->SetProperties(rBaseModelPart.pProperties());
+        for(auto i_properties = rBaseModelPart.PropertiesBegin() ; i_properties != rBaseModelPart.PropertiesEnd() ; i_properties++){
+            mpDistanceModelPart->AddProperties(*(i_properties).base(),0);
+        }
         mpDistanceModelPart->Tables() = rBaseModelPart.Tables();
 
         // Assigning the nodes to the new model part
@@ -805,7 +813,11 @@ private:
         mMaxAllowedCFL = ThisParameters["max_CFL"].GetDouble();
         mpLevelSetVar = &KratosComponents<Variable<double>>::Get(ThisParameters["levelset_variable_name"].GetString());
         mpConvectVar = &KratosComponents<Variable<array_1d<double,3>>>::Get(ThisParameters["levelset_convection_variable_name"].GetString());
-        mAuxModelPartName = mrBaseModelPart.Name() + "_DistanceConvectionPart";
+        if (ThisParameters["new_model_part_name"].GetString().empty()) {
+            mAuxModelPartName = mrBaseModelPart.Name() + "_DistanceConvectionPart";
+        } else {
+            mAuxModelPartName = ThisParameters["new_model_part_name"].GetString();
+        }
 
         // Limiter related settings
         mpLevelSetGradientVar = (mIsBfecc || mElementRequiresLevelSetGradient) ? &(KratosComponents<Variable<array_1d<double, 3>>>::Get(ThisParameters["levelset_gradient_variable_name"].GetString())) : nullptr;

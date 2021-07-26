@@ -102,12 +102,8 @@ public:
     {
         KRATOS_TRY
 
-        const int row_size_guess = (TDim == 2 ? 15 : 40);
-        auto p_builder_and_solver = Kratos::make_shared< TrilinosBlockBuilderAndSolver<TSparseSpace,TDenseSpace,TLinearSolver>>(
-            mrEpetraCommunicator,
-            row_size_guess,
-            pLinearSolver);
-        InitializeConvectionStrategy(p_builder_and_solver);
+        mpLinearSystemSolver = pLinearSolver;
+        mParameters = ThisParameters;
 
         KRATOS_CATCH("")
     }
@@ -125,6 +121,17 @@ public:
     ///@}
     ///@name Operations
     ///@{
+
+    void ExecuteInitialize() override
+    {
+        const int row_size_guess = (TDim == 2 ? 15 : 40);
+        auto p_builder_and_solver = Kratos::make_shared< TrilinosBlockBuilderAndSolver<TSparseSpace,TDenseSpace,TLinearSolver>>(
+            mrEpetraCommunicator,
+            row_size_guess,
+            mpLinearSystemSolver);
+        InitializeConvectionStrategy(p_builder_and_solver);
+
+    }
 
     ///@}
     ///@name Access

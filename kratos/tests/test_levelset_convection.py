@@ -61,10 +61,13 @@ class TestLevelSetConvection(KratosUnittest.TestCase):
             "eulerian_error_compensation" : false,
             "element_type" : "levelset_convection_supg"
         }""")
-        KratosMultiphysics.LevelSetConvectionProcess2D(
+        level_set_process = KratosMultiphysics.LevelSetConvectionProcess2D(
             model_part,
             linear_solver,
-            levelset_convection_settings).Execute()
+            levelset_convection_settings)
+            
+        level_set_process.ExecuteInitialize()
+        level_set_process.Execute()
 
         max_distance = -1.0
         min_distance = +1.0
@@ -108,10 +111,13 @@ class TestLevelSetConvection(KratosUnittest.TestCase):
             "eulerian_error_compensation" : true,
             "element_type" : "levelset_convection_supg"
         }""")
-        KratosMultiphysics.LevelSetConvectionProcess2D(
+        level_set_process = KratosMultiphysics.LevelSetConvectionProcess2D(
             model_part,
             linear_solver,
-            levelset_convection_settings).Execute()
+            levelset_convection_settings)
+            
+        level_set_process.ExecuteInitialize()
+        level_set_process.Execute()
 
         max_distance = -1.0
         min_distance = +1.0
@@ -182,10 +188,13 @@ class TestLevelSetConvection(KratosUnittest.TestCase):
                 "include_anti_diffusivity_terms" : true
             }
         }""")
-        KratosMultiphysics.LevelSetConvectionProcess2D(
+        level_set_process = KratosMultiphysics.LevelSetConvectionProcess2D(
             model_part,
             linear_solver,
-            levelset_convection_settings).Execute()
+            levelset_convection_settings)
+            
+        level_set_process.ExecuteInitialize()
+        level_set_process.Execute()
 
         max_distance = -1.0
         min_distance = +1.0

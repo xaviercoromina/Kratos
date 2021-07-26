@@ -138,6 +138,7 @@ class NavierStokesMPITwoFluidsSolver(NavierStokesTwoFluidsSolver):
                 levelset_linear_solver,
                 levelset_convection_settings)
 
+        level_set_convection_process.ExecuteInitialize()
         return level_set_convection_process
 
     def _CreateDistanceReinitializationProcess(self):

@@ -86,11 +86,14 @@ class TestTrilinosLevelSetConvection(KratosUnittest.TestCase):
             "eulerian_error_compensation" : false,
             "element_type" : "levelset_convection_supg"
         }""")
-        TrilinosApplication.TrilinosLevelSetConvectionProcess2D(
+        level_set_process = TrilinosApplication.TrilinosLevelSetConvectionProcess2D(
             epetra_comm,
             self.model_part,
             trilinos_linear_solver,
-            levelset_convection_settings).Execute()
+            levelset_convection_settings)
+        
+        level_set_process.ExecuteInitialize()
+        level_set_process.Execute()
 
         # Check the obtained values
         max_distance = -1.0
@@ -137,11 +140,14 @@ class TestTrilinosLevelSetConvection(KratosUnittest.TestCase):
             "eulerian_error_compensation" : true,
             "element_type" : "levelset_convection_supg"
         }""")
-        TrilinosApplication.TrilinosLevelSetConvectionProcess2D(
+        level_set_process = TrilinosApplication.TrilinosLevelSetConvectionProcess2D(
             epetra_comm,
             self.model_part,
             trilinos_linear_solver,
-            levelset_convection_settings).Execute()
+            levelset_convection_settings)
+        
+        level_set_process.ExecuteInitialize()
+        level_set_process.Execute()
 
         max_distance = -1.0
         min_distance = +1.0
