@@ -200,15 +200,17 @@ class FluidTransportReplaceSolver(FluidTransportSolver):
             for elem in self.main_model_part.Elements:
                 num_nodes_elements = len(elem.GetNodes())
                 break
+        
+        use_pfem2_convection = self.settings["pfem2_convection_settings"]["use_pfem2_convection"].GetBool()
 
         if domain_size == 2:
             if (self.settings["element_replace_settings"]["element_name"].GetString() == "EulerianConvDiff"):
                 if (num_nodes_elements == 3):
                     if(self.settings["solution_type"].GetString() == "Steady"):
                         self.settings["element_replace_settings"]["element_name"].SetString("SteadyConvectionDiffusionFICElement2D3N")
-                    elif(self.settings["scheme_type"].GetString() == "Implicit"):
-                        # TODO: clean this...
-                        # self.settings["element_replace_settings"]["element_name"].SetString("TransientConvectionDiffusionFICElement2D3N")
+                    elif(self.settings["scheme_type"].GetString() == "Implicit" and use_pfem2_convection==False):
+                        self.settings["element_replace_settings"]["element_name"].SetString("TransientConvectionDiffusionFICElement2D3N")
+                    elif(self.settings["scheme_type"].GetString() == "Implicit" and use_pfem2_convection==True):
                         self.settings["element_replace_settings"]["element_name"].SetString("TransientConvectionDiffusionPFEM2FICElement2D3N")
                     else:
                         self.settings["element_replace_settings"]["element_name"].SetString("TransientConvectionDiffusionFICExplicitElement2D3N")
@@ -224,7 +226,9 @@ class FluidTransportReplaceSolver(FluidTransportSolver):
                 if (num_nodes_elements == 4):
                     if(self.settings["solution_type"].GetString() == "Steady"):
                         self.settings["element_replace_settings"]["element_name"].SetString("SteadyConvectionDiffusionFICElement3D4N")
-                    elif(self.settings["scheme_type"].GetString() == "Implicit"):
+                    elif(self.settings["scheme_type"].GetString() == "Implicit" and use_pfem2_convection==False):
+                        self.settings["element_replace_settings"]["element_name"].SetString("TransientConvectionDiffusionFICElement3D4N")
+                    elif(self.settings["scheme_type"].GetString() == "Implicit" and use_pfem2_convection==True):
                         self.settings["element_replace_settings"]["element_name"].SetString("TransientConvectionDiffusionPFEM2FICElement3D4N")
                     else:
                         self.settings["element_replace_settings"]["element_name"].SetString("TransientConvectionDiffusionFICExplicitElement3D4N")
