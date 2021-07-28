@@ -99,29 +99,19 @@ class FluidTransportSolver(PythonSolver):
         ## ConvectionDiffusionSettings
         thermal_settings = Kratos.ConvectionDiffusionSettings()
 
-        self.main_model_part.AddNodalSolutionStepVariable(Kratos.ABSORPTION_COEFFICIENT)
         thermal_settings.SetReactionVariable(Kratos.ABSORPTION_COEFFICIENT)
-        self.main_model_part.AddNodalSolutionStepVariable(Kratos.CONDUCTIVITY)
         thermal_settings.SetDiffusionVariable(Kratos.CONDUCTIVITY)
-
         if(self.settings["solution_type"].GetString() == "Steady"):
             thermal_settings.SetUnknownVariable(Kratos.TEMPERATURE)
         elif(self.settings["scheme_type"].GetString() == "Implicit"):
             thermal_settings.SetUnknownVariable(KratosFluidTransport.PHI_THETA)
         else:
             thermal_settings.SetUnknownVariable(Kratos.TEMPERATURE)
-
-        self.main_model_part.AddNodalSolutionStepVariable(Kratos.SPECIFIC_HEAT)
         thermal_settings.SetSpecificHeatVariable(Kratos.SPECIFIC_HEAT)
-        self.main_model_part.AddNodalSolutionStepVariable(Kratos.DENSITY)
         thermal_settings.SetDensityVariable(Kratos.DENSITY)
-        self.main_model_part.AddNodalSolutionStepVariable(Kratos.HEAT_FLUX)
         thermal_settings.SetVolumeSourceVariable(Kratos.HEAT_FLUX)
-        self.main_model_part.AddNodalSolutionStepVariable(Kratos.FACE_HEAT_FLUX)
         thermal_settings.SetSurfaceSourceVariable(Kratos.FACE_HEAT_FLUX)
-        self.main_model_part.AddNodalSolutionStepVariable(Kratos.MESH_VELOCITY)
         thermal_settings.SetMeshVelocityVariable(Kratos.MESH_VELOCITY)
-        self.main_model_part.AddNodalSolutionStepVariable(Kratos.VELOCITY)
         thermal_settings.SetVelocityVariable(Kratos.VELOCITY)
 
         if self.settings["pfem2_convection_settings"]["use_pfem2_convection"].GetBool():
@@ -130,6 +120,11 @@ class FluidTransportSolver(PythonSolver):
 
         ## ConvectionDiffusionSettings Variable
         self.main_model_part.ProcessInfo.SetValue(Kratos.CONVECTION_DIFFUSION_SETTINGS, thermal_settings)
+
+        self.main_model_part.AddNodalSolutionStepVariable(Kratos.ABSORPTION_COEFFICIENT)
+        self.main_model_part.AddNodalSolutionStepVariable(Kratos.CONDUCTIVITY)
+        self.main_model_part.AddNodalSolutionStepVariable(Kratos.SPECIFIC_HEAT)
+        self.main_model_part.AddNodalSolutionStepVariable(Kratos.DENSITY)
 
         ## Convection Variables
         self.main_model_part.AddNodalSolutionStepVariable(Kratos.VELOCITY)
