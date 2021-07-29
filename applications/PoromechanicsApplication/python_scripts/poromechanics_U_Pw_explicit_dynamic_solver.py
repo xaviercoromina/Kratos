@@ -35,7 +35,8 @@ class ExplicitUPwSolver(UPwSolver):
             "theta_factor"               : 1.0,
             "g_factor"                   : 0.0,
             "calculate_xi"               : false,
-            "xi_1_factor"                : 1.0
+            "xi_1_factor"                : 1.0,
+            "delta"                      : 0.667
         }""")
         this_defaults.AddMissingParameters(super().GetDefaultParameters())
         return this_defaults
@@ -151,12 +152,15 @@ class ExplicitUPwSolver(UPwSolver):
         process_info.SetValue(StructuralMechanicsApplication.RAYLEIGH_BETA, rayleigh_beta)
         process_info.SetValue(KratosPoro.G_COEFFICIENT, g_coeff)
         process_info.SetValue(KratosPoro.THETA_FACTOR, theta_factor)
+        process_info.SetValue(KratosPoro.DELTA, self.settings["delta"].GetDouble())
 
         # Setting the time integration schemes
         if(scheme_type == "Explicit_Central_Differences"):
             scheme = KratosPoro.PoroExplicitCDScheme()
         elif(scheme_type == "Explicit_Velocity_Verlet"):
             scheme = KratosPoro.PoroExplicitVVScheme()
+        elif(scheme_type == "Explicit_CDF"):
+            scheme = KratosPoro.PoroExplicitCDFScheme()
         else:
             err_msg =  "The requested scheme type \"" + scheme_type + "\" is not available!\n"
             err_msg += "Available options are: \"Explicit_Central_Differences\", \"Explicit_Velocity_Verlet\" "

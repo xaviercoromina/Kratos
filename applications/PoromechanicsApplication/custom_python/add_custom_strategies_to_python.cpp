@@ -29,6 +29,7 @@
 #include "custom_strategies/schemes/newmark_dynamic_U_Pw_scheme.hpp"
 #include "custom_strategies/schemes/poro_explicit_cd_scheme.hpp"
 #include "custom_strategies/schemes/poro_explicit_vv_scheme.hpp"
+#include "custom_strategies/schemes/poro_explicit_cdf_scheme.hpp"
 
 //linear solvers
 #include "linear_solvers/linear_solver.h"
@@ -58,6 +59,7 @@ void  AddCustomStrategiesToPython(pybind11::module& m)
     typedef NewmarkDynamicUPwScheme< SparseSpaceType, LocalSpaceType >  NewmarkDynamicUPwSchemeType;
     typedef PoroExplicitCDScheme< SparseSpaceType, LocalSpaceType >  PoroExplicitCDSchemeType;
     typedef PoroExplicitVVScheme< SparseSpaceType, LocalSpaceType >  PoroExplicitVVSchemeType;
+    typedef PoroExplicitCDFScheme< SparseSpaceType, LocalSpaceType >  PoroExplicitCDFSchemeType;
 
     typedef PoromechanicsNewtonRaphsonStrategy< SparseSpaceType, LocalSpaceType, LinearSolverType > PoromechanicsNewtonRaphsonStrategyType;
     typedef PoromechanicsRammArcLengthStrategy< SparseSpaceType, LocalSpaceType, LinearSolverType > PoromechanicsRammArcLengthStrategyType;
@@ -82,6 +84,9 @@ void  AddCustomStrategiesToPython(pybind11::module& m)
     .def(py::init< >());
     py::class_< PoroExplicitVVSchemeType,typename PoroExplicitVVSchemeType::Pointer, BaseSchemeType >
     (m,"PoroExplicitVVScheme")
+    .def(py::init< >());
+    py::class_< PoroExplicitCDFSchemeType,typename PoroExplicitCDFSchemeType::Pointer, BaseSchemeType >
+    (m,"PoroExplicitCDFScheme")
     .def(py::init< >());
 
     py::class_< PoromechanicsNewtonRaphsonStrategyType, typename PoromechanicsNewtonRaphsonStrategyType::Pointer, BaseSolvingStrategyType >
