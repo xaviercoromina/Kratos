@@ -1,7 +1,9 @@
-// KRATOS  ___|  |                   |                   |
-//       \___ \  __|  __| |   |  __| __| |   |  __| _` | |
-//             | |   |    |   | (    |   |   | |   (   | |
-//       _____/ \__|_|   \__,_|\___|\__|\__,_|_|  \__,_|_| MECHANICS
+// KRATOS ___                _   _ _         _   _             __                       _
+//       / __\___  _ __  ___| |_(_) |_ _   _| |_(_)_   _____  / /  __ ___      _____   /_\  _ __  _ __
+//      / /  / _ \| '_ \/ __| __| | __| | | | __| \ \ / / _ \/ /  / _` \ \ /\ / / __| //_\\| '_ \| '_  |
+//     / /__| (_) | | | \__ \ |_| | |_| |_| | |_| |\ V /  __/ /__| (_| |\ V  V /\__ \/  _  \ |_) | |_) |
+//     \____/\___/|_| |_|___/\__|_|\__|\__,_|\__|_| \_/ \___\____/\__,_| \_/\_/ |___/\_/ \_/ .__/| .__/
+//                                                                                         |_|   |_|
 //
 //  License:         BSD License
 //                   license: structural_mechanics_application/license.txt
@@ -20,7 +22,7 @@
 #include "includes/serializer.h"
 #include "includes/properties.h"
 #include "utilities/math_utils.h"
-#include "structural_mechanics_application_variables.h"
+#include "constitutive_laws_application_variables.h"
 #include "custom_utilities/constitutive_law_utilities.h"
 
 namespace Kratos
@@ -148,7 +150,7 @@ class GenericConstitutiveLawIntegratorDamage
             KRATOS_ERROR << "SOFTENING_TYPE not defined or wrong..." << softening_type << std::endl;
             break;
         }
-        rDamage = (rDamage > 0.999) ? 0.999 : rDamage;
+        rDamage = (rDamage > 0.9999) ? 0.9999 : rDamage;
         rDamage = (rDamage < 0.0) ? 0.0 : rDamage;
         rPredictiveStressVector *= (1.0 - rDamage);
     }
@@ -284,6 +286,30 @@ class GenericConstitutiveLawIntegratorDamage
         YieldSurfaceType::CalculateYieldSurfaceDerivative(rStressVector, deviator, J2, rFlux, rValues);
     }
 
+    /**
+     * @brief This method checks if the global stress state is tension or compression; -1 for a generalized compression state and 1 for a generalized tensile state.
+     * @param StressVector Current predictive stress tensor.
+     */
+    static double CalculateTensionCompressionFactor(const Vector& rStressVector)
+    {
+        array_1d<double,3> principal_stresses;
+        ConstitutiveLawUtilities<6>::CalculatePrincipalStresses(principal_stresses, rStressVector);
+
+
+        double abs_component = 0.0, average_component = 0.0, sum_abs = 0.0, sum_average = 0.0;
+        for (unsigned int i = 0; i < principal_stresses.size(); ++i) {
+            abs_component = std::abs(principal_stresses[i]);
+            average_component = 0.5 * (principal_stresses[i] + abs_component);
+            sum_average += average_component;
+            sum_abs += abs_component;
+        }
+        const double pre_indicator = sum_average / sum_abs;
+        if (pre_indicator < 0.5) {
+            return -1.0;
+        } else {
+            return 1.0;
+        }
+    }
     ///@}
     ///@name Access
     ///@{

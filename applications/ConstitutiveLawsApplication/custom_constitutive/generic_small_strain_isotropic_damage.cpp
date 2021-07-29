@@ -1,7 +1,9 @@
-// KRATOS  ___|  |                   |                   |
-//       \___ \  __|  __| |   |  __| __| |   |  __| _` | |
-//             | |   |    |   | (    |   |   | |   (   | |
-//       _____/ \__|_|   \__,_|\___|\__|\__,_|_|  \__,_|_| MECHANICS
+// KRATOS ___                _   _ _         _   _             __                       _
+//       / __\___  _ __  ___| |_(_) |_ _   _| |_(_)_   _____  / /  __ ___      _____   /_\  _ __  _ __
+//      / /  / _ \| '_ \/ __| __| | __| | | | __| \ \ / / _ \/ /  / _` \ \ /\ / / __| //_\\| '_ \| '_  |
+//     / /__| (_) | | | \__ \ |_| | |_| |_| | |_| |\ V /  __/ /__| (_| |\ V  V /\__ \/  _  \ |_) | |_) |
+//     \____/\___/|_| |_|___/\__|_|\__|\__,_|\__|_| \_/ \___\____/\__,_| \_/\_/ |___/\_/ \_/ .__/| .__/
+//                                                                                         |_|   |_|
 //
 //  License:         BSD License
 //                   license: structural_mechanics_application/license.txt
@@ -16,7 +18,7 @@
 
 // Project includes
 #include "custom_utilities/tangent_operator_calculator_utility.h"
-#include "structural_mechanics_application_variables.h"
+#include "constitutive_laws_application_variables.h"
 #include "custom_constitutive/generic_small_strain_isotropic_damage.h"
 #include "custom_constitutive/constitutive_laws_integrators/generic_constitutive_law_integrator_damage.h"
 
@@ -112,20 +114,43 @@ void GenericSmallStrainIsotropicDamage<TConstLawIntegratorType>::CalculateMateri
 
         // Initialize Plastic Parameters
         double uniaxial_stress;
-        TConstLawIntegratorType::YieldSurfaceType::CalculateEquivalentStress(predictive_stress_vector, r_strain_vector, uniaxial_stress, rValues);
 
-        const double F = uniaxial_stress - threshold;
+        TConstLawIntegratorType::YieldSurfaceType::CalculateEquivalentStress(predictive_stress_vector, r_strain_vector, uniaxial_stress, rValues);
+        double uniaxial_stress_comp = std::abs(uniaxial_stress - damage * threshold) + damage * threshold;
+
+        const double F = uniaxial_stress_comp - threshold;
 
         if (F <= 0.0) { // Elastic case
-            noalias(auxiliar_integrated_stress_vector) = (1.0 - damage) * predictive_stress_vector;
+            // KRATOS_WATCH(mThresholdVector)
+            // KRATOS_WATCH(predictive_stress_vector)
+            noalias(auxiliar_integrated_stress_vector) = predictive_stress_vector - damage * mThresholdVector;
 			noalias(integrated_stress_vector) = auxiliar_integrated_stress_vector;
 
             if (r_constitutive_law_options.Is(ConstitutiveLaw::COMPUTE_CONSTITUTIVE_TENSOR)) {
-                noalias(r_tangent_tensor) = (1.0 - damage) * r_constitutive_matrix;
+                noalias(r_tangent_tensor) = r_constitutive_matrix;
             }
         } else { // Damage case
+            double sign_factor_stress = TConstLawIntegratorType::CalculateTensionCompressionFactor(predictive_stress_vector - damage * mThresholdVector);
+            double sign_factor_threshold = TConstLawIntegratorType::CalculateTensionCompressionFactor(mThresholdVector - damage * mThresholdVector);
+
+            if (sign_factor_stress != sign_factor_threshold) {
+                KRATOS_WATCH(predictive_stress_vector)
+                predictive_stress_vector = predictive_stress_vector - 2.0 * damage * mThresholdVector;
+                KRATOS_WATCH(predictive_stress_vector)
+                KRATOS_WATCH(damage)
+                KRATOS_WATCH(mThresholdVector)
+                KRATOS_WATCH(uniaxial_stress_comp)
+                double uniaxial_stress_recalculated;
+                TConstLawIntegratorType::YieldSurfaceType::CalculateEquivalentStress(predictive_stress_vector, r_strain_vector, uniaxial_stress_recalculated, rValues);
+                KRATOS_WATCH(uniaxial_stress_recalculated)
+                KRATOS_WATCH(threshold)
+            }
             const double characteristic_length = ConstitutiveLawUtilities<VoigtSize>::CalculateCharacteristicLength(rValues.GetElementGeometry());
             // This routine updates the PredictiveStress to verify the yield surf
+
+            mThresholdVector = predictive_stress_vector;
+            uniaxial_stress = uniaxial_stress_comp;
+
             TConstLawIntegratorType::IntegrateStressVector(
                 predictive_stress_vector,
                 uniaxial_stress, damage,
@@ -134,7 +159,8 @@ void GenericSmallStrainIsotropicDamage<TConstLawIntegratorType>::CalculateMateri
 
             // Updated Values
             noalias(auxiliar_integrated_stress_vector) = predictive_stress_vector;
-
+            KRATOS_WATCH(predictive_stress_vector)
+            KRATOS_WATCH(mThresholdVector)
             if (r_constitutive_law_options.Is(ConstitutiveLaw::COMPUTE_CONSTITUTIVE_TENSOR)) {
                 this->CalculateTangentTensor(rValues);
             }
@@ -272,9 +298,26 @@ void GenericSmallStrainIsotropicDamage<TConstLawIntegratorType>::FinalizeMateria
         double uniaxial_stress;
         TConstLawIntegratorType::YieldSurfaceType::CalculateEquivalentStress(predictive_stress_vector, r_strain_vector, uniaxial_stress, rValues);
 
-        const double F = uniaxial_stress - threshold;
+        double uniaxial_stress_comp = std::abs(uniaxial_stress - damage * threshold) + damage * threshold;
+        // KRATOS_WATCH(uniaxial_stress)
+        // KRATOS_WATCH(uniaxial_stress_comp)
+        const double threshold_comp = threshold - damage * threshold;
+        // KRATOS_WATCH(threshold_comp)
+
+        const double F = uniaxial_stress_comp - threshold;
+        // const double F = uniaxial_stress - threshold;
 
         if (F >= 0.0) { // Plastic case
+            // KRATOS_WATCH(predictive_stress_vector)
+            double sign_factor_stress = TConstLawIntegratorType::CalculateTensionCompressionFactor(predictive_stress_vector - damage * mThresholdVector);
+            double sign_factor_threshold = TConstLawIntegratorType::CalculateTensionCompressionFactor(mThresholdVector - damage * mThresholdVector);
+
+            if (sign_factor_stress != sign_factor_threshold) {
+                predictive_stress_vector = predictive_stress_vector - 2.0 * damage * mThresholdVector;
+            }
+
+            mThresholdVector = predictive_stress_vector;
+            uniaxial_stress = uniaxial_stress_comp;
             const double characteristic_length = ConstitutiveLawUtilities<VoigtSize>::CalculateCharacteristicLength(rValues.GetElementGeometry());
             // This routine updates the PredictiveStress to verify the yield surf
             TConstLawIntegratorType::IntegrateStressVector(
@@ -287,10 +330,15 @@ void GenericSmallStrainIsotropicDamage<TConstLawIntegratorType>::FinalizeMateria
 
             TConstLawIntegratorType::YieldSurfaceType::CalculateEquivalentStress(predictive_stress_vector, r_strain_vector, uniaxial_stress, rValues);
             this->SetValue(UNIAXIAL_STRESS, uniaxial_stress, rValues.GetProcessInfo());
+            KRATOS_WATCH(uniaxial_stress)
         } else {
-            predictive_stress_vector *= (1.0 - mDamage);
+            // KRATOS_WATCH(mThresholdVector)
+            // KRATOS_WATCH(predictive_stress_vector)
+            predictive_stress_vector = predictive_stress_vector - mDamage * mThresholdVector;
+            // KRATOS_WATCH(predictive_stress_vector)
             TConstLawIntegratorType::YieldSurfaceType::CalculateEquivalentStress(predictive_stress_vector, r_strain_vector, uniaxial_stress, rValues);
             this->SetValue(UNIAXIAL_STRESS, uniaxial_stress, rValues.GetProcessInfo());
+            // KRATOS_WATCH(uniaxial_stress)
         }
     }
 }
