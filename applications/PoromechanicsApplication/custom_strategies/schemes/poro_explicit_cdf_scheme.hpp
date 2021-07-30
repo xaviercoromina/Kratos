@@ -215,7 +215,7 @@ public:
 
 protected:
 
-    mDelta;
+    double mDelta;
 
     ///@}
     ///@name Protected Structs
