@@ -56,7 +56,8 @@ namespace Kratos {
 
             /// Check creation of quadrature point geometries
             GeometryType::GeometriesArrayType geometry_vector;
-            point.CreateQuadraturePointGeometries(geometry_vector, 2, point.GetDefaultIntegrationInfo());
+            IntegrationInfo integration_info = p_nurbs_curve->GetDefaultIntegrationInfo();
+            point.CreateQuadraturePointGeometries(geometry_vector, 2, integration_info);
 
             KRATOS_CHECK_EQUAL(geometry_vector[0].Dimension(), 0);
             KRATOS_CHECK_EQUAL(geometry_vector[0].LocalSpaceDimension(), 1);
