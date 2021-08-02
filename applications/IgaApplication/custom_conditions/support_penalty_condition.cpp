@@ -64,7 +64,11 @@ namespace Kratos
             }
 
             // Differential area
-            const double penalty_integration = penalty * integration_points[point_number].Weight() * determinant_jacobian_vector[point_number];
+            double penalty_integration = penalty * integration_points[point_number].Weight(); // weak point DBC
+            if(r_geometry.GetGeometryParent(0).Dimension() == 1)
+            {
+                penalty_integration = penalty_integration * determinant_jacobian_vector[point_number];
+            }            
 
             // Assembly
             if (CalculateStiffnessMatrixFlag) {

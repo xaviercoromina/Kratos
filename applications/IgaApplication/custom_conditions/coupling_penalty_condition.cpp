@@ -99,8 +99,11 @@ namespace Kratos
             }
 
             // Differential area
-            const double penalty_integration = penalty * integration_points[point_number].Weight() * determinant_jacobian_vector[point_number];
-
+            double penalty_integration = penalty * integration_points[point_number].Weight(); // coupling point
+            if(r_geometry_master.GetGeometryParent(0).Dimension() == 1)
+            {
+                penalty_integration = penalty_integration * determinant_jacobian_vector[point_number];
+            }            
             // Rotation coupling
             if (Is(IgaFlags::FIX_ROTATION_X))
             {
