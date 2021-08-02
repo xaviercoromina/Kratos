@@ -228,15 +228,15 @@ public:
         IntegrationPointsArrayType integration_point(1);
         this->CreateIntegrationPoints(integration_point, rIntegrationInfo);
 
-        GeometriesArrayType rQuadraturePointGeometries(1);
+        //GeometriesArrayType rQuadraturePointGeometries(1);
         mpBackgroundGeometry->CreateQuadraturePointGeometries(
-            rQuadraturePointGeometries, NumberOfShapeFunctionDerivatives, integration_point, rIntegrationInfo);
+            rResultGeometries, NumberOfShapeFunctionDerivatives, integration_point, rIntegrationInfo);
 
-        if (rResultGeometries.size() != 1) { rResultGeometries.resize(1); }
+        //if (rResultGeometries.size() != 1) { rResultGeometries.resize(1); }
         // assignment operator for quadrature point geometry with Dimension being 0.
-        rResultGeometries[0] = QuadraturePointGeometry<
-            PointType, TWorkingSpaceDimension, TLocalSpaceDimension,
-            0>(rQuadraturePointGeometries[0]);
+        // rResultGeometries[0] = QuadraturePointGeometry<
+        //     PointType, TWorkingSpaceDimension, TLocalSpaceDimension,
+        //     0>(rQuadraturePointGeometries[0]);
     }
 
     ///@}
@@ -259,6 +259,12 @@ public:
         mpBackgroundGeometry->ShapeFunctionsLocalGradients(rResult, mLocalCoordinates);
 
         return rResult;
+    }
+
+    /// Return polynomial degree of background geometry
+    SizeType PolynomialDegree(IndexType LocalDirectionIndex) const override
+    {
+        return mpBackgroundGeometry->PolynomialDegree(LocalDirectionIndex);
     }
 
     ///@}
