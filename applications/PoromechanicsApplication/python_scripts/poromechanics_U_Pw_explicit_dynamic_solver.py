@@ -36,7 +36,8 @@ class ExplicitUPwSolver(UPwSolver):
             "g_factor"                   : 0.0,
             "calculate_xi"               : false,
             "xi_1_factor"                : 1.0,
-            "delta"                      : 0.667
+            "delta"                      : 1.0,
+            "delta_b"                    : 1.9
         }""")
         this_defaults.AddMissingParameters(super().GetDefaultParameters())
         return this_defaults
@@ -45,7 +46,7 @@ class ExplicitUPwSolver(UPwSolver):
         super().AddVariables()
 
         self.main_model_part.AddNodalSolutionStepVariable(KratosPoro.DISPLACEMENT_OLD)
-        # self.main_model_part.AddNodalSolutionStepVariable(KratosPoro.DISPLACEMENT_OLDER)
+        self.main_model_part.AddNodalSolutionStepVariable(KratosPoro.DISPLACEMENT_OLDER)
         self.main_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.INTERNAL_FORCE)
         self.main_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.EXTERNAL_FORCE)
         self.main_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.FORCE_RESIDUAL)
@@ -153,6 +154,7 @@ class ExplicitUPwSolver(UPwSolver):
         process_info.SetValue(KratosPoro.G_COEFFICIENT, g_coeff)
         process_info.SetValue(KratosPoro.THETA_FACTOR, theta_factor)
         process_info.SetValue(KratosPoro.DELTA, self.settings["delta"].GetDouble())
+        process_info.SetValue(KratosPoro.DELTA_B, self.settings["delta_b"].GetDouble())
 
         # Setting the time integration schemes
         if(scheme_type == "Explicit_Central_Differences"):

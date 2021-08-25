@@ -129,6 +129,7 @@ public:
         const ProcessInfo& r_current_process_info = rModelPart.GetProcessInfo();
 
         mDelta = r_current_process_info[DELTA];
+        mDeltab = r_current_process_info[DELTA_B];
 
         KRATOS_CATCH("")
     }
@@ -149,8 +150,7 @@ public:
         array_1d<double, 3> displacement_aux;
         noalias(displacement_aux) = r_displacement;
         array_1d<double, 3>& r_displacement_old = itCurrentNode->FastGetSolutionStepValue(DISPLACEMENT_OLD);
-        // array_1d<double, 3>& r_displacement_older = itCurrentNode->FastGetSolutionStepValue(DISPLACEMENT_OLDER);
-        const array_1d<double, 3>& r_actual_previous_displacement = itCurrentNode->FastGetSolutionStepValue(DISPLACEMENT,2);
+        array_1d<double, 3>& r_displacement_older = itCurrentNode->FastGetSolutionStepValue(DISPLACEMENT_OLDER);
         const double nodal_mass = itCurrentNode->GetValue(NODAL_MASS);
 
         double& r_current_water_pressure = itCurrentNode->FastGetSolutionStepValue(WATER_PRESSURE);
@@ -169,12 +169,13 @@ public:
 
         for (IndexType j = 0; j < DomainSize; j++) {
             if (fix_displacements[j] == false) {
-                    r_displacement[j] = ( (2.0*(1.0+mDelta)-mAlpha*mDeltaTime)*nodal_mass*r_displacement[j]
-                                          + (mAlpha*mDeltaTime-(1.0+mDelta))*nodal_mass*r_displacement_old[j]
-                                          - mDeltaTime*(mBeta+1.0/3.0*mDeltaTime)*r_internal_force[j]
-                                          + mDeltaTime*(mBeta-mDeltaTime*(2.0/3.0-mDelta))*r_internal_force_old[j]
-                                          + mDeltaTime*mDeltaTime*(1.0/3.0*r_external_force[j]+(2.0/3.0-mDelta)*r_external_force_old[j])
-                                        ) / ( nodal_mass*(1.0+mDelta) );
+                    r_displacement[j] = ( (2.0+mDelta+3.5*mDeltab-mAlpha*mDeltaTime)*nodal_mass*r_displacement[j]
+                                          + (mAlpha*mDeltaTime-1.0+mDelta-4.0*mDeltab)*nodal_mass*r_displacement_old[j]
+                                          + (1.5*mDeltab-mDelta)*nodal_mass*r_displacement_older[j]
+                                          - mDeltaTime*(mBeta+0.5*mDeltaTime*(1.0+mDelta-mDeltab))*r_internal_force[j]
+                                          + mDeltaTime*(mBeta-0.5*mDeltaTime*(1.0+mDelta-mDeltab))*r_internal_force_old[j]
+                                          + 0.5*mDeltaTime*mDeltaTime*(1.0+mDelta-mDeltab)*(r_external_force[j]+r_external_force_old[j])
+                                        ) / ( nodal_mass*(1.0+mDelta+mDeltab) );
             }
         }
 
@@ -185,6 +186,7 @@ public:
             r_current_dt_water_pressure = 0.0;
         }
 
+        noalias(r_displacement_older) = r_displacement_old;
         noalias(r_displacement_old) = displacement_aux;
         const array_1d<double, 3>& r_velocity_old = itCurrentNode->FastGetSolutionStepValue(VELOCITY,1);
         array_1d<double, 3>& r_velocity = itCurrentNode->FastGetSolutionStepValue(VELOCITY);
@@ -216,6 +218,7 @@ public:
 protected:
 
     double mDelta;
+    double mDeltab;
 
     ///@}
     ///@name Protected Structs
