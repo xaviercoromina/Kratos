@@ -158,8 +158,10 @@ public:
 
         const array_1d<double, 3>& r_external_force = itCurrentNode->FastGetSolutionStepValue(EXTERNAL_FORCE);
         const array_1d<double, 3>& r_external_force_old = itCurrentNode->FastGetSolutionStepValue(EXTERNAL_FORCE,1);
+        array_1d<double, 3>& r_external_force_older = itCurrentNode->FastGetSolutionStepValue(EXTERNAL_FORCE_OLDER);
         const array_1d<double, 3>& r_internal_force = itCurrentNode->FastGetSolutionStepValue(INTERNAL_FORCE);
         const array_1d<double, 3>& r_internal_force_old = itCurrentNode->FastGetSolutionStepValue(INTERNAL_FORCE,1);
+        array_1d<double, 3>& r_internal_force_older = itCurrentNode->FastGetSolutionStepValue(INTERNAL_FORCE_OLDER);
 
         std::array<bool, 3> fix_displacements = {false, false, false};
         fix_displacements[0] = (itCurrentNode->GetDof(DISPLACEMENT_X, DisplacementPosition).IsFixed());
@@ -172,9 +174,10 @@ public:
                     r_displacement[j] = ( (2.0+mDelta+3.5*mDeltab-mAlpha*mDeltaTime)*nodal_mass*r_displacement[j]
                                           + (mAlpha*mDeltaTime-1.0+mDelta-4.0*mDeltab)*nodal_mass*r_displacement_old[j]
                                           + (1.5*mDeltab-mDelta)*nodal_mass*r_displacement_older[j]
-                                          - mDeltaTime*(mBeta+0.5*mDeltaTime*(1.0+mDelta-mDeltab))*r_internal_force[j]
+                                          - mDeltaTime*(mBeta+0.5*mDeltaTime*(0.75+mDelta-mDeltab))*r_internal_force[j]
                                           + mDeltaTime*(mBeta-0.5*mDeltaTime*(1.0+mDelta-mDeltab))*r_internal_force_old[j]
-                                          + 0.5*mDeltaTime*mDeltaTime*(1.0+mDelta-mDeltab)*(r_external_force[j]+r_external_force_old[j])
+                                          - 0.125*mDeltaTime*mDeltaTime*r_internal_force_older[j]
+                                          + mDeltaTime*mDeltaTime*(0.5*(0.75+mDelta-mDeltab)*r_external_force[j]+0.5*(1.0+mDelta-mDeltab)*r_external_force_old[j]+0.125*r_external_force_older[j])
                                         ) / ( nodal_mass*(1.0+mDelta+mDeltab) );
             }
         }
@@ -188,6 +191,8 @@ public:
 
         noalias(r_displacement_older) = r_displacement_old;
         noalias(r_displacement_old) = displacement_aux;
+        noalias(r_external_force_older) = r_external_force_old;
+        noalias(r_internal_force_older) = r_internal_force_old;
         const array_1d<double, 3>& r_velocity_old = itCurrentNode->FastGetSolutionStepValue(VELOCITY,1);
         array_1d<double, 3>& r_velocity = itCurrentNode->FastGetSolutionStepValue(VELOCITY);
         array_1d<double, 3>& r_acceleration = itCurrentNode->FastGetSolutionStepValue(ACCELERATION);
