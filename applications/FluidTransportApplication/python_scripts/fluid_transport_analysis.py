@@ -22,17 +22,13 @@ class FluidTransportAnalysis(AnalysisStage):
         KratosMultiphysics.Logger.PrintInfo(self._GetSimulationName(),timer.ctime())
         self.initial_time = timer.perf_counter()
 
-        # Set number of OMP threads
-        parallel=Kratos.OpenMPUtils()
-        parallel.SetNumThreads(parameters["problem_data"]["number_of_threads"].GetInt())
-
         ## Import parallel modules if needed
         if (parameters["problem_data"]["parallel_type"].GetString() == "MPI"):
             import KratosMultiphysics.MetisApplication as MetisApplication
             import KratosMultiphysics.TrilinosApplication as TrilinosApplication
-            KratosMultiphysics.Logger.PrintInfo(self._GetSimulationName(),"MPI parallel configuration. OMP_NUM_THREADS =",parallel.GetNumThreads())
+            KratosMultiphysics.Logger.PrintInfo(self._GetSimulationName(),"MPI parallel configuration.")
         else:
-            KratosMultiphysics.Logger.PrintInfo(self._GetSimulationName(),"OpenMP parallel configuration. OMP_NUM_THREADS =",parallel.GetNumThreads())
+            KratosMultiphysics.Logger.PrintInfo(self._GetSimulationName(),"OpenMP parallel configuration.")
 
         # Creating solver and model part and adding variables
         super(FluidTransportAnalysis,self).__init__(model,parameters)
