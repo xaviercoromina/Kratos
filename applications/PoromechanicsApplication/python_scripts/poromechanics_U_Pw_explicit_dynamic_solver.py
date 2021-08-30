@@ -48,9 +48,9 @@ class ExplicitUPwSolver(UPwSolver):
         self.main_model_part.AddNodalSolutionStepVariable(KratosPoro.DISPLACEMENT_OLD)
         self.main_model_part.AddNodalSolutionStepVariable(KratosPoro.DISPLACEMENT_OLDER)
         self.main_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.INTERNAL_FORCE)
-        self.main_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.INTERNAL_FORCE_OLDER)
+        self.main_model_part.AddNodalSolutionStepVariable(KratosPoro.INTERNAL_FORCE_OLDER)
         self.main_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.EXTERNAL_FORCE)
-        self.main_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.EXTERNAL_FORCE_OLDER)
+        self.main_model_part.AddNodalSolutionStepVariable(KratosPoro.EXTERNAL_FORCE_OLDER)
         self.main_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.FORCE_RESIDUAL)
         self.main_model_part.AddNodalSolutionStepVariable(KratosPoro.FLUX_RESIDUAL)
 
