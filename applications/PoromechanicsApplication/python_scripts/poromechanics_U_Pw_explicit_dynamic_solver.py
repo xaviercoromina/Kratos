@@ -36,8 +36,11 @@ class ExplicitUPwSolver(UPwSolver):
             "g_factor"                   : 0.0,
             "calculate_xi"               : false,
             "xi_1_factor"                : 1.0,
-            "delta"                      : 1.0,
-            "delta_b"                    : 1.9
+            "delta"                      : 0.5,
+            "delta_b"                    : 1.0,
+            "gamma"                      : 0.5,
+            "kappa_0"                    : 0.5,
+            "kappa_1"                    : 0.5
         }""")
         this_defaults.AddMissingParameters(super().GetDefaultParameters())
         return this_defaults
@@ -157,6 +160,9 @@ class ExplicitUPwSolver(UPwSolver):
         process_info.SetValue(KratosPoro.THETA_FACTOR, theta_factor)
         process_info.SetValue(KratosPoro.DELTA, self.settings["delta"].GetDouble())
         process_info.SetValue(KratosPoro.DELTA_B, self.settings["delta_b"].GetDouble())
+        process_info.SetValue(KratosPoro.GAMMA, self.settings["gamma"].GetDouble())
+        process_info.SetValue(KratosPoro.KAPPA_0, self.settings["kappa_0"].GetDouble())
+        process_info.SetValue(KratosPoro.KAPPA_1, self.settings["kappa_1"].GetDouble())
 
         # Setting the time integration schemes
         if(scheme_type == "Explicit_Central_Differences"):
