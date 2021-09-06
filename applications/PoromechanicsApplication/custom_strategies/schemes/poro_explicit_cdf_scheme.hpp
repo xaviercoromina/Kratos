@@ -178,7 +178,7 @@ public:
                     r_displacement[j] = ( (2.0*(1.0-mDelta)-mAlpha*mDeltaTime)*nodal_mass*r_displacement[j]
                                           + (mDelta-1.0+mAlpha*mDeltaTime)*nodal_mass*r_displacement_old[j]
                                           - mDeltaTime*(mBeta+mDeltaTime*(mGamma-mDelta*mKappa0))*r_internal_force[j]
-                                          + mDeltaTime*(mBeta-(1.0-mGamma-mDelta*mKappa1))*r_internal_force_old[j]
+                                          + mDeltaTime*(mBeta-mDeltaTime*(1.0-mGamma-mDelta*mKappa1))*r_internal_force_old[j]
                                           + mDeltaTime*mDeltaTime*((mGamma-mDelta*mKappa0)*r_external_force[j]+(1.0-mGamma-mDelta*mKappa1)*r_external_force_old[j])
                                         ) / ( nodal_mass*(1.0-mDelta) );
             }
