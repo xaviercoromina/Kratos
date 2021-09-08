@@ -146,6 +146,8 @@ class UPwSolver(PythonSolver):
         self.main_model_part.AddNodalSolutionStepVariable(KratosPoro.NODAL_WATER_PRESSURE_GRADIENT)
         self.main_model_part.AddNodalSolutionStepVariable(KratosPoro.INITIAL_STRESS_TENSOR)
 
+        self.main_model_part.AddNodalSolutionStepVariable(KratosPoro.REFERENCE_DISPLACEMENT)
+
         # Add variables from gp to nodal variable list
         if self.settings["gp_to_nodal_variable_extrapolate_non_historical"].GetBool()==False:
             for i in range(self.settings["gp_to_nodal_variable_list"].size()):
