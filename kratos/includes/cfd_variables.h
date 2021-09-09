@@ -77,6 +77,7 @@ namespace Kratos
     KRATOS_DEFINE_VARIABLE( double, M )
 
     KRATOS_DEFINE_VARIABLE( double, CROSS_WIND_STABILIZATION_FACTOR )
+    KRATOS_DEFINE_VARIABLE( double, TAU_STABILIZATION_FACTOR )
 
 } // namespace Kratos
 

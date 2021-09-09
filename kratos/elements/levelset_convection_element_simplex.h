@@ -123,6 +123,7 @@ public:
         const double delta_t = rCurrentProcessInfo[DELTA_TIME];
         const double dt_inv = 1.0 / delta_t;
         const double theta = rCurrentProcessInfo.Has(TIME_INTEGRATION_THETA) ? rCurrentProcessInfo[TIME_INTEGRATION_THETA] : 0.5;
+        const double tau_factor = rCurrentProcessInfo.Has(TAU_STABILIZATION_FACTOR) ? rCurrentProcessInfo[TAU_STABILIZATION_FACTOR] : 1.0;
 
         ConvectionDiffusionSettings::Pointer my_settings = rCurrentProcessInfo.GetValue(CONVECTION_DIFFUSION_SETTINGS);
         const Variable<double>& rUnknownVar = my_settings->GetUnknownVariable();
@@ -191,7 +192,7 @@ public:
             array_1d<double, TNumNodes > a_dot_grad = prod(DN_DX, vel_gauss);
 
             const double tau_denom = std::max(dyn_st_beta *dt_inv + 2.0 * norm_vel / h + std::abs(/*beta**/div_v),  1e-2); //the term std::abs(div_v) is added following Pablo Becker's suggestion
-            const double tau = 1.0 / (tau_denom);
+            const double tau = tau_factor / (tau_denom);
 
             //terms multiplying dphi/dt (aux1)
             noalias(aux1) += (1.0+tau*beta*div_v)*outer_prod(N, N);
