@@ -90,8 +90,9 @@ public:
         KRATOS_TRY;
 
         const ProcessInfo& r_current_process_info = mr_model_part.GetProcessInfo();
-        NodesArrayType& r_nodes = mr_model_part.Nodes();
-        const auto it_node_begin = mr_model_part.NodesBegin();
+        const int NNodes = static_cast<int>(mr_model_part.Nodes().size());
+        ModelPart::NodesContainerType::iterator it_begin = mr_model_part.NodesBegin();
+
 
         double l2_abs_error = 1.0;
         double l2_rel_error = 1.0;
@@ -100,8 +101,8 @@ public:
         double l2_denominator = 0.0;
 
         #pragma omp parallel for reduction(+:l2_numerator,l2_denominator)
-        for (int i = 0; i < static_cast<int>(r_nodes.size()); ++i) {
-            auto itCurrentNode = it_node_begin + i;
+        for(int i = 0; i<NNodes; i++) {
+            ModelPart::NodesContainerType::iterator itCurrentNode = it_begin + i;
             const array_1d<double, 3>& r_current_displacement = itCurrentNode->FastGetSolutionStepValue(DISPLACEMENT);
             const array_1d<double, 3>& r_reference_displacement = itCurrentNode->FastGetSolutionStepValue(REFERENCE_DISPLACEMENT);
             const double& r_current_fluid_pressure = itCurrentNode->FastGetSolutionStepValue(WATER_PRESSURE);
@@ -109,7 +110,7 @@ public:
             array_1d<double, 3> delta_displacement;
             noalias(delta_displacement) = r_current_displacement - r_reference_displacement;
             const double delta_fluid_pressure = r_current_fluid_pressure - r_reference_fluid_pressure;
-            const double norm_2_du = inner_prod(delta_displacement,delta_displacement) + delta_water_pressure*delta_water_pressure;
+            const double norm_2_du = inner_prod(delta_displacement,delta_displacement) + delta_fluid_pressure*delta_fluid_pressure;
             const double norm_2_u_ref = inner_prod(r_reference_displacement,r_reference_displacement) + r_reference_fluid_pressure*r_reference_fluid_pressure;
 
             l2_numerator += norm_2_du;
