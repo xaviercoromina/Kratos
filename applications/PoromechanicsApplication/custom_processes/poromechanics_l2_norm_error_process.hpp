@@ -15,11 +15,10 @@
 #if !defined(KRATOS_POROMECHANICS_L2_NORM_ERROR_PROCESS )
 #define  KRATOS_POROMECHANICS_L2_NORM_ERROR_PROCESS
 
+#include <fstream>
 #include "includes/kratos_flags.h"
 #include "includes/kratos_parameters.h"
 #include "processes/process.h"
-#include "custom_utilities/solid_mechanics_math_utilities.hpp"
-#include "utilities/math_utils.h"
 
 #include "poromechanics_application_variables.h"
 
@@ -74,42 +73,58 @@ public:
     /// right after reading the model and the groups
     void ExecuteInitialize() override
     {
-        // KRATOS_TRY;
+        KRATOS_TRY;
 
-        // int NCons = static_cast<int>(mr_model_part.Conditions().size());
-        // ModelPart::ConditionsContainerType::iterator con_begin = mr_model_part.ConditionsBegin();
+        std::fstream l2_error_file;
+        l2_error_file.open ("time_l2-rel-error_l2-abs-error.txt", std::fstream::out | std::fstream::app);
+        l2_error_file.precision(12);
+        l2_error_file << 0.0 << " " << 1.0 << " " << 1.0 << std::endl;
+        l2_error_file.close();
 
-        // #pragma omp parallel for
-        // for(int i = 0; i < NCons; i++)
-        // {
-        //     ModelPart::ConditionsContainerType::iterator itCond = con_begin + i;
-        //     Condition::GeometryType& rGeom = itCond->GetGeometry();
-
-        //     itCond->Set(PERIODIC,true);
-
-        //     rGeom[0].FastGetSolutionStepValue(PERIODIC_PAIR_INDEX) = rGeom[1].Id();
-        //     rGeom[1].FastGetSolutionStepValue(PERIODIC_PAIR_INDEX) = rGeom[0].Id();
-        // }
-
-        // int NElems = static_cast<int>(mr_model_part.Elements().size());
-        // ModelPart::ElementsContainerType::iterator el_begin = mr_model_part.ElementsBegin();
-
-        // #pragma omp parallel for
-        // for(int i = 0; i < NElems; i++)
-        // {
-        //     ModelPart::ElementsContainerType::iterator itElem = el_begin + i;
-        //     itElem->Set(ACTIVE,false);
-        // }
-
-        // KRATOS_CATCH("");
+        KRATOS_CATCH("");
     }
 
     /// this function will be executed at every time step AFTER performing the solve phase
-    void ExecuteFinalizeSolutionStep() override
+    void ExecuteAfterOutputStep() override
     {
         KRATOS_TRY;
 
-        // TODO: calculate L2 Norm of Error and write it in a file
+        const ProcessInfo& r_current_process_info = mr_model_part.GetProcessInfo();
+        NodesArrayType& r_nodes = mr_model_part.Nodes();
+        const auto it_node_begin = mr_model_part.NodesBegin();
+
+        double l2_abs_error = 1.0;
+        double l2_rel_error = 1.0;
+
+        double l2_numerator = 0.0;
+        double l2_denominator = 0.0;
+
+        #pragma omp parallel for reduction(+:l2_numerator,l2_denominator)
+        for (int i = 0; i < static_cast<int>(r_nodes.size()); ++i) {
+            auto itCurrentNode = it_node_begin + i;
+            const array_1d<double, 3>& r_current_displacement = itCurrentNode->FastGetSolutionStepValue(DISPLACEMENT);
+            const array_1d<double, 3>& r_reference_displacement = itCurrentNode->FastGetSolutionStepValue(REFERENCE_DISPLACEMENT);
+            const double& r_current_fluid_pressure = itCurrentNode->FastGetSolutionStepValue(WATER_PRESSURE);
+            const double& r_reference_fluid_pressure = itCurrentNode->FastGetSolutionStepValue(REFERENCE_FLUID_PRESSURE);
+            array_1d<double, 3> delta_displacement;
+            noalias(delta_displacement) = r_current_displacement - r_reference_displacement;
+            const double delta_fluid_pressure = r_current_fluid_pressure - r_reference_fluid_pressure;
+            const double norm_2_du = inner_prod(delta_displacement,delta_displacement) + delta_water_pressure*delta_water_pressure;
+            const double norm_2_u_ref = inner_prod(r_reference_displacement,r_reference_displacement) + r_reference_fluid_pressure*r_reference_fluid_pressure;
+
+            l2_numerator += norm_2_du;
+            l2_denominator += norm_2_u_ref;
+        }
+        if (l2_denominator > 1.0e-12) {
+            l2_abs_error = std::sqrt(l2_numerator);
+            l2_rel_error = l2_abs_error/std::sqrt(l2_denominator);
+        }
+
+        std::fstream l2_error_file;
+        l2_error_file.open ("time_l2-rel-error_l2-abs-error.txt", std::fstream::out | std::fstream::app);
+        l2_error_file.precision(12);
+        l2_error_file << r_current_process_info[TIME] << " " << l2_rel_error << " " << l2_abs_error << std::endl;
+        l2_error_file.close();
 
         KRATOS_CATCH("");
     }
