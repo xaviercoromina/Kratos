@@ -92,18 +92,25 @@ class PoromechanicsL2NormErrorProcess(KratosMultiphysics.Process):
                                 data = [self.node_id_list, self.displ_x_list, self.displ_y_list, self.displ_z_list,self.fluid_pressure_list],
                                 dtype = 'float32')
         else:
-            i = 0
-            ref_displ_x = self.file[self.group_name + '/REF_DISPL_X'][:,]
-            ref_displ_y = self.file[self.group_name + '/REF_DISPL_Y'][:,]
-            ref_displ_z = self.file[self.group_name + '/REF_DISPL_Z'][:,]
-            ref_fluid_pressure = self.file[self.group_name + '/REF_FLUID_PRESSURE'][:,]
+            e = False
+            node = self.group_name + '/REF_DISPL_X'
+            if node in self.file.keys():
+                # self.file[node]
+                e = True
+            if e:
+                i = 0
 
-            for node in self.model_part.Nodes:
-                node.SetSolutionStepValue(KratosMultiphysics.REFERENCE_DISPLACEMENT_X,ref_displ_x[i])
-                node.SetSolutionStepValue(KratosMultiphysics.REFERENCE_DISPLACEMENT_Y,ref_displ_y[i])
-                node.SetSolutionStepValue(KratosMultiphysics.REFERENCE_DISPLACEMENT_Z,ref_displ_z[i])
-                node.SetSolutionStepValue(KratosMultiphysics.REFERENCE_FLUID_PRESSURE,ref_fluid_pressure[i])
+                ref_displ_x = self.file[self.group_name + '/REF_DISPL_X'][:,]
+                ref_displ_y = self.file[self.group_name + '/REF_DISPL_Y'][:,]
+                ref_displ_z = self.file[self.group_name + '/REF_DISPL_Z'][:,]
+                ref_fluid_pressure = self.file[self.group_name + '/REF_FLUID_PRESSURE'][:,]
 
-                i += 1
-            
-            self.process.ExecuteAfterOutputStep()
+                for node in self.model_part.Nodes:
+                    node.SetSolutionStepValue(KratosPoro.REFERENCE_DISPLACEMENT_X,ref_displ_x[i])
+                    node.SetSolutionStepValue(KratosPoro.REFERENCE_DISPLACEMENT_Y,ref_displ_y[i])
+                    node.SetSolutionStepValue(KratosPoro.REFERENCE_DISPLACEMENT_Z,ref_displ_z[i])
+                    node.SetSolutionStepValue(KratosPoro.REFERENCE_FLUID_PRESSURE,ref_fluid_pressure[i])
+
+                    i += 1
+                
+                self.process.ExecuteAfterOutputStep()
