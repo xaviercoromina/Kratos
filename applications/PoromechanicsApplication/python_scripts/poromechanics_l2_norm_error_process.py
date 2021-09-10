@@ -17,6 +17,7 @@ class PoromechanicsL2NormErrorProcess(KratosMultiphysics.Process):
         default_settings = KratosMultiphysics.Parameters( """
             {
                 "model_part_name": "PLEASE_CHOOSE_MODEL_PART_NAME",
+                "reference_solution_file_name": "reference_solution.hdf5",
                 "write_reference_solution": true
             }  """ )
         settings.ValidateAndAssignDefaults(default_settings)
@@ -25,11 +26,12 @@ class PoromechanicsL2NormErrorProcess(KratosMultiphysics.Process):
 
         self.model_part = Model[settings["model_part_name"].GetString()]
 
+        file_name = settings["reference_solution_file_name"].GetString()
         self.file = 0
         if self.write_reference_solution:
-            self.file = h5py.File("reference_solution.hdf5", 'w')
+            self.file = h5py.File(file_name, 'w')
         else:
-            self.file = h5py.File("reference_solution.hdf5", 'r')
+            self.file = h5py.File(file_name, 'r')
 
         self.params = KratosMultiphysics.Parameters("""{}""")
         self.params.AddValue("model_part_name",settings["model_part_name"])
