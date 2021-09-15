@@ -20,6 +20,7 @@
 #include "custom_constitutive/exponential_cohesive_2D_law.hpp"
 
 #include "custom_constitutive/simo_ju_local_damage_3D_law.hpp"
+#include "custom_constitutive/simo_ju_local_damage_3D_law_mix.hpp"
 #include "custom_constitutive/simo_ju_local_damage_plane_strain_2D_law.hpp"
 #include "custom_constitutive/simo_ju_local_damage_plane_stress_2D_law.hpp"
 
@@ -28,6 +29,7 @@
 #include "custom_constitutive/simo_ju_nonlocal_damage_plane_stress_2D_law.hpp"
 
 #include "custom_constitutive/modified_mises_nonlocal_damage_3D_law.hpp"
+#include "custom_constitutive/modified_mises_nonlocal_damage_3D_law_mix.hpp"
 #include "custom_constitutive/modified_mises_nonlocal_damage_plane_strain_2D_law.hpp"
 #include "custom_constitutive/modified_mises_nonlocal_damage_plane_stress_2D_law.hpp"
 #include "custom_constitutive/history_linear_elastic_3D_law.hpp"
@@ -78,6 +80,9 @@ void  AddCustomConstitutiveLawsToPython(pybind11::module& m)
     py::class_< SimoJuLocalDamage3DLaw, SimoJuLocalDamage3DLaw::Pointer, ConstitutiveLaw >
     (m, "SimoJuLocalDamage3DLaw")
     .def( py::init<>() );
+    py::class_< SimoJuLocalDamage3DLawMix, SimoJuLocalDamage3DLawMix::Pointer, ConstitutiveLaw >
+    (m, "SimoJuLocalDamage3DLawMix")
+    .def( py::init<>() );
     py::class_< SimoJuLocalDamagePlaneStrain2DLaw, SimoJuLocalDamagePlaneStrain2DLaw::Pointer, ConstitutiveLaw >
     (m, "SimoJuLocalDamagePlaneStrain2DLaw")
     .def( py::init<>() );
@@ -97,6 +102,9 @@ void  AddCustomConstitutiveLawsToPython(pybind11::module& m)
 
     py::class_< ModifiedMisesNonlocalDamage3DLaw, ModifiedMisesNonlocalDamage3DLaw::Pointer, ConstitutiveLaw >
     (m, "ModifiedMisesNonlocalDamage3DLaw")
+    .def( py::init<>() );
+    py::class_< ModifiedMisesNonlocalDamage3DLawMix, ModifiedMisesNonlocalDamage3DLawMix::Pointer, ConstitutiveLaw >
+    (m, "ModifiedMisesNonlocalDamage3DLawMix")
     .def( py::init<>() );
     py::class_< ModifiedMisesNonlocalDamagePlaneStrain2DLaw, ModifiedMisesNonlocalDamagePlaneStrain2DLaw::Pointer, ConstitutiveLaw >
     (m, "ModifiedMisesNonlocalDamagePlaneStrain2DLaw")
