@@ -66,7 +66,6 @@ protected:
     void CalculateLinearElasticMatrix( Matrix& rLinearElasticMatrix,const double& YoungModulus,const double& PoissonCoefficient ) override;
 
 
-
 private:
     
     /// Serialization

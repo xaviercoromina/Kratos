@@ -40,7 +40,7 @@ ConstitutiveLaw::Pointer ModifiedMisesNonlocalDamage3DLawMix::Clone() const
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-void LinearElasticPlastic3DLaw::CalculateLinearElasticMatrix( Matrix& rLinearElasticMatrix,const double& YoungModulus,const double& PoissonCoefficient )
+void ModifiedMisesNonlocalDamage3DLawMix::CalculateLinearElasticMatrix( Matrix& rLinearElasticMatrix,const double& YoungModulus,const double& PoissonCoefficient )
 {
     rLinearElasticMatrix.clear();
 
