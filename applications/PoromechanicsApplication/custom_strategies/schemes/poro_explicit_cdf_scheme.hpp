@@ -133,6 +133,8 @@ public:
         mGamma = r_current_process_info[GAMMA];
         mKappa0 = r_current_process_info[KAPPA_0];
         mKappa1 = r_current_process_info[KAPPA_1];
+        mAlpha1 = r_current_process_info[RAYLEIGH_ALPHA_1];
+        mBeta1 = r_current_process_info[RAYLEIGH_BETA_1];
 
         KRATOS_CATCH("")
     }
@@ -153,7 +155,7 @@ public:
         array_1d<double, 3> displacement_aux;
         noalias(displacement_aux) = r_displacement;
         array_1d<double, 3>& r_displacement_old = itCurrentNode->FastGetSolutionStepValue(DISPLACEMENT_OLD);
-        // array_1d<double, 3>& r_displacement_older = itCurrentNode->FastGetSolutionStepValue(DISPLACEMENT_OLDER);
+        array_1d<double, 3>& r_displacement_older = itCurrentNode->FastGetSolutionStepValue(DISPLACEMENT_OLDER);
         const double nodal_mass = itCurrentNode->GetValue(NODAL_MASS);
 
         double& r_current_water_pressure = itCurrentNode->FastGetSolutionStepValue(WATER_PRESSURE);
@@ -164,7 +166,7 @@ public:
         // array_1d<double, 3>& r_external_force_older = itCurrentNode->FastGetSolutionStepValue(EXTERNAL_FORCE_OLDER);
         const array_1d<double, 3>& r_internal_force = itCurrentNode->FastGetSolutionStepValue(INTERNAL_FORCE);
         const array_1d<double, 3>& r_internal_force_old = itCurrentNode->FastGetSolutionStepValue(INTERNAL_FORCE,1);
-        // array_1d<double, 3>& r_internal_force_older = itCurrentNode->FastGetSolutionStepValue(INTERNAL_FORCE_OLDER);
+        array_1d<double, 3>& r_internal_force_older = itCurrentNode->FastGetSolutionStepValue(INTERNAL_FORCE_OLDER);
 
         std::array<bool, 3> fix_displacements = {false, false, false};
         fix_displacements[0] = (itCurrentNode->GetDof(DISPLACEMENT_X, DisplacementPosition).IsFixed());
@@ -172,17 +174,45 @@ public:
         if (DomainSize == 3)
             fix_displacements[2] = (itCurrentNode->GetDof(DISPLACEMENT_Z, DisplacementPosition + 2).IsFixed());
 
-        // TODO: CDF-1
+        // CDF-1d
         for (IndexType j = 0; j < DomainSize; j++) {
             if (fix_displacements[j] == false) {
-                    r_displacement[j] = ( (2.0*(1.0-mDelta)-mAlpha*mDeltaTime)*nodal_mass*r_displacement[j]
-                                          + (mDelta-1.0+mAlpha*mDeltaTime)*nodal_mass*r_displacement_old[j]
-                                          - mDeltaTime*(mBeta+mDeltaTime*(mGamma-mDelta*mKappa0))*r_internal_force[j]
-                                          + mDeltaTime*(mBeta-mDeltaTime*(1.0-mGamma-mDelta*mKappa1))*r_internal_force_old[j]
-                                          + mDeltaTime*mDeltaTime*((mGamma-mDelta*mKappa0)*r_external_force[j]+(1.0-mGamma-mDelta*mKappa1)*r_external_force_old[j])
-                                        ) / ( nodal_mass*(1.0-mDelta) );
+                    r_displacement[j] = ( (2.0*(1.0+mDelta)-mDeltaTime*(mAlpha+mDelta*mAlpha1))*nodal_mass*r_displacement[j]
+                                          + (mDeltaTime*(mAlpha+2.0*mDelta*mAlpha1)-(1.0+mDelta))*nodal_mass*r_displacement_old[j]
+                                          - mDeltaTime*mDelta*mAlpha1*nodal_mass*r_displacement_older[j]
+                                          - mDeltaTime*(mBeta+mDelta*mBeta1+mDeltaTime*(mGamma+mDelta*mKappa0))*r_internal_force[j]
+                                          + mDeltaTime*(mBeta+2.0*mDelta*mBeta1-mDeltaTime*(1.0-mGamma+mDelta*mKappa1))*r_internal_force_old[j]
+                                          - mDeltaTime*mDelta*mBeta1*r_internal_force_older[j]
+                                          + mDeltaTime*mDeltaTime*((mGamma+mDelta*mKappa0)*r_external_force[j]+(1.0-mGamma+mDelta*mKappa1)*r_external_force_old[j])
+                                        ) / ( nodal_mass*(1.0+mDelta) );
             }
         }
+
+        // CDF-1d*
+        // for (IndexType j = 0; j < DomainSize; j++) {
+        //     if (fix_displacements[j] == false) {
+        //             r_displacement[j] = ( (2.0+mDelta-mDeltaTime*(mAlpha+mDelta*mAlpha1))*nodal_mass*r_displacement[j]
+        //                                   + (mDeltaTime*(mAlpha+2.0*mDelta*mAlpha1)-(1.0+2.0*mDelta))*nodal_mass*r_displacement_old[j]
+        //                                   + (mDelta-mDeltaTime*mDelta*mAlpha1)*nodal_mass*r_displacement_older[j]
+        //                                   - mDeltaTime*(mBeta+mDelta*mBeta1+mDeltaTime*(mGamma-mDelta*mKappa0))*r_internal_force[j]
+        //                                   + mDeltaTime*(mBeta+2.0*mDelta*mBeta1-mDeltaTime*(1.0-mGamma-mDelta*mKappa1))*r_internal_force_old[j]
+        //                                   - mDeltaTime*mDelta*mBeta1*r_internal_force_older[j]
+        //                                   + mDeltaTime*mDeltaTime*((mGamma-mDelta*mKappa0)*r_external_force[j]+(1.0-mGamma-mDelta*mKappa1)*r_external_force_old[j])
+        //                                 ) / ( nodal_mass );
+        //     }
+        // }
+
+        // CDF-1
+        // for (IndexType j = 0; j < DomainSize; j++) {
+        //     if (fix_displacements[j] == false) {
+        //             r_displacement[j] = ( (2.0*(1.0-mDelta)-mAlpha*mDeltaTime)*nodal_mass*r_displacement[j]
+        //                                   + (mDelta-1.0+mAlpha*mDeltaTime)*nodal_mass*r_displacement_old[j]
+        //                                   - mDeltaTime*(mBeta+mDeltaTime*(mGamma-mDelta*mKappa0))*r_internal_force[j]
+        //                                   + mDeltaTime*(mBeta-mDeltaTime*(1.0-mGamma-mDelta*mKappa1))*r_internal_force_old[j]
+        //                                   + mDeltaTime*mDeltaTime*((mGamma-mDelta*mKappa0)*r_external_force[j]+(1.0-mGamma-mDelta*mKappa1)*r_external_force_old[j])
+        //                                 ) / ( nodal_mass*(1.0-mDelta) );
+        //     }
+        // }
 
         // CDF-12bd
         // for (IndexType j = 0; j < DomainSize; j++) {
@@ -205,10 +235,10 @@ public:
             r_current_dt_water_pressure = 0.0;
         }
 
-        // noalias(r_displacement_older) = r_displacement_old;
+        noalias(r_displacement_older) = r_displacement_old;
         noalias(r_displacement_old) = displacement_aux;
         // noalias(r_external_force_older) = r_external_force_old;
-        // noalias(r_internal_force_older) = r_internal_force_old;
+        noalias(r_internal_force_older) = r_internal_force_old;
         const array_1d<double, 3>& r_velocity_old = itCurrentNode->FastGetSolutionStepValue(VELOCITY,1);
         array_1d<double, 3>& r_velocity = itCurrentNode->FastGetSolutionStepValue(VELOCITY);
         array_1d<double, 3>& r_acceleration = itCurrentNode->FastGetSolutionStepValue(ACCELERATION);
@@ -243,6 +273,8 @@ protected:
     double mGamma;
     double mKappa0;
     double mKappa1;
+    double mAlpha1;
+    double mBeta1;
 
     ///@}
     ///@name Protected Structs

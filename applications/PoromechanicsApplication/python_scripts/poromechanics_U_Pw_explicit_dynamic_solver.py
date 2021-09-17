@@ -40,7 +40,11 @@ class ExplicitUPwSolver(UPwSolver):
             "delta_b"                    : 1.0,
             "gamma"                      : 0.5,
             "kappa_0"                    : 0.5,
-            "kappa_1"                    : 0.5
+            "kappa_1"                    : 0.5,
+            "rayleigh_alpha_1"           : 0.0,
+            "rayleigh_beta_1"            : 0.0,
+            "xi1_1"                      : 1.0,
+            "xi1_n"                      : 0.05
         }""")
         this_defaults.AddMissingParameters(super().GetDefaultParameters())
         return this_defaults
@@ -130,6 +134,10 @@ class ExplicitUPwSolver(UPwSolver):
         omega_n = self.settings["omega_n"].GetDouble()
         rayleigh_alpha = self.settings["rayleigh_alpha"].GetDouble()
         rayleigh_beta = self.settings["rayleigh_beta"].GetDouble()
+        rayleigh_alpha_1 = self.settings["rayleigh_alpha_1"].GetDouble()
+        rayleigh_beta_1 = self.settings["rayleigh_beta_1"].GetDouble()
+        xi1_1 = self.settings["xi1_1"].GetDouble()
+        xi1_n = self.settings["xi1_n"].GetDouble()
         if (scheme_type == "Explicit_Central_Differences" and g_factor >= 1.0):
             theta_factor = 0.5
             g_coeff = Dt*omega_n*omega_n*0.25*g_factor
@@ -143,6 +151,14 @@ class ExplicitUPwSolver(UPwSolver):
                 xi_n = (np.sqrt(1+g_coeff*Dt)-theta_factor*omega_n*Dt*0.5)
             rayleigh_beta = 2.0*(xi_n*omega_n-xi_1*omega_1)/(omega_n*omega_n-omega_1*omega_1)
             rayleigh_alpha = 2.0*xi_1*omega_1-rayleigh_beta*omega_1*omega_1
+            if (scheme_type == "Explicit_CDF"):
+                rayleigh_beta_1 = 2.0*(xi1_n*omega_n-xi1_1*omega_1)/(omega_n*omega_n-omega_1*omega_1)
+                rayleigh_alpha_1 = 2.0*xi1_1*omega_1-rayleigh_beta_1*omega_1*omega_1
+            # TODO: tests
+            # rayleigh_beta = xi_n/omega_n
+            # rayleigh_alpha = omega_n*xi_n
+            # xi_1 = rayleigh_alpha/(2.0*omega_1)+0.5*rayleigh_beta*omega_1
+            # TODO
             KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: Scheme Information")
             KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: dt: ",Dt)
             KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: g_coeff: ",g_coeff)
@@ -153,7 +169,13 @@ class ExplicitUPwSolver(UPwSolver):
             KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: Alpha and Beta output")
             KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: rayleigh_alpha: ",rayleigh_alpha)
             KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: rayleigh_beta: ",rayleigh_beta)
-        
+            if (scheme_type == "Explicit_CDF"):
+                KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: xi1_1: ",xi1_1)
+                KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: xi1_n: ",xi1_n)
+                KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: Alpha1 and Beta1 output")
+                KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: rayleigh_alpha_1: ",rayleigh_alpha_1)
+                KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: rayleigh_beta_1: ",rayleigh_beta_1)
+                
         process_info.SetValue(StructuralMechanicsApplication.RAYLEIGH_ALPHA, rayleigh_alpha)
         process_info.SetValue(StructuralMechanicsApplication.RAYLEIGH_BETA, rayleigh_beta)
         process_info.SetValue(KratosPoro.G_COEFFICIENT, g_coeff)
@@ -163,6 +185,8 @@ class ExplicitUPwSolver(UPwSolver):
         process_info.SetValue(KratosPoro.GAMMA, self.settings["gamma"].GetDouble())
         process_info.SetValue(KratosPoro.KAPPA_0, self.settings["kappa_0"].GetDouble())
         process_info.SetValue(KratosPoro.KAPPA_1, self.settings["kappa_1"].GetDouble())
+        process_info.SetValue(KratosPoro.RAYLEIGH_ALPHA_1, rayleigh_alpha_1)
+        process_info.SetValue(KratosPoro.RAYLEIGH_BETA_1, rayleigh_beta_1)
 
         # Setting the time integration schemes
         if(scheme_type == "Explicit_Central_Differences"):
