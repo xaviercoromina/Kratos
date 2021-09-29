@@ -601,12 +601,50 @@ void BaseSolidElement::CalculateMassMatrix(
     // Checking if computing lumped mass matrix
     const bool compute_lumped_mass_matrix = StructuralMechanicsElementUtilities::ComputeLumpedMassMatrix(r_prop, rCurrentProcessInfo);
 
+    // TODO: Ignasi
+    MatrixType stiffness_matrix( mat_size, mat_size );
+    VectorType residual_vector( mat_size );
+    this->CalculateAll(stiffness_matrix, residual_vector, rCurrentProcessInfo, true, false);
+
     // LUMPED MASS MATRIX
     if (compute_lumped_mass_matrix) {
-        VectorType temp_vector(mat_size);
-        this->CalculateLumpedMassVector(temp_vector, rCurrentProcessInfo);
-        for (IndexType i = 0; i < mat_size; ++i)
-            rMassMatrix(i, i) = temp_vector[i];
+        // TODO: Ignasi
+        // VectorType temp_vector(mat_size);
+        // this->CalculateLumpedMassVector(temp_vector, rCurrentProcessInfo);
+        // for (IndexType i = 0; i < mat_size; ++i)
+        //     rMassMatrix(i, i) = temp_vector[i];
+
+        // TODO: Ignasi
+        // for ( IndexType i = 0; i < number_of_nodes; ++i ) {
+        //     const SizeType index = dimension * i;
+        //     double average_nodal_stiffness = 0.0;
+        //     for ( IndexType j = 0; j < dimension; ++j ){
+        //         average_nodal_stiffness += stiffness_matrix(index+j,index+j);
+        //     }
+        //     average_nodal_stiffness *= 1.0/dimension;
+        //     for ( IndexType j = 0; j < dimension; ++j ){
+        //         rMassMatrix(index+j, index+j) = average_nodal_stiffness;
+        //     }
+        // }
+        // TODO: Ignasi
+        // for ( IndexType i = 0; i < number_of_nodes; ++i ) {
+        //     const SizeType index = dimension * i;
+        //     for ( IndexType j = 0; j < dimension; ++j ){
+        //         double row_stiffness = 0.0;
+        //         for ( IndexType k = 0; k < stiffness_matrix.size1(); ++k ){
+        //             row_stiffness += stiffness_matrix(index+j,k)*stiffness_matrix(index+j,k);
+        //         }
+        //         row_stiffness = std::sqrt(row_stiffness);
+        //         rMassMatrix(index+j, index+j) = row_stiffness;
+        //     }
+        // }
+        // TODO: Ignasi
+        for ( IndexType i = 0; i < number_of_nodes; ++i ) {
+            const SizeType index = dimension * i;
+            for ( IndexType j = 0; j < dimension; ++j ){
+                rMassMatrix(index+j, index+j) = stiffness_matrix(index+j,index+j);
+            }
+        }
     } else { // CONSISTENT MASS
         const double density = StructuralMechanicsElementUtilities::GetDensityForMassMatrixComputation(*this);
         const double thickness = (dimension == 2 && r_prop.Has(THICKNESS)) ? r_prop[THICKNESS] : 1.0;
