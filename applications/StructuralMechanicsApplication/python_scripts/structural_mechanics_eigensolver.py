@@ -27,6 +27,7 @@ class EigenSolver(MechanicalSolver):
 
         # Construct the base solver.
         super().__init__(main_model_part, custom_settings)
+        self.main_model_part.ProcessInfo[KratosMultiphysics.COMPUTE_LUMPED_MASS_MATRIX] = True
         KratosMultiphysics.Logger.PrintInfo("::[EigenSolver]:: ", "Construction finished")
 
     @classmethod
@@ -46,6 +47,10 @@ class EigenSolver(MechanicalSolver):
         base_parameters.RemoveValue("linear_solver_settings")
         this_defaults.AddMissingParameters(base_parameters)
         return this_defaults
+
+    def FinalizeSolutionStep(self):
+        super().FinalizeSolutionStep()
+        print('eigenvalue_vector: ',self.main_model_part.ProcessInfo[StructuralMechanicsApplication.EIGENVALUE_VECTOR])
 
     #### Private functions ####
 
@@ -80,8 +85,8 @@ class EigenSolver(MechanicalSolver):
 
         solver_type = self.settings["eigensolver_settings"]["solver_type"].GetString()
         if solver_type in ["eigen_eigensystem", "spectra_sym_g_eigs_shift"]: # TODO evaluate what has to be used for spectra
-            mass_matrix_diagonal_value = 0.0
-            stiffness_matrix_diagonal_value = 1.0
+            mass_matrix_diagonal_value = 1.0
+            stiffness_matrix_diagonal_value = -1.0
         elif solver_type == "feast":
             mass_matrix_diagonal_value = 1.0
             stiffness_matrix_diagonal_value = -1.0
