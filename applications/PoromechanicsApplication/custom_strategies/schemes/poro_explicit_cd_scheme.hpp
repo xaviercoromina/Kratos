@@ -214,6 +214,8 @@ public:
         for (int i = 0; i < static_cast<int>(r_nodes.size()); ++i) {
             auto it_node = (it_node_begin + i);
             it_node->SetValue(NODAL_MASS, 0.0);
+            const array_1d<double, 3> nodal_mass_array = ZeroVector(3);
+            it_node->SetValue(NODAL_MASS_ARRAY,nodal_mass_array);
             // TODO: Set Nodal AntiCompressibility to zero for mass-balance equation (C=1/Q, with Q being the compressibility coeff.)
             array_1d<double, 3>& r_force_residual = it_node->FastGetSolutionStepValue(FORCE_RESIDUAL);
             double& r_flux_residual = it_node->FastGetSolutionStepValue(FLUX_RESIDUAL);
@@ -478,7 +480,8 @@ public:
         noalias(displacement_aux) = r_displacement;
         array_1d<double, 3>& r_displacement_old = itCurrentNode->FastGetSolutionStepValue(DISPLACEMENT_OLD);
         // array_1d<double, 3>& r_displacement_older = itCurrentNode->FastGetSolutionStepValue(DISPLACEMENT_OLDER);
-        const double nodal_mass = itCurrentNode->GetValue(NODAL_MASS);
+        // const double nodal_mass = itCurrentNode->GetValue(NODAL_MASS);
+        const array_1d<double, 3>& r_nodal_mass_array = itCurrentNode->GetValue(NODAL_MASS_ARRAY);
 
         double& r_current_water_pressure = itCurrentNode->FastGetSolutionStepValue(WATER_PRESSURE);
         double& r_current_dt_water_pressure = itCurrentNode->FastGetSolutionStepValue(DT_WATER_PRESSURE);      
@@ -494,14 +497,25 @@ public:
         if (DomainSize == 3)
             fix_displacements[2] = (itCurrentNode->GetDof(DISPLACEMENT_Z, DisplacementPosition + 2).IsFixed());
 
+        // for (IndexType j = 0; j < DomainSize; j++) {
+        //     if (fix_displacements[j] == false) {
+        //             r_displacement[j] = ( (2.0*(1.0+mGCoefficient*mDeltaTime)-mAlpha*mDeltaTime)*nodal_mass*r_displacement[j]
+        //                                   + (mAlpha*mDeltaTime-(1.0+mGCoefficient*mDeltaTime))*nodal_mass*r_displacement_old[j]
+        //                                   - mDeltaTime*(mBeta+mTheta*mDeltaTime)*r_internal_force[j]
+        //                                   + mDeltaTime*(mBeta-mDeltaTime*(1.0-mTheta))*r_internal_force_old[j]
+        //                                   + mDeltaTime*mDeltaTime*(mTheta*r_external_force[j]+(1.0-mTheta)*r_external_force_old[j])
+        //                                 ) / ( nodal_mass*(1.0+mGCoefficient*mDeltaTime) );
+        //     }
+        // }
+
         for (IndexType j = 0; j < DomainSize; j++) {
             if (fix_displacements[j] == false) {
-                    r_displacement[j] = ( (2.0*(1.0+mGCoefficient*mDeltaTime)-mAlpha*mDeltaTime)*nodal_mass*r_displacement[j]
-                                          + (mAlpha*mDeltaTime-(1.0+mGCoefficient*mDeltaTime))*nodal_mass*r_displacement_old[j]
+                    r_displacement[j] = ( (2.0*(1.0+mGCoefficient*mDeltaTime)-mAlpha*mDeltaTime)*r_nodal_mass_array[j]*r_displacement[j]
+                                          + (mAlpha*mDeltaTime-(1.0+mGCoefficient*mDeltaTime))*r_nodal_mass_array[j]*r_displacement_old[j]
                                           - mDeltaTime*(mBeta+mTheta*mDeltaTime)*r_internal_force[j]
                                           + mDeltaTime*(mBeta-mDeltaTime*(1.0-mTheta))*r_internal_force_old[j]
                                           + mDeltaTime*mDeltaTime*(mTheta*r_external_force[j]+(1.0-mTheta)*r_external_force_old[j])
-                                        ) / ( nodal_mass*(1.0+mGCoefficient*mDeltaTime) );
+                                        ) / ( r_nodal_mass_array[j]*(1.0+mGCoefficient*mDeltaTime) );
             }
         }
 
