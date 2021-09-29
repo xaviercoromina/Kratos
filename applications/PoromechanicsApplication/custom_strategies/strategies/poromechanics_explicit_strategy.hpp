@@ -139,6 +139,8 @@ public:
             // Set Nodal Mass to zero
             NodesArrayType& r_nodes = r_model_part.Nodes();
             VariableUtils().SetNonHistoricalVariable(NODAL_MASS, 0.0, r_nodes);
+            const array_1d<double, 3> nodal_mass_array = ZeroVector(3);
+            VariableUtils().SetNonHistoricalVariable(NODAL_MASS_ARRAY, nodal_mass_array, r_nodes);
             // TODO: Set Nodal AntiCompressibility to zero for mass-balance equation (C=1/Q, with Q being the compressibility coeff.)
 
             // Iterate over the elements
@@ -155,9 +157,6 @@ public:
                 auto it_elem = it_elem_begin + i;
                 it_elem->AddExplicitContribution(dummy_vector, RESIDUAL_VECTOR, NODAL_MASS, r_current_process_info);
             }
-
-            //Initialize ProcessInfo variables
-            r_current_process_info[IS_CONVERGED] = true;
 
             mInitializeWasPerformed = true;
         }
@@ -191,6 +190,8 @@ public:
             // Set Nodal Mass and Damping to zero
             NodesArrayType& r_nodes = r_model_part.Nodes();
             VariableUtils().SetNonHistoricalVariable(NODAL_MASS, 0.0, r_nodes);
+            const array_1d<double, 3> nodal_mass_array = ZeroVector(3);
+            VariableUtils().SetNonHistoricalVariable(NODAL_MASS_ARRAY, nodal_mass_array, r_nodes);
 
             Vector dummy_vector;
             #pragma omp parallel for firstprivate(dummy_vector), schedule(guided,512)
@@ -233,9 +234,6 @@ public:
         // Explicitly integrates the equation of motion.
         mpScheme->Update(r_model_part, dof_set_dummy, rA, rDx, rb);
 
-        // CONVERGENCE CHECK
-        this->CheckConvergence(r_model_part);
-
         // Move the mesh if needed
         if (BaseType::MoveMeshFlag())
             BaseType::MoveMesh();
@@ -248,7 +246,8 @@ public:
             this->CalculateReactions(mpScheme, r_model_part);
         }
 
-        return true;
+        // CONVERGENCE CHECK
+        return this->CheckConvergence(r_model_part);
     }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -339,17 +338,37 @@ protected:
         }
     }
 
-    virtual void CheckConvergence(ModelPart& rModelPart)
+    virtual bool CheckConvergence(ModelPart& rModelPart)
     {
+        bool is_converged = false;
+        bool is_converged_rx = false;
+        bool is_converged_ry = false;
+        bool is_converged_rz = false;
+        bool is_converged_rwp = false;
+
         const ProcessInfo& r_current_process_info = rModelPart.GetProcessInfo();
         NodesArrayType& r_nodes = rModelPart.Nodes();
         const auto it_node_begin = rModelPart.NodesBegin();
 
+        double total_reaction_x = 0.0;
+        double total_reaction_y = 0.0;
+        double total_reaction_z = 0.0;
+        double total_reaction_water_pressure = 0.0;
         double l2_numerator = 0.0;
         double l2_denominator = 0.0;
-        #pragma omp parallel for reduction(+:l2_numerator,l2_denominator)
+        #pragma omp parallel for reduction(+:total_reaction_x,total_reaction_y,total_reaction_z,total_reaction_water_pressure,l2_numerator,l2_denominator)
         for (int i = 0; i < static_cast<int>(r_nodes.size()); ++i) {
             auto itCurrentNode = it_node_begin + i;
+            const array_1d<double, 3>& r_reaction_x = itCurrentNode->FastGetSolutionStepValue(REACTION_X);
+            const array_1d<double, 3>& r_reaction_y = itCurrentNode->FastGetSolutionStepValue(REACTION_Y);
+            const array_1d<double, 3>& r_reaction_z = itCurrentNode->FastGetSolutionStepValue(REACTION_Z);
+            const array_1d<double, 3>& r_reaction_water_pressure = itCurrentNode->FastGetSolutionStepValue(REACTION_WATER_PRESSURE);
+
+            total_reaction_x += r_reaction_x;
+            total_reaction_y += r_reaction_y;
+            total_reaction_z += r_reaction_z;
+            total_reaction_water_pressure += r_reaction_water_pressure;
+
             const array_1d<double, 3>& r_current_displacement = itCurrentNode->FastGetSolutionStepValue(DISPLACEMENT);
             const array_1d<double, 3>& r_previous_displacement = itCurrentNode->FastGetSolutionStepValue(DISPLACEMENT,1);
             const double& r_current_water_pressure = itCurrentNode->FastGetSolutionStepValue(WATER_PRESSURE);
@@ -363,6 +382,7 @@ protected:
             l2_numerator += norm_2_du;
             l2_denominator += norm_2_u_old;
         }
+
         if (l2_denominator > 1.0e-12) {
             double l2_abs_error = std::sqrt(l2_numerator);
             double l2_rel_error = l2_abs_error/std::sqrt(l2_denominator);
@@ -374,11 +394,30 @@ protected:
             // l2_error_file.close();
 
             if (l2_rel_error <= r_current_process_info[ERROR_RATIO] && l2_abs_error <= r_current_process_info[ERROR_INTEGRATION_POINT]) {
-                KRATOS_INFO("EXPLICIT CONVERGENCE CHECK") << "The simulation is converging at step: " << r_current_process_info[STEP] << std::endl;
-                KRATOS_INFO("EXPLICIT CONVERGENCE CHECK") << "L2 Relative Error is: " << l2_rel_error << std::endl;
-                KRATOS_INFO("EXPLICIT CONVERGENCE CHECK") << "L2 Absolute Error is: " << l2_abs_error << std::endl;
+                KRATOS_INFO("EXPLICIT CONVERGENCE CHECK") << "Displacement convergence is achieved" << std::endl;
+                // KRATOS_INFO("EXPLICIT CONVERGENCE CHECK") << "L2 Relative Error is: " << l2_rel_error << std::endl;
+                // KRATOS_INFO("EXPLICIT CONVERGENCE CHECK") << "L2 Absolute Error is: " << l2_abs_error << std::endl;
             }
         }
+
+        if(total_reaction_x <= r_current_process_info[ERROR_INTEGRATION_POINT]){
+            is_converged_rx = true;
+        }
+        if(total_reaction_y <= r_current_process_info[ERROR_INTEGRATION_POINT]){
+            is_converged_ry = true;
+        }
+        if(total_reaction_z <= r_current_process_info[ERROR_INTEGRATION_POINT]){
+            is_converged_rz = true;
+        }
+        if(total_reaction_water_pressure <= r_current_process_info[ERROR_INTEGRATION_POINT]){
+            is_converged_rwp = true;
+        }
+        if(is_converged_rx==true && is_converged_rx==true && is_converged_rx==true && is_converged_rx==true) {
+            is_converged = true;
+            KRATOS_INFO("EXPLICIT CONVERGENCE CHECK") << "Reaction convergence is achieved" << std::endl;
+        }
+
+        return is_converged;
     }
 
 }; // Class PoromechanicsExplicitStrategy
