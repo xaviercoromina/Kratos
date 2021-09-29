@@ -280,6 +280,7 @@ class UPwSolver(PythonSolver):
 
     def SolveSolutionStep(self):
         is_converged = self.solver.SolveSolutionStep()
+        self.main_model_part.ProcessInfo.SetValue(KratosPoro.IS_CONVERGED, is_converged)
         return is_converged
 
     def FinalizeSolutionStep(self):

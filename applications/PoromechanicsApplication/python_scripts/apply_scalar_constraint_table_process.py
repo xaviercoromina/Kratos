@@ -13,6 +13,7 @@ class ApplyScalarConstraintTableProcess(KratosMultiphysics.Process):
         KratosMultiphysics.Process.__init__(self)
 
         self.model_part = Model[settings["model_part_name"].GetString()]
+        self.root_model_part = self.model_part.GetRootModelPart()
 
         self.params = KratosMultiphysics.Parameters("{}")
         self.params.AddValue("model_part_name",settings["model_part_name"])
@@ -51,4 +52,5 @@ class ApplyScalarConstraintTableProcess(KratosMultiphysics.Process):
 
     def ExecuteInitializeSolutionStep(self):
 
-        self.process.ExecuteInitializeSolutionStep()
+        if(self.root_model_part.ProcessInfo[KratosPoro.IS_CONVERGED]==True):
+            self.process.ExecuteInitializeSolutionStep()

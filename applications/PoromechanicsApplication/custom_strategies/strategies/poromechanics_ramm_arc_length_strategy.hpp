@@ -308,8 +308,6 @@ public:
             mpBuilderAndSolver->CalculateReactions(mpScheme, BaseType::GetModelPart(), mA, mDx, mb);
         }
 
-        BaseType::GetModelPart().GetProcessInfo()[IS_CONVERGED] = is_converged;
-
 		return is_converged;
     }
 

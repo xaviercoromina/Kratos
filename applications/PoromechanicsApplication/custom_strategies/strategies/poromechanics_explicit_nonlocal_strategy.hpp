@@ -165,9 +165,6 @@ public:
         // Explicitly integrates the equation of motion.
         mpScheme->Update(r_model_part, dof_set_dummy, rA, rDx, rb);
 
-        // CONVERGENCE CHECK
-        this->CheckConvergence(r_model_part);
-
         // Move the mesh if needed
         if (BaseType::MoveMeshFlag())
             BaseType::MoveMesh();
@@ -181,7 +178,8 @@ public:
             this->CalculateReactions(mpScheme, r_model_part);
         }
 
-        return true;
+        // CONVERGENCE CHECK
+        return this->CheckConvergence(r_model_part);
     }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

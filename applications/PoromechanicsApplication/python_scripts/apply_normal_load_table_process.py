@@ -13,6 +13,7 @@ class ApplyNormalLoadTableProcess(KratosMultiphysics.Process):
         KratosMultiphysics.Process.__init__(self)
 
         self.model_part = Model[settings["model_part_name"].GetString()]
+        self.root_model_part = self.model_part.GetRootModelPart()
 
         self.components_process_list = []
 
@@ -55,5 +56,6 @@ class ApplyNormalLoadTableProcess(KratosMultiphysics.Process):
 
     def ExecuteInitializeSolutionStep(self):
 
-        for component in self.components_process_list:
-            component.ExecuteInitializeSolutionStep()
+        if(self.root_model_part.ProcessInfo[KratosPoro.IS_CONVERGED]==True):
+            for component in self.components_process_list:
+                component.ExecuteInitializeSolutionStep()

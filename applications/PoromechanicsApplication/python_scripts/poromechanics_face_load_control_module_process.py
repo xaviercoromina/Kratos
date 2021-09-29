@@ -15,6 +15,8 @@ class PoromechanicsFaceLoadControlModuleProcess(KratosMultiphysics.Process):
         # Control module process acting on the imposed direction: 0 (X), 1 (Y), 2 (Z)
 
         self.model_part = Model[settings["model_part_name"].GetString()]
+        self.root_model_part = self.model_part.GetRootModelPart()
+
         self.components_process_list = []
 
         # Settings string in json format
@@ -52,8 +54,9 @@ class PoromechanicsFaceLoadControlModuleProcess(KratosMultiphysics.Process):
             component.ExecuteInitialize()
 
     def ExecuteInitializeSolutionStep(self):
-        for component in self.components_process_list:
-            component.ExecuteInitializeSolutionStep()
+        if(self.root_model_part.ProcessInfo[KratosPoro.IS_CONVERGED]==True):
+            for component in self.components_process_list:
+                component.ExecuteInitializeSolutionStep()
 
     def ExecuteFinalizeSolutionStep(self):
         for component in self.components_process_list:

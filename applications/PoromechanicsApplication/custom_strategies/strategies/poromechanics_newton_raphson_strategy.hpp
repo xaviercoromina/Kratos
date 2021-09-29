@@ -119,9 +119,6 @@ public:
         if (mInitializeWasPerformed == false)
 		{
             MotherType::Initialize();
-
-            //Initialize ProcessInfo variables
-            BaseType::GetModelPart().GetProcessInfo()[IS_CONVERGED] = true;
         }
 
         KRATOS_CATCH( "" )
