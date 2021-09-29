@@ -175,32 +175,32 @@ public:
             fix_displacements[2] = (itCurrentNode->GetDof(DISPLACEMENT_Z, DisplacementPosition + 2).IsFixed());
 
         // CDF-1d
-        for (IndexType j = 0; j < DomainSize; j++) {
-            if (fix_displacements[j] == false) {
-                    r_displacement[j] = ( (2.0*(1.0+mDelta)-mDeltaTime*(mAlpha+mDelta*mAlpha1))*nodal_mass*r_displacement[j]
-                                          + (mDeltaTime*(mAlpha+2.0*mDelta*mAlpha1)-(1.0+mDelta))*nodal_mass*r_displacement_old[j]
-                                          - mDeltaTime*mDelta*mAlpha1*nodal_mass*r_displacement_older[j]
-                                          - mDeltaTime*(mBeta+mDelta*mBeta1+mDeltaTime*(mGamma+mDelta*mKappa0))*r_internal_force[j]
-                                          + mDeltaTime*(mBeta+2.0*mDelta*mBeta1-mDeltaTime*(1.0-mGamma+mDelta*mKappa1))*r_internal_force_old[j]
-                                          - mDeltaTime*mDelta*mBeta1*r_internal_force_older[j]
-                                          + mDeltaTime*mDeltaTime*((mGamma+mDelta*mKappa0)*r_external_force[j]+(1.0-mGamma+mDelta*mKappa1)*r_external_force_old[j])
-                                        ) / ( nodal_mass*(1.0+mDelta) );
-            }
-        }
-
-        // CDF-1d*
         // for (IndexType j = 0; j < DomainSize; j++) {
         //     if (fix_displacements[j] == false) {
-        //             r_displacement[j] = ( (2.0+mDelta-mDeltaTime*(mAlpha+mDelta*mAlpha1))*nodal_mass*r_displacement[j]
-        //                                   + (mDeltaTime*(mAlpha+2.0*mDelta*mAlpha1)-(1.0+2.0*mDelta))*nodal_mass*r_displacement_old[j]
-        //                                   + (mDelta-mDeltaTime*mDelta*mAlpha1)*nodal_mass*r_displacement_older[j]
-        //                                   - mDeltaTime*(mBeta+mDelta*mBeta1+mDeltaTime*(mGamma-mDelta*mKappa0))*r_internal_force[j]
-        //                                   + mDeltaTime*(mBeta+2.0*mDelta*mBeta1-mDeltaTime*(1.0-mGamma-mDelta*mKappa1))*r_internal_force_old[j]
+        //             r_displacement[j] = ( (2.0*(1.0+mDelta)-mDeltaTime*(mAlpha+mDelta*mAlpha1))*nodal_mass*r_displacement[j]
+        //                                   + (mDeltaTime*(mAlpha+2.0*mDelta*mAlpha1)-(1.0+mDelta))*nodal_mass*r_displacement_old[j]
+        //                                   - mDeltaTime*mDelta*mAlpha1*nodal_mass*r_displacement_older[j]
+        //                                   - mDeltaTime*(mBeta+mDelta*mBeta1+mDeltaTime*(mGamma+mDelta*mKappa0))*r_internal_force[j]
+        //                                   + mDeltaTime*(mBeta+2.0*mDelta*mBeta1-mDeltaTime*(1.0-mGamma+mDelta*mKappa1))*r_internal_force_old[j]
         //                                   - mDeltaTime*mDelta*mBeta1*r_internal_force_older[j]
-        //                                   + mDeltaTime*mDeltaTime*((mGamma-mDelta*mKappa0)*r_external_force[j]+(1.0-mGamma-mDelta*mKappa1)*r_external_force_old[j])
-        //                                 ) / ( nodal_mass );
+        //                                   + mDeltaTime*mDeltaTime*((mGamma+mDelta*mKappa0)*r_external_force[j]+(1.0-mGamma+mDelta*mKappa1)*r_external_force_old[j])
+        //                                 ) / ( nodal_mass*(1.0+mDelta) );
         //     }
         // }
+
+        // CDF-1d*
+        for (IndexType j = 0; j < DomainSize; j++) {
+            if (fix_displacements[j] == false) {
+                    r_displacement[j] = ( (2.0+mDelta-mDeltaTime*(mAlpha+mDelta*mAlpha1))*nodal_mass*r_displacement[j]
+                                          + (mDeltaTime*(mAlpha+2.0*mDelta*mAlpha1)-(1.0+2.0*mDelta))*nodal_mass*r_displacement_old[j]
+                                          + (mDelta-mDeltaTime*mDelta*mAlpha1)*nodal_mass*r_displacement_older[j]
+                                          - mDeltaTime*(mBeta+mDelta*mBeta1+mDeltaTime*(mGamma-mDelta*mKappa0))*r_internal_force[j]
+                                          + mDeltaTime*(mBeta+2.0*mDelta*mBeta1-mDeltaTime*(1.0-mGamma-mDelta*mKappa1))*r_internal_force_old[j]
+                                          - mDeltaTime*mDelta*mBeta1*r_internal_force_older[j]
+                                          + mDeltaTime*mDeltaTime*((mGamma-mDelta*mKappa0)*r_external_force[j]+(1.0-mGamma-mDelta*mKappa1)*r_external_force_old[j])
+                                        ) / ( nodal_mass );
+            }
+        }
 
         // CDF-1
         // for (IndexType j = 0; j < DomainSize; j++) {
