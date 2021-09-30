@@ -889,6 +889,7 @@ void UPwElement<TDim,TNumNodes>::AddExplicitContribution(
 
             SizeType index = (TDim + 1) * i;
 
+            // TODO: Ignasi
             // #pragma omp atomic
             // rGeom[i].GetValue(NODAL_MASS) += lumped_mass_matrix(index,index);
 
@@ -903,6 +904,8 @@ void UPwElement<TDim,TNumNodes>::AddExplicitContribution(
             // TODO: Ignasi
             array_1d<double, 3 >& r_nodal_mass_array = rGeom[i].GetValue(NODAL_MASS_ARRAY);
             for(SizeType j=0; j<TDim; ++j) {
+                // #pragma omp atomic
+                // r_nodal_mass_array[j] += lumped_mass_matrix(index,index);
                 #pragma omp atomic
                 r_nodal_mass_array[j] += StiffnessMatrix(index+j,index+j);
             }
