@@ -105,6 +105,8 @@ public:
             }
 
             BaseType::SetRebuildLevel(rParameters["rebuild_level"].GetInt());
+
+            mNumberOfStepsToConverge = 0;
         }
 
     //------------------------------------------------------------------------------------
@@ -280,6 +282,7 @@ protected:
     Parameters* mpParameters;
     std::vector<ModelPart*> mSubModelPartList; /// List of every SubModelPart associated to an external load
     std::vector<std::string> mVariableNames; /// Name of the nodal variable associated to every SubModelPart
+    int mNumberOfStepsToConverge;
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -340,6 +343,8 @@ protected:
 
     virtual bool CheckConvergence(ModelPart& rModelPart)
     {
+        mNumberOfStepsToConverge += 1;
+
         bool is_converged = false;
         bool is_converged_rx = false;
         bool is_converged_ry = false;
@@ -394,27 +399,28 @@ protected:
             // l2_error_file.close();
 
             if (l2_rel_error <= r_current_process_info[ERROR_RATIO] && l2_abs_error <= r_current_process_info[ERROR_INTEGRATION_POINT]) {
-                KRATOS_INFO("EXPLICIT CONVERGENCE CHECK") << "Displacement convergence is achieved" << std::endl;
+                KRATOS_INFO("EXPLICIT CONVERGENCE CHECK") << "Displacement convergence is achieved after: " << mNumberOfStepsToConverge << " steps." << std::endl;
                 // KRATOS_INFO("EXPLICIT CONVERGENCE CHECK") << "L2 Relative Error is: " << l2_rel_error << std::endl;
                 // KRATOS_INFO("EXPLICIT CONVERGENCE CHECK") << "L2 Absolute Error is: " << l2_abs_error << std::endl;
             }
         }
 
-        if(total_reaction_x <= r_current_process_info[ERROR_INTEGRATION_POINT]){
+        if(std::abs(total_reaction_x) <= r_current_process_info[ERROR_INTEGRATION_POINT]){
             is_converged_rx = true;
         }
-        if(total_reaction_y <= r_current_process_info[ERROR_INTEGRATION_POINT]){
+        if(std::abs(total_reaction_y) <= r_current_process_info[ERROR_INTEGRATION_POINT]){
             is_converged_ry = true;
         }
-        if(total_reaction_z <= r_current_process_info[ERROR_INTEGRATION_POINT]){
+        if(std::abs(total_reaction_z) <= r_current_process_info[ERROR_INTEGRATION_POINT]){
             is_converged_rz = true;
         }
-        if(total_reaction_water_pressure <= r_current_process_info[ERROR_INTEGRATION_POINT]){
+        if(std::abs(total_reaction_water_pressure) <= r_current_process_info[ERROR_INTEGRATION_POINT]){
             is_converged_rwp = true;
         }
-        if(is_converged_rx==true && is_converged_rx==true && is_converged_rx==true && is_converged_rx==true) {
+        if(is_converged_rx==true && is_converged_ry==true && is_converged_rz==true && is_converged_rwp==true) {
             is_converged = true;
-            KRATOS_INFO("EXPLICIT CONVERGENCE CHECK") << "Reaction convergence is achieved" << std::endl;
+            KRATOS_INFO("EXPLICIT CONVERGENCE CHECK") << "Reaction convergence is achieved after: " << mNumberOfStepsToConverge << " steps." << std::endl;
+            mNumberOfStepsToConverge = 0;
         }
 
         return is_converged;
