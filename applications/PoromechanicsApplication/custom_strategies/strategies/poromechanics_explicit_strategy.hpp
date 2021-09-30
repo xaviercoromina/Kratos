@@ -447,23 +447,30 @@ protected:
 
         const ProcessInfo& r_current_process_info = rModelPart.GetProcessInfo();
 
-        if(relative_total_reaction_x <= r_current_process_info[ERROR_RATIO] || total_reaction_x <= r_current_process_info[ERROR_INTEGRATION_POINT]){
+        if(relative_total_reaction_x <= r_current_process_info[ERROR_RATIO]){
             is_converged_rx = true;
         }
-        if(relative_total_reaction_y <= r_current_process_info[ERROR_RATIO] || total_reaction_y <= r_current_process_info[ERROR_INTEGRATION_POINT]){
+        if(relative_total_reaction_y <= r_current_process_info[ERROR_RATIO]){
             is_converged_ry = true;
         }
-        if(relative_total_reaction_z <= r_current_process_info[ERROR_RATIO] || total_reaction_z <= r_current_process_info[ERROR_INTEGRATION_POINT]){
+        if(relative_total_reaction_z <= r_current_process_info[ERROR_RATIO]){
             is_converged_rz = true;
         }
-        if(relative_total_reaction_water_pressure <= r_current_process_info[ERROR_RATIO] || total_reaction_water_pressure <= r_current_process_info[ERROR_INTEGRATION_POINT]){
+        if(relative_total_reaction_water_pressure <= r_current_process_info[ERROR_RATIO]){
             is_converged_rwp = true;
         }
         if(is_converged_rx==true && is_converged_ry==true && is_converged_rz==true && is_converged_rwp==true) {
             is_converged = true;
 
             KRATOS_INFO("EXPLICIT CONVERGENCE CHECK") << "Reaction convergence is achieved after: " << mNumberOfStepsToConverge << " steps." << std::endl;
-            
+            KRATOS_INFO("EXPLICIT CONVERGENCE CHECK") << "relative_total_reaction_x: " << relative_total_reaction_x << std::endl;
+            KRATOS_INFO("EXPLICIT CONVERGENCE CHECK") << "relative_total_reaction_y: " << relative_total_reaction_y << std::endl;
+            KRATOS_INFO("EXPLICIT CONVERGENCE CHECK") << "relative_total_reaction_z: " << relative_total_reaction_z << std::endl;
+            KRATOS_INFO("EXPLICIT CONVERGENCE CHECK") << "relative_total_reaction_water_pressure: " << relative_total_reaction_water_pressure << std::endl;
+            // KRATOS_INFO("EXPLICIT CONVERGENCE CHECK") << "total_reaction_x: " << total_reaction_x << std::endl;
+            // KRATOS_INFO("EXPLICIT CONVERGENCE CHECK") << "total_reaction_y: " << total_reaction_y << std::endl;
+            // KRATOS_INFO("EXPLICIT CONVERGENCE CHECK") << "total_reaction_z: " << total_reaction_z << std::endl;
+            // KRATOS_INFO("EXPLICIT CONVERGENCE CHECK") << "total_reaction_water_pressure: " << total_reaction_water_pressure << std::endl;
             mNumberOfStepsToConverge = 0;
         }
 
