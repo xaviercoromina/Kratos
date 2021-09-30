@@ -20,6 +20,7 @@
 
 // Project includes
 #include "custom_strategies/custom_strategies/mechanical_explicit_strategy.hpp"
+#include "utilities/parallel_utilities.h"
 
 // Application includes
 #include "poromechanics_application_variables.h"
@@ -343,6 +344,7 @@ protected:
 
     virtual bool CheckConvergence(ModelPart& rModelPart)
     {
+        // Initialize variables
         mNumberOfStepsToConverge += 1;
 
         bool is_converged = false;
@@ -351,18 +353,68 @@ protected:
         bool is_converged_rz = false;
         bool is_converged_rwp = false;
 
-        const ProcessInfo& r_current_process_info = rModelPart.GetProcessInfo();
-        NodesArrayType& r_nodes = rModelPart.Nodes();
+        const int NNodes = static_cast<int>(rModelPart.Nodes().size());
         const auto it_node_begin = rModelPart.NodesBegin();
 
+        // Calculate maximum reactions
+        unsigned int NumThreads = ParallelUtilities::GetNumThreads();
+        std::vector<double> maximum_reaction_partition(NumThreads);
+        std::vector<double> maximum_reaction_water_pressure_partition(NumThreads);
+        
+        #pragma omp parallel
+        {
+            int k = OpenMPUtils::ThisThread();
+
+            maximum_reaction_partition[k] = it_node_begin->FastGetSolutionStepValue(REACTION_X);
+            maximum_reaction_water_pressure_partition[k] = it_node_begin->FastGetSolutionStepValue(REACTION_WATER_PRESSURE);
+
+            double reaction_x,reaction_y,reaction_z,reaction_water_pressure;
+
+            #pragma omp for
+            for(int i = 0; i < NNodes; i++)
+            {
+                auto itCurrentNode = it_node_begin + i;
+
+                reaction_x = std::abs(itCurrentNode->FastGetSolutionStepValue(REACTION_X));
+                reaction_y = std::abs(itCurrentNode->FastGetSolutionStepValue(REACTION_Y));
+                reaction_z = std::abs(itCurrentNode->FastGetSolutionStepValue(REACTION_Z));
+                reaction_water_pressure = std::abs(itCurrentNode->FastGetSolutionStepValue(REACTION_WATER_PRESSURE));
+
+                if( reaction_x > maximum_reaction_partition[k] ){
+                    maximum_reaction_partition[k] = reaction_x;
+                }
+                if( reaction_y > maximum_reaction_partition[k] ){
+                    maximum_reaction_partition[k] = reaction_y;
+                }
+                if( reaction_z > maximum_reaction_partition[k] ){
+                    maximum_reaction_partition[k] = reaction_z;
+                }
+                if( reaction_water_pressure > maximum_reaction_water_pressure_partition[k] ){
+                    maximum_reaction_water_pressure_partition[k] = reaction_water_pressure;
+                }
+            }
+        }
+
+        double maximum_reaction = maximum_reaction_partition[0];
+        double maximum_reaction_water_pressure = maximum_reaction_water_pressure_partition[0];
+
+        for(unsigned int i=1; i < NumThreads; i++)
+        {
+            if(maximum_reaction_partition[i] > maximum_reaction){
+                maximum_reaction = maximum_reaction_partition[i];
+            }
+            if(maximum_reaction_water_pressure_partition[i] > maximum_reaction_water_pressure){
+                maximum_reaction_water_pressure = maximum_reaction_water_pressure_partition[i];
+            }
+        }
+
+        // Calculate total reactions
         double total_reaction_x = 0.0;
         double total_reaction_y = 0.0;
         double total_reaction_z = 0.0;
         double total_reaction_water_pressure = 0.0;
-        double l2_numerator = 0.0;
-        double l2_denominator = 0.0;
-        #pragma omp parallel for reduction(+:total_reaction_x,total_reaction_y,total_reaction_z,total_reaction_water_pressure,l2_numerator,l2_denominator)
-        for (int i = 0; i < static_cast<int>(r_nodes.size()); ++i) {
+        #pragma omp parallel for reduction(+:total_reaction_x,total_reaction_y,total_reaction_z,total_reaction_water_pressure)
+        for (int i = 0; i < NNodes; ++i) {
             auto itCurrentNode = it_node_begin + i;
             const double& r_reaction_x = itCurrentNode->FastGetSolutionStepValue(REACTION_X);
             const double& r_reaction_y = itCurrentNode->FastGetSolutionStepValue(REACTION_Y);
@@ -373,53 +425,45 @@ protected:
             total_reaction_y += r_reaction_y;
             total_reaction_z += r_reaction_z;
             total_reaction_water_pressure += r_reaction_water_pressure;
-
-            const array_1d<double, 3>& r_current_displacement = itCurrentNode->FastGetSolutionStepValue(DISPLACEMENT);
-            const array_1d<double, 3>& r_previous_displacement = itCurrentNode->FastGetSolutionStepValue(DISPLACEMENT,1);
-            const double& r_current_water_pressure = itCurrentNode->FastGetSolutionStepValue(WATER_PRESSURE);
-            const double& r_previous_water_pressure = itCurrentNode->FastGetSolutionStepValue(WATER_PRESSURE,1);
-            array_1d<double, 3> delta_displacement;
-            noalias(delta_displacement) = r_current_displacement - r_previous_displacement;
-            const double delta_water_pressure = r_current_water_pressure - r_previous_water_pressure;
-            const double norm_2_du = inner_prod(delta_displacement,delta_displacement) + delta_water_pressure*delta_water_pressure;
-            const double norm_2_u_old = inner_prod(r_previous_displacement,r_previous_displacement) + r_previous_water_pressure*r_previous_water_pressure;
-
-            l2_numerator += norm_2_du;
-            l2_denominator += norm_2_u_old;
         }
 
-        if (l2_denominator > 1.0e-12) {
-            double l2_abs_error = std::sqrt(l2_numerator);
-            double l2_rel_error = l2_abs_error/std::sqrt(l2_denominator);
-
-            // std::fstream l2_error_file;
-            // l2_error_file.open ("l2_error_time.txt", std::fstream::out | std::fstream::app);
-            // l2_error_file.precision(12);
-            // l2_error_file << r_current_process_info[TIME] << " " << l2_rel_error << std::endl;
-            // l2_error_file.close();
-
-            if (l2_rel_error <= r_current_process_info[ERROR_RATIO] && l2_abs_error <= r_current_process_info[ERROR_INTEGRATION_POINT]) {
-                KRATOS_INFO("EXPLICIT CONVERGENCE CHECK") << "Displacement convergence is achieved after: " << mNumberOfStepsToConverge << " steps." << std::endl;
-                // KRATOS_INFO("EXPLICIT CONVERGENCE CHECK") << "L2 Relative Error is: " << l2_rel_error << std::endl;
-                // KRATOS_INFO("EXPLICIT CONVERGENCE CHECK") << "L2 Absolute Error is: " << l2_abs_error << std::endl;
-            }
+        // Calculate relative total reactions
+        double relative_total_reaction_x = 0.0;
+        double relative_total_reaction_y = 0.0;
+        double relative_total_reaction_z = 0.0;
+        double relative_total_reaction_water_pressure = 0.0;
+        const double abs_total_reaction_x = std::abs(total_reaction_x);
+        const double abs_total_reaction_y = std::abs(total_reaction_y);
+        const double abs_total_reaction_z = std::abs(total_reaction_z);
+        const double abs_total_reaction_water_pressure = std::abs(total_reaction_water_pressure);
+        if(maximum_reaction > 1.0e-12) {
+            relative_total_reaction_x = abs_total_reaction_x/maximum_reaction;
+            relative_total_reaction_y = abs_total_reaction_y/maximum_reaction;
+            relative_total_reaction_z = abs_total_reaction_z/maximum_reaction;
+        }
+        if(maximum_reaction_water_pressure > 1.0e-12) {
+            relative_total_reaction_water_pressure = abs_total_reaction_water_pressure/maximum_reaction_water_pressure;
         }
 
-        if(std::abs(total_reaction_x) <= r_current_process_info[ERROR_INTEGRATION_POINT]){
+        const ProcessInfo& r_current_process_info = rModelPart.GetProcessInfo();
+
+        if(relative_total_reaction_x <= r_current_process_info[ERROR_RATIO] || total_reaction_x <= r_current_process_info[ERROR_INTEGRATION_POINT]){
             is_converged_rx = true;
         }
-        if(std::abs(total_reaction_y) <= r_current_process_info[ERROR_INTEGRATION_POINT]){
+        if(relative_total_reaction_y <= r_current_process_info[ERROR_RATIO] || total_reaction_y <= r_current_process_info[ERROR_INTEGRATION_POINT]){
             is_converged_ry = true;
         }
-        if(std::abs(total_reaction_z) <= r_current_process_info[ERROR_INTEGRATION_POINT]){
+        if(relative_total_reaction_z <= r_current_process_info[ERROR_RATIO] || total_reaction_z <= r_current_process_info[ERROR_INTEGRATION_POINT]){
             is_converged_rz = true;
         }
-        if(std::abs(total_reaction_water_pressure) <= r_current_process_info[ERROR_INTEGRATION_POINT]){
+        if(relative_total_reaction_water_pressure <= r_current_process_info[ERROR_RATIO] || total_reaction_water_pressure <= r_current_process_info[ERROR_INTEGRATION_POINT]){
             is_converged_rwp = true;
         }
         if(is_converged_rx==true && is_converged_ry==true && is_converged_rz==true && is_converged_rwp==true) {
             is_converged = true;
+
             KRATOS_INFO("EXPLICIT CONVERGENCE CHECK") << "Reaction convergence is achieved after: " << mNumberOfStepsToConverge << " steps." << std::endl;
+            
             mNumberOfStepsToConverge = 0;
         }
 

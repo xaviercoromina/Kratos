@@ -202,8 +202,8 @@ class ExplicitUPwSolver(UPwSolver):
         return scheme
 
     def _ConstructSolver(self, strategy_type):
-        self.main_model_part.ProcessInfo.SetValue(KratosMultiphysics.ERROR_RATIO, self.settings["displacement_relative_tolerance"].GetDouble())
-        self.main_model_part.ProcessInfo.SetValue(KratosMultiphysics.ERROR_INTEGRATION_POINT, self.settings["displacement_absolute_tolerance"].GetDouble())
+        self.main_model_part.ProcessInfo.SetValue(KratosMultiphysics.ERROR_RATIO, self.settings["residual_relative_tolerance"].GetDouble())
+        self.main_model_part.ProcessInfo.SetValue(KratosMultiphysics.ERROR_INTEGRATION_POINT, self.settings["residual_absolute_tolerance"].GetDouble())
         self.main_model_part.ProcessInfo.SetValue(KratosPoro.IS_CONVERGED, True)
         self.main_model_part.ProcessInfo.SetValue(KratosMultiphysics.NL_ITERATION_NUMBER, 1)
 
