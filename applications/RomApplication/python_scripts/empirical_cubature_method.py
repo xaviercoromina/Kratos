@@ -27,7 +27,7 @@ class EmpiricalCubatureMethod(ElementSelectionStrategy):
         Take_into_account_singular_values: whether to multiply the matrix of singular values by the matrix of left singular vectors. If false, convergence is easier
         Plotting: whether to plot the error evolution of the element selection algorithm
     """
-    def __init__(self, ECM_tolerance = 1e-6, SVD_tolerance = 1e-6, Filter_tolerance = 1e-16, Take_into_account_singular_values = False, Plotting = False):
+    def __init__(self, ECM_tolerance = 1e-10, SVD_tolerance = 1e-10, Filter_tolerance = 1e-16, Take_into_account_singular_values = False, Plotting = False):
         super().__init__()
         self.ECM_tolerance = ECM_tolerance
         self.SVD_tolerance = SVD_tolerance

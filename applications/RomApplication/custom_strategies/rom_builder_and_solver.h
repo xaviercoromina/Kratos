@@ -22,6 +22,7 @@
 #include "includes/model_part.h"
 #include "solving_strategies/schemes/scheme.h"
 #include "solving_strategies/builder_and_solvers/builder_and_solver.h"
+#include "utilities/qr_utility.h"
 
 /* Application includes */
 #include "rom_application_variables.h"
@@ -92,8 +93,12 @@ public:
         // Validate default parameters
         Parameters default_parameters = Parameters(R"(
         {
-            "nodal_unknowns" : [],
-            "number_of_rom_dofs" : 10
+            "nodal_unknowns": [],
+            "number_of_rom_dofs": 0,
+            "build_petrov_galerkin": false,
+            "solve_petrov_galerkin": false,
+            "nodal_residual_unknowns": [],
+            "number_of_rom_residual_dofs": 0
         })");
 
         ThisParameters.ValidateAndAssignDefaults(default_parameters);
@@ -105,6 +110,18 @@ public:
 
         mNodalDofs = mNodalVariablesNames.size();
         mRomDofs = ThisParameters["number_of_rom_dofs"].GetInt();
+        if (ThisParameters["build_petrov_galerkin"].GetBool() == true){
+            mBuildPetrovGalerkin = true;
+            KRATOS_WATCH(900000000000000)
+        }
+        else if (ThisParameters["solve_petrov_galerkin"].GetBool() == true){
+            mSolvePetrovGalerkin = true;
+            mRomDofs_petrov = ThisParameters["number_of_rom_residual_dofs"].GetInt();//ADDEDPETROV
+            }
+        else {
+            mRomDofs_petrov = mRomDofs;
+            KRATOS_WATCH(100000000000000)
+        }
 
         // Setting up mapping: VARIABLE_KEY --> CORRECT_ROW_IN_BASIS
         for(int k=0; k<mNodalDofs; k++){
@@ -358,6 +375,28 @@ public:
         }
     }
 
+    void GetPhiElementalResidual(
+        Matrix &PhiElementalResidual,
+        const Element::DofsVectorType &dofs,
+        const Element::GeometryType &geom)
+    {
+        const Matrix *pcurrent_rom_nodal_basis = nullptr;
+        int counter = 0;
+        for(int k = 0; k < static_cast<int>(dofs.size()); ++k){
+            auto variable_key = dofs[k]->GetVariable().Key();
+            if(k==0)
+                pcurrent_rom_nodal_basis = &(geom[counter].GetValue(ROM_BASIS_ASSEMBLED_RESIDUALS));
+            else if(dofs[k]->Id() != dofs[k-1]->Id()){
+                counter++;
+                pcurrent_rom_nodal_basis = &(geom[counter].GetValue(ROM_BASIS_ASSEMBLED_RESIDUALS));
+            }
+            if (dofs[k]->IsFixed())
+                noalias(row(PhiElementalResidual, k)) = ZeroVector(PhiElementalResidual.size2());
+            else
+                noalias(row(PhiElementalResidual, k)) = row(*pcurrent_rom_nodal_basis, mMapPhi[variable_key]);
+        }
+    }
+
 
 
     /*@{ */
@@ -375,8 +414,17 @@ public:
         TSystemVectorType &b) override
     {
         //define a dense matrix to hold the reduced problem
-        Matrix Arom = ZeroMatrix(mRomDofs, mRomDofs);
-        Vector brom = ZeroVector(mRomDofs);
+        Matrix Arom;
+        Vector brom;
+        if (mBuildPetrovGalerkin== true){//ADDEDPETROV
+            Arom = ZeroMatrix(Dx.size(), mRomDofs);//ADDEDPETROV
+            brom = ZeroVector(Dx.size());//ADDEDPETROV
+        }
+        else {//ADDEDPETROV
+            Arom = ZeroMatrix(mRomDofs_petrov, mRomDofs);
+            brom = ZeroVector(mRomDofs_petrov);
+        }
+        
         TSystemVectorType x(Dx.size());
 
         double project_to_reduced_start = OpenMPUtils::GetCurrentTime();
@@ -422,8 +470,17 @@ public:
         #pragma omp parallel firstprivate(nelements, nconditions, LHS_Contribution, RHS_Contribution, EquationId, el_begin, cond_begin)
         {
             Matrix PhiElemental;
-            Matrix tempA = ZeroMatrix(mRomDofs,mRomDofs);
-            Vector tempb = ZeroVector(mRomDofs);
+            Matrix PhiElementalResidual;//ADDEDPETROV
+            Matrix tempA;
+            Vector tempb;
+            if (mBuildPetrovGalerkin== true){
+                tempA = ZeroMatrix(Dx.size(),mRomDofs);//ADDEDPETROV
+                tempb = ZeroVector(Dx.size());//ADDEDPETROV
+            }
+            else{
+                tempA = ZeroMatrix(mRomDofs_petrov,mRomDofs);//ADDEDPETROV
+                tempb = ZeroVector(mRomDofs_petrov);//ADDEDPETROV
+            }
             Matrix aux;
 
             #pragma omp for nowait
@@ -447,10 +504,32 @@ public:
                     if(aux.size1() != dofs.size() || aux.size2() != mRomDofs)
                         aux.resize(dofs.size(), mRomDofs,false);
                     GetPhiElemental(PhiElemental, dofs, geom);
-                    noalias(aux) = prod(LHS_Contribution, PhiElemental);
-                    double h_rom_weight = it_el->GetValue(HROM_WEIGHT);
-                    noalias(tempA) += prod(trans(PhiElemental), aux) * h_rom_weight;
-                    noalias(tempb) += prod(trans(PhiElemental), RHS_Contribution) * h_rom_weight;
+                    if (mBuildPetrovGalerkin== true){//ADDEDPETROV
+                        if(aux.size1() != dofs.size() || aux.size2() != mRomDofs)//ADDEDPETROV
+                            aux.resize(dofs.size(), mRomDofs,false);//ADDEDPETROV
+                        noalias(aux) = prod(LHS_Contribution, PhiElemental);//ADDEDPETROV
+                        double h_rom_weight = it_el->GetValue(HROM_WEIGHT);//ADDEDPETROV
+                        noalias(tempA) += aux * h_rom_weight;//ADDEDPETROV
+                        noalias(tempb) += RHS_Contribution * h_rom_weight;//ADDEDPETROV
+                    }//ADDEDPETROV
+                    else if (mSolvePetrovGalerkin== true){
+                        if(PhiElementalResidual.size1() != dofs.size() || PhiElementalResidual.size2() != mRomDofs_petrov)//ADDEDPETROV
+                            PhiElementalResidual.resize(dofs.size(), mRomDofs_petrov,false);//ADDEDPETROV
+                        if(aux.size1() != dofs.size() || aux.size2() != mRomDofs_petrov)//ADDEDPETROV
+                            aux.resize(dofs.size(), mRomDofs_petrov,false);//ADDEDPETROV
+                        GetPhiElementalResidual(PhiElementalResidual,dofs,geom);//ADDEDPETROV
+                        noalias(aux) = prod(LHS_Contribution, PhiElemental);//ADDEDPETROV
+                        double h_rom_weight = it_el->GetValue(HROM_WEIGHT);//ADDEDPETROV
+                        noalias(tempA) += prod(trans(PhiElementalResidual), aux) * h_rom_weight;//ADDEDPETROV
+                        noalias(tempb) += prod(trans(PhiElementalResidual), RHS_Contribution) * h_rom_weight;//ADDEDPETROV
+                    }
+                    else {
+                        noalias(aux) = prod(LHS_Contribution, PhiElemental);
+                        double h_rom_weight = it_el->GetValue(HROM_WEIGHT);
+                        noalias(tempA) += prod(trans(PhiElemental), aux) * h_rom_weight;
+                        noalias(tempb) += prod(trans(PhiElemental), RHS_Contribution) * h_rom_weight;
+                    }
+                    
                 }
             }
 
@@ -474,10 +553,31 @@ public:
                     if(aux.size1() != dofs.size() || aux.size2() != mRomDofs)
                         aux.resize(dofs.size(), mRomDofs,false);
                     GetPhiElemental(PhiElemental, dofs, geom);
-                    noalias(aux) = prod(LHS_Contribution, PhiElemental);
-                    double h_rom_weight = it->GetValue(HROM_WEIGHT);
-                    noalias(tempA) += prod(trans(PhiElemental), aux) * h_rom_weight;
-                    noalias(tempb) += prod(trans(PhiElemental), RHS_Contribution) * h_rom_weight;
+                    if (mBuildPetrovGalerkin== true){//ADDEDPETROV
+                    if(aux.size1() != dofs.size() || aux.size2() != mRomDofs)//ADDEDPETROV
+                            aux.resize(dofs.size(), mRomDofs,false);//ADDEDPETROV
+                        noalias(aux) = prod(LHS_Contribution, PhiElemental);//ADDEDPETROV
+                        double h_rom_weight = it->GetValue(HROM_WEIGHT);//ADDEDPETROV
+                        noalias(tempA) += aux * h_rom_weight;//ADDEDPETROV
+                        noalias(tempb) += RHS_Contribution * h_rom_weight;//ADDEDPETROV
+                    }//ADDEDPETROV
+                    else if (mSolvePetrovGalerkin== true){//ADDEDPETROV
+                        if(PhiElementalResidual.size1() != dofs.size() || PhiElementalResidual.size2() != mRomDofs_petrov)//ADDEDPETROV
+                            PhiElementalResidual.resize(dofs.size(), mRomDofs_petrov,false);//ADDEDPETROV
+                        if(aux.size1() != dofs.size() || aux.size2() != mRomDofs_petrov)//ADDEDPETROV
+                            aux.resize(dofs.size(), mRomDofs_petrov,false);//ADDEDPETROV
+                        GetPhiElementalResidual(PhiElementalResidual,dofs,geom);//ADDEDPETROV
+                        noalias(aux) = prod(LHS_Contribution, PhiElemental);//ADDEDPETROV
+                        double h_rom_weight = it->GetValue(HROM_WEIGHT);//ADDEDPETROV
+                        noalias(tempA) += prod(trans(PhiElementalResidual), aux) * h_rom_weight;//ADDEDPETROV
+                        noalias(tempb) += prod(trans(PhiElementalResidual), RHS_Contribution) * h_rom_weight;//ADDEDPETROV
+                    }//ADDEDPETROV
+                    else {//ADDEDPETROV
+                        noalias(aux) = prod(LHS_Contribution, PhiElemental);
+                        double h_rom_weight = it->GetValue(HROM_WEIGHT);
+                        noalias(tempA) += prod(trans(PhiElemental), aux) * h_rom_weight;
+                        noalias(tempb) += prod(trans(PhiElemental), RHS_Contribution) * h_rom_weight;
+                    }
                 }
             }
 
@@ -498,7 +598,20 @@ public:
         //solve for the rom unkowns dunk = Arom^-1 * brom
         Vector dxrom(xrom.size());
         double start_solve = OpenMPUtils::GetCurrentTime();
-        MathUtils<double>::Solve(Arom, dxrom, brom);
+        if (mBuildPetrovGalerkin==true){
+            QR<double, row_major> qr_util;//ADDEDPETROV
+            qr_util.compute(Dx.size(), mRomDofs, &(Arom)(0,0));//ADDEDPETROV
+            qr_util.solve(&(brom)(0), &(dxrom)(0));//ADDEDPETROV
+        }
+        else if (mSolvePetrovGalerkin == true){//ADDEDPETROV
+            //Resolver con QR
+            QR<double, row_major> qr_util;//ADDEDPETROV
+            qr_util.compute(mRomDofs_petrov, mRomDofs, &(Arom)(0,0));//ADDEDPETROV
+            qr_util.solve(&(brom)(0), &(dxrom)(0));//ADDEDPETROV
+        }
+        else {
+            MathUtils<double>::Solve(Arom, dxrom, brom);
+        }
         const double stop_solve = OpenMPUtils::GetCurrentTime();
         KRATOS_INFO_IF("ROMBuilderAndSolver", (this->GetEchoLevel() >= 1 && rModelPart.GetCommunicator().MyPID() == 0)) << "Solve reduced system time: " << stop_solve - start_solve << std::endl;
 
@@ -623,8 +736,10 @@ protected:
     std::vector<std::string> mNodalVariablesNames;
     int mNodalDofs;
     unsigned int mRomDofs;
+    unsigned int mRomDofs_petrov;//ADDEDPETROV
     std::unordered_map<Kratos::VariableData::KeyType,int> mMapPhi;
     ModelPart::ConditionsContainerType mSelectedConditions;
+    bool mSolvePetrovGalerkin = false,mBuildPetrovGalerkin = false;
     bool mHromSimulation = false;
 
     /*@} */

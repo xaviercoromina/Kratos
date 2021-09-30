@@ -31,9 +31,15 @@ class ROMSolver(StaticMechanicalSolver):
             "rom_settings": {
             "nodal_unknowns": [ "DISPLACEMENT_X", "DISPLACEMENT_Y", "DISPLACEMENT_Z"],
             "number_of_rom_dofs": 3
+            },
+            "build_petrov_galerkin": false,
+            "solve_petrov_galerkin": false,
+            "rom_residual_settings": {
+            "nodal_unknowns": [ "RESIDUAL_X", "RESIDUAL_Y", "RESIDUAL_Z"],
+            "number_of_rom_dofs": 0
             }
         }
-        """)
+        """)#ADDEDPETROV
         default_settings.AddMissingParameters(super(ROMSolver,cls).GetDefaultParameters())
         return default_settings
 
@@ -43,6 +49,13 @@ class ROMSolver(StaticMechanicalSolver):
 
     def _create_builder_and_solver(self):
         linear_solver = self.get_linear_solver()
-        rom_parameters=self.settings["rom_settings"]
+        # rom_parameters = KratosMultiphysics.Parameters()
+        # rom_parameters.AddEmptyValue("rom_settings")
+        rom_parameters=self.settings["rom_settings"].Clone()
+        if (self.settings["rom_residual_settings"]["number_of_rom_dofs"].GetInt() != 0):  # ADDEDPETROV
+            rom_parameters.AddBool("solve_petrov_galerkin", True)# ADDEDPETROV
+            rom_parameters.AddInt("number_of_rom_residual_dofs", self.settings["rom_residual_settings"]["number_of_rom_dofs"].GetInt())# ADDEDPETROV
+            rom_parameters.AddEmptyList("nodal_residual_unknowns") #ADDEDPETROV
+            rom_parameters["nodal_residual_unknowns"].SetStringArray(self.settings["rom_residual_settings"]["nodal_unknowns"].GetStringArray())#ADDEDPETROV
         builder_and_solver = romapp.ROMBuilderAndSolver(linear_solver, rom_parameters)
         return builder_and_solver

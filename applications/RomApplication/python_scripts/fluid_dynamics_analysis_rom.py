@@ -8,7 +8,9 @@ import json
 
 class FluidDynamicsAnalysisROM(FluidDynamicsAnalysis):
 
-    def __init__(self,model,project_parameters):
+    def __init__(self,model,project_parameters, build_petrov_galerkin=False, solve_petrov_galerkin=False):
+        self.build_petrov_galerkin = build_petrov_galerkin
+        self.solve_petrov_galerkin = solve_petrov_galerkin
         super().__init__(model,project_parameters)
 
     #### Internal functions ####
@@ -18,6 +20,10 @@ class FluidDynamicsAnalysisROM(FluidDynamicsAnalysis):
         with open('RomParameters.json') as rom_parameters:
             rom_settings = KratosMultiphysics.Parameters(rom_parameters.read())
             self.project_parameters["solver_settings"].AddValue("rom_settings", rom_settings["rom_settings"])
+            if self.build_petrov_galerkin:
+                self.project_parameters["solver_settings"].AddBool("build_petrov_galerkin", self.build_petrov_galerkin)
+            if self.solve_petrov_galerkin:
+                self.project_parameters["solver_settings"].AddBool("solve_petrov_galerkin", self.solve_petrov_galerkin)
         return solver_wrapper.CreateSolverByParameters(self.model, self.project_parameters["solver_settings"],self.project_parameters["problem_data"]["parallel_type"].GetString())
 
     def _GetSimulationName(self):
@@ -33,11 +39,27 @@ class FluidDynamicsAnalysisROM(FluidDynamicsAnalysis):
             nodal_modes = data["nodal_modes"]
             counter = 0
             rom_dofs= self.project_parameters["solver_settings"]["rom_settings"]["number_of_rom_dofs"].GetInt()
-            for node in computing_model_part.Nodes:
-                aux = KratosMultiphysics.Matrix(nodal_dofs, rom_dofs)
-                for j in range(nodal_dofs):
-                    Counter=str(node.Id)
-                    for i in range(rom_dofs):
-                        aux[j,i] = nodal_modes[Counter][j][i]
-                node.SetValue(romapp.ROM_BASIS, aux ) # ROM basis
-                counter+=1
+            if self.solve_petrov_galerkin:
+                nodal_residual_modes = data["Petrov_Galerkin_basis"]["nodal_modes"]####ADDEDPETROV
+                nodal_residual_dofs = len(data["Petrov_Galerkin_basis"]["rom_settings"]["nodal_unknowns"])####ADDEDPETROV
+                rom_residual_dofs = self.project_parameters["solver_settings"]["rom_settings"]["number_of_rom_dofs"].GetInt()####ADDEDPETROV
+                for node in computing_model_part.Nodes:
+                    aux = KratosMultiphysics.Matrix(nodal_dofs, rom_dofs)
+                    aux_residual = KratosMultiphysics.Matrix(nodal_residual_dofs,rom_residual_dofs)####ADDEDPETROV
+                    for j in range(nodal_dofs):
+                        Counter=str(node.Id)
+                        for i in range(rom_dofs):
+                            aux[j,i] = nodal_modes[Counter][j][i]
+                            aux_residual[j,i] = nodal_residual_modes[Counter][j][i]####ADDEDPETROV
+                    node.SetValue(romapp.ROM_BASIS, aux ) # ROM basis
+                    node.SetValue(romapp.ROM_BASIS_ASSEMBLED_RESIDUALS, aux_residual)####ADDEDPETROV
+                    counter+=1
+            else:
+                for node in computing_model_part.Nodes:
+                    aux = KratosMultiphysics.Matrix(nodal_dofs, rom_dofs)
+                    for j in range(nodal_dofs):
+                        Counter=str(node.Id)
+                        for i in range(rom_dofs):
+                            aux[j,i] = nodal_modes[Counter][j][i]
+                    node.SetValue(romapp.ROM_BASIS, aux ) # ROM basis
+                    counter+=1

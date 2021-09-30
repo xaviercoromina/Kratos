@@ -33,6 +33,7 @@ void KratosRomApplication::Register()
 {
     KRATOS_INFO("") << "Initializing KratosRomApplication..." << std::endl;
     KRATOS_REGISTER_VARIABLE( ROM_BASIS )
+    KRATOS_REGISTER_VARIABLE( ROM_BASIS_ASSEMBLED_RESIDUALS)
     KRATOS_REGISTER_VARIABLE ( HROM_WEIGHT )
 }
 }  // namespace Kratos.
