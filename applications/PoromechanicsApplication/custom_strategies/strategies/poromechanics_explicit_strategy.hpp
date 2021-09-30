@@ -359,10 +359,10 @@ protected:
         #pragma omp parallel for reduction(+:total_reaction_x,total_reaction_y,total_reaction_z,total_reaction_water_pressure,l2_numerator,l2_denominator)
         for (int i = 0; i < static_cast<int>(r_nodes.size()); ++i) {
             auto itCurrentNode = it_node_begin + i;
-            const array_1d<double, 3>& r_reaction_x = itCurrentNode->FastGetSolutionStepValue(REACTION_X);
-            const array_1d<double, 3>& r_reaction_y = itCurrentNode->FastGetSolutionStepValue(REACTION_Y);
-            const array_1d<double, 3>& r_reaction_z = itCurrentNode->FastGetSolutionStepValue(REACTION_Z);
-            const array_1d<double, 3>& r_reaction_water_pressure = itCurrentNode->FastGetSolutionStepValue(REACTION_WATER_PRESSURE);
+            const double& r_reaction_x = itCurrentNode->FastGetSolutionStepValue(REACTION_X);
+            const double& r_reaction_y = itCurrentNode->FastGetSolutionStepValue(REACTION_Y);
+            const double& r_reaction_z = itCurrentNode->FastGetSolutionStepValue(REACTION_Z);
+            const double& r_reaction_water_pressure = itCurrentNode->FastGetSolutionStepValue(REACTION_WATER_PRESSURE);
 
             total_reaction_x += r_reaction_x;
             total_reaction_y += r_reaction_y;
