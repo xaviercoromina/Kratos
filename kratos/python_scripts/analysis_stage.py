@@ -165,9 +165,11 @@ class AnalysisStage(object):
             for process in self._GetListOfProcesses():
                 process.ExecuteAfterOutputStep()
 
-            # TODO: FPBT total force (kN), displacement (mm)
-            model_part_name = self.project_parameters["solver_settings"]["model_part_name"].GetString()
-            main_model_part = self.model.GetModelPart(model_part_name)
+        # TODO: FPBT total force (kN), displacement (mm)
+        import KratosMultiphysics.PoromechanicsApplication as KratosPoro
+        model_part_name = self.project_parameters["solver_settings"]["model_part_name"].GetString()
+        main_model_part = self.model.GetModelPart(model_part_name)
+        if(main_model_part.ProcessInfo[KratosPoro.IS_CONVERGED]==True):
             time = main_model_part.ProcessInfo[KratosMultiphysics.TIME]
             total_force = 0.0
             disp = 0.0
