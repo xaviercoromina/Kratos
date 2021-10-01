@@ -171,6 +171,7 @@ class AnalysisStage(object):
         main_model_part = self.model.GetModelPart(model_part_name)
         if(main_model_part.ProcessInfo[KratosPoro.IS_CONVERGED]==True):
             time = main_model_part.ProcessInfo[KratosMultiphysics.TIME]
+            steps_to_converge = main_model_part.ProcessInfo[KratosPoro.STEPS_TO_CONVERGE]
             total_force = 0.0
             disp = 0.0
             for node in self.model.GetModelPart('PorousModelPart.Solid_Displacement-auto-3').Nodes:
@@ -184,9 +185,11 @@ class AnalysisStage(object):
             out_total_force.write(str(disp))
             out_total_force.write(" ")
             out_total_force.write(str(total_force))
+            out_total_force.write(" ")
+            out_total_force.write(str(steps_to_converge))
             out_total_force.write("\n")
             out_total_force.close()
-            print('FPBT total force (kN): ', total_force)
+            print('FPBT total force (kN): ', total_force, ' . Steps to converge: ',steps_to_converge)
 
     def Check(self):
         """This function checks the AnalysisStage

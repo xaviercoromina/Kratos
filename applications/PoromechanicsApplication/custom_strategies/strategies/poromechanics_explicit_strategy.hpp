@@ -376,7 +376,7 @@ protected:
         }
 
         // Check convergence
-        const ProcessInfo& r_current_process_info = rModelPart.GetProcessInfo();
+        ProcessInfo& r_current_process_info = rModelPart.GetProcessInfo();
 
         if(std::abs(total_reaction_x) <= r_current_process_info[ERROR_INTEGRATION_POINT]){
             is_converged_rx = true;
@@ -393,6 +393,7 @@ protected:
         if(is_converged_rx==true && is_converged_ry==true && is_converged_rz==true && is_converged_rwp==true) {
             is_converged = true;
 
+            r_current_process_info[STEPS_TO_CONVERGE] = mNumberOfStepsToConverge;
             KRATOS_INFO("EXPLICIT CONVERGENCE CHECK") << "Reaction convergence is achieved after: " << mNumberOfStepsToConverge << " steps." << std::endl;
             KRATOS_INFO("EXPLICIT CONVERGENCE CHECK") << "total_reaction_x: " << total_reaction_x << std::endl;
             KRATOS_INFO("EXPLICIT CONVERGENCE CHECK") << "total_reaction_y: " << total_reaction_y << std::endl;
