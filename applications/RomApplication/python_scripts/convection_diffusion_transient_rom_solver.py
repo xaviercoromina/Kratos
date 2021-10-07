@@ -31,6 +31,12 @@ class ROMSolver(ConvectionDiffusionTransientSolver):
             "rom_settings": {
             "nodal_unknowns": [ "TEMPERATURE" ],
             "number_of_rom_dofs": 3
+            },
+            "build_petrov_galerkin": false,
+            "solve_petrov_galerkin": false,
+            "rom_residual_settings": {
+            "nodal_unknowns": [ "RESIDUAL"],
+            "number_of_rom_dofs": 0
             }
         }
         """)
@@ -44,5 +50,12 @@ class ROMSolver(ConvectionDiffusionTransientSolver):
     def _create_builder_and_solver(self):
         linear_solver = self.get_linear_solver()
         rom_parameters=self.settings["rom_settings"]
+        if self.settings["build_petrov_galerkin"].GetBool():
+            rom_parameters.AddBool("build_petrov_galerkin",True)
+        elif self.settings["solve_petrov_galerkin"].GetBool():
+            rom_parameters.AddBool("solve_petrov_galerkin", True)# ADDEDPETROV
+            rom_parameters.AddInt("number_of_rom_residual_dofs", self.settings["rom_residual_settings"]["number_of_rom_dofs"].GetInt())# ADDEDPETROV
+            rom_parameters.AddEmptyList("nodal_residual_unknowns") #ADDEDPETROV
+            rom_parameters["nodal_residual_unknowns"].SetStringArray(self.settings["rom_residual_settings"]["nodal_unknowns"].GetStringArray())#ADDEDPETROV
         builder_and_solver = romapp.ROMBuilderAndSolver(linear_solver, rom_parameters)
         return builder_and_solver

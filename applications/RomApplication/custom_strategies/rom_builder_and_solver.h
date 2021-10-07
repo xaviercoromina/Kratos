@@ -23,6 +23,8 @@
 #include "solving_strategies/schemes/scheme.h"
 #include "solving_strategies/builder_and_solvers/builder_and_solver.h"
 #include "utilities/qr_utility.h"
+#include "utilities/atomic_utilities.h"
+#include "solving_strategies/builder_and_solvers/residualbased_block_builder_and_solver.h"
 
 /* Application includes */
 #include "rom_application_variables.h"
@@ -112,7 +114,6 @@ public:
         mRomDofs = ThisParameters["number_of_rom_dofs"].GetInt();
         if (ThisParameters["build_petrov_galerkin"].GetBool() == true){
             mBuildPetrovGalerkin = true;
-            KRATOS_WATCH(900000000000000)
         }
         else if (ThisParameters["solve_petrov_galerkin"].GetBool() == true){
             mSolvePetrovGalerkin = true;
@@ -120,7 +121,6 @@ public:
             }
         else {
             mRomDofs_petrov = mRomDofs;
-            KRATOS_WATCH(100000000000000)
         }
 
         // Setting up mapping: VARIABLE_KEY --> CORRECT_ROW_IN_BASIS
@@ -209,7 +209,7 @@ public:
                 }
                 else
                     it_cond->SetValue(HROM_WEIGHT, 1.0);
-                // Gets list of Dof involved on every element
+                // Gets list of Dof involved on every elem*pcurrent_rom_nodal_basis = nullptrent
                 pScheme->GetDofList(*it_cond, dof_list, r_current_process_info);
                 dofs_tmp_set.insert(dof_list.begin(), dof_list.end());
             }
@@ -397,6 +397,110 @@ public:
         }
     }
 
+    void GetPhiGlobal(Matrix &PhiGlobal,
+    ModelPart &rModelPart)
+    {
+        const auto dofs_begin = BaseType::mDofSet.begin();
+        const auto dofs_number = BaseType::mDofSet.size();
+
+        #pragma omp parallel firstprivate(dofs_begin, dofs_number)
+        {
+            const Matrix *pcurrent_rom_nodal_basis = nullptr;
+            unsigned int old_dof_id;
+            #pragma omp for nowait
+            for (int k = 0; k < static_cast<int>(dofs_number); k++){
+                auto dof = dofs_begin + k;
+                if(pcurrent_rom_nodal_basis == nullptr){
+                    pcurrent_rom_nodal_basis = &(rModelPart.pGetNode(dof->Id())->GetValue(ROM_BASIS));
+                    old_dof_id = dof->Id();
+                }
+                else if(dof->Id() != old_dof_id ){
+                    pcurrent_rom_nodal_basis = &(rModelPart.pGetNode(dof->Id())->GetValue(ROM_BASIS));
+                    old_dof_id = dof->Id();
+                }
+                noalias(row(PhiGlobal,dof->EquationId())) = row(*pcurrent_rom_nodal_basis,mMapPhi[dof->GetVariable().Key()]);
+            }
+        }
+    }
+
+    inline void AssembleRowContribution(TSystemMatrixType& A, const Matrix& Alocal, const unsigned int i, const unsigned int i_local, Element::EquationIdVectorType& EquationId)
+    {
+        double* values_vector = A.value_data().begin();
+        std::size_t* index1_vector = A.index1_data().begin();
+        std::size_t* index2_vector = A.index2_data().begin();
+
+        size_t left_limit = index1_vector[i];
+//    size_t right_limit = index1_vector[i+1];
+
+        //find the first entry
+        size_t last_pos = ForwardFind(EquationId[0],left_limit,index2_vector);
+        size_t last_found = EquationId[0];
+
+        double& r_a = values_vector[last_pos];
+        const double& v_a = Alocal(i_local,0);
+        AtomicAdd(r_a,  v_a);
+
+        //now find all of the other entries
+        size_t pos = 0;
+        for (unsigned int j=1; j<EquationId.size(); j++) {
+            unsigned int id_to_find = EquationId[j];
+            if(id_to_find > last_found) {
+                pos = ForwardFind(id_to_find,last_pos+1,index2_vector);
+            } else if(id_to_find < last_found) {
+                pos = BackwardFind(id_to_find,last_pos-1,index2_vector);
+            } else {
+                pos = last_pos;
+            }
+
+            double& r = values_vector[pos];
+            const double& v = Alocal(i_local,j);
+            AtomicAdd(r,  v);
+
+            last_found = id_to_find;
+            last_pos = pos;
+        }
+    }
+
+    inline unsigned int ForwardFind(const unsigned int id_to_find,
+                                    const unsigned int start,
+                                    const size_t* index_vector)
+    {
+        unsigned int pos = start;
+        while(id_to_find != index_vector[pos]) pos++;
+        return pos;
+    }
+
+    inline unsigned int BackwardFind(const unsigned int id_to_find,
+                                     const unsigned int start,
+                                     const size_t* index_vector)
+    {
+        unsigned int pos = start;
+        while(id_to_find != index_vector[pos]) pos--;
+        return pos;
+    }
+
+    void Assemble(
+        TSystemMatrixType& A,
+        TSystemVectorType& b,
+        const LocalSystemMatrixType& LHS_Contribution,
+        const LocalSystemVectorType& RHS_Contribution,
+        Element::EquationIdVectorType& EquationId
+    )
+    {
+        unsigned int local_size = LHS_Contribution.size1();
+
+        for (unsigned int i_local = 0; i_local < local_size; i_local++) {
+            unsigned int i_global = EquationId[i_local];
+
+            double& r_a = b[i_global];
+            const double& v_a = RHS_Contribution(i_local);
+            AtomicAdd(r_a, v_a);
+
+            AssembleRowContribution(A, LHS_Contribution, i_global, i_local, EquationId);
+        }
+    }
+
+
 
 
     /*@{ */
@@ -466,53 +570,158 @@ public:
         // assemble all elements
         double start_build = OpenMPUtils::GetCurrentTime();
 
+        if (mBuildPetrovGalerkin== true){
+            #pragma omp parallel firstprivate(nelements, nconditions, LHS_Contribution, RHS_Contribution, EquationId, el_begin, cond_begin)
+            {
+                #pragma omp for nowait
+                for (int k = 0; k < static_cast<int>(nelements); k++)
+                {
+                    auto it_el = el_begin + k;
+                    bool element_is_active = true;
+                    if ((it_el)->IsDefined(ACTIVE))
+                        element_is_active = (it_el)->Is(ACTIVE);
+                    
+                    if (element_is_active){
+                        //calculate elemental contribution
+                        pScheme->CalculateSystemContributions(*it_el, LHS_Contribution, RHS_Contribution, EquationId, CurrentProcessInfo);
+                        Assemble(A, b, LHS_Contribution, RHS_Contribution, EquationId);
+                    }
+                }
 
-        #pragma omp parallel firstprivate(nelements, nconditions, LHS_Contribution, RHS_Contribution, EquationId, el_begin, cond_begin)
-        {
-            Matrix PhiElemental;
-            Matrix PhiElementalResidual;//ADDEDPETROV
-            Matrix tempA;
-            Vector tempb;
-            if (mBuildPetrovGalerkin== true){
+                #pragma omp for nowait
+                for (int k = 0; k < static_cast<int>(nconditions); k++)
+                {
+                    auto it = cond_begin + k;
+
+                    //detect if the element is active or not. If the user did not make any choice the condition
+                    //is active by default
+                    bool condition_is_active = true;
+                    if ((it)->IsDefined(ACTIVE))
+                        condition_is_active = (it)->Is(ACTIVE);
+
+                    if (condition_is_active){
+                        Condition::DofsVectorType dofs;
+                        it->GetDofList(dofs, CurrentProcessInfo);
+                        //calculate elemental contribution
+                        pScheme->CalculateSystemContributions(*it, LHS_Contribution, RHS_Contribution, EquationId, CurrentProcessInfo);
+                        Assemble(A, b, LHS_Contribution, RHS_Contribution, EquationId);
+                    }
+                }
+
+            }
+            Matrix PhiGlobal;
+            PhiGlobal = ZeroMatrix(Dx.size(),mRomDofs);
+            GetPhiGlobal(PhiGlobal,rModelPart);
+            noalias(Arom) = prod(A, PhiGlobal);
+            
+        }
+        else if (mBuildPetrovGalerking== true){
+            #pragma omp parallel firstprivate(nelements, nconditions, LHS_Contribution, RHS_Contribution, EquationId, el_begin, cond_begin)
+            {
+                Matrix PhiElemental;
+                Matrix tempA;
+                Vector tempb;
                 tempA = ZeroMatrix(Dx.size(),mRomDofs);//ADDEDPETROV
                 tempb = ZeroVector(Dx.size());//ADDEDPETROV
-            }
-            else{
-                tempA = ZeroMatrix(mRomDofs_petrov,mRomDofs);//ADDEDPETROV
-                tempb = ZeroVector(mRomDofs_petrov);//ADDEDPETROV
-            }
-            Matrix aux;
-
-            #pragma omp for nowait
-            for (int k = 0; k < static_cast<int>(nelements); k++)
-            {
-                auto it_el = el_begin + k;
-                //detect if the element is active or not. If the user did not make any choice the element
-                //is active by default
-                bool element_is_active = true;
-                if ((it_el)->IsDefined(ACTIVE))
-                    element_is_active = (it_el)->Is(ACTIVE);
-
-                if (element_is_active){
-                    //calculate elemental contribution
-                    pScheme->CalculateSystemContributions(*it_el, LHS_Contribution, RHS_Contribution, EquationId, CurrentProcessInfo);
-                    Element::DofsVectorType dofs;
-                    it_el->GetDofList(dofs, CurrentProcessInfo);
-                    const auto &geom = it_el->GetGeometry();
-                    if(PhiElemental.size1() != dofs.size() || PhiElemental.size2() != mRomDofs)
-                        PhiElemental.resize(dofs.size(), mRomDofs,false);
-                    if(aux.size1() != dofs.size() || aux.size2() != mRomDofs)
-                        aux.resize(dofs.size(), mRomDofs,false);
-                    GetPhiElemental(PhiElemental, dofs, geom);
-                    if (mBuildPetrovGalerkin== true){//ADDEDPETROV
-                        if(aux.size1() != dofs.size() || aux.size2() != mRomDofs)//ADDEDPETROV
-                            aux.resize(dofs.size(), mRomDofs,false);//ADDEDPETROV
+                
+                Matrix aux;
+                #pragma omp for nowait
+                for (int k = 0; k < static_cast<int>(nelements); k++)
+                {
+                    auto it_el = el_begin + k;
+                    //detect if the element is active or not. If the user did not make any choice the element
+                    //is active by default
+                    bool element_is_active = true;
+                    if ((it_el)->IsDefined(ACTIVE))
+                        element_is_active = (it_el)->Is(ACTIVE);
+                    
+                    if (element_is_active){
+                        //calculate elemental contribution
+                        pScheme->CalculateSystemContributions(*it_el, LHS_Contribution, RHS_Contribution, EquationId, CurrentProcessInfo);
+                        Element::DofsVectorType dofs;
+                        it_el->GetDofList(dofs, CurrentProcessInfo);
+                        const auto &geom = it_el->GetGeometry();
+                        if(PhiElemental.size1() != dofs.size() || PhiElemental.size2() != mRomDofs)
+                            PhiElemental.resize(dofs.size(), mRomDofs,false);
+                        if(aux.size1() != dofs.size() || aux.size2() != mRomDofs)
+                            aux.resize(dofs.size(), mRomDofs,false);
+                        GetPhiElemental(PhiElemental, dofs, geom);
                         noalias(aux) = prod(LHS_Contribution, PhiElemental);//ADDEDPETROV
                         double h_rom_weight = it_el->GetValue(HROM_WEIGHT);//ADDEDPETROV
                         noalias(tempA) += aux * h_rom_weight;//ADDEDPETROV
                         noalias(tempb) += RHS_Contribution * h_rom_weight;//ADDEDPETROV
-                    }//ADDEDPETROV
-                    else if (mSolvePetrovGalerkin== true){
+                    }
+                }
+
+                #pragma omp for nowait
+                for (int k = 0; k < static_cast<int>(nconditions); k++){
+                    auto it = cond_begin + k;
+
+                    //detect if the element is active or not. If the user did not make any choice the condition
+                    //is active by default
+                    bool condition_is_active = true;
+                    if ((it)->IsDefined(ACTIVE))
+                        condition_is_active = (it)->Is(ACTIVE);
+
+                    if (condition_is_active){
+                        Condition::DofsVectorType dofs;
+                        it->GetDofList(dofs, CurrentProcessInfo);
+                        //calculate elemental contribution
+                        pScheme->CalculateSystemContributions(*it, LHS_Contribution, RHS_Contribution, EquationId, CurrentProcessInfo);
+                        const auto &geom = it->GetGeometry();
+                        if(PhiElemental.size1() != dofs.size() || PhiElemental.size2() != mRomDofs)
+                            PhiElemental.resize(dofs.size(), mRomDofs,false);
+                        if(aux.size1() != dofs.size() || aux.size2() != mRomDofs)
+                            aux.resize(dofs.size(), mRomDofs,false);
+                        GetPhiElemental(PhiElemental, dofs, geom);
+                        noalias(aux) = prod(LHS_Contribution, PhiElemental);//ADDEDPETROV
+                        double h_rom_weight = it->GetValue(HROM_WEIGHT);//ADDEDPETROV
+                        noalias(tempA) += aux * h_rom_weight;//ADDEDPETROV
+                        noalias(tempb) += RHS_Contribution * h_rom_weight;//ADDEDPETROV
+                    }
+                }
+
+                #pragma omp critical
+                {
+                    noalias(Arom) +=tempA;
+                    noalias(brom) +=tempb;
+                }
+
+            }
+        }
+        else if (mSolvePetrovGalerkin == true){
+            #pragma omp parallel firstprivate(nelements, nconditions, LHS_Contribution, RHS_Contribution, EquationId, el_begin, cond_begin)
+            {
+                Matrix PhiElemental;
+                Matrix PhiElementalResidual;//ADDEDPETROV
+                Matrix tempA;
+                Vector tempb;
+                tempA = ZeroMatrix(mRomDofs_petrov,mRomDofs);//ADDEDPETROV
+                tempb = ZeroVector(mRomDofs_petrov);//ADDEDPETROV
+            
+                Matrix aux;
+
+                #pragma omp for nowait
+                for (int k = 0; k < nelements; k++)
+                {
+                    auto it_el = el_begin + k;
+                    //detect if the element is active or not. If the user did not make any choice the element
+                    //is active by default
+                    bool element_is_active = true;
+                    if ((it_el)->IsDefined(ACTIVE))
+                        element_is_active = (it_el)->Is(ACTIVE);
+
+                    if (element_is_active){
+                        //calculate elemental contribution
+                        pScheme->CalculateSystemContributions(*it_el, LHS_Contribution, RHS_Contribution, EquationId, CurrentProcessInfo);
+                        Element::DofsVectorType dofs;
+                        it_el->GetDofList(dofs, CurrentProcessInfo);
+                        const auto &geom = it_el->GetGeometry();
+                        if(PhiElemental.size1() != dofs.size() || PhiElemental.size2() != mRomDofs)
+                            PhiElemental.resize(dofs.size(), mRomDofs,false);
+                        if(aux.size1() != dofs.size() || aux.size2() != mRomDofs)
+                            aux.resize(dofs.size(), mRomDofs,false);
+                        GetPhiElemental(PhiElemental, dofs, geom);
                         if(PhiElementalResidual.size1() != dofs.size() || PhiElementalResidual.size2() != mRomDofs_petrov)//ADDEDPETROV
                             PhiElementalResidual.resize(dofs.size(), mRomDofs_petrov,false);//ADDEDPETROV
                         if(aux.size1() != dofs.size() || aux.size2() != mRomDofs_petrov)//ADDEDPETROV
@@ -523,71 +732,128 @@ public:
                         noalias(tempA) += prod(trans(PhiElementalResidual), aux) * h_rom_weight;//ADDEDPETROV
                         noalias(tempb) += prod(trans(PhiElementalResidual), RHS_Contribution) * h_rom_weight;//ADDEDPETROV
                     }
-                    else {
+                }
+
+                #pragma omp for nowait
+                for (int k = 0; k < nconditions; k++){
+                    auto it = cond_begin + k;
+
+                    //detect if the element is active or not. If the user did not make any choice the condition
+                    //is active by default
+                    bool condition_is_active = true;
+                    if ((it)->IsDefined(ACTIVE))
+                        condition_is_active = (it)->Is(ACTIVE);
+                    if (condition_is_active){
+                        Condition::DofsVectorType dofs;
+                        it->GetDofList(dofs, CurrentProcessInfo);
+                        //calculate elemental contribution
+                        pScheme->CalculateSystemContributions(*it, LHS_Contribution, RHS_Contribution, EquationId, CurrentProcessInfo);
+                        const auto &geom = it->GetGeometry();
+                        if(PhiElemental.size1() != dofs.size() || PhiElemental.size2() != mRomDofs)
+                            PhiElemental.resize(dofs.size(), mRomDofs,false);
+                        if(aux.size1() != dofs.size() || aux.size2() != mRomDofs)
+                            aux.resize(dofs.size(), mRomDofs,false);
+                        GetPhiElemental(PhiElemental, dofs, geom);
+                        if(PhiElementalResidual.size1() != dofs.size() || PhiElementalResidual.size2() != mRomDofs_petrov)//ADDEDPETROV
+                            PhiElementalResidual.resize(dofs.size(), mRomDofs_petrov,false);//ADDEDPETROV
+                        if(aux.size1() != dofs.size() || aux.size2() != mRomDofs_petrov)//ADDEDPETROV
+                            aux.resize(dofs.size(), mRomDofs_petrov,false);//ADDEDPETROV
+                        GetPhiElementalResidual(PhiElementalResidual,dofs,geom);//ADDEDPETROV
+                        noalias(aux) = prod(LHS_Contribution, PhiElemental);//ADDEDPETROV
+                        double h_rom_weight = it->GetValue(HROM_WEIGHT);//ADDEDPETROV
+                        noalias(tempA) += prod(trans(PhiElementalResidual), aux) * h_rom_weight;//ADDEDPETROV
+                        noalias(tempb) += prod(trans(PhiElementalResidual), RHS_Contribution) * h_rom_weight;//ADDEDPETROV
+                    }
+                }
+
+                #pragma omp critical
+                {
+                    noalias(Arom) +=tempA;
+                    noalias(brom) +=tempb;
+                }
+
+            }
+        }
+        else {
+            #pragma omp parallel firstprivate(nelements, nconditions, LHS_Contribution, RHS_Contribution, EquationId, el_begin, cond_begin)
+            {
+                Matrix PhiElemental;
+                Matrix tempA = ZeroMatrix(mRomDofs,mRomDofs);
+                Vector tempb = ZeroVector(mRomDofs);
+                Matrix aux;
+
+                #pragma omp for nowait
+                for (int k = 0; k < nelements; k++)
+                {
+                    auto it_el = el_begin + k;
+                    //detect if the element is active or not. If the user did not make any choice the element
+                    //is active by default
+                    bool element_is_active = true;
+                    if ((it_el)->IsDefined(ACTIVE)){
+                        element_is_active = (it_el)->Is(ACTIVE);
+                    }
+
+
+                    //KRATOS_WATCH("entered elements loop")
+
+                    if (element_is_active){
+                        //calculate elemental contribution
+                        pScheme->CalculateSystemContributions(*it_el, LHS_Contribution, RHS_Contribution, EquationId, CurrentProcessInfo);
+                        Element::DofsVectorType dofs;
+                        it_el->GetDofList(dofs, CurrentProcessInfo);
+                        const auto &geom = it_el->GetGeometry();
+                        if(PhiElemental.size1() != dofs.size() || PhiElemental.size2() != mRomDofs)
+                            PhiElemental.resize(dofs.size(), mRomDofs,false);
+                        if(aux.size1() != dofs.size() || aux.size2() != mRomDofs)
+                            aux.resize(dofs.size(), mRomDofs,false);
+                        GetPhiElemental(PhiElemental, dofs, geom);
                         noalias(aux) = prod(LHS_Contribution, PhiElemental);
                         double h_rom_weight = it_el->GetValue(HROM_WEIGHT);
                         noalias(tempA) += prod(trans(PhiElemental), aux) * h_rom_weight;
                         noalias(tempb) += prod(trans(PhiElemental), RHS_Contribution) * h_rom_weight;
                     }
-                    
                 }
-            }
 
-            #pragma omp for nowait
-            for (int k = 0; k < static_cast<int>(nconditions); k++){
-                auto it = cond_begin + k;
+                #pragma omp for nowait
+                for (int k = 0; k < nconditions; k++){
+                    auto it = cond_begin + k;
 
-                //detect if the element is active or not. If the user did not make any choice the condition
-                //is active by default
-                bool condition_is_active = true;
-                if ((it)->IsDefined(ACTIVE))
-                    condition_is_active = (it)->Is(ACTIVE);
-                if (condition_is_active){
-                    Condition::DofsVectorType dofs;
-                    it->GetDofList(dofs, CurrentProcessInfo);
-                    //calculate elemental contribution
-                    pScheme->CalculateSystemContributions(*it, LHS_Contribution, RHS_Contribution, EquationId, CurrentProcessInfo);
-                    const auto &geom = it->GetGeometry();
-                    if(PhiElemental.size1() != dofs.size() || PhiElemental.size2() != mRomDofs)
-                        PhiElemental.resize(dofs.size(), mRomDofs,false);
-                    if(aux.size1() != dofs.size() || aux.size2() != mRomDofs)
-                        aux.resize(dofs.size(), mRomDofs,false);
-                    GetPhiElemental(PhiElemental, dofs, geom);
-                    if (mBuildPetrovGalerkin== true){//ADDEDPETROV
-                    if(aux.size1() != dofs.size() || aux.size2() != mRomDofs)//ADDEDPETROV
-                            aux.resize(dofs.size(), mRomDofs,false);//ADDEDPETROV
-                        noalias(aux) = prod(LHS_Contribution, PhiElemental);//ADDEDPETROV
-                        double h_rom_weight = it->GetValue(HROM_WEIGHT);//ADDEDPETROV
-                        noalias(tempA) += aux * h_rom_weight;//ADDEDPETROV
-                        noalias(tempb) += RHS_Contribution * h_rom_weight;//ADDEDPETROV
-                    }//ADDEDPETROV
-                    else if (mSolvePetrovGalerkin== true){//ADDEDPETROV
-                        if(PhiElementalResidual.size1() != dofs.size() || PhiElementalResidual.size2() != mRomDofs_petrov)//ADDEDPETROV
-                            PhiElementalResidual.resize(dofs.size(), mRomDofs_petrov,false);//ADDEDPETROV
-                        if(aux.size1() != dofs.size() || aux.size2() != mRomDofs_petrov)//ADDEDPETROV
-                            aux.resize(dofs.size(), mRomDofs_petrov,false);//ADDEDPETROV
-                        GetPhiElementalResidual(PhiElementalResidual,dofs,geom);//ADDEDPETROV
-                        noalias(aux) = prod(LHS_Contribution, PhiElemental);//ADDEDPETROV
-                        double h_rom_weight = it->GetValue(HROM_WEIGHT);//ADDEDPETROV
-                        noalias(tempA) += prod(trans(PhiElementalResidual), aux) * h_rom_weight;//ADDEDPETROV
-                        noalias(tempb) += prod(trans(PhiElementalResidual), RHS_Contribution) * h_rom_weight;//ADDEDPETROV
-                    }//ADDEDPETROV
-                    else {//ADDEDPETROV
+                    //detect if the element is active or not. If the user did not make any choice the condition
+                    //is active by default
+                    bool condition_is_active = true;
+                    if ((it)->IsDefined(ACTIVE)){
+                        condition_is_active = (it)->Is(ACTIVE);
+                    }
+
+                    //KRATOS_WATCH("entered conditions loop")
+
+                    if (condition_is_active){
+                        Condition::DofsVectorType dofs;
+                        it->GetDofList(dofs, CurrentProcessInfo);
+                        //calculate elemental contribution
+                        pScheme->CalculateSystemContributions(*it, LHS_Contribution, RHS_Contribution, EquationId, CurrentProcessInfo);
+                        const auto &geom = it->GetGeometry();
+                        if(PhiElemental.size1() != dofs.size() || PhiElemental.size2() != mRomDofs)
+                            PhiElemental.resize(dofs.size(), mRomDofs,false);
+                        if(aux.size1() != dofs.size() || aux.size2() != mRomDofs)
+                            aux.resize(dofs.size(), mRomDofs,false);
+                        GetPhiElemental(PhiElemental, dofs, geom);
                         noalias(aux) = prod(LHS_Contribution, PhiElemental);
                         double h_rom_weight = it->GetValue(HROM_WEIGHT);
                         noalias(tempA) += prod(trans(PhiElemental), aux) * h_rom_weight;
                         noalias(tempb) += prod(trans(PhiElemental), RHS_Contribution) * h_rom_weight;
                     }
                 }
-            }
 
-            #pragma omp critical
-            {
-                noalias(Arom) +=tempA;
-                noalias(brom) +=tempb;
-            }
+                #pragma omp critical
+                {
+                    noalias(Arom) +=tempA;
+                    noalias(brom) +=tempb;
+                }
 
+            }
         }
+
 
         const double stop_build = OpenMPUtils::GetCurrentTime();
         KRATOS_INFO_IF("ROMBuilderAndSolver", (this->GetEchoLevel() >= 1 && rModelPart.GetCommunicator().MyPID() == 0)) << "Build time: " << stop_build - start_build << std::endl;
@@ -601,7 +867,7 @@ public:
         if (mBuildPetrovGalerkin==true){
             QR<double, row_major> qr_util;//ADDEDPETROV
             qr_util.compute(Dx.size(), mRomDofs, &(Arom)(0,0));//ADDEDPETROV
-            qr_util.solve(&(brom)(0), &(dxrom)(0));//ADDEDPETROV
+            qr_util.solve(&(b)(0), &(dxrom)(0));//ADDEDPETROV
         }
         else if (mSolvePetrovGalerkin == true){//ADDEDPETROV
             //Resolver con QR
@@ -649,15 +915,146 @@ public:
             pb.swap(pNewb);
         }
 
+        TSystemMatrixType& A = *pA; //To solve least squares problem A@Phi@Dq=b
         TSystemVectorType &Dx = *pDx;
         TSystemVectorType &b = *pb;
 
+        //resizing the system vectors and matrix
+        if (A.size1() == 0 || BaseType::GetReshapeMatrixFlag() == true) //if the matrix is not initialized
+        {
+            A.resize(BaseType::mEquationSystemSize, BaseType::mEquationSystemSize, false);
+            ConstructMatrixStructure(pScheme, A, rModelPart);
+        }
+        else
+        {
+            if (A.size1() != BaseType::mEquationSystemSize || A.size2() != BaseType::mEquationSystemSize)
+            {
+                KRATOS_ERROR <<"The equation system size has changed during the simulation. This is not permited."<<std::endl;
+                A.resize(BaseType::mEquationSystemSize, BaseType::mEquationSystemSize, true);
+                ConstructMatrixStructure(pScheme, A, rModelPart);
+            }
+        }
+
         if (Dx.size() != BaseType::mEquationSystemSize)
             Dx.resize(BaseType::mEquationSystemSize, false);
+        // TSparseSpace::SetToZero(Dx);
         if (b.size() != BaseType::mEquationSystemSize)
             b.resize(BaseType::mEquationSystemSize, false);
+        // TSparseSpace::SetToZero(b);
 
         KRATOS_CATCH("")
+    }
+
+    virtual void ConstructMatrixStructure(
+        typename TSchemeType::Pointer pScheme,
+        TSystemMatrixType& A,
+        ModelPart& rModelPart)
+    {
+        //filling with zero the matrix (creating the structure)
+        Timer::Start("MatrixStructure");
+
+        const ProcessInfo& CurrentProcessInfo = rModelPart.GetProcessInfo();
+
+        const std::size_t equation_size = BaseType::mEquationSystemSize;
+
+        std::vector< LockObject > lock_array(equation_size);
+
+        std::vector<std::unordered_set<std::size_t> > indices(equation_size);
+
+        block_for_each(indices, [](std::unordered_set<std::size_t>& rIndices){
+            rIndices.reserve(40);
+        });
+
+        Element::EquationIdVectorType ids(3, 0);
+
+        block_for_each(rModelPart.Elements(), ids, [&](Element& rElem, Element::EquationIdVectorType& rIdsTLS){
+            pScheme->EquationId(rElem, rIdsTLS, CurrentProcessInfo);
+            for (std::size_t i = 0; i < rIdsTLS.size(); i++) {
+                lock_array[rIdsTLS[i]].lock();
+                auto& row_indices = indices[rIdsTLS[i]];
+                row_indices.insert(rIdsTLS.begin(), rIdsTLS.end());
+                lock_array[rIdsTLS[i]].unlock();
+            }
+        });
+
+        block_for_each(rModelPart.Conditions(), ids, [&](Condition& rCond, Element::EquationIdVectorType& rIdsTLS){
+            pScheme->EquationId(rCond, rIdsTLS, CurrentProcessInfo);
+            for (std::size_t i = 0; i < rIdsTLS.size(); i++) {
+                lock_array[rIdsTLS[i]].lock();
+                auto& row_indices = indices[rIdsTLS[i]];
+                row_indices.insert(rIdsTLS.begin(), rIdsTLS.end());
+                lock_array[rIdsTLS[i]].unlock();
+            }
+        });
+
+        if (rModelPart.MasterSlaveConstraints().size() != 0) {
+            struct TLS
+            {
+                Element::EquationIdVectorType master_ids = Element::EquationIdVectorType(3,0);
+                Element::EquationIdVectorType slave_ids = Element::EquationIdVectorType(3,0);
+            };
+            TLS tls;
+
+            block_for_each(rModelPart.MasterSlaveConstraints(), tls, [&](MasterSlaveConstraint& rConst, TLS& rTls){
+                rConst.EquationIdVector(rTls.slave_ids, rTls.master_ids, CurrentProcessInfo);
+
+                for (std::size_t i = 0; i < rTls.slave_ids.size(); i++) {
+                    lock_array[rTls.slave_ids[i]].lock();
+                    auto& row_indices = indices[rTls.slave_ids[i]];
+                    row_indices.insert(rTls.slave_ids[i]);
+                    lock_array[rTls.slave_ids[i]].unlock();
+                }
+
+                for (std::size_t i = 0; i < rTls.master_ids.size(); i++) {
+                    lock_array[rTls.master_ids[i]].lock();
+                    auto& row_indices = indices[rTls.master_ids[i]];
+                    row_indices.insert(rTls.master_ids[i]);
+                    lock_array[rTls.master_ids[i]].unlock();
+                }
+            });
+
+        }
+
+        //destroy locks
+        lock_array = std::vector< LockObject >();
+
+        //count the row sizes
+        unsigned int nnz = 0;
+        for (unsigned int i = 0; i < indices.size(); i++) {
+            nnz += indices[i].size();
+        }
+
+        A = CompressedMatrixType(indices.size(), indices.size(), nnz);
+
+        double* Avalues = A.value_data().begin();
+        std::size_t* Arow_indices = A.index1_data().begin();
+        std::size_t* Acol_indices = A.index2_data().begin();
+
+        //filling the index1 vector - DO NOT MAKE PARALLEL THE FOLLOWING LOOP!
+        Arow_indices[0] = 0;
+        for (int i = 0; i < static_cast<int>(A.size1()); i++) {
+            Arow_indices[i+1] = Arow_indices[i] + indices[i].size();
+        }
+
+        IndexPartition<std::size_t>(A.size1()).for_each([&](std::size_t i){
+            const unsigned int row_begin = Arow_indices[i];
+            const unsigned int row_end = Arow_indices[i+1];
+            unsigned int k = row_begin;
+            for (auto it = indices[i].begin(); it != indices[i].end(); it++) {
+                Acol_indices[k] = *it;
+                Avalues[k] = 0.0;
+                k++;
+            }
+
+            indices[i].clear(); //deallocating the memory
+
+            std::sort(&Acol_indices[row_begin], &Acol_indices[row_end]);
+
+        });
+
+        A.set_filled(indices.size()+1, nnz);
+
+        Timer::Stop("MatrixStructure");
     }
 
     /*@} */
@@ -739,7 +1136,7 @@ protected:
     unsigned int mRomDofs_petrov;//ADDEDPETROV
     std::unordered_map<Kratos::VariableData::KeyType,int> mMapPhi;
     ModelPart::ConditionsContainerType mSelectedConditions;
-    bool mSolvePetrovGalerkin = false,mBuildPetrovGalerkin = false;
+    bool mSolvePetrovGalerkin = false,mBuildPetrovGalerkin = false,mBuildPetrovGalerking = false;
     bool mHromSimulation = false;
 
     /*@} */

@@ -278,6 +278,7 @@ public:
         KRATOS_INFO_IF("ResidualBasedBlockBuilderAndSolver", (this->GetEchoLevel() > 2 && rModelPart.GetCommunicator().MyPID() == 0)) << "Finished parallel building" << std::endl;
 
         KRATOS_CATCH("")
+        
     }
 
     /**
@@ -518,7 +519,7 @@ public:
         Timer::Start("Build");
 
         Build(pScheme, rModelPart, A, b);
-
+        
         Timer::Stop("Build");
 
         if(rModelPart.MasterSlaveConstraints().size() != 0) {
@@ -528,6 +529,7 @@ public:
         }
 
         ApplyDirichletConditions(pScheme, rModelPart, A, Dx, b);
+
 
         KRATOS_INFO_IF("ResidualBasedBlockBuilderAndSolver", ( this->GetEchoLevel() == 3)) << "Before the solution of the system" << "\nSystem Matrix = " << A << "\nUnknowns vector = " << Dx << "\nRHS vector = " << b << std::endl;
 
@@ -543,6 +545,7 @@ public:
         KRATOS_INFO_IF("ResidualBasedBlockBuilderAndSolver", ( this->GetEchoLevel() == 3)) << "After the solution of the system" << "\nSystem Matrix = " << A << "\nUnknowns vector = " << Dx << "\nRHS vector = " << b << std::endl;
 
         KRATOS_CATCH("")
+        
     }
 
     /**
