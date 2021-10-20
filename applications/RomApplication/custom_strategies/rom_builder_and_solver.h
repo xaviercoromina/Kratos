@@ -99,6 +99,7 @@ public:
             "number_of_rom_dofs": 0,
             "build_petrov_galerkin": false,
             "solve_petrov_galerkin": false,
+            "solve_least_squares" : false,
             "nodal_residual_unknowns": [],
             "number_of_rom_residual_dofs": 0
         })");
@@ -115,6 +116,10 @@ public:
         if (ThisParameters["build_petrov_galerkin"].GetBool() == true){
             mBuildPetrovGalerkin = true;
         }
+        else if (ThisParameters["solve_least_squares"].GetBool() == true){
+            mSolveLeastSquares = true;
+            mRomDofs_petrov = mRomDofs;
+            }
         else if (ThisParameters["solve_petrov_galerkin"].GetBool() == true){
             mSolvePetrovGalerkin = true;
             mRomDofs_petrov = ThisParameters["number_of_rom_residual_dofs"].GetInt();//ADDEDPETROV
@@ -375,6 +380,7 @@ public:
         }
     }
 
+
     void GetPhiElementalResidual(
         Matrix &PhiElementalResidual,
         const Element::DofsVectorType &dofs,
@@ -423,82 +429,82 @@ public:
         }
     }
 
-    inline void AssembleRowContribution(TSystemMatrixType& A, const Matrix& Alocal, const unsigned int i, const unsigned int i_local, Element::EquationIdVectorType& EquationId)
-    {
-        double* values_vector = A.value_data().begin();
-        std::size_t* index1_vector = A.index1_data().begin();
-        std::size_t* index2_vector = A.index2_data().begin();
+//     inline void AssembleRowContribution(TSystemMatrixType& A, const Matrix& Alocal, const unsigned int i, const unsigned int i_local, Element::EquationIdVectorType& EquationId)
+//     {
+//         double* values_vector = A.value_data().begin();
+//         std::size_t* index1_vector = A.index1_data().begin();
+//         std::size_t* index2_vector = A.index2_data().begin();
 
-        size_t left_limit = index1_vector[i];
-//    size_t right_limit = index1_vector[i+1];
+//         size_t left_limit = index1_vector[i];
+// //    size_t right_limit = index1_vector[i+1];
 
-        //find the first entry
-        size_t last_pos = ForwardFind(EquationId[0],left_limit,index2_vector);
-        size_t last_found = EquationId[0];
+//         //find the first entry
+//         size_t last_pos = ForwardFind(EquationId[0],left_limit,index2_vector);
+//         size_t last_found = EquationId[0];
 
-        double& r_a = values_vector[last_pos];
-        const double& v_a = Alocal(i_local,0);
-        AtomicAdd(r_a,  v_a);
+//         double& r_a = values_vector[last_pos];
+//         const double& v_a = Alocal(i_local,0);
+//         AtomicAdd(r_a,  v_a);
 
-        //now find all of the other entries
-        size_t pos = 0;
-        for (unsigned int j=1; j<EquationId.size(); j++) {
-            unsigned int id_to_find = EquationId[j];
-            if(id_to_find > last_found) {
-                pos = ForwardFind(id_to_find,last_pos+1,index2_vector);
-            } else if(id_to_find < last_found) {
-                pos = BackwardFind(id_to_find,last_pos-1,index2_vector);
-            } else {
-                pos = last_pos;
-            }
+//         //now find all of the other entries
+//         size_t pos = 0;
+//         for (unsigned int j=1; j<EquationId.size(); j++) {
+//             unsigned int id_to_find = EquationId[j];
+//             if(id_to_find > last_found) {
+//                 pos = ForwardFind(id_to_find,last_pos+1,index2_vector);
+//             } else if(id_to_find < last_found) {
+//                 pos = BackwardFind(id_to_find,last_pos-1,index2_vector);
+//             } else {
+//                 pos = last_pos;
+//             }
 
-            double& r = values_vector[pos];
-            const double& v = Alocal(i_local,j);
-            AtomicAdd(r,  v);
+//             double& r = values_vector[pos];
+//             const double& v = Alocal(i_local,j);
+//             AtomicAdd(r,  v);
 
-            last_found = id_to_find;
-            last_pos = pos;
-        }
-    }
+//             last_found = id_to_find;
+//             last_pos = pos;
+//         }
+//     }
 
-    inline unsigned int ForwardFind(const unsigned int id_to_find,
-                                    const unsigned int start,
-                                    const size_t* index_vector)
-    {
-        unsigned int pos = start;
-        while(id_to_find != index_vector[pos]) pos++;
-        return pos;
-    }
+//     inline unsigned int ForwardFind(const unsigned int id_to_find,
+//                                     const unsigned int start,
+//                                     const size_t* index_vector)
+//     {
+//         unsigned int pos = start;
+//         while(id_to_find != index_vector[pos]) pos++;
+//         return pos;
+//     }
 
-    inline unsigned int BackwardFind(const unsigned int id_to_find,
-                                     const unsigned int start,
-                                     const size_t* index_vector)
-    {
-        unsigned int pos = start;
-        while(id_to_find != index_vector[pos]) pos--;
-        return pos;
-    }
+//     inline unsigned int BackwardFind(const unsigned int id_to_find,
+//                                      const unsigned int start,
+//                                      const size_t* index_vector)
+//     {
+//         unsigned int pos = start;
+//         while(id_to_find != index_vector[pos]) pos--;
+//         return pos;
+//     }
 
-    void Assemble(
-        TSystemMatrixType& A,
-        TSystemVectorType& b,
-        const LocalSystemMatrixType& LHS_Contribution,
-        const LocalSystemVectorType& RHS_Contribution,
-        Element::EquationIdVectorType& EquationId
-    )
-    {
-        unsigned int local_size = LHS_Contribution.size1();
+    // void Assemble(
+    //     TSystemMatrixType& A,
+    //     TSystemVectorType& b,
+    //     const LocalSystemMatrixType& LHS_Contribution,
+    //     const LocalSystemVectorType& RHS_Contribution,
+    //     Element::EquationIdVectorType& EquationId
+    // )
+    // {
+    //     unsigned int local_size = LHS_Contribution.size1();
 
-        for (unsigned int i_local = 0; i_local < local_size; i_local++) {
-            unsigned int i_global = EquationId[i_local];
+    //     for (unsigned int i_local = 0; i_local < local_size; i_local++) {
+    //         unsigned int i_global = EquationId[i_local];
 
-            double& r_a = b[i_global];
-            const double& v_a = RHS_Contribution(i_local);
-            AtomicAdd(r_a, v_a);
+    //         double& r_a = b[i_global];
+    //         const double& v_a = RHS_Contribution(i_local);
+    //         AtomicAdd(r_a, v_a);
 
-            AssembleRowContribution(A, LHS_Contribution, i_global, i_local, EquationId);
-        }
-    }
+    //         AssembleRowContribution(A, LHS_Contribution, i_global, i_local, EquationId);
+    //     }
+    // }
 
 
 
@@ -569,10 +575,15 @@ public:
 
         // assemble all elements
         double start_build = OpenMPUtils::GetCurrentTime();
-
         if (mBuildPetrovGalerkin== true){
             #pragma omp parallel firstprivate(nelements, nconditions, LHS_Contribution, RHS_Contribution, EquationId, el_begin, cond_begin)
             {
+                Matrix PhiElemental;
+                Matrix tempA;
+                Vector tempb;
+                tempA = ZeroMatrix(Dx.size(),mRomDofs);
+                tempb = ZeroVector(Dx.size());
+                Matrix aux;
                 #pragma omp for nowait
                 for (int k = 0; k < static_cast<int>(nelements); k++)
                 {
@@ -584,7 +595,20 @@ public:
                     if (element_is_active){
                         //calculate elemental contribution
                         pScheme->CalculateSystemContributions(*it_el, LHS_Contribution, RHS_Contribution, EquationId, CurrentProcessInfo);
-                        Assemble(A, b, LHS_Contribution, RHS_Contribution, EquationId);
+                        Element::DofsVectorType dofs;
+                        it_el->GetDofList(dofs, CurrentProcessInfo);
+                        const auto &geom = it_el->GetGeometry();
+                        if(PhiElemental.size1() != dofs.size() || PhiElemental.size2() != mRomDofs)
+                            PhiElemental.resize(dofs.size(), mRomDofs,false);
+                        if(aux.size1() != dofs.size() || aux.size2() != mRomDofs)
+                            aux.resize(dofs.size(), mRomDofs,false);
+                        GetPhiElemental(PhiElemental, dofs, geom);
+                        noalias(aux) = prod(LHS_Contribution, PhiElemental);
+                        for(int k = 0; k < static_cast<int>(dofs.size()); ++k){
+                            if(dofs[k]->IsFixed()==false)  //When dof is fixed set to zero the corresponging LHS row (==not adding contribution)
+                                noalias(row(tempA,dofs[k]->EquationId()))+=row(aux,k);
+                            tempb[dofs[k]->EquationId()]+=RHS_Contribution(k);
+                        }
                     }
                 }
 
@@ -604,28 +628,121 @@ public:
                         it->GetDofList(dofs, CurrentProcessInfo);
                         //calculate elemental contribution
                         pScheme->CalculateSystemContributions(*it, LHS_Contribution, RHS_Contribution, EquationId, CurrentProcessInfo);
-                        Assemble(A, b, LHS_Contribution, RHS_Contribution, EquationId);
+                        const auto &geom = it->GetGeometry();
+                        if(PhiElemental.size1() != dofs.size() || PhiElemental.size2() != mRomDofs)
+                            PhiElemental.resize(dofs.size(), mRomDofs,false);
+                        if(aux.size1() != dofs.size() || aux.size2() != mRomDofs)
+                            aux.resize(dofs.size(), mRomDofs,false);
+                        GetPhiElemental(PhiElemental, dofs, geom);
+                        noalias(aux) = prod(LHS_Contribution, PhiElemental);
+                        for(int k = 0; k < static_cast<int>(dofs.size()); ++k){
+                            if(dofs[k]->IsFixed()==false)  //When dof is fixed set to zero the corresponging LHS row (==not adding contribution)
+                                noalias(row(tempA,dofs[k]->EquationId()))+=row(aux,k);
+                            tempb[dofs[k]->EquationId()]+=RHS_Contribution(k);
+                        }
                     }
                 }
 
-            }
-            Matrix PhiGlobal;
-            PhiGlobal = ZeroMatrix(Dx.size(),mRomDofs);
-            GetPhiGlobal(PhiGlobal,rModelPart);
-            noalias(Arom) = prod(A, PhiGlobal);
+                #pragma omp critical
+                {
+                    noalias(Arom) +=tempA;
+                    noalias(brom) +=tempb;
+                }
+            } 
             
         }
-        else if (mBuildPetrovGalerking== true){
+        else if (mSolveLeastSquares== true){
+            Matrix globalAphi;
+            Vector globalb;
+            globalAphi = ZeroMatrix(Dx.size(),mRomDofs);
+            globalb = ZeroVector(Dx.size());
             #pragma omp parallel firstprivate(nelements, nconditions, LHS_Contribution, RHS_Contribution, EquationId, el_begin, cond_begin)
             {
                 Matrix PhiElemental;
                 Matrix tempA;
                 Vector tempb;
-                tempA = ZeroMatrix(Dx.size(),mRomDofs);//ADDEDPETROV
-                tempb = ZeroVector(Dx.size());//ADDEDPETROV
-                
+                tempA = ZeroMatrix(Dx.size(),mRomDofs);
+                tempb = ZeroVector(Dx.size());
                 Matrix aux;
                 #pragma omp for nowait
+                for (int k = 0; k < static_cast<int>(nelements); k++)
+                {
+                    auto it_el = el_begin + k;
+                    bool element_is_active = true;
+                    if ((it_el)->IsDefined(ACTIVE))
+                        element_is_active = (it_el)->Is(ACTIVE);
+                    
+                    if (element_is_active){
+                        //calculate elemental contribution
+                        pScheme->CalculateSystemContributions(*it_el, LHS_Contribution, RHS_Contribution, EquationId, CurrentProcessInfo);
+                        Element::DofsVectorType dofs;
+                        it_el->GetDofList(dofs, CurrentProcessInfo);
+                        const auto &geom = it_el->GetGeometry();
+                        if(PhiElemental.size1() != dofs.size() || PhiElemental.size2() != mRomDofs)
+                            PhiElemental.resize(dofs.size(), mRomDofs,false);
+                        if(aux.size1() != dofs.size() || aux.size2() != mRomDofs)
+                            aux.resize(dofs.size(), mRomDofs,false);
+                        GetPhiElemental(PhiElemental, dofs, geom);
+                        noalias(aux) = prod(LHS_Contribution, PhiElemental);
+                        for(int k = 0; k < static_cast<int>(dofs.size()); ++k){
+                            if(dofs[k]->IsFixed()==false)  //When dof is fixed set to zero the corresponging LHS row (==not adding contribution)
+                                noalias(row(tempA,dofs[k]->EquationId()))+=row(aux,k);
+                            tempb[dofs[k]->EquationId()]+=RHS_Contribution(k);
+                        }
+                    }
+                }
+
+                #pragma omp for nowait
+                for (int k = 0; k < static_cast<int>(nconditions); k++)
+                {
+                    auto it = cond_begin + k;
+
+                    //detect if the element is active or not. If the user did not make any choice the condition
+                    //is active by default
+                    bool condition_is_active = true;
+                    if ((it)->IsDefined(ACTIVE))
+                        condition_is_active = (it)->Is(ACTIVE);
+
+                    if (condition_is_active){
+                        Condition::DofsVectorType dofs;
+                        it->GetDofList(dofs, CurrentProcessInfo);
+                        //calculate elemental contribution
+                        pScheme->CalculateSystemContributions(*it, LHS_Contribution, RHS_Contribution, EquationId, CurrentProcessInfo);
+                        const auto &geom = it->GetGeometry();
+                        if(PhiElemental.size1() != dofs.size() || PhiElemental.size2() != mRomDofs)
+                            PhiElemental.resize(dofs.size(), mRomDofs,false);
+                        if(aux.size1() != dofs.size() || aux.size2() != mRomDofs)
+                            aux.resize(dofs.size(), mRomDofs,false);
+                        GetPhiElemental(PhiElemental, dofs, geom);
+                        noalias(aux) = prod(LHS_Contribution, PhiElemental);
+                        for(int k = 0; k < static_cast<int>(dofs.size()); ++k){
+                            if(dofs[k]->IsFixed()==false)  //When dof is fixed set to zero the corresponging LHS row (==not adding contribution)
+                                noalias(row(tempA,dofs[k]->EquationId()))+=row(aux,k);
+                            tempb[dofs[k]->EquationId()]+=RHS_Contribution(k);
+                        }
+                    }
+                }
+
+                #pragma omp critical
+                {
+                    noalias(globalAphi) +=tempA;
+                    noalias(globalb) +=tempb;
+                }
+            }
+            noalias(Arom) = prod(trans(globalAphi),globalAphi);
+            noalias(brom) = prod(trans(globalAphi),globalb);
+        }
+        else if (mBuildPetrovGalerking== true){
+            //#pragma omp parallel firstprivate(nelements, nconditions, LHS_Contribution, RHS_Contribution, EquationId, el_begin, cond_begin)
+            {
+                Matrix PhiElemental;
+                Matrix tempA;
+                Vector tempb;
+                tempA = ZeroMatrix(mRomDofs,mRomDofs);
+                tempb = ZeroVector(mRomDofs);
+                
+                Matrix aux;
+                //#pragma omp for nowait
                 for (int k = 0; k < static_cast<int>(nelements); k++)
                 {
                     auto it_el = el_begin + k;
@@ -646,14 +763,19 @@ public:
                         if(aux.size1() != dofs.size() || aux.size2() != mRomDofs)
                             aux.resize(dofs.size(), mRomDofs,false);
                         GetPhiElemental(PhiElemental, dofs, geom);
-                        noalias(aux) = prod(LHS_Contribution, PhiElemental);//ADDEDPETROV
-                        double h_rom_weight = it_el->GetValue(HROM_WEIGHT);//ADDEDPETROV
-                        noalias(tempA) += aux * h_rom_weight;//ADDEDPETROV
-                        noalias(tempb) += RHS_Contribution * h_rom_weight;//ADDEDPETROV
+                        noalias(aux) = prod(LHS_Contribution, PhiElemental);
+                        // for(int l = 0; l < static_cast<int>(dofs.size()); ++l){
+                        //     if(dofs[l]->IsFixed()){  //When dof is fixed set to zero the corresponging elemental LHS row (==not adding contribution)
+                        //         noalias(row(aux,l)) = ZeroVector(aux.size2());
+                        //     }
+                        // }
+                        double h_rom_weight = it_el->GetValue(HROM_WEIGHT);
+                        noalias(tempA) += prod(trans(aux),aux) * h_rom_weight;
+                        noalias(tempb) += prod(trans(aux),RHS_Contribution) * h_rom_weight;
                     }
                 }
 
-                #pragma omp for nowait
+                //#pragma omp for nowait
                 for (int k = 0; k < static_cast<int>(nconditions); k++){
                     auto it = cond_begin + k;
 
@@ -674,10 +796,15 @@ public:
                         if(aux.size1() != dofs.size() || aux.size2() != mRomDofs)
                             aux.resize(dofs.size(), mRomDofs,false);
                         GetPhiElemental(PhiElemental, dofs, geom);
-                        noalias(aux) = prod(LHS_Contribution, PhiElemental);//ADDEDPETROV
-                        double h_rom_weight = it->GetValue(HROM_WEIGHT);//ADDEDPETROV
-                        noalias(tempA) += aux * h_rom_weight;//ADDEDPETROV
-                        noalias(tempb) += RHS_Contribution * h_rom_weight;//ADDEDPETROV
+                        noalias(aux) = prod(LHS_Contribution, PhiElemental);
+                        for(int l = 0; l < static_cast<int>(dofs.size()); ++l){
+                            if(dofs[l]->IsFixed()){  //When dof is fixed set to zero the corresponging elemental LHS row (==not adding contribution)
+                                noalias(row(aux,l)) = ZeroVector(aux.size2());
+                            }
+                        }
+                        double h_rom_weight = it->GetValue(HROM_WEIGHT);
+                        noalias(tempA) += prod(trans(aux),aux) * h_rom_weight;
+                        noalias(tempb) += prod(trans(aux),RHS_Contribution) * h_rom_weight;
                     }
                 }
 
@@ -721,11 +848,9 @@ public:
                             PhiElemental.resize(dofs.size(), mRomDofs,false);
                         if(aux.size1() != dofs.size() || aux.size2() != mRomDofs)
                             aux.resize(dofs.size(), mRomDofs,false);
-                        GetPhiElemental(PhiElemental, dofs, geom);
                         if(PhiElementalResidual.size1() != dofs.size() || PhiElementalResidual.size2() != mRomDofs_petrov)//ADDEDPETROV
                             PhiElementalResidual.resize(dofs.size(), mRomDofs_petrov,false);//ADDEDPETROV
-                        if(aux.size1() != dofs.size() || aux.size2() != mRomDofs_petrov)//ADDEDPETROV
-                            aux.resize(dofs.size(), mRomDofs_petrov,false);//ADDEDPETROV
+                        GetPhiElemental(PhiElemental, dofs, geom);
                         GetPhiElementalResidual(PhiElementalResidual,dofs,geom);//ADDEDPETROV
                         noalias(aux) = prod(LHS_Contribution, PhiElemental);//ADDEDPETROV
                         double h_rom_weight = it_el->GetValue(HROM_WEIGHT);//ADDEDPETROV
@@ -753,11 +878,9 @@ public:
                             PhiElemental.resize(dofs.size(), mRomDofs,false);
                         if(aux.size1() != dofs.size() || aux.size2() != mRomDofs)
                             aux.resize(dofs.size(), mRomDofs,false);
-                        GetPhiElemental(PhiElemental, dofs, geom);
                         if(PhiElementalResidual.size1() != dofs.size() || PhiElementalResidual.size2() != mRomDofs_petrov)//ADDEDPETROV
                             PhiElementalResidual.resize(dofs.size(), mRomDofs_petrov,false);//ADDEDPETROV
-                        if(aux.size1() != dofs.size() || aux.size2() != mRomDofs_petrov)//ADDEDPETROV
-                            aux.resize(dofs.size(), mRomDofs_petrov,false);//ADDEDPETROV
+                        GetPhiElemental(PhiElemental, dofs, geom);
                         GetPhiElementalResidual(PhiElementalResidual,dofs,geom);//ADDEDPETROV
                         noalias(aux) = prod(LHS_Contribution, PhiElemental);//ADDEDPETROV
                         double h_rom_weight = it->GetValue(HROM_WEIGHT);//ADDEDPETROV
@@ -867,16 +990,23 @@ public:
         if (mBuildPetrovGalerkin==true){
             QR<double, row_major> qr_util;//ADDEDPETROV
             qr_util.compute(Dx.size(), mRomDofs, &(Arom)(0,0));//ADDEDPETROV
-            qr_util.solve(&(b)(0), &(dxrom)(0));//ADDEDPETROV
+            qr_util.solve(&(brom)(0), &(dxrom)(0));//
+            KRATOS_WATCH(dxrom)
         }
         else if (mSolvePetrovGalerkin == true){//ADDEDPETROV
             //Resolver con QR
             QR<double, row_major> qr_util;//ADDEDPETROV
             qr_util.compute(mRomDofs_petrov, mRomDofs, &(Arom)(0,0));//ADDEDPETROV
             qr_util.solve(&(brom)(0), &(dxrom)(0));//ADDEDPETROV
+            KRATOS_WATCH(dxrom)
+        }
+        else if (mSolveLeastSquares == true){
+            MathUtils<double>::Solve(Arom, dxrom, brom);
+            KRATOS_WATCH(dxrom)
         }
         else {
             MathUtils<double>::Solve(Arom, dxrom, brom);
+            KRATOS_WATCH(dxrom)
         }
         const double stop_solve = OpenMPUtils::GetCurrentTime();
         KRATOS_INFO_IF("ROMBuilderAndSolver", (this->GetEchoLevel() >= 1 && rModelPart.GetCommunicator().MyPID() == 0)) << "Solve reduced system time: " << stop_solve - start_solve << std::endl;
@@ -915,25 +1045,25 @@ public:
             pb.swap(pNewb);
         }
 
-        TSystemMatrixType& A = *pA; //To solve least squares problem A@Phi@Dq=b
+        // TSystemMatrixType& A = *pA; //To solve least squares problem A@Phi@Dq=b
         TSystemVectorType &Dx = *pDx;
         TSystemVectorType &b = *pb;
 
         //resizing the system vectors and matrix
-        if (A.size1() == 0 || BaseType::GetReshapeMatrixFlag() == true) //if the matrix is not initialized
-        {
-            A.resize(BaseType::mEquationSystemSize, BaseType::mEquationSystemSize, false);
-            ConstructMatrixStructure(pScheme, A, rModelPart);
-        }
-        else
-        {
-            if (A.size1() != BaseType::mEquationSystemSize || A.size2() != BaseType::mEquationSystemSize)
-            {
-                KRATOS_ERROR <<"The equation system size has changed during the simulation. This is not permited."<<std::endl;
-                A.resize(BaseType::mEquationSystemSize, BaseType::mEquationSystemSize, true);
-                ConstructMatrixStructure(pScheme, A, rModelPart);
-            }
-        }
+        // if (A.size1() == 0 || BaseType::GetReshapeMatrixFlag() == true) //if the matrix is not initialized
+        // {
+        //     A.resize(BaseType::mEquationSystemSize, BaseType::mEquationSystemSize, false);
+        //     ConstructMatrixStructure(pScheme, A, rModelPart);
+        // }
+        // else
+        // {
+        //     if (A.size1() != BaseType::mEquationSystemSize || A.size2() != BaseType::mEquationSystemSize)
+        //     {
+        //         KRATOS_ERROR <<"The equation system size has changed during the simulation. This is not permited."<<std::endl;
+        //         A.resize(BaseType::mEquationSystemSize, BaseType::mEquationSystemSize, true);
+        //         ConstructMatrixStructure(pScheme, A, rModelPart);
+        //     }
+        // }
 
         if (Dx.size() != BaseType::mEquationSystemSize)
             Dx.resize(BaseType::mEquationSystemSize, false);
@@ -945,117 +1075,117 @@ public:
         KRATOS_CATCH("")
     }
 
-    virtual void ConstructMatrixStructure(
-        typename TSchemeType::Pointer pScheme,
-        TSystemMatrixType& A,
-        ModelPart& rModelPart)
-    {
-        //filling with zero the matrix (creating the structure)
-        Timer::Start("MatrixStructure");
+    // virtual void ConstructMatrixStructure(
+    //     typename TSchemeType::Pointer pScheme,
+    //     TSystemMatrixType& A,
+    //     ModelPart& rModelPart)
+    // {
+    //     //filling with zero the matrix (creating the structure)
+    //     Timer::Start("MatrixStructure");
 
-        const ProcessInfo& CurrentProcessInfo = rModelPart.GetProcessInfo();
+    //     const ProcessInfo& CurrentProcessInfo = rModelPart.GetProcessInfo();
 
-        const std::size_t equation_size = BaseType::mEquationSystemSize;
+    //     const std::size_t equation_size = BaseType::mEquationSystemSize;
 
-        std::vector< LockObject > lock_array(equation_size);
+    //     std::vector< LockObject > lock_array(equation_size);
 
-        std::vector<std::unordered_set<std::size_t> > indices(equation_size);
+    //     std::vector<std::unordered_set<std::size_t> > indices(equation_size);
 
-        block_for_each(indices, [](std::unordered_set<std::size_t>& rIndices){
-            rIndices.reserve(40);
-        });
+    //     block_for_each(indices, [](std::unordered_set<std::size_t>& rIndices){
+    //         rIndices.reserve(40);
+    //     });
 
-        Element::EquationIdVectorType ids(3, 0);
+    //     Element::EquationIdVectorType ids(3, 0);
 
-        block_for_each(rModelPart.Elements(), ids, [&](Element& rElem, Element::EquationIdVectorType& rIdsTLS){
-            pScheme->EquationId(rElem, rIdsTLS, CurrentProcessInfo);
-            for (std::size_t i = 0; i < rIdsTLS.size(); i++) {
-                lock_array[rIdsTLS[i]].lock();
-                auto& row_indices = indices[rIdsTLS[i]];
-                row_indices.insert(rIdsTLS.begin(), rIdsTLS.end());
-                lock_array[rIdsTLS[i]].unlock();
-            }
-        });
+    //     block_for_each(rModelPart.Elements(), ids, [&](Element& rElem, Element::EquationIdVectorType& rIdsTLS){
+    //         pScheme->EquationId(rElem, rIdsTLS, CurrentProcessInfo);
+    //         for (std::size_t i = 0; i < rIdsTLS.size(); i++) {
+    //             lock_array[rIdsTLS[i]].lock();
+    //             auto& row_indices = indices[rIdsTLS[i]];
+    //             row_indices.insert(rIdsTLS.begin(), rIdsTLS.end());
+    //             lock_array[rIdsTLS[i]].unlock();
+    //         }
+    //     });
 
-        block_for_each(rModelPart.Conditions(), ids, [&](Condition& rCond, Element::EquationIdVectorType& rIdsTLS){
-            pScheme->EquationId(rCond, rIdsTLS, CurrentProcessInfo);
-            for (std::size_t i = 0; i < rIdsTLS.size(); i++) {
-                lock_array[rIdsTLS[i]].lock();
-                auto& row_indices = indices[rIdsTLS[i]];
-                row_indices.insert(rIdsTLS.begin(), rIdsTLS.end());
-                lock_array[rIdsTLS[i]].unlock();
-            }
-        });
+    //     block_for_each(rModelPart.Conditions(), ids, [&](Condition& rCond, Element::EquationIdVectorType& rIdsTLS){
+    //         pScheme->EquationId(rCond, rIdsTLS, CurrentProcessInfo);
+    //         for (std::size_t i = 0; i < rIdsTLS.size(); i++) {
+    //             lock_array[rIdsTLS[i]].lock();
+    //             auto& row_indices = indices[rIdsTLS[i]];
+    //             row_indices.insert(rIdsTLS.begin(), rIdsTLS.end());
+    //             lock_array[rIdsTLS[i]].unlock();
+    //         }
+    //     });
 
-        if (rModelPart.MasterSlaveConstraints().size() != 0) {
-            struct TLS
-            {
-                Element::EquationIdVectorType master_ids = Element::EquationIdVectorType(3,0);
-                Element::EquationIdVectorType slave_ids = Element::EquationIdVectorType(3,0);
-            };
-            TLS tls;
+    //     if (rModelPart.MasterSlaveConstraints().size() != 0) {
+    //         struct TLS
+    //         {
+    //             Element::EquationIdVectorType master_ids = Element::EquationIdVectorType(3,0);
+    //             Element::EquationIdVectorType slave_ids = Element::EquationIdVectorType(3,0);
+    //         };
+    //         TLS tls;
 
-            block_for_each(rModelPart.MasterSlaveConstraints(), tls, [&](MasterSlaveConstraint& rConst, TLS& rTls){
-                rConst.EquationIdVector(rTls.slave_ids, rTls.master_ids, CurrentProcessInfo);
+    //         block_for_each(rModelPart.MasterSlaveConstraints(), tls, [&](MasterSlaveConstraint& rConst, TLS& rTls){
+    //             rConst.EquationIdVector(rTls.slave_ids, rTls.master_ids, CurrentProcessInfo);
 
-                for (std::size_t i = 0; i < rTls.slave_ids.size(); i++) {
-                    lock_array[rTls.slave_ids[i]].lock();
-                    auto& row_indices = indices[rTls.slave_ids[i]];
-                    row_indices.insert(rTls.slave_ids[i]);
-                    lock_array[rTls.slave_ids[i]].unlock();
-                }
+    //             for (std::size_t i = 0; i < rTls.slave_ids.size(); i++) {
+    //                 lock_array[rTls.slave_ids[i]].lock();
+    //                 auto& row_indices = indices[rTls.slave_ids[i]];
+    //                 row_indices.insert(rTls.slave_ids[i]);
+    //                 lock_array[rTls.slave_ids[i]].unlock();
+    //             }
 
-                for (std::size_t i = 0; i < rTls.master_ids.size(); i++) {
-                    lock_array[rTls.master_ids[i]].lock();
-                    auto& row_indices = indices[rTls.master_ids[i]];
-                    row_indices.insert(rTls.master_ids[i]);
-                    lock_array[rTls.master_ids[i]].unlock();
-                }
-            });
+    //             for (std::size_t i = 0; i < rTls.master_ids.size(); i++) {
+    //                 lock_array[rTls.master_ids[i]].lock();
+    //                 auto& row_indices = indices[rTls.master_ids[i]];
+    //                 row_indices.insert(rTls.master_ids[i]);
+    //                 lock_array[rTls.master_ids[i]].unlock();
+    //             }
+    //         });
 
-        }
+    //     }
 
-        //destroy locks
-        lock_array = std::vector< LockObject >();
+    //     //destroy locks
+    //     lock_array = std::vector< LockObject >();
 
-        //count the row sizes
-        unsigned int nnz = 0;
-        for (unsigned int i = 0; i < indices.size(); i++) {
-            nnz += indices[i].size();
-        }
+    //     //count the row sizes
+    //     unsigned int nnz = 0;
+    //     for (unsigned int i = 0; i < indices.size(); i++) {
+    //         nnz += indices[i].size();
+    //     }
 
-        A = CompressedMatrixType(indices.size(), indices.size(), nnz);
+    //     A = CompressedMatrixType(indices.size(), indices.size(), nnz);
 
-        double* Avalues = A.value_data().begin();
-        std::size_t* Arow_indices = A.index1_data().begin();
-        std::size_t* Acol_indices = A.index2_data().begin();
+    //     double* Avalues = A.value_data().begin();
+    //     std::size_t* Arow_indices = A.index1_data().begin();
+    //     std::size_t* Acol_indices = A.index2_data().begin();
 
-        //filling the index1 vector - DO NOT MAKE PARALLEL THE FOLLOWING LOOP!
-        Arow_indices[0] = 0;
-        for (int i = 0; i < static_cast<int>(A.size1()); i++) {
-            Arow_indices[i+1] = Arow_indices[i] + indices[i].size();
-        }
+    //     //filling the index1 vector - DO NOT MAKE PARALLEL THE FOLLOWING LOOP!
+    //     Arow_indices[0] = 0;
+    //     for (int i = 0; i < static_cast<int>(A.size1()); i++) {
+    //         Arow_indices[i+1] = Arow_indices[i] + indices[i].size();
+    //     }
 
-        IndexPartition<std::size_t>(A.size1()).for_each([&](std::size_t i){
-            const unsigned int row_begin = Arow_indices[i];
-            const unsigned int row_end = Arow_indices[i+1];
-            unsigned int k = row_begin;
-            for (auto it = indices[i].begin(); it != indices[i].end(); it++) {
-                Acol_indices[k] = *it;
-                Avalues[k] = 0.0;
-                k++;
-            }
+    //     IndexPartition<std::size_t>(A.size1()).for_each([&](std::size_t i){
+    //         const unsigned int row_begin = Arow_indices[i];
+    //         const unsigned int row_end = Arow_indices[i+1];
+    //         unsigned int k = row_begin;
+    //         for (auto it = indices[i].begin(); it != indices[i].end(); it++) {
+    //             Acol_indices[k] = *it;
+    //             Avalues[k] = 0.0;
+    //             k++;
+    //         }
 
-            indices[i].clear(); //deallocating the memory
+    //         indices[i].clear(); //deallocating the memory
 
-            std::sort(&Acol_indices[row_begin], &Acol_indices[row_end]);
+    //         std::sort(&Acol_indices[row_begin], &Acol_indices[row_end]);
 
-        });
+    //     });
 
-        A.set_filled(indices.size()+1, nnz);
+    //     A.set_filled(indices.size()+1, nnz);
 
-        Timer::Stop("MatrixStructure");
-    }
+    //     Timer::Stop("MatrixStructure");
+    // }
 
     /*@} */
     /**@name Operations */
@@ -1136,7 +1266,7 @@ protected:
     unsigned int mRomDofs_petrov;//ADDEDPETROV
     std::unordered_map<Kratos::VariableData::KeyType,int> mMapPhi;
     ModelPart::ConditionsContainerType mSelectedConditions;
-    bool mSolvePetrovGalerkin = false,mBuildPetrovGalerkin = false,mBuildPetrovGalerking = false;
+    bool mSolvePetrovGalerkin = false,mBuildPetrovGalerkin = false,mBuildPetrovGalerking = false, mSolveLeastSquares = false;
     bool mHromSimulation = false;
 
     /*@} */
