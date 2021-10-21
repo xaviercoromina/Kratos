@@ -235,8 +235,136 @@ namespace Kratos {
             mListOfSphericParticles[i]->CalculateInitialNodalMassArray(r_process_info);
         }
 
-        KRATOS_CATCH("")
+        // We need to make sure that the mass array is different from zero
 
+        // 1. Compute maximum stiffness for each DOF to have a conservative estimation of stiffness
+        ModelPart& dem_model_part = GetModelPart();
+        NodesArrayType& rNodes = dem_model_part.Nodes();
+        const int NNodes = static_cast<int>(rNodes.size());
+        ModelPart::NodesContainerType::iterator node_begin = dem_model_part.NodesBegin();
+
+        array_1d<double,3> k_max;
+        array_1d<double,3> m_max;
+        
+        unsigned int NumThreads = ParallelUtilities::GetNumThreads();
+        std::vector<double> kx_max_partition(NumThreads);
+        std::vector<double> ky_max_partition(NumThreads);
+        std::vector<double> kz_max_partition(NumThreads);
+        std::vector<double> mx_max_partition(NumThreads);
+        std::vector<double> my_max_partition(NumThreads);
+        std::vector<double> mz_max_partition(NumThreads);
+
+        #pragma omp parallel
+        {
+            int k = OpenMPUtils::ThisThread();
+
+            kx_max_partition[k] = node_begin->FastGetSolutionStepValue(NODAL_MASS_ARRAY_X);
+            ky_max_partition[k] = node_begin->FastGetSolutionStepValue(NODAL_MASS_ARRAY_Y);
+            kz_max_partition[k] = node_begin->FastGetSolutionStepValue(NODAL_MASS_ARRAY_Z);
+            mx_max_partition[k] = node_begin->FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY_X);
+            my_max_partition[k] = node_begin->FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY_Y);
+            mz_max_partition[k] = node_begin->FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY_Z);
+
+            double kx_me, ky_me, kz_me, mx_me, my_me, mz_me;
+
+            #pragma omp for
+            for(int i = 0; i < NNodes; i++) {
+                ModelPart::NodesContainerType::iterator itNode = node_begin + i;
+
+                kx_me = itNode->FastGetSolutionStepValue(NODAL_MASS_ARRAY_X);
+                ky_me = itNode->FastGetSolutionStepValue(NODAL_MASS_ARRAY_Y);
+                kz_me = itNode->FastGetSolutionStepValue(NODAL_MASS_ARRAY_Z);
+                mx_me = itNode->FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY_X);
+                my_me = itNode->FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY_Y);
+                mz_me = itNode->FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY_Z);
+
+                if( kx_me > kx_max_partition[k] ) {
+                    kx_max_partition[k] = kx_me;
+                }
+                if( ky_me > ky_max_partition[k] ) {
+                    ky_max_partition[k] = ky_me;
+                }
+                if( kz_me > kz_max_partition[k] ) {
+                    kz_max_partition[k] = kz_me;
+                }
+                if( mx_me > mx_max_partition[k] ) {
+                    mx_max_partition[k] = mx_me;
+                }
+                if( my_me > my_max_partition[k] ) {
+                    my_max_partition[k] = my_me;
+                }
+                if( mz_me > mz_max_partition[k] ) {
+                    mz_max_partition[k] = mz_me;
+                }
+            }
+        }
+
+        k_max[0] = kx_max_partition[0];
+        k_max[1] = ky_max_partition[0];
+        k_max[2] = kz_max_partition[0];
+        m_max[0] = mx_max_partition[0];
+        m_max[1] = my_max_partition[0];
+        m_max[2] = mz_max_partition[0];
+
+        for(unsigned int i=1; i < NumThreads; i++) {
+            if(kx_max_partition[i] > k_max[0]){
+                k_max[0] = kx_max_partition[i];
+            }
+            if(ky_max_partition[i] > k_max[1]) {
+                k_max[1] = ky_max_partition[i];
+            }
+            if(kz_max_partition[i] > k_max[2]) {
+                k_max[2] = kz_max_partition[i];
+            }
+            if(mx_max_partition[i] > m_max[0]){
+                m_max[0] = mx_max_partition[i];
+            }
+            if(my_max_partition[i] > m_max[1]) {
+                m_max[1] = my_max_partition[i];
+            }
+            if(mz_max_partition[i] > m_max[2]) {
+                m_max[2] = mz_max_partition[i];
+            }
+        }
+
+        // 2. Check that the maximum stiffness is not zero
+        double k_max_total = 0.0;
+        double m_max_total = 0.0;
+        for(unsigned int i = 0; i<3; i++){
+            k_max_total += k_max[i];
+            m_max_total += m_max[i];
+        }
+        for(unsigned int i = 0; i<3; i++){
+            if(k_max[i] < std::numeric_limits<double>::epsilon()) {
+                k_max[i] = k_max_total;
+            }
+            if(k_max[i] < std::numeric_limits<double>::epsilon()) {
+                k_max[i] = 1.0e12; // Just in case stiffness is zero everywhere !
+            }
+            if(m_max[i] < std::numeric_limits<double>::epsilon()) {
+                m_max[i] = m_max_total;
+            }
+            if(m_max[i] < std::numeric_limits<double>::epsilon()) {
+                m_max[i] = 1.0e12; // Just in case moment_of_inertia is zero everywhere !
+            }
+        }
+
+        // Check that mass array is different from zero and replace it by the stiffness estimation when necessary
+        block_for_each(rNodes, [&](ModelPart::NodeType& rNode) {
+            array_1d<double, 3>& nodal_mass_array = rNode.FastGetSolutionStepValue(NODAL_MASS_ARRAY);
+            array_1d<double, 3>& particle_moment_intertia_array = rNode.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY);
+
+            for(unsigned int i = 0; i<3; i++){
+                if(nodal_mass_array[i] < std::numeric_limits<double>::epsilon()) {
+                    nodal_mass_array[i] = k_max[i];
+                }
+                if(particle_moment_intertia_array[i] < std::numeric_limits<double>::epsilon()) {
+                    particle_moment_intertia_array[i] = m_max[i];
+                }
+            }
+        });
+
+        KRATOS_CATCH("")
     }
 
     void ExplicitSolverStrategy::AttachSpheresToStickyWalls() {

@@ -263,16 +263,6 @@ void SphericParticle::CalculateInitialNodalMassArray(const ProcessInfo& r_proces
 
     ComputeBallToRigidFaceInitialStiffness(data_buffer, r_process_info, nodal_mass_array, particle_moment_intertia_array);
 
-    // Check that no mass is zero or negative
-    for(unsigned int i = 0; i<3; i++){
-        if(nodal_mass_array[i] < std::numeric_limits<double>::epsilon()) {
-            nodal_mass_array[i] = 1.0; // TODO. Ignasi: Think of a clever way to avoid instabilities due to isolated spheres
-        }
-        if(particle_moment_intertia_array[i] < std::numeric_limits<double>::epsilon()) {
-            particle_moment_intertia_array[i] = 1.0; // TODO. Ignasi: same here
-        }
-    }
-
     KRATOS_CATCH( "" )
 }
 
@@ -324,6 +314,16 @@ void SphericParticle::ComputeBallToBallInitialStiffness(SphericParticle::Particl
 
             GeometryFunctions::VectorLocal2Global(data_buffer.mLocalCoordSystem, LocalStiffness, GlobalStiffness);
             GeometryFunctions::VectorLocal2Global(data_buffer.mLocalCoordSystem, LocalRotationalStiffness, GlobalRotationalStiffness);
+
+            // Make global stiffness positive before accumulation
+            for(unsigned int j = 0; j<3; j++){
+                if(GlobalStiffness[j] < 0.0) {
+                    GlobalStiffness[j] = -GlobalStiffness[j];
+                }
+                if(GlobalRotationalStiffness[j] < 0.0) {
+                    GlobalRotationalStiffness[j] = -GlobalRotationalStiffness[j];
+                }
+            }
 
             DEM_ADD_SECOND_TO_FIRST(r_nodal_stiffness_array, GlobalStiffness)
             DEM_ADD_SECOND_TO_FIRST(r_nodal_rotational_stiffness_array, GlobalRotationalStiffness)
@@ -414,6 +414,16 @@ void SphericParticle::ComputeBallToRigidFaceInitialStiffness(SphericParticle::Pa
             GeometryFunctions::VectorLocal2Global(data_buffer.mLocalCoordSystem, LocalStiffness, GlobalStiffness);
             GeometryFunctions::VectorLocal2Global(data_buffer.mLocalCoordSystem, LocalRotationalStiffness, GlobalRotationalStiffness);
 
+            // Make global stiffness positive before accumulation
+            for(unsigned int j = 0; j<3; j++){
+                if(GlobalStiffness[j] < 0.0) {
+                    GlobalStiffness[j] = -GlobalStiffness[j];
+                }
+                if(GlobalRotationalStiffness[j] < 0.0) {
+                    GlobalRotationalStiffness[j] = -GlobalRotationalStiffness[j];
+                }
+            }
+
             DEM_ADD_SECOND_TO_FIRST(r_nodal_stiffness_array, GlobalStiffness)
             DEM_ADD_SECOND_TO_FIRST(r_nodal_rotational_stiffness_array, GlobalRotationalStiffness)
             
@@ -489,6 +499,16 @@ void SphericParticle::ComputeBallToRigidFaceInitialStiffness(SphericParticle::Pa
 
         GeometryFunctions::VectorLocal2Global(data_buffer.mLocalCoordSystem, LocalStiffness, GlobalStiffness);
         GeometryFunctions::VectorLocal2Global(data_buffer.mLocalCoordSystem, LocalRotationalStiffness, GlobalRotationalStiffness);
+
+            // Make global stiffness positive before accumulation
+            for(unsigned int j = 0; j<3; j++){
+                if(GlobalStiffness[j] < 0.0) {
+                    GlobalStiffness[j] = -GlobalStiffness[j];
+                }
+                if(GlobalRotationalStiffness[j] < 0.0) {
+                    GlobalRotationalStiffness[j] = -GlobalRotationalStiffness[j];
+                }
+            }
 
         DEM_ADD_SECOND_TO_FIRST(r_nodal_stiffness_array, GlobalStiffness)
         DEM_ADD_SECOND_TO_FIRST(r_nodal_rotational_stiffness_array, GlobalRotationalStiffness)

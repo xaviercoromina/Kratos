@@ -305,6 +305,16 @@ namespace Kratos {
             GeometryFunctions::VectorLocal2Global(data_buffer.mLocalCoordSystem, LocalStiffness, GlobalStiffness);
             GeometryFunctions::VectorLocal2Global(data_buffer.mLocalCoordSystem, LocalRotationalStiffness, GlobalRotationalStiffness);
 
+            // Make global stiffness positive before accumulation
+            for(unsigned int j = 0; j<3; j++){
+                if(GlobalStiffness[j] < 0.0) {
+                    GlobalStiffness[j] = -GlobalStiffness[j];
+                }
+                if(GlobalRotationalStiffness[j] < 0.0) {
+                    GlobalRotationalStiffness[j] = -GlobalRotationalStiffness[j];
+                }
+            }
+
             DEM_ADD_SECOND_TO_FIRST(r_nodal_stiffness_array, GlobalStiffness)
             DEM_ADD_SECOND_TO_FIRST(r_nodal_rotational_stiffness_array, GlobalRotationalStiffness)
 
