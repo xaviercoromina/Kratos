@@ -215,8 +215,29 @@ namespace Kratos {
 
         ComputeNodalArea();
 
+        //TODO. Ignasi:
+        CalculateInitialNodalMassArray();
+
         KRATOS_CATCH("")
     } // Initialize()
+
+    //TODO. Ignasi:
+    void ExplicitSolverStrategy::CalculateInitialNodalMassArray() {
+
+        KRATOS_TRY
+
+        const ProcessInfo& r_process_info = GetModelPart().GetProcessInfo();
+
+        const int number_of_particles = (int) mListOfSphericParticles.size();
+
+        #pragma omp parallel for schedule(dynamic, 100)
+        for (int i = 0; i < number_of_particles; i++) {
+            mListOfSphericParticles[i]->CalculateInitialNodalMassArray(r_process_info);
+        }
+
+        KRATOS_CATCH("")
+
+    }
 
     void ExplicitSolverStrategy::AttachSpheresToStickyWalls() {
         KRATOS_TRY

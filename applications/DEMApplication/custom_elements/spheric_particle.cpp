@@ -227,9 +227,6 @@ void SphericParticle::Initialize(const ProcessInfo& r_process_info)
     theta_factor = r_process_info[THETA_FACTOR];
     g_coefficient = r_process_info[G_COEFFICIENT];
 
-    // TODO. Ignasi
-    this->CalculateInitialNodalMassArray(r_process_info);
-
     KRATOS_CATCH( "" )
 }
 

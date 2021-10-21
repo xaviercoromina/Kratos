@@ -145,6 +145,9 @@ namespace Kratos {
         CalculateMaxSearchDistance();
         ComputeNodalArea();
 
+        //TODO. Ignasi:
+        CalculateInitialNodalMassArray();
+        
         KRATOS_CATCH("")
     }// Initialize()
 

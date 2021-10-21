@@ -293,6 +293,9 @@ namespace Kratos {
 
     protected:
 
+        //TODO. Ignasi:
+        virtual void CalculateInitialNodalMassArray();
+
         Parameters mParameters;
         bool mRemoveBallsInitiallyTouchingWallsOption;
         VectorResultElementsContainerType mResults;
