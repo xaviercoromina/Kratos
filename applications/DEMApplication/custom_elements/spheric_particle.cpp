@@ -602,8 +602,8 @@ void SphericParticle::CalculateRightHandSide(const ProcessInfo& r_process_info, 
     ApplyGlobalDampingToContactForcesAndMoments(total_forces, total_moment);
 
     // TODO.Ignasi: this may be not necessary for CD scheme...
-    ApplyNegGlobalDampingToContactForcesAndMoments(internal_force, internal_moment);
-    ApplyGlobalDampingToContactForcesAndMoments(external_force, external_moment);
+    // ApplyNegGlobalDampingToContactForcesAndMoments(internal_force, internal_moment);
+    // ApplyGlobalDampingToContactForcesAndMoments(external_force, external_moment);
 
     #ifdef KRATOS_DEBUG
     DemDebugFunctions::CheckIfNan(total_forces, "NAN in Total Forces in RHS of Ball");
