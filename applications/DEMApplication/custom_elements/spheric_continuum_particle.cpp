@@ -278,7 +278,7 @@ namespace Kratos {
 
             } else if (indentation > 0.0) {
 
-                mDiscontinuumConstitutiveLaw = pGetDiscontinuumConstitutiveLawWithNeighbour(data_buffer.mpOtherParticle);
+                mDiscontinuumConstitutiveLaw = pCloneDiscontinuumConstitutiveLawWithNeighbour(data_buffer.mpOtherParticle);
                 mDiscontinuumConstitutiveLaw->InitializeContact(this,data_buffer.mpOtherParticle,indentation);
 
                 const double Kt = mDiscontinuumConstitutiveLaw->mKt;

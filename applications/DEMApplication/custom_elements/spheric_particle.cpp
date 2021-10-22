@@ -296,7 +296,7 @@ void SphericParticle::ComputeBallToBallInitialStiffness(SphericParticle::Particl
 
             EvaluateDeltaDisplacement(data_buffer, DeltDisp, RelVel, data_buffer.mLocalCoordSystem, data_buffer.mOldLocalCoordSystem, velocity, delta_displ);
 
-            mDiscontinuumConstitutiveLaw = pGetDiscontinuumConstitutiveLawWithNeighbour(data_buffer.mpOtherParticle);
+            mDiscontinuumConstitutiveLaw = pCloneDiscontinuumConstitutiveLawWithNeighbour(data_buffer.mpOtherParticle);
             mDiscontinuumConstitutiveLaw->InitializeContact(this,data_buffer.mpOtherParticle,data_buffer.mIndentation);
 
             const double Kt = mDiscontinuumConstitutiveLaw->mKt;
@@ -393,7 +393,7 @@ void SphericParticle::ComputeBallToRigidFaceInitialStiffness(SphericParticle::Pa
 
             if (indentation > 0.0) {
 
-                mDiscontinuumConstitutiveLaw = pGetDiscontinuumConstitutiveLawWithFEMNeighbour(wall);
+                mDiscontinuumConstitutiveLaw = pCloneDiscontinuumConstitutiveLawWithFEMNeighbour(wall);
                 mDiscontinuumConstitutiveLaw->InitializeContactWithFEM(this,wall,indentation);
 
                 Kt = mDiscontinuumConstitutiveLaw->mKt;
@@ -479,7 +479,7 @@ void SphericParticle::ComputeBallToRigidFaceInitialStiffness(SphericParticle::Pa
 
         if (indentation > 0.0)
         {
-            mDiscontinuumConstitutiveLaw = pGetDiscontinuumConstitutiveLawWithFEMNeighbour(wall);
+            mDiscontinuumConstitutiveLaw = pCloneDiscontinuumConstitutiveLawWithFEMNeighbour(wall);
             mDiscontinuumConstitutiveLaw->InitializeContactWithFEM(this,wall,indentation);
 
             Kt = mDiscontinuumConstitutiveLaw->mKt;
