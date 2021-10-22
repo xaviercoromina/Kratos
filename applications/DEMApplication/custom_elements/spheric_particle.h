@@ -260,8 +260,11 @@ BoundedMatrix<double, 3, 3>* mSymmStressTensor;
 virtual void ComputeAdditionalForces(array_1d<double, 3>& externally_applied_force, array_1d<double, 3>& externally_applied_moment, const ProcessInfo& r_process_info, const array_1d<double,3>& gravity);
 virtual array_1d<double,3> ComputeWeight(const array_1d<double,3>& gravity, const ProcessInfo& r_process_info);
 virtual void CalculateOnContactElements(size_t i_neighbour_count, double LocalContactForce[3]);
-DEMDiscontinuumConstitutiveLaw* pGetDiscontinuumConstitutiveLawWithNeighbour(SphericParticle* neighbour);
-DEMDiscontinuumConstitutiveLaw* pGetDiscontinuumConstitutiveLawWithFEMNeighbour(Condition* neighbour);
+
+std::unique_ptr<DEMDiscontinuumConstitutiveLaw> pCloneDiscontinuumConstitutiveLawWithNeighbour(SphericParticle* neighbour);
+
+std::unique_ptr<DEMDiscontinuumConstitutiveLaw> pCloneDiscontinuumConstitutiveLawWithFEMNeighbour(Condition* neighbour);
+
 
 // TODO. Ignasi
 virtual void CalculateInitialNodalMassArray(const ProcessInfo& r_process_info);
@@ -439,7 +442,8 @@ virtual void ApplyGlobalDampingToContactForcesAndMoments(array_1d<double,3>& tot
 
 virtual void ApplyNegGlobalDampingToContactForcesAndMoments(array_1d<double,3>& internal_forces, array_1d<double,3>& internal_moment);
 
-DEMDiscontinuumConstitutiveLaw* mDiscontinuumConstitutiveLaw;
+std::unique_ptr<DEMDiscontinuumConstitutiveLaw> mDiscontinuumConstitutiveLaw;
+
 double mRadius;
 double mSearchRadius;
 double mRealMass;
