@@ -882,8 +882,8 @@ void UPwElement<TDim,TNumNodes>::AddExplicitContribution(
         Matrix lumped_mass_matrix = ZeroMatrix(element_size,element_size);
         this->CalculateLumpedMassMatrix(lumped_mass_matrix,rCurrentProcessInfo);
         // TODO. Ignasi
-        // MatrixType StiffnessMatrix(element_size,element_size);
-        // this->CalculateStiffnessMatrix(StiffnessMatrix,rCurrentProcessInfo);
+        MatrixType StiffnessMatrix(element_size,element_size);
+        this->CalculateStiffnessMatrix(StiffnessMatrix,rCurrentProcessInfo);
 
         for(SizeType i=0; i< TNumNodes; ++i) {
 
@@ -894,10 +894,10 @@ void UPwElement<TDim,TNumNodes>::AddExplicitContribution(
             // rGeom[i].GetValue(NODAL_MASS) += lumped_mass_matrix(index,index);
             array_1d<double, 3 >& r_nodal_mass_array = rGeom[i].GetValue(NODAL_MASS_ARRAY);
             for(SizeType j=0; j<TDim; ++j) {
-                #pragma omp atomic
-                r_nodal_mass_array[j] += lumped_mass_matrix(index,index);
                 // #pragma omp atomic
-                // r_nodal_mass_array[j] += StiffnessMatrix(index+j,index+j);
+                // r_nodal_mass_array[j] += lumped_mass_matrix(index,index);
+                #pragma omp atomic
+                r_nodal_mass_array[j] += StiffnessMatrix(index+j,index+j);
             }
         }
     }
