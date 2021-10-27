@@ -349,6 +349,8 @@ namespace Kratos {
             }
         }
 
+        const bool use_mass_array = r_process_info[USE_MASS_ARRAY];
+        const double mass_array_scale_factor = r_process_info[MASS_ARRAY_SCALE_FACTOR];
         // Check that mass array is different from zero and replace it by the stiffness estimation when necessary
         block_for_each(rNodes, [&](ModelPart::NodeType& rNode) {
             array_1d<double, 3>& nodal_mass_array = rNode.FastGetSolutionStepValue(NODAL_MASS_ARRAY);
@@ -360,6 +362,23 @@ namespace Kratos {
                 }
                 if(particle_moment_intertia_array[i] < std::numeric_limits<double>::epsilon()) {
                     particle_moment_intertia_array[i] = m_max[i];
+                }
+            }
+
+            // Scale mass array to have similar Dt as in the original case
+            for(unsigned int i = 0; i<3; i++){
+                nodal_mass_array[i] = nodal_mass_array[i]*mass_array_scale_factor;
+                particle_moment_intertia_array[i] = particle_moment_intertia_array[i]*mass_array_scale_factor;
+            }
+
+            // Use standard mass if necessary
+            if(use_mass_array == false){
+                const double& nodal_mass = rNode.FastGetSolutionStepValue(NODAL_MASS);
+                const double& particle_moment_intertia = rNode.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA);
+
+                for(unsigned int i = 0; i<3; i++){
+                    nodal_mass_array[i] = nodal_mass;
+                    particle_moment_intertia_array[i] = particle_moment_intertia;
                 }
             }
         });

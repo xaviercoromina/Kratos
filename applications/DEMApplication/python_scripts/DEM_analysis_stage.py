@@ -233,6 +233,8 @@ class DEMAnalysisStage(AnalysisStage):
                 Logger.PrintInfo('DEM', 'rayleigh_alpha: ',rayleigh_alpha)
                 Logger.PrintInfo('DEM', 'rayleigh_beta: ',rayleigh_beta)
 
+            self.spheres_model_part.ProcessInfo.SetValue(USE_MASS_ARRAY, rayleigh_cd_param["use_mass_array"].GetBool())
+            self.spheres_model_part.ProcessInfo.SetValue(MASS_ARRAY_SCALE_FACTOR, rayleigh_cd_param["mass_array_scale_factor"].GetDouble())
             self.spheres_model_part.ProcessInfo.SetValue(RAYLEIGH_ALPHA, rayleigh_alpha)
             self.spheres_model_part.ProcessInfo.SetValue(RAYLEIGH_BETA, rayleigh_beta)
             self.spheres_model_part.ProcessInfo.SetValue(G_COEFFICIENT, g_coefficient)
