@@ -327,7 +327,9 @@ namespace Kratos {
                                                                 const ProcessInfo& r_process_info,
                                                                 array_1d<double, 3>& rElasticForce,
                                                                 array_1d<double, 3>& rContactForce,
-                                                                double& RollingResistance)
+                                                                double& RollingResistance,
+                                                                array_1d<double, 3>& r_nodal_stiffness_array,
+                                                                array_1d<double, 3>& r_nodal_rotational_stiffness_array)
     {
         KRATOS_TRY
 
@@ -410,6 +412,10 @@ namespace Kratos {
             double GlobalElasticExtraContactForce[3] = {0.0};
             double TotalGlobalElasticContactForce[3] = {0.0};
             double OldLocalElasticContactForce[3] = {0.0};
+            double LocalStiffness[3]              = {0.0};
+            double GlobalStiffness[3]             = {0.0};
+            double LocalRotationalStiffness[3]    = {0.0};
+            double GlobalRotationalStiffness[3]   = {0.0};
 
             //FilterNonSignificantDisplacements(DeltDisp, RelVel, indentation);
 
@@ -465,12 +471,49 @@ namespace Kratos {
                                                                 LocalRelVel,
                                                                 ViscoDampingLocalContactForce);
 
+                // Estimate updated local stiffness
+                if (std::abs(LocalDeltDisp[0]) > std::numeric_limits<double>::epsilon()){
+                    LocalStiffness[0] = LocalElasticContactForce[0] / LocalDeltDisp[0];
+                } else{
+                    LocalStiffness[0] = kt_el;
+                }
+                if (std::abs(LocalDeltDisp[1]) > std::numeric_limits<double>::epsilon()){
+                    LocalStiffness[1] = LocalElasticContactForce[1] / LocalDeltDisp[1];
+                } else{
+                    LocalStiffness[1] = kt_el;
+                }
+                if (std::abs(indentation) > std::numeric_limits<double>::epsilon()){
+                    LocalStiffness[2] = LocalElasticContactForce[2] / indentation;
+                } else{
+                    LocalStiffness[2] = kn_el;
+                }
+
             } else if (indentation > 0.0) {
                 const double previous_indentation = indentation + LocalDeltDisp[2];
                 mDiscontinuumConstitutiveLaw = pCloneDiscontinuumConstitutiveLawWithNeighbour(data_buffer.mpOtherParticle);
                 mDiscontinuumConstitutiveLaw->CalculateForces(r_process_info, OldLocalElasticContactForce, LocalElasticContactForce,
                         LocalDeltDisp, LocalRelVel, indentation, previous_indentation,
                         ViscoDampingLocalContactForce, cohesive_force, this, data_buffer.mpOtherParticle, sliding, data_buffer.mLocalCoordSystem);
+                
+                // Estimate updated local stiffness
+                mDiscontinuumConstitutiveLaw->InitializeContact(this,data_buffer.mpOtherParticle,indentation);
+                const double Kt = mDiscontinuumConstitutiveLaw->mKt;
+                const double Kn = mDiscontinuumConstitutiveLaw->mKn;
+                if (std::abs(LocalDeltDisp[0]) > std::numeric_limits<double>::epsilon()){
+                    LocalStiffness[0] = LocalElasticContactForce[0] / LocalDeltDisp[0];
+                } else{
+                    LocalStiffness[0] = Kt;
+                }
+                if (std::abs(LocalDeltDisp[1]) > std::numeric_limits<double>::epsilon()){
+                    LocalStiffness[1] = LocalElasticContactForce[1] / LocalDeltDisp[1];
+                } else{
+                    LocalStiffness[1] = Kt;
+                }
+                if (std::abs(indentation) > std::numeric_limits<double>::epsilon()){
+                    LocalStiffness[2] = LocalElasticContactForce[2] / indentation;
+                } else{
+                    LocalStiffness[2] = Kn;
+                }
             } else { //Not bonded and no idata_buffer.mpOtherParticlendentation
                 LocalElasticContactForce[0] = 0.0;      LocalElasticContactForce[1] = 0.0;      LocalElasticContactForce[2] = 0.0;
                 ViscoDampingLocalContactForce[0] = 0.0; ViscoDampingLocalContactForce[1] = 0.0; ViscoDampingLocalContactForce[2] = 0.0;
@@ -496,10 +539,54 @@ namespace Kratos {
                 if (i < (int)mContinuumInitialNeighborsSize && mIniNeighbourFailureId[i] == 0) {
                     mContinuumConstitutiveLawArray[i]->ComputeParticleRotationalMoments(this, neighbour_iterator, equiv_young, data_buffer.mDistance, calculation_area,
                                                                                         data_buffer.mLocalCoordSystem, ElasticLocalRotationalMoment, ViscoLocalRotationalMoment, equiv_poisson, indentation);
+
+                    // Estimate updated local rotational stiffness
+                    double LocalDeltaRotatedAngle[3]    = {0.0};
+                    array_1d<double, 3> GlobalDeltaRotatedAngle;
+                    noalias(GlobalDeltaRotatedAngle) = this->GetGeometry()[0].FastGetSolutionStepValue(PARTICLE_ROTATION_ANGLE) - neighbour_iterator->GetGeometry()[0].FastGetSolutionStepValue(PARTICLE_ROTATION_ANGLE);
+                    GeometryFunctions::VectorGlobal2Local(data_buffer.mLocalCoordSystem, GlobalDeltaRotatedAngle, LocalDeltaRotatedAngle);
+                    double aux = (this->GetRadius() + neighbour_iterator->GetRadius()) / data_buffer.mDistance;
+                    array_1d<double, 3> LocalEffDeltaRotatedAngle;
+                    LocalEffDeltaRotatedAngle[0] = LocalDeltaRotatedAngle[0] * aux;
+                    LocalEffDeltaRotatedAngle[1] = LocalDeltaRotatedAngle[1] * aux;
+                    LocalEffDeltaRotatedAngle[2] = LocalDeltaRotatedAngle[2] * aux;
+                    const double equivalent_radius = sqrt(calculation_area / Globals::Pi);
+                    const double Inertia_I = 0.25 * Globals::Pi * equivalent_radius * equivalent_radius * equivalent_radius * equivalent_radius;
+                    const double Inertia_J = 2.0 * Inertia_I; // This is the polar inertia
+                    if (std::abs(LocalEffDeltaRotatedAngle[0]) > std::numeric_limits<double>::epsilon()){
+                        LocalRotationalStiffness[0] = ElasticLocalRotationalMoment[0] / LocalEffDeltaRotatedAngle[0];
+                    } else{
+                        LocalRotationalStiffness[0] = equiv_young * Inertia_I / data_buffer.mDistance;
+                    }
+                    if (std::abs(LocalEffDeltaRotatedAngle[1]) > std::numeric_limits<double>::epsilon()){
+                        LocalRotationalStiffness[1] = ElasticLocalRotationalMoment[1] / LocalEffDeltaRotatedAngle[1];
+                    } else{
+                        LocalRotationalStiffness[1] = equiv_young * Inertia_I / data_buffer.mDistance;
+                    }
+                    if (std::abs(LocalEffDeltaRotatedAngle[2]) > std::numeric_limits<double>::epsilon()){
+                        LocalRotationalStiffness[2] = ElasticLocalRotationalMoment[2] / LocalEffDeltaRotatedAngle[2];
+                    } else{
+                        LocalRotationalStiffness[2] = equiv_young * Inertia_J / data_buffer.mDistance;
+                    }
                 }
 
                 AddUpMomentsAndProject(data_buffer.mLocalCoordSystem, ElasticLocalRotationalMoment, ViscoLocalRotationalMoment);
             }
+
+            // Accumulate GlobalStiffness
+            GeometryFunctions::VectorLocal2Global(data_buffer.mLocalCoordSystem, LocalStiffness, GlobalStiffness);
+            GeometryFunctions::VectorLocal2Global(data_buffer.mLocalCoordSystem, LocalRotationalStiffness, GlobalRotationalStiffness);
+            // Make global stiffness positive before accumulation
+            for(unsigned int j = 0; j<3; j++){
+                if(GlobalStiffness[j] < 0.0) {
+                    GlobalStiffness[j] = -GlobalStiffness[j];
+                }
+                if(GlobalRotationalStiffness[j] < 0.0) {
+                    GlobalRotationalStiffness[j] = -GlobalRotationalStiffness[j];
+                }
+            }
+            DEM_ADD_SECOND_TO_FIRST(r_nodal_stiffness_array, GlobalStiffness)
+            DEM_ADD_SECOND_TO_FIRST(r_nodal_rotational_stiffness_array, GlobalRotationalStiffness)
 
             if (r_process_info[CONTACT_MESH_OPTION] == 1 && (i < (int)mContinuumInitialNeighborsSize) && this->Id() < neighbour_iterator_id) {
                 double total_local_elastic_contact_force[3] = {0.0};

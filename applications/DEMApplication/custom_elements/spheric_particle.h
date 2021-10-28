@@ -288,7 +288,9 @@ virtual void ComputeBallToRigidFaceContactForce(ParticleDataBuffer & data_buffer
                                                 array_1d<double, 3>& rContactForce,
                                                 double& RollingResistance,
                                                 array_1d<double, 3>& rigid_element_force,
-                                                const ProcessInfo& r_process_info) ;
+                                                const ProcessInfo& r_process_info,
+                                                array_1d<double, 3>& r_nodal_stiffness_array,
+                                                array_1d<double, 3>& r_nodal_rotational_stiffness_array);
 
 virtual void CalculateMomentum(array_1d<double, 3>& rMomentum);
 
@@ -298,7 +300,9 @@ virtual void ComputeBallToBallContactForce(ParticleDataBuffer & data_buffer,
                                         const ProcessInfo& r_process_info,
                                         array_1d<double, 3>& rElasticForce,
                                         array_1d<double, 3>& rContactForce,
-                                        double& RollingResistance);
+                                        double& RollingResistance,
+                                        array_1d<double, 3>& r_nodal_stiffness_array,
+                                        array_1d<double, 3>& r_nodal_rotational_stiffness_array);
 
 virtual void EvaluateDeltaDisplacement(ParticleDataBuffer & data_buffer,
                                     double DeltDisp[3],

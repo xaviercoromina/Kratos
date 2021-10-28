@@ -254,15 +254,15 @@ void SphericParticle::CalculateInitialNodalMassArray(const ProcessInfo& r_proces
     data_buffer.mDt = dt;
     data_buffer.mMultiStageRHS = false;
 
-    array_1d<double, 3>& nodal_mass_array = this_node.FastGetSolutionStepValue(NODAL_MASS_ARRAY);
-    array_1d<double, 3>& particle_moment_intertia_array = this_node.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY);
+    array_1d<double, 3>& initial_nodal_mass_array = this_node.FastGetSolutionStepValue(NODAL_MASS_ARRAY);
+    array_1d<double, 3>& initial_particle_moment_intertia_array = this_node.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY);
 
-    nodal_mass_array.clear();
-    particle_moment_intertia_array.clear();
+    initial_nodal_mass_array.clear();
+    initial_particle_moment_intertia_array.clear();
 
-    ComputeBallToBallInitialStiffness(data_buffer, r_process_info, nodal_mass_array, particle_moment_intertia_array);
+    ComputeBallToBallInitialStiffness(data_buffer, r_process_info, initial_nodal_mass_array, initial_particle_moment_intertia_array);
 
-    ComputeBallToRigidFaceInitialStiffness(data_buffer, r_process_info, nodal_mass_array, particle_moment_intertia_array);
+    ComputeBallToRigidFaceInitialStiffness(data_buffer, r_process_info, initial_nodal_mass_array, initial_particle_moment_intertia_array);
 
     KRATOS_CATCH( "" )
 }
@@ -548,18 +548,23 @@ void SphericParticle::CalculateRightHandSide(const ProcessInfo& r_process_info, 
     array_1d<double, 3>& external_moment = this_node.FastGetSolutionStepValue(PARTICLE_EXTERNAL_MOMENT);
     array_1d<double, 3>& external_moment_old = this_node.FastGetSolutionStepValue(PARTICLE_EXTERNAL_MOMENT_OLD);
 
+    array_1d<double, 3>& nodal_mass_array = this_node.FastGetSolutionStepValue(NODAL_MASS_ARRAY);
+    array_1d<double, 3>& particle_moment_intertia_array = this_node.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY);
+
     mContactMoment.clear();
     elastic_force.clear();
     contact_force.clear();
     rigid_element_force.clear();
+    nodal_mass_array.clear();
+    particle_moment_intertia_array.clear();
 
     InitializeForceComputation(r_process_info);
 
     double RollingResistance = 0.0;
 
-    ComputeBallToBallContactForce(data_buffer, r_process_info, elastic_force, contact_force, RollingResistance);
+    ComputeBallToBallContactForce(data_buffer, r_process_info, elastic_force, contact_force, RollingResistance, nodal_mass_array, particle_moment_intertia_array);
 
-    ComputeBallToRigidFaceContactForce(data_buffer, elastic_force, contact_force, RollingResistance, rigid_element_force, r_process_info);
+    ComputeBallToRigidFaceContactForce(data_buffer, elastic_force, contact_force, RollingResistance, rigid_element_force, r_process_info, nodal_mass_array, particle_moment_intertia_array);
 
     if (this->IsNot(DEMFlags::BELONGS_TO_A_CLUSTER)){
         ComputeAdditionalForces(additional_forces, additionally_applied_moment, r_process_info, gravity);
@@ -1135,7 +1140,9 @@ void SphericParticle::ComputeBallToBallContactForce(SphericParticle::ParticleDat
                                                     const ProcessInfo& r_process_info,
                                                     array_1d<double, 3>& r_elastic_force,
                                                     array_1d<double, 3>& r_contact_force,
-                                                    double& RollingResistance)
+                                                    double& RollingResistance,
+                                                    array_1d<double, 3>& r_nodal_stiffness_array,
+                                                    array_1d<double, 3>& r_nodal_rotational_stiffness_array)
 {
     KRATOS_TRY
 
@@ -1159,6 +1166,10 @@ void SphericParticle::ComputeBallToBallContactForce(SphericParticle::ParticleDat
             double GlobalElasticExtraContactForce[3] = {0.0};
             double TotalGlobalElasticContactForce[3] = {0.0};
             double ViscoDampingLocalContactForce[3]  = {0.0};
+            double LocalStiffness[3]                 = {0.0};
+            double GlobalStiffness[3]                = {0.0};
+            double LocalRotationalStiffness[3]       = {0.0};
+            double GlobalRotationalStiffness[3]      = {0.0};
             double cohesive_force                    =  0.0;
             bool sliding = false;
 
@@ -1215,6 +1226,49 @@ void SphericParticle::ComputeBallToBallContactForce(SphericParticle::ParticleDat
                 }
             }
 
+            // Estimate updated local stiffness
+            mDiscontinuumConstitutiveLaw = pCloneDiscontinuumConstitutiveLawWithNeighbour(data_buffer.mpOtherParticle);
+            mDiscontinuumConstitutiveLaw->InitializeContact(this,data_buffer.mpOtherParticle,data_buffer.mIndentation);
+            const double Kt = mDiscontinuumConstitutiveLaw->mKt;
+            const double Kn = mDiscontinuumConstitutiveLaw->mKn;
+            if (std::abs(LocalDeltDisp[0]) > std::numeric_limits<double>::epsilon()){
+                LocalStiffness[0] = LocalElasticContactForce[0] / LocalDeltDisp[0];
+            } else{
+                LocalStiffness[0] = Kt;
+            }
+            if (std::abs(LocalDeltDisp[1]) > std::numeric_limits<double>::epsilon()){
+                LocalStiffness[1] = LocalElasticContactForce[1] / LocalDeltDisp[1];
+            } else{
+                LocalStiffness[1] = Kt;
+            }
+            if (std::abs(data_buffer.mIndentation) > std::numeric_limits<double>::epsilon()){
+                LocalStiffness[2] = LocalElasticContactForce[2] / data_buffer.mIndentation;
+            } else{
+                LocalStiffness[2] = Kn;
+            }
+            if (this->Is(DEMFlags::HAS_ROTATION)) {
+                // Estimate updated local rotational stiffness
+                double arm_length = GetInteractionRadius() - data_buffer.mIndentation;
+                // TODO. Ignasi: is this right?
+                LocalRotationalStiffness[0] = LocalStiffness[0] * arm_length*arm_length;
+                LocalRotationalStiffness[1] = LocalStiffness[1] * arm_length*arm_length;
+                LocalRotationalStiffness[2] = LocalStiffness[2] * arm_length*arm_length;
+            }
+            // Accumulate GlobalStiffness
+            GeometryFunctions::VectorLocal2Global(data_buffer.mLocalCoordSystem, LocalStiffness, GlobalStiffness);
+            GeometryFunctions::VectorLocal2Global(data_buffer.mLocalCoordSystem, LocalRotationalStiffness, GlobalRotationalStiffness);
+            // Make global stiffness positive before accumulation
+            for(unsigned int j = 0; j<3; j++){
+                if(GlobalStiffness[j] < 0.0) {
+                    GlobalStiffness[j] = -GlobalStiffness[j];
+                }
+                if(GlobalRotationalStiffness[j] < 0.0) {
+                    GlobalRotationalStiffness[j] = -GlobalRotationalStiffness[j];
+                }
+            }
+            DEM_ADD_SECOND_TO_FIRST(r_nodal_stiffness_array, GlobalStiffness)
+            DEM_ADD_SECOND_TO_FIRST(r_nodal_rotational_stiffness_array, GlobalRotationalStiffness)
+
             DEM_SET_COMPONENTS_TO_ZERO_3(DeltDisp)
             DEM_SET_COMPONENTS_TO_ZERO_3(LocalDeltDisp)
             DEM_SET_COMPONENTS_TO_ZERO_3(RelVel)
@@ -1268,7 +1322,9 @@ void SphericParticle::ComputeBallToRigidFaceContactForce(SphericParticle::Partic
                                                         array_1d<double, 3>& r_contact_force,
                                                         double& RollingResistance,
                                                         array_1d<double, 3>& rigid_element_force,
-                                                        const ProcessInfo& r_process_info)
+                                                        const ProcessInfo& r_process_info,
+                                                        array_1d<double, 3>& r_nodal_stiffness_array,
+                                                        array_1d<double, 3>& r_nodal_rotational_stiffness_array)
 {
     KRATOS_TRY
 
@@ -1296,6 +1352,10 @@ void SphericParticle::ComputeBallToRigidFaceContactForce(SphericParticle::Partic
         double LocalElasticContactForce[3]       = {0.0};
         double GlobalElasticContactForce[3]      = {0.0};
         double ViscoDampingLocalContactForce[3]  = {0.0};
+        double LocalStiffness[3]                 = {0.0};
+        double GlobalStiffness[3]                = {0.0};
+        double LocalRotationalStiffness[3]       = {0.0};
+        double GlobalRotationalStiffness[3]      = {0.0};
         double cohesive_force                    =  0.0;
         DEM_SET_COMPONENTS_TO_ZERO_3x3(data_buffer.mLocalCoordSystem)
         DEM_SET_COMPONENTS_TO_ZERO_3x3(data_buffer.mOldLocalCoordSystem)
@@ -1379,6 +1439,26 @@ void SphericParticle::ComputeBallToRigidFaceContactForce(SphericParticle::Partic
                                                                     this,
                                                                     wall,
                                                                     sliding);
+
+                // Estimate updated local stiffness
+                mDiscontinuumConstitutiveLaw->InitializeContactWithFEM(this,wall,indentation);
+                const double Kt = mDiscontinuumConstitutiveLaw->mKt;
+                const double Kn = mDiscontinuumConstitutiveLaw->mKn;
+                if (std::abs(LocalDeltDisp[0]) > std::numeric_limits<double>::epsilon()){
+                    LocalStiffness[0] = LocalElasticContactForce[0] / LocalDeltDisp[0];
+                } else{
+                    LocalStiffness[0] = Kt;
+                }
+                if (std::abs(LocalDeltDisp[1]) > std::numeric_limits<double>::epsilon()){
+                    LocalStiffness[1] = LocalElasticContactForce[1] / LocalDeltDisp[1];
+                } else{
+                    LocalStiffness[1] = Kt;
+                }
+                if (std::abs(indentation) > std::numeric_limits<double>::epsilon()){
+                    LocalStiffness[2] = LocalElasticContactForce[2] / indentation;
+                } else{
+                    LocalStiffness[2] = Kn;
+                }
             }
 
             double LocalContactForce[3]  = {0.0};
@@ -1394,7 +1474,29 @@ void SphericParticle::ComputeBallToRigidFaceContactForce(SphericParticle::Partic
 
             if (this->Is(DEMFlags::HAS_ROTATION)) {
                 ComputeMomentsWithWalls(LocalContactForce[2], GlobalContactForce, RollingResistance, data_buffer.mLocalCoordSystem[2], wall, indentation, i); //WARNING: sending itself as the neighbor!!
+
+                // Estimate updated local rotational stiffness
+                double arm_length = GetInteractionRadius() - indentation;
+                // TODO. Ignasi: is this right?
+                LocalRotationalStiffness[0] = LocalStiffness[0] * arm_length*arm_length;
+                LocalRotationalStiffness[1] = LocalStiffness[1] * arm_length*arm_length;
+                LocalRotationalStiffness[2] = LocalStiffness[2] * arm_length*arm_length;
             }
+
+            // Accumulate GlobalStiffness
+            GeometryFunctions::VectorLocal2Global(data_buffer.mLocalCoordSystem, LocalStiffness, GlobalStiffness);
+            GeometryFunctions::VectorLocal2Global(data_buffer.mLocalCoordSystem, LocalRotationalStiffness, GlobalRotationalStiffness);
+            // Make global stiffness positive before accumulation
+            for(unsigned int j = 0; j<3; j++){
+                if(GlobalStiffness[j] < 0.0) {
+                    GlobalStiffness[j] = -GlobalStiffness[j];
+                }
+                if(GlobalRotationalStiffness[j] < 0.0) {
+                    GlobalRotationalStiffness[j] = -GlobalRotationalStiffness[j];
+                }
+            }
+            DEM_ADD_SECOND_TO_FIRST(r_nodal_stiffness_array, GlobalStiffness)
+            DEM_ADD_SECOND_TO_FIRST(r_nodal_rotational_stiffness_array, GlobalRotationalStiffness)
 
             //WEAR
             if (wall->GetProperties()[COMPUTE_WEAR]) {
@@ -1427,6 +1529,10 @@ void SphericParticle::ComputeBallToRigidFaceContactForce(SphericParticle::Partic
         double LocalElasticContactForce[3] = { 0.0 };
         double GlobalElasticContactForce[3] = { 0.0 };
         double ViscoDampingLocalContactForce[3] = { 0.0 };
+        double LocalStiffness[3]                 = {0.0};
+        double GlobalStiffness[3]                = {0.0};
+        double LocalRotationalStiffness[3]       = {0.0};
+        double GlobalRotationalStiffness[3]      = {0.0};
         double cohesive_force = 0.0;
 
         DEM_SET_COMPONENTS_TO_ZERO_3x3(data_buffer.mLocalCoordSystem)
@@ -1520,6 +1626,26 @@ void SphericParticle::ComputeBallToRigidFaceContactForce(SphericParticle::Partic
                 this,
                 wall,
                 sliding);
+
+            // Estimate updated local stiffness
+            mDiscontinuumConstitutiveLaw->InitializeContactWithFEM(this,wall,indentation);
+            const double Kt = mDiscontinuumConstitutiveLaw->mKt;
+            const double Kn = mDiscontinuumConstitutiveLaw->mKn;
+            if (std::abs(LocalDeltDisp[0]) > std::numeric_limits<double>::epsilon()){
+                LocalStiffness[0] = LocalElasticContactForce[0] / LocalDeltDisp[0];
+            } else{
+                LocalStiffness[0] = Kt;
+            }
+            if (std::abs(LocalDeltDisp[1]) > std::numeric_limits<double>::epsilon()){
+                LocalStiffness[1] = LocalElasticContactForce[1] / LocalDeltDisp[1];
+            } else{
+                LocalStiffness[1] = Kt;
+            }
+            if (std::abs(indentation) > std::numeric_limits<double>::epsilon()){
+                LocalStiffness[2] = LocalElasticContactForce[2] / indentation;
+            } else{
+                LocalStiffness[2] = Kn;
+            }
         }
 
         double LocalContactForce[3] = { 0.0 };
@@ -1548,7 +1674,29 @@ void SphericParticle::ComputeBallToRigidFaceContactForce(SphericParticle::Partic
 
         if (this->Is(DEMFlags::HAS_ROTATION)) {
             ComputeMomentsWithWalls(LocalContactForce[2], GlobalContactForce, RollingResistance, data_buffer.mLocalCoordSystem[2], wall, indentation, i); //WARNING: sending itself as the neighbor!!
+
+            // Estimate updated local rotational stiffness
+            double arm_length = GetInteractionRadius() - indentation;
+            // TODO. Ignasi: is this right?
+            LocalRotationalStiffness[0] = LocalStiffness[0] * arm_length*arm_length;
+            LocalRotationalStiffness[1] = LocalStiffness[1] * arm_length*arm_length;
+            LocalRotationalStiffness[2] = LocalStiffness[2] * arm_length*arm_length;
         }
+
+        // Accumulate GlobalStiffness
+        GeometryFunctions::VectorLocal2Global(data_buffer.mLocalCoordSystem, LocalStiffness, GlobalStiffness);
+        GeometryFunctions::VectorLocal2Global(data_buffer.mLocalCoordSystem, LocalRotationalStiffness, GlobalRotationalStiffness);
+        // Make global stiffness positive before accumulation
+        for(unsigned int j = 0; j<3; j++){
+            if(GlobalStiffness[j] < 0.0) {
+                GlobalStiffness[j] = -GlobalStiffness[j];
+            }
+            if(GlobalRotationalStiffness[j] < 0.0) {
+                GlobalRotationalStiffness[j] = -GlobalRotationalStiffness[j];
+            }
+        }
+        DEM_ADD_SECOND_TO_FIRST(r_nodal_stiffness_array, GlobalStiffness)
+        DEM_ADD_SECOND_TO_FIRST(r_nodal_rotational_stiffness_array, GlobalRotationalStiffness)
 
         if (this->Is(DEMFlags::HAS_STRESS_TENSOR)) {
             AddWallContributionToStressTensor(GlobalElasticContactForce, data_buffer.mLocalCoordSystem[2], DistPToB, 0.0);

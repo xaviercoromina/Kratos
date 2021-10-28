@@ -235,7 +235,7 @@ namespace Kratos {
             mListOfSphericParticles[i]->CalculateInitialNodalMassArray(r_process_info);
         }
 
-        // We need to make sure that the mass array is different from zero
+        // We need to make sure that the initial mass array is different from zero
 
         // 1. Compute maximum stiffness for each DOF to have a conservative estimation of stiffness
         ModelPart& dem_model_part = GetModelPart();
@@ -349,12 +349,13 @@ namespace Kratos {
             }
         }
 
+        // 3. Check that mass array is different from zero and replace it by the maximum stiffness estimation if necessary
         const bool use_mass_array = r_process_info[USE_MASS_ARRAY];
-        const double mass_array_scale_factor = r_process_info[MASS_ARRAY_SCALE_FACTOR];
-        // Check that mass array is different from zero and replace it by the stiffness estimation when necessary
         block_for_each(rNodes, [&](ModelPart::NodeType& rNode) {
             array_1d<double, 3>& nodal_mass_array = rNode.FastGetSolutionStepValue(NODAL_MASS_ARRAY);
             array_1d<double, 3>& particle_moment_intertia_array = rNode.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY);
+            array_1d<double, 3>& nodal_mass_array_old = rNode.FastGetSolutionStepValue(NODAL_MASS_ARRAY_OLD);
+            array_1d<double, 3>& particle_moment_intertia_array_old = rNode.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY_OLD);
 
             for(unsigned int i = 0; i<3; i++){
                 if(nodal_mass_array[i] < std::numeric_limits<double>::epsilon()) {
@@ -363,12 +364,9 @@ namespace Kratos {
                 if(particle_moment_intertia_array[i] < std::numeric_limits<double>::epsilon()) {
                     particle_moment_intertia_array[i] = m_max[i];
                 }
-            }
-
-            // Scale mass array to have similar Dt as in the original case
-            for(unsigned int i = 0; i<3; i++){
-                nodal_mass_array[i] = nodal_mass_array[i]*mass_array_scale_factor;
-                particle_moment_intertia_array[i] = particle_moment_intertia_array[i]*mass_array_scale_factor;
+                // Save nodal mass array
+                nodal_mass_array_old[i] = nodal_mass_array[i];
+                particle_moment_intertia_array_old[i] = particle_moment_intertia_array[i];
             }
 
             // Use standard mass if necessary
@@ -379,6 +377,9 @@ namespace Kratos {
                 for(unsigned int i = 0; i<3; i++){
                     nodal_mass_array[i] = nodal_mass;
                     particle_moment_intertia_array[i] = particle_moment_intertia;
+                    // Save nodal mass array
+                    nodal_mass_array_old[i] = nodal_mass_array[i];
+                    particle_moment_intertia_array_old[i] = particle_moment_intertia_array[i];
                 }
             }
         });
@@ -776,6 +777,46 @@ namespace Kratos {
         for (int i = 0; i < number_of_particles; i++) {
             mListOfSphericParticles[i]->CalculateRightHandSide(r_process_info, dt, gravity);
         }
+
+        // We need to make sure that the mass array is different from zero. Otherwise, use the previous calculated value
+        NodesArrayType& rNodes = GetModelPart().Nodes();
+        const bool use_mass_array = r_process_info[USE_MASS_ARRAY];
+        const double mass_array_scale_factor = r_process_info[MASS_ARRAY_SCALE_FACTOR];
+        block_for_each(rNodes, [&](ModelPart::NodeType& rNode) {
+            array_1d<double, 3>& nodal_mass_array = rNode.FastGetSolutionStepValue(NODAL_MASS_ARRAY);
+            array_1d<double, 3>& particle_moment_intertia_array = rNode.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY);
+            array_1d<double, 3>& nodal_mass_array_old = rNode.FastGetSolutionStepValue(NODAL_MASS_ARRAY_OLD);
+            array_1d<double, 3>& particle_moment_intertia_array_old = rNode.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY_OLD);
+
+            for(unsigned int i = 0; i<3; i++){
+                if(nodal_mass_array[i] < std::numeric_limits<double>::epsilon()) {
+                    nodal_mass_array[i] = nodal_mass_array_old[i];
+                }
+                if(particle_moment_intertia_array[i] < std::numeric_limits<double>::epsilon()) {
+                    particle_moment_intertia_array[i] = particle_moment_intertia_array_old[i];
+                }
+                // Save nodal mass array
+                nodal_mass_array_old[i] = nodal_mass_array[i];
+                particle_moment_intertia_array_old[i] = particle_moment_intertia_array[i];
+                // Scale mass array to have similar Dt as in the original case
+                nodal_mass_array[i] = nodal_mass_array[i]*mass_array_scale_factor;
+                particle_moment_intertia_array[i] = particle_moment_intertia_array[i]*mass_array_scale_factor;
+            }
+
+            // Use standard mass if necessary
+            if(use_mass_array == false){
+                const double& nodal_mass = rNode.FastGetSolutionStepValue(NODAL_MASS);
+                const double& particle_moment_intertia = rNode.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA);
+
+                for(unsigned int i = 0; i<3; i++){
+                    nodal_mass_array[i] = nodal_mass;
+                    particle_moment_intertia_array[i] = particle_moment_intertia;
+                    // Save nodal mass array
+                    nodal_mass_array_old[i] = nodal_mass_array[i];
+                    particle_moment_intertia_array_old[i] = particle_moment_intertia_array[i];
+                }
+            }
+        });
 
         KRATOS_CATCH("")
     }

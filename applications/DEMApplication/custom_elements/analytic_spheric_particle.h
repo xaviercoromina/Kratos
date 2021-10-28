@@ -172,7 +172,9 @@ void ComputeBallToRigidFaceContactForce(SphericParticle::ParticleDataBuffer & da
                                         array_1d<double, 3>& r_contact_force,
                                         double& RollingResistance,
                                         array_1d<double, 3>& rigid_element_force,
-                                        const ProcessInfo& r_process_info) override;
+                                        const ProcessInfo& r_process_info,
+                                        array_1d<double, 3>& r_nodal_stiffness_array,
+                                        array_1d<double, 3>& r_nodal_rotational_stiffness_array) override;
 
 
 bool IsNewNeighbour(const int neighbour_id);

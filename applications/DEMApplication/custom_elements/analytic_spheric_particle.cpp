@@ -212,7 +212,9 @@ void AnalyticSphericParticle::ComputeBallToRigidFaceContactForce(SphericParticle
                                                                 array_1d<double, 3>& r_contact_force,
                                                                 double& RollingResistance,
                                                                 array_1d<double, 3>& rigid_element_force,
-                                                                const ProcessInfo& r_process_info)
+                                                                const ProcessInfo& r_process_info,
+                                                                array_1d<double, 3>& r_nodal_stiffness_array,
+                                                                array_1d<double, 3>& r_nodal_rotational_stiffness_array)
 
 {
 
@@ -221,7 +223,9 @@ void AnalyticSphericParticle::ComputeBallToRigidFaceContactForce(SphericParticle
                                         r_contact_force,
                                         RollingResistance,
                                         rigid_element_force,
-                                        r_process_info);
+                                        r_process_info,
+                                        r_nodal_stiffness_array,
+                                        r_nodal_rotational_stiffness_array);
 
 
     //const auto face_id = data_buffer.mNeighbourRigidFaces->Id(); //definir neighbor wall id
