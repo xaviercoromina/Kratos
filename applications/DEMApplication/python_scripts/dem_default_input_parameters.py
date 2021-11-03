@@ -185,6 +185,8 @@ def GetDefaultInputParameters():
             "PostFaceTangentialImpactVelocity" : false,
             "PostControlModule"                : false,
             "PostDeltaDisplacement"            : false,
+            "PostNodalMassArray"               : false,
+            "PostMomentIntertiaArray"          : false,
             "print_CN_graph"                   : false,
             "output_configuration" : {
                 "print_number_of_neighbours_histogram" : false
