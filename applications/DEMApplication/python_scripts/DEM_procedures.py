@@ -577,6 +577,11 @@ class Procedures():
         model_part.AddNodalSolutionStepVariable(NODAL_MASS)
         model_part.AddNodalSolutionStepVariable(CHARACTERISTIC_LENGTH)
         model_part.AddNodalSolutionStepVariable(PARTICLE_DENSITY)
+        # TODO. Ignasi
+        model_part.AddNodalSolutionStepVariable(NODAL_MASS_ARRAY)
+        model_part.AddNodalSolutionStepVariable(NODAL_MASS_ARRAY_OLD)
+        model_part.AddNodalSolutionStepVariable(PARTICLE_MOMENT_OF_INERTIA_ARRAY)
+        model_part.AddNodalSolutionStepVariable(PARTICLE_MOMENT_OF_INERTIA_ARRAY_OLD)
 
     def AddElasticFaceVariables(self, model_part, DEM_parameters): #Only used in CSM coupling
         self.AddRigidFaceVariables(model_part, self.DEM_parameters)
@@ -609,6 +614,11 @@ class Procedures():
         model_part.AddNodalSolutionStepVariable(NODAL_MASS)
         model_part.AddNodalSolutionStepVariable(CHARACTERISTIC_LENGTH)
         model_part.AddNodalSolutionStepVariable(PARTICLE_DENSITY)
+        # TODO. Ignasi
+        model_part.AddNodalSolutionStepVariable(NODAL_MASS_ARRAY)
+        model_part.AddNodalSolutionStepVariable(NODAL_MASS_ARRAY_OLD)
+        model_part.AddNodalSolutionStepVariable(PARTICLE_MOMENT_OF_INERTIA_ARRAY)
+        model_part.AddNodalSolutionStepVariable(PARTICLE_MOMENT_OF_INERTIA_ARRAY_OLD)
 
         # OTHER PROPERTIES
         model_part.AddNodalSolutionStepVariable(PARTICLE_MATERIAL)   # Colour defined in GiD
