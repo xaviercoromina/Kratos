@@ -119,6 +119,7 @@ def GetDefaultInputParameters():
                 "calculate_xi"                 : false,
                 "xi_1_factor"                  : 1.0,
                 "use_mass_array"               : false,
+                "mass_array_averaging_time_interval": 1.0e12,
                 "mass_array_scale_factor"      : 1.0
             },
             "virtual_sea_surface_settings"     : {

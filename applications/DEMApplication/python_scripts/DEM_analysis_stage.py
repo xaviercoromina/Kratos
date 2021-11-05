@@ -235,6 +235,10 @@ class DEMAnalysisStage(AnalysisStage):
 
             self.spheres_model_part.ProcessInfo.SetValue(USE_MASS_ARRAY, rayleigh_cd_param["use_mass_array"].GetBool())
             self.spheres_model_part.ProcessInfo.SetValue(MASS_ARRAY_SCALE_FACTOR, rayleigh_cd_param["mass_array_scale_factor"].GetDouble())
+            mass_array_averaging_time_interval = rayleigh_cd_param["mass_array_averaging_time_interval"].GetDouble()
+            if (Dt > mass_array_averaging_time_interval):
+                raise ValueError('Dt > mass_array_averaging_time_interval')
+            self.spheres_model_part.ProcessInfo.SetValue(MASS_ARRAY_AVERAGING_TIME_INTERVAL, mass_array_averaging_time_interval)
             self.spheres_model_part.ProcessInfo.SetValue(RAYLEIGH_ALPHA, rayleigh_alpha)
             self.spheres_model_part.ProcessInfo.SetValue(RAYLEIGH_BETA, rayleigh_beta)
             self.spheres_model_part.ProcessInfo.SetValue(G_COEFFICIENT, g_coefficient)

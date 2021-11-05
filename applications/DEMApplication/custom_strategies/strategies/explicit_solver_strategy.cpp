@@ -357,18 +357,6 @@ namespace Kratos {
             array_1d<double, 3>& nodal_mass_array_old = rNode.FastGetSolutionStepValue(NODAL_MASS_ARRAY_OLD);
             array_1d<double, 3>& particle_moment_intertia_array_old = rNode.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY_OLD);
 
-            for(unsigned int i = 0; i<3; i++){
-                if(nodal_mass_array[i] < std::numeric_limits<double>::epsilon()) {
-                    nodal_mass_array[i] = k_max[i];
-                }
-                if(particle_moment_intertia_array[i] < std::numeric_limits<double>::epsilon()) {
-                    particle_moment_intertia_array[i] = m_max[i];
-                }
-                // Save nodal mass array
-                nodal_mass_array_old[i] = nodal_mass_array[i];
-                particle_moment_intertia_array_old[i] = particle_moment_intertia_array[i];
-            }
-
             // Use standard mass if necessary
             if(use_mass_array == false){
                 const double& nodal_mass = rNode.FastGetSolutionStepValue(NODAL_MASS);
@@ -377,6 +365,18 @@ namespace Kratos {
                 for(unsigned int i = 0; i<3; i++){
                     nodal_mass_array[i] = nodal_mass;
                     particle_moment_intertia_array[i] = particle_moment_intertia;
+                    // Save nodal mass array
+                    nodal_mass_array_old[i] = nodal_mass_array[i];
+                    particle_moment_intertia_array_old[i] = particle_moment_intertia_array[i];
+                }
+            } else {
+                for(unsigned int i = 0; i<3; i++){
+                    if(nodal_mass_array[i] < std::numeric_limits<double>::epsilon()) {
+                        nodal_mass_array[i] = k_max[i];
+                    }
+                    if(particle_moment_intertia_array[i] < std::numeric_limits<double>::epsilon()) {
+                        particle_moment_intertia_array[i] = m_max[i];
+                    }
                     // Save nodal mass array
                     nodal_mass_array_old[i] = nodal_mass_array[i];
                     particle_moment_intertia_array_old[i] = particle_moment_intertia_array[i];
@@ -778,30 +778,18 @@ namespace Kratos {
             mListOfSphericParticles[i]->CalculateRightHandSide(r_process_info, dt, gravity);
         }
 
+        // TODO. Ignasi:
         // We need to make sure that the mass array is different from zero. Otherwise, use the previous calculated value
         NodesArrayType& rNodes = GetModelPart().Nodes();
         const bool use_mass_array = r_process_info[USE_MASS_ARRAY];
         const double mass_array_scale_factor = r_process_info[MASS_ARRAY_SCALE_FACTOR];
+        const double mass_array_averaging_time_interval = r_process_info[MASS_ARRAY_AVERAGING_TIME_INTERVAL];
+        const double mass_array_alpha = 1.0-dt/mass_array_averaging_time_interval;
         block_for_each(rNodes, [&](ModelPart::NodeType& rNode) {
             array_1d<double, 3>& nodal_mass_array = rNode.FastGetSolutionStepValue(NODAL_MASS_ARRAY);
             array_1d<double, 3>& particle_moment_intertia_array = rNode.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY);
             array_1d<double, 3>& nodal_mass_array_old = rNode.FastGetSolutionStepValue(NODAL_MASS_ARRAY_OLD);
             array_1d<double, 3>& particle_moment_intertia_array_old = rNode.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY_OLD);
-
-            for(unsigned int i = 0; i<3; i++){
-                if(nodal_mass_array[i] < std::numeric_limits<double>::epsilon()) {
-                    nodal_mass_array[i] = nodal_mass_array_old[i];
-                }
-                if(particle_moment_intertia_array[i] < std::numeric_limits<double>::epsilon()) {
-                    particle_moment_intertia_array[i] = particle_moment_intertia_array_old[i];
-                }
-                // Save nodal mass array
-                nodal_mass_array_old[i] = nodal_mass_array[i];
-                particle_moment_intertia_array_old[i] = particle_moment_intertia_array[i];
-                // Scale mass array to have similar Dt as in the original case
-                nodal_mass_array[i] = nodal_mass_array[i]*mass_array_scale_factor;
-                particle_moment_intertia_array[i] = particle_moment_intertia_array[i]*mass_array_scale_factor;
-            }
 
             // Use standard mass if necessary
             if(use_mass_array == false){
@@ -814,6 +802,24 @@ namespace Kratos {
                     // Save nodal mass array
                     nodal_mass_array_old[i] = nodal_mass_array[i];
                     particle_moment_intertia_array_old[i] = particle_moment_intertia_array[i];
+                }
+            } else {
+                for(unsigned int i = 0; i<3; i++){
+                    if(nodal_mass_array[i] < std::numeric_limits<double>::epsilon()) {
+                        nodal_mass_array[i] = nodal_mass_array_old[i];
+                    }
+                    if(particle_moment_intertia_array[i] < std::numeric_limits<double>::epsilon()) {
+                        particle_moment_intertia_array[i] = particle_moment_intertia_array_old[i];
+                    }
+                    // Update nodal mass array averaging it in time
+                    nodal_mass_array[i] = (1.0-mass_array_alpha)*nodal_mass_array[i] + mass_array_alpha*nodal_mass_array_old[i];
+                    particle_moment_intertia_array[i] = (1.0-mass_array_alpha)*particle_moment_intertia_array[i] + mass_array_alpha*particle_moment_intertia_array_old[i];
+                    // Save nodal mass array
+                    nodal_mass_array_old[i] = nodal_mass_array[i];
+                    particle_moment_intertia_array_old[i] = particle_moment_intertia_array[i];
+                    // Scale mass array to have similar Dt as in the original case
+                    nodal_mass_array[i] = nodal_mass_array[i]*mass_array_scale_factor;
+                    particle_moment_intertia_array[i] = particle_moment_intertia_array[i]*mass_array_scale_factor;
                 }
             }
         });
