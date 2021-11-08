@@ -295,7 +295,7 @@ namespace Kratos {
                     const double equivalent_radius = sqrt(calculation_area / Globals::Pi);
                     const double Inertia_I = 0.25 * Globals::Pi * equivalent_radius * equivalent_radius * equivalent_radius * equivalent_radius;
                     const double Inertia_J = 2.0 * Inertia_I; // This is the polar inertia
-                    // Note. Ignasi: we do not reduce the rotational stiffness with the rotational_moment_coeff to avoid penalizing the delta time
+                    // Note. Ignasi: we do not reduce the rotational stiffness with the rotational_moment_coeff to avoid having a Moment Of Inertia too low that penalizes the delta time
                     // const double& rotational_moment_coeff = (*(mContinuumConstitutiveLawArray[i]->pGetProperties()))[ROTATIONAL_MOMENT_COEFFICIENT];
                     // LocalRotationalStiffness[0] = rotational_moment_coeff * equiv_young * Inertia_I / data_buffer.mDistance;
                     // LocalRotationalStiffness[1] = rotational_moment_coeff * equiv_young * Inertia_I / data_buffer.mDistance;
