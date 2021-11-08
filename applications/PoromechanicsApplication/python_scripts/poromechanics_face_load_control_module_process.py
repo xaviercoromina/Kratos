@@ -54,9 +54,11 @@ class PoromechanicsFaceLoadControlModuleProcess(KratosMultiphysics.Process):
             component.ExecuteInitialize()
 
     def ExecuteInitializeSolutionStep(self):
-        if(self.root_model_part.ProcessInfo[KratosPoro.IS_CONVERGED]==True):
-            for component in self.components_process_list:
-                component.ExecuteInitializeSolutionStep()
+        # if(self.root_model_part.ProcessInfo[KratosPoro.IS_CONVERGED]==True):
+        #     for component in self.components_process_list:
+        #         component.ExecuteInitializeSolutionStep()
+        for component in self.components_process_list:
+            component.ExecuteInitializeSolutionStep()
 
     def ExecuteFinalizeSolutionStep(self):
         for component in self.components_process_list:

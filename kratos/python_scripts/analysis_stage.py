@@ -165,31 +165,53 @@ class AnalysisStage(object):
             for process in self._GetListOfProcesses():
                 process.ExecuteAfterOutputStep()
 
+            # TODO: FPBT total force (kN), displacement (mm)
+            # model_part_name = self.project_parameters["solver_settings"]["model_part_name"].GetString()
+            # main_model_part = self.model.GetModelPart(model_part_name)
+            # time = main_model_part.ProcessInfo[KratosMultiphysics.TIME]
+            # total_force = 0.0
+            # disp = 0.0
+            # for node in self.model.GetModelPart('PorousModelPart.Solid_Displacement-auto-3').Nodes:
+            #     total_force += node.GetSolutionStepValue(KratosMultiphysics.REACTION_Y)
+            #     disp = node.GetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_Y)
+            # total_force = -1.0e-3*total_force # kN (positive)
+            # disp = -1000.0*disp # mm (positive)
+            # out_total_force = open("time_disp_totalforce.txt","a")
+            # out_total_force.write(str(time))
+            # out_total_force.write(" ")
+            # out_total_force.write(str(disp))
+            # out_total_force.write(" ")
+            # out_total_force.write(str(total_force))
+            # out_total_force.write("\n")
+            # out_total_force.close()
+            print('FPBT total force (kN): ', total_force)
+
         # TODO: FPBT total force (kN), displacement (mm)
-        import KratosMultiphysics.PoromechanicsApplication as KratosPoro
-        model_part_name = self.project_parameters["solver_settings"]["model_part_name"].GetString()
-        main_model_part = self.model.GetModelPart(model_part_name)
-        if(main_model_part.ProcessInfo[KratosPoro.IS_CONVERGED]==True):
-            time = main_model_part.ProcessInfo[KratosMultiphysics.TIME]
-            steps_to_converge = main_model_part.ProcessInfo[KratosPoro.STEPS_TO_CONVERGE]
-            total_force = 0.0
-            disp = 0.0
-            for node in self.model.GetModelPart('PorousModelPart.Solid_Displacement-auto-3').Nodes:
-                total_force += node.GetSolutionStepValue(KratosMultiphysics.REACTION_Y)
-                disp = node.GetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_Y)
-            total_force = -1.0e-3*total_force # kN (positive)
-            disp = -1000.0*disp # mm (positive)
-            out_total_force = open("time_disp_totalforce.txt","a")
-            out_total_force.write(str(time))
-            out_total_force.write(" ")
-            out_total_force.write(str(disp))
-            out_total_force.write(" ")
-            out_total_force.write(str(total_force))
-            out_total_force.write(" ")
-            out_total_force.write(str(steps_to_converge))
-            out_total_force.write("\n")
-            out_total_force.close()
-            print('FPBT total force (kN): ', total_force, ' . Steps to converge: ',steps_to_converge)
+        # import KratosMultiphysics.PoromechanicsApplication as KratosPoro
+        # model_part_name = self.project_parameters["solver_settings"]["model_part_name"].GetString()
+        # main_model_part = self.model.GetModelPart(model_part_name)
+        # if(main_model_part.ProcessInfo[KratosPoro.IS_CONVERGED]==True):
+        #     time = main_model_part.ProcessInfo[KratosMultiphysics.TIME]
+        #     steps_to_converge = main_model_part.ProcessInfo[KratosPoro.STEPS_TO_CONVERGE]
+        #     total_force = 0.0
+        #     disp = 0.0
+        #     for node in self.model.GetModelPart('PorousModelPart.Solid_Displacement-auto-3').Nodes:
+        #         total_force += node.GetSolutionStepValue(KratosMultiphysics.REACTION_Y)
+        #         disp = node.GetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_Y)
+        #     total_force = -1.0e-3*total_force # kN (positive)
+        #     disp = -1000.0*disp # mm (positive)
+        #     out_total_force = open("time_disp_totalforce.txt","a")
+        #     out_total_force.write(str(time))
+        #     out_total_force.write(" ")
+        #     out_total_force.write(str(disp))
+        #     out_total_force.write(" ")
+        #     out_total_force.write(str(total_force))
+        #     out_total_force.write(" ")
+        #     out_total_force.write(str(steps_to_converge))
+        #     out_total_force.write("\n")
+        #     out_total_force.close()
+        #     print('FPBT total force (kN): ', total_force, ' . Steps to converge: ',steps_to_converge)
+
 
     def Check(self):
         """This function checks the AnalysisStage

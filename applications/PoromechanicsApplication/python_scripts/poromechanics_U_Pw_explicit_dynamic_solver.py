@@ -120,6 +120,12 @@ class ExplicitUPwSolver(UPwSolver):
         # Check and construct gp_to_nodal_variable process
         self._CheckAndConstructGPtoNodalVariableExtrapolationProcess()
 
+    def SolveSolutionStep(self):
+        is_converged = self.solver.SolveSolutionStep()
+        is_converged = True
+        self.main_model_part.ProcessInfo.SetValue(KratosPoro.IS_CONVERGED, is_converged)
+        return is_converged
+
     #### Specific internal functions ####
     def _ConstructScheme(self, scheme_type):
         scheme_type = self.settings["scheme_type"].GetString()

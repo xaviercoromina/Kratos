@@ -52,5 +52,6 @@ class ApplyScalarConstraintTableProcess(KratosMultiphysics.Process):
 
     def ExecuteInitializeSolutionStep(self):
 
-        if(self.root_model_part.ProcessInfo[KratosPoro.IS_CONVERGED]==True):
-            self.process.ExecuteInitializeSolutionStep()
+        # if(self.root_model_part.ProcessInfo[KratosPoro.IS_CONVERGED]==True):
+        #     self.process.ExecuteInitializeSolutionStep()
+        self.process.ExecuteInitializeSolutionStep()
