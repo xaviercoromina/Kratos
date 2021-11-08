@@ -308,7 +308,7 @@ void SphericParticle::ComputeBallToBallInitialStiffness(SphericParticle::Particl
                 double arm_length = GetInteractionRadius() - data_buffer.mIndentation;
 
                 // TODO. Ignasi: is this right?
-                // NOTE: we multiply this by 1.0 to avoid having a Moment Of Inertia too low that penalizes the delta time
+                // NOTE. Ignasi: we multiply this by 1.0 to avoid having a Moment Of Inertia too low that penalizes the delta time
                 LocalRotationalStiffness[0] = Kt * arm_length*1.0;
                 LocalRotationalStiffness[1] = Kt * arm_length*1.0;
                 LocalRotationalStiffness[2] = Kn * arm_length*1.0;
