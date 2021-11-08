@@ -295,7 +295,11 @@ namespace Kratos {
                     const double equivalent_radius = sqrt(calculation_area / Globals::Pi);
                     const double Inertia_I = 0.25 * Globals::Pi * equivalent_radius * equivalent_radius * equivalent_radius * equivalent_radius;
                     const double Inertia_J = 2.0 * Inertia_I; // This is the polar inertia
-
+                    // Note: we do not reduce the rotational stiffness with the rotational_moment_coeff to avoid penalizing the delta time
+                    // const double& rotational_moment_coeff = (*(mContinuumConstitutiveLawArray[i]->pGetProperties()))[ROTATIONAL_MOMENT_COEFFICIENT];
+                    // LocalRotationalStiffness[0] = rotational_moment_coeff * equiv_young * Inertia_I / data_buffer.mDistance;
+                    // LocalRotationalStiffness[1] = rotational_moment_coeff * equiv_young * Inertia_I / data_buffer.mDistance;
+                    // LocalRotationalStiffness[2] = rotational_moment_coeff * equiv_young * Inertia_J / data_buffer.mDistance;
                     LocalRotationalStiffness[0] = equiv_young * Inertia_I / data_buffer.mDistance;
                     LocalRotationalStiffness[1] = equiv_young * Inertia_I / data_buffer.mDistance;
                     LocalRotationalStiffness[2] = equiv_young * Inertia_J / data_buffer.mDistance;
@@ -473,12 +477,12 @@ namespace Kratos {
 
                 // Estimate updated local stiffness
                 if (std::abs(LocalDeltDisp[0]) > std::numeric_limits<double>::epsilon()){
-                    LocalStiffness[0] = LocalElasticContactForce[0] / LocalDeltDisp[0];
+                    LocalStiffness[0] = -(LocalElasticContactForce[0]-OldLocalElasticContactForce[0]) / LocalDeltDisp[0];
                 } else{
                     LocalStiffness[0] = kt_el;
                 }
                 if (std::abs(LocalDeltDisp[1]) > std::numeric_limits<double>::epsilon()){
-                    LocalStiffness[1] = LocalElasticContactForce[1] / LocalDeltDisp[1];
+                    LocalStiffness[1] = -(LocalElasticContactForce[1]-OldLocalElasticContactForce[1]) / LocalDeltDisp[1];
                 } else{
                     LocalStiffness[1] = kt_el;
                 }
@@ -487,7 +491,7 @@ namespace Kratos {
                 } else{
                     LocalStiffness[2] = kn_el;
                 }
-
+                
             } else if (indentation > 0.0) {
                 const double previous_indentation = indentation + LocalDeltDisp[2];
                 mDiscontinuumConstitutiveLaw = pCloneDiscontinuumConstitutiveLawWithNeighbour(data_buffer.mpOtherParticle);
@@ -500,12 +504,12 @@ namespace Kratos {
                 const double Kt = mDiscontinuumConstitutiveLaw->mKt;
                 const double Kn = mDiscontinuumConstitutiveLaw->mKn;
                 if (std::abs(LocalDeltDisp[0]) > std::numeric_limits<double>::epsilon()){
-                    LocalStiffness[0] = LocalElasticContactForce[0] / LocalDeltDisp[0];
+                    LocalStiffness[0] = -(LocalElasticContactForce[0]-OldLocalElasticContactForce[0]) / LocalDeltDisp[0];
                 } else{
                     LocalStiffness[0] = Kt;
                 }
                 if (std::abs(LocalDeltDisp[1]) > std::numeric_limits<double>::epsilon()){
-                    LocalStiffness[1] = LocalElasticContactForce[1] / LocalDeltDisp[1];
+                    LocalStiffness[1] = -(LocalElasticContactForce[1]-OldLocalElasticContactForce[1]) / LocalDeltDisp[1];
                 } else{
                     LocalStiffness[1] = Kt;
                 }
@@ -553,19 +557,27 @@ namespace Kratos {
                     const double equivalent_radius = sqrt(calculation_area / Globals::Pi);
                     const double Inertia_I = 0.25 * Globals::Pi * equivalent_radius * equivalent_radius * equivalent_radius * equivalent_radius;
                     const double Inertia_J = 2.0 * Inertia_I; // This is the polar inertia
+                    const double& rotational_moment_coeff = (*(mContinuumConstitutiveLawArray[i]->pGetProperties()))[ROTATIONAL_MOMENT_COEFFICIENT];
+
                     if (std::abs(LocalEffDeltaRotatedAngle[0]) > std::numeric_limits<double>::epsilon()){
-                        LocalRotationalStiffness[0] = ElasticLocalRotationalMoment[0] / LocalEffDeltaRotatedAngle[0];
+                        // LocalRotationalStiffness[0] = -ElasticLocalRotationalMoment[0] / LocalEffDeltaRotatedAngle[0];
+                        LocalRotationalStiffness[0] = -ElasticLocalRotationalMoment[0] / (LocalEffDeltaRotatedAngle[0] * rotational_moment_coeff);
                     } else{
+                        // LocalRotationalStiffness[0] = rotational_moment_coeff * equiv_young * Inertia_I / data_buffer.mDistance;
                         LocalRotationalStiffness[0] = equiv_young * Inertia_I / data_buffer.mDistance;
                     }
                     if (std::abs(LocalEffDeltaRotatedAngle[1]) > std::numeric_limits<double>::epsilon()){
-                        LocalRotationalStiffness[1] = ElasticLocalRotationalMoment[1] / LocalEffDeltaRotatedAngle[1];
+                        // LocalRotationalStiffness[1] = -ElasticLocalRotationalMoment[1] / LocalEffDeltaRotatedAngle[1];
+                        LocalRotationalStiffness[1] = -ElasticLocalRotationalMoment[1] / (LocalEffDeltaRotatedAngle[1] * rotational_moment_coeff);
                     } else{
+                        // LocalRotationalStiffness[1] = rotational_moment_coeff * equiv_young * Inertia_I / data_buffer.mDistance;
                         LocalRotationalStiffness[1] = equiv_young * Inertia_I / data_buffer.mDistance;
                     }
                     if (std::abs(LocalEffDeltaRotatedAngle[2]) > std::numeric_limits<double>::epsilon()){
-                        LocalRotationalStiffness[2] = ElasticLocalRotationalMoment[2] / LocalEffDeltaRotatedAngle[2];
+                        // LocalRotationalStiffness[2] = -ElasticLocalRotationalMoment[2] / LocalEffDeltaRotatedAngle[2];
+                        LocalRotationalStiffness[2] = -ElasticLocalRotationalMoment[2] / (LocalEffDeltaRotatedAngle[2] * rotational_moment_coeff);
                     } else{
+                        // LocalRotationalStiffness[2] = rotational_moment_coeff * equiv_young * Inertia_J / data_buffer.mDistance;
                         LocalRotationalStiffness[2] = equiv_young * Inertia_J / data_buffer.mDistance;
                     }
                 }

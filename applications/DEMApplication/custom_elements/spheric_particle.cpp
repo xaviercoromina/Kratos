@@ -308,9 +308,10 @@ void SphericParticle::ComputeBallToBallInitialStiffness(SphericParticle::Particl
                 double arm_length = GetInteractionRadius() - data_buffer.mIndentation;
 
                 // TODO. Ignasi: is this right?
-                LocalRotationalStiffness[0] = Kt * arm_length*arm_length;
-                LocalRotationalStiffness[1] = Kt * arm_length*arm_length;
-                LocalRotationalStiffness[2] = Kn * arm_length*arm_length;
+                // NOTE: we multiply this by 1.0 to avoid having a Moment Of Inertia too low that penalizes the delta time
+                LocalRotationalStiffness[0] = Kt * arm_length*1.0;
+                LocalRotationalStiffness[1] = Kt * arm_length*1.0;
+                LocalRotationalStiffness[2] = Kn * arm_length*1.0;
             }
 
             GeometryFunctions::VectorLocal2Global(data_buffer.mLocalCoordSystem, LocalStiffness, GlobalStiffness);
@@ -407,9 +408,9 @@ void SphericParticle::ComputeBallToRigidFaceInitialStiffness(SphericParticle::Pa
                 double arm_length = GetInteractionRadius() - indentation;
 
                 // TODO. Ignasi: is this right?
-                LocalRotationalStiffness[0] = Kt * arm_length*arm_length;
-                LocalRotationalStiffness[1] = Kt * arm_length*arm_length;
-                LocalRotationalStiffness[2] = Kn * arm_length*arm_length;
+                LocalRotationalStiffness[0] = Kt * arm_length*1.0;
+                LocalRotationalStiffness[1] = Kt * arm_length*1.0;
+                LocalRotationalStiffness[2] = Kn * arm_length*1.0;
             }
 
             GeometryFunctions::VectorLocal2Global(data_buffer.mLocalCoordSystem, LocalStiffness, GlobalStiffness);
@@ -493,9 +494,9 @@ void SphericParticle::ComputeBallToRigidFaceInitialStiffness(SphericParticle::Pa
             double arm_length = GetInteractionRadius() - indentation;
 
             // TODO. Ignasi: is this right?
-            LocalRotationalStiffness[0] = Kt * arm_length*arm_length;
-            LocalRotationalStiffness[1] = Kt * arm_length*arm_length;
-            LocalRotationalStiffness[2] = Kn * arm_length*arm_length;
+            LocalRotationalStiffness[0] = Kt * arm_length*1.0;
+            LocalRotationalStiffness[1] = Kt * arm_length*1.0;
+            LocalRotationalStiffness[2] = Kn * arm_length*1.0;
         }
 
         GeometryFunctions::VectorLocal2Global(data_buffer.mLocalCoordSystem, LocalStiffness, GlobalStiffness);
@@ -1231,13 +1232,16 @@ void SphericParticle::ComputeBallToBallContactForce(SphericParticle::ParticleDat
             mDiscontinuumConstitutiveLaw->InitializeContact(this,data_buffer.mpOtherParticle,data_buffer.mIndentation);
             const double Kt = mDiscontinuumConstitutiveLaw->mKt;
             const double Kn = mDiscontinuumConstitutiveLaw->mKn;
+            double OldLocalElasticContactForce[3] = {0.0};
+            RotateOldContactForces(data_buffer.mOldLocalCoordSystem, data_buffer.mLocalCoordSystem, mNeighbourElasticContactForces[i]);
+            GeometryFunctions::VectorGlobal2Local(data_buffer.mLocalCoordSystem, mNeighbourElasticContactForces[i], OldLocalElasticContactForce);
             if (std::abs(LocalDeltDisp[0]) > std::numeric_limits<double>::epsilon()){
-                LocalStiffness[0] = LocalElasticContactForce[0] / LocalDeltDisp[0];
+                LocalStiffness[0] = -(LocalElasticContactForce[0]-OldLocalElasticContactForce[0]) / LocalDeltDisp[0];
             } else{
                 LocalStiffness[0] = Kt;
             }
             if (std::abs(LocalDeltDisp[1]) > std::numeric_limits<double>::epsilon()){
-                LocalStiffness[1] = LocalElasticContactForce[1] / LocalDeltDisp[1];
+                LocalStiffness[1] = -(LocalElasticContactForce[1]-OldLocalElasticContactForce[1]) / LocalDeltDisp[1];
             } else{
                 LocalStiffness[1] = Kt;
             }
@@ -1250,9 +1254,9 @@ void SphericParticle::ComputeBallToBallContactForce(SphericParticle::ParticleDat
                 // Estimate updated local rotational stiffness
                 double arm_length = GetInteractionRadius() - data_buffer.mIndentation;
                 // TODO. Ignasi: is this right?
-                LocalRotationalStiffness[0] = LocalStiffness[0] * arm_length*arm_length;
-                LocalRotationalStiffness[1] = LocalStiffness[1] * arm_length*arm_length;
-                LocalRotationalStiffness[2] = LocalStiffness[2] * arm_length*arm_length;
+                LocalRotationalStiffness[0] = LocalStiffness[0] * arm_length*1.0;
+                LocalRotationalStiffness[1] = LocalStiffness[1] * arm_length*1.0;
+                LocalRotationalStiffness[2] = LocalStiffness[2] * arm_length*1.0;
             }
             // Accumulate GlobalStiffness
             GeometryFunctions::VectorLocal2Global(data_buffer.mLocalCoordSystem, LocalStiffness, GlobalStiffness);
@@ -1445,12 +1449,12 @@ void SphericParticle::ComputeBallToRigidFaceContactForce(SphericParticle::Partic
                 const double Kt = mDiscontinuumConstitutiveLaw->mKt;
                 const double Kn = mDiscontinuumConstitutiveLaw->mKn;
                 if (std::abs(LocalDeltDisp[0]) > std::numeric_limits<double>::epsilon()){
-                    LocalStiffness[0] = LocalElasticContactForce[0] / LocalDeltDisp[0];
+                    LocalStiffness[0] = -(LocalElasticContactForce[0]-OldLocalElasticContactForce[0]) / LocalDeltDisp[0];
                 } else{
                     LocalStiffness[0] = Kt;
                 }
                 if (std::abs(LocalDeltDisp[1]) > std::numeric_limits<double>::epsilon()){
-                    LocalStiffness[1] = LocalElasticContactForce[1] / LocalDeltDisp[1];
+                    LocalStiffness[1] = -(LocalElasticContactForce[1]-OldLocalElasticContactForce[1]) / LocalDeltDisp[1];
                 } else{
                     LocalStiffness[1] = Kt;
                 }
@@ -1478,9 +1482,9 @@ void SphericParticle::ComputeBallToRigidFaceContactForce(SphericParticle::Partic
                 // Estimate updated local rotational stiffness
                 double arm_length = GetInteractionRadius() - indentation;
                 // TODO. Ignasi: is this right?
-                LocalRotationalStiffness[0] = LocalStiffness[0] * arm_length*arm_length;
-                LocalRotationalStiffness[1] = LocalStiffness[1] * arm_length*arm_length;
-                LocalRotationalStiffness[2] = LocalStiffness[2] * arm_length*arm_length;
+                LocalRotationalStiffness[0] = LocalStiffness[0] * arm_length*1.0;
+                LocalRotationalStiffness[1] = LocalStiffness[1] * arm_length*1.0;
+                LocalRotationalStiffness[2] = LocalStiffness[2] * arm_length*1.0;
             }
 
             // Accumulate GlobalStiffness
@@ -1632,12 +1636,12 @@ void SphericParticle::ComputeBallToRigidFaceContactForce(SphericParticle::Partic
             const double Kt = mDiscontinuumConstitutiveLaw->mKt;
             const double Kn = mDiscontinuumConstitutiveLaw->mKn;
             if (std::abs(LocalDeltDisp[0]) > std::numeric_limits<double>::epsilon()){
-                LocalStiffness[0] = LocalElasticContactForce[0] / LocalDeltDisp[0];
+                LocalStiffness[0] = -(LocalElasticContactForce[0]-OldLocalElasticContactForce[0]) / LocalDeltDisp[0];
             } else{
                 LocalStiffness[0] = Kt;
             }
             if (std::abs(LocalDeltDisp[1]) > std::numeric_limits<double>::epsilon()){
-                LocalStiffness[1] = LocalElasticContactForce[1] / LocalDeltDisp[1];
+                LocalStiffness[1] = -(LocalElasticContactForce[1]-OldLocalElasticContactForce[1]) / LocalDeltDisp[1];
             } else{
                 LocalStiffness[1] = Kt;
             }
@@ -1678,9 +1682,9 @@ void SphericParticle::ComputeBallToRigidFaceContactForce(SphericParticle::Partic
             // Estimate updated local rotational stiffness
             double arm_length = GetInteractionRadius() - indentation;
             // TODO. Ignasi: is this right?
-            LocalRotationalStiffness[0] = LocalStiffness[0] * arm_length*arm_length;
-            LocalRotationalStiffness[1] = LocalStiffness[1] * arm_length*arm_length;
-            LocalRotationalStiffness[2] = LocalStiffness[2] * arm_length*arm_length;
+            LocalRotationalStiffness[0] = LocalStiffness[0] * arm_length*1.0;
+            LocalRotationalStiffness[1] = LocalStiffness[1] * arm_length*1.0;
+            LocalRotationalStiffness[2] = LocalStiffness[2] * arm_length*1.0;
         }
 
         // Accumulate GlobalStiffness

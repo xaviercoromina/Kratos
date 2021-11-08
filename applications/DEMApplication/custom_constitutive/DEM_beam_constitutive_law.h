@@ -118,6 +118,11 @@ namespace Kratos {
 
         virtual bool CheckRequirementsOfStressTensor();
 
+        const Properties::Pointer pGetProperties() const
+        {
+            return mpProperties;
+        }
+
     protected:
 
         Properties::Pointer mpProperties;
