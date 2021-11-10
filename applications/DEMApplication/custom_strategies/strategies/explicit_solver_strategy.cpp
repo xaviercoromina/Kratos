@@ -349,6 +349,19 @@ namespace Kratos {
             }
         }
 
+        // TODO. Ignasi: should we do this ?
+        // Calculate inertia scale factor (to make it similar to the mass)
+        // double k_max_norm = 0.0;
+        // double m_max_norm = 0.0;
+        // for(unsigned int i = 0; i<3; i++){
+        //     k_max_norm += k_max[i]*k_max[i];
+        //     m_max_norm += m_max[i]*m_max[i];
+        // }
+        // k_max_norm = std::sqrt(k_max_norm);
+        // m_max_norm = std::sqrt(m_max_norm);
+        // const double inertia_scale_factor = r_process_info[INERTIA_ARRAY_SCALE_FACTOR];
+        // GetModelPart().GetProcessInfo()[INERTIA_ARRAY_SCALE_FACTOR] = inertia_scale_factor*k_max_norm/m_max_norm;
+
         // 3. Check that mass array is different from zero and replace it by the maximum stiffness estimation if necessary
         const bool use_mass_array = r_process_info[USE_MASS_ARRAY];
         block_for_each(rNodes, [&](ModelPart::NodeType& rNode) {
@@ -783,8 +796,14 @@ namespace Kratos {
         NodesArrayType& rNodes = GetModelPart().Nodes();
         const bool use_mass_array = r_process_info[USE_MASS_ARRAY];
         const double mass_array_scale_factor = r_process_info[MASS_ARRAY_SCALE_FACTOR];
+        const double inertia_scale_factor = r_process_info[INERTIA_ARRAY_SCALE_FACTOR];
         const double mass_array_averaging_time_interval = r_process_info[MASS_ARRAY_AVERAGING_TIME_INTERVAL];
-        const double mass_array_alpha = 1.0-dt/mass_array_averaging_time_interval;
+        double mass_array_alpha = 1.0-dt/mass_array_averaging_time_interval;
+        // Update fast the nodal mass to avoid an initial bad estimation in the first steps
+        int current_step = int(r_process_info[TIME]/dt);
+        if(current_step <= 1000){
+            mass_array_alpha = 0.0;
+        }
         block_for_each(rNodes, [&](ModelPart::NodeType& rNode) {
             array_1d<double, 3>& nodal_mass_array = rNode.FastGetSolutionStepValue(NODAL_MASS_ARRAY);
             array_1d<double, 3>& particle_moment_intertia_array = rNode.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY);
@@ -817,9 +836,9 @@ namespace Kratos {
                     // Save nodal mass array
                     nodal_mass_array_old[i] = nodal_mass_array[i];
                     particle_moment_intertia_array_old[i] = particle_moment_intertia_array[i];
-                    // Scale mass array to have similar Dt as in the original case
+                    // Scale mass array and moment array to have similar Dt as in the original case
                     nodal_mass_array[i] = nodal_mass_array[i]*mass_array_scale_factor;
-                    particle_moment_intertia_array[i] = particle_moment_intertia_array[i]*mass_array_scale_factor;
+                    particle_moment_intertia_array[i] = particle_moment_intertia_array[i]*inertia_scale_factor;
                 }
             }
         });
