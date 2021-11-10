@@ -643,6 +643,7 @@ void BaseSolidElement::CalculateMassMatrix(
             const SizeType index = dimension * i;
             for ( IndexType j = 0; j < dimension; ++j ){
                 rMassMatrix(index+j, index+j) = stiffness_matrix(index+j,index+j);
+                // rMassMatrix(index+j, index+j) = stiffness_matrix(index+j,index+j)*1.0e-12;
             }
         }
     } else { // CONSISTENT MASS
