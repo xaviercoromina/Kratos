@@ -34,7 +34,6 @@ class StructuralMechanicsAnalysisROM(StructuralMechanicsAnalysis):
         with open('RomParameters.json') as rom_parameters:
             rom_settings = KratosMultiphysics.Parameters(rom_parameters.read())
             self.project_parameters["solver_settings"].AddValue("rom_settings", rom_settings["rom_settings"])
-            self.project_parameters["solver_settings"].AddValue("rom_settings", rom_settings["rom_settings"])
             if self.build_petrov_galerkin:
                 self.project_parameters["solver_settings"].AddBool("build_petrov_galerkin", self.build_petrov_galerkin)
             if self.solve_petrov_galerkin:
@@ -60,7 +59,7 @@ class StructuralMechanicsAnalysisROM(StructuralMechanicsAnalysis):
             if self.solve_petrov_galerkin:
                 nodal_residual_modes = data["Petrov_Galerkin_basis"]["nodal_modes"]####ADDEDPETROV
                 nodal_residual_dofs = len(data["Petrov_Galerkin_basis"]["rom_settings"]["nodal_unknowns"])####ADDEDPETROV
-                rom_residual_dofs = self.project_parameters["solver_settings"]["rom_settings"]["number_of_rom_dofs"].GetInt()####ADDEDPETROV
+                rom_residual_dofs = data["Petrov_Galerkin_basis"]["rom_settings"]["number_of_rom_dofs"]
                 for node in computing_model_part.Nodes:
                     aux = KratosMultiphysics.Matrix(nodal_dofs, rom_dofs)
                     aux_residual = KratosMultiphysics.Matrix(nodal_residual_dofs,rom_residual_dofs)####ADDEDPETROV

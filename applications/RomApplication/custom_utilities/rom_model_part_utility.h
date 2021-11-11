@@ -370,10 +370,10 @@ namespace Kratos
                             aux.resize(dofs.size(), mDofs, false);
                         GetPhiElemental(PhiElemental, dofs, geom);
                         noalias(aux) = prod(LHS_Contribution, PhiElemental);
-                        for (int k = 0; k < static_cast<int>(dofs.size()); ++k)
-                        {
-                            if(dofs[k]->IsFixed()==false)  //When dof is fixed set to zero the corresponging LHS row (==not adding contribution)
-                                noalias(row(tempAphi,dofs[k]->EquationId()))+=row(aux,k);
+                        for (int l = 0; l < static_cast<int>(dofs.size()); ++l)
+                        {   
+                            if(dofs[l]->IsFixed()==false)  //When dof is fixed set to zero the corresponging LHS row (==not adding contribution)
+                                noalias(row(tempAphi,dofs[l]->EquationId()))+=row(aux,l);
                         }
                     }
                 }
@@ -402,10 +402,10 @@ namespace Kratos
                             aux.resize(dofs.size(), mDofs, false);
                         GetPhiElemental(PhiElemental, dofs, geom);
                         noalias(aux) = prod(LHS_Contribution, PhiElemental);
-                        for (int k = 0; k < static_cast<int>(dofs.size()); ++k)
-                        {
-                            if(dofs[k]->IsFixed()==false)  //When dof is fixed set to zero the corresponging LHS row (==not adding contribution)
-                                noalias(row(tempAphi,dofs[k]->EquationId()))+=row(aux,k);
+                        for (int l = 0; l < static_cast<int>(dofs.size()); ++l)
+                        {   
+                            if(dofs[l]->IsFixed()==false)  //When dof is fixed set to zero the corresponging LHS row (==not adding contribution)
+                                noalias(row(tempAphi,dofs[l]->EquationId()))+=row(aux,l);
                         }
                     }
                 }

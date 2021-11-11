@@ -36,7 +36,7 @@ class ROMSolver(StaticMechanicalSolver):
             "solve_petrov_galerkin": false,
             "solve_least_squares" : false,
             "rom_residual_settings": {
-            "nodal_unknowns": [ "RESIDUAL_X", "RESIDUAL_Y", "RESIDUAL_Z"],
+            "nodal_unknowns": [ "DISPLACEMENT_X", "DISPLACEMENT_Y", "DISPLACEMENT_Z"],
             "number_of_rom_dofs": 0
             }
         }

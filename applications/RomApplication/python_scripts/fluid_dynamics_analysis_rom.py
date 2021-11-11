@@ -8,9 +8,10 @@ import json
 
 class FluidDynamicsAnalysisROM(FluidDynamicsAnalysis):
 
-    def __init__(self,model,project_parameters, build_petrov_galerkin=False, solve_petrov_galerkin=False):
+    def __init__(self,model,project_parameters, build_petrov_galerkin=False, solve_petrov_galerkin=False,solve_least_squares=False):
         self.build_petrov_galerkin = build_petrov_galerkin
         self.solve_petrov_galerkin = solve_petrov_galerkin
+        self.solve_least_squares = solve_least_squares
         super().__init__(model,project_parameters)
 
     #### Internal functions ####
@@ -24,6 +25,9 @@ class FluidDynamicsAnalysisROM(FluidDynamicsAnalysis):
                 self.project_parameters["solver_settings"].AddBool("build_petrov_galerkin", self.build_petrov_galerkin)
             if self.solve_petrov_galerkin:
                 self.project_parameters["solver_settings"].AddBool("solve_petrov_galerkin", self.solve_petrov_galerkin)
+                self.project_parameters["solver_settings"].AddValue("rom_residual_settings",rom_settings["Petrov_Galerkin_basis"]["rom_settings"])
+            if self.solve_least_squares:
+                self.project_parameters["solver_settings"].AddBool("solve_least_squares", self.solve_least_squares)
         return solver_wrapper.CreateSolverByParameters(self.model, self.project_parameters["solver_settings"],self.project_parameters["problem_data"]["parallel_type"].GetString())
 
     def _GetSimulationName(self):
@@ -48,8 +52,9 @@ class FluidDynamicsAnalysisROM(FluidDynamicsAnalysis):
                     aux_residual = KratosMultiphysics.Matrix(nodal_residual_dofs,rom_residual_dofs)####ADDEDPETROV
                     for j in range(nodal_dofs):
                         Counter=str(node.Id)
-                        for i in range(rom_dofs):
-                            aux[j,i] = nodal_modes[Counter][j][i]
+                        for i in range(rom_residual_dofs):
+                            if (i<rom_dofs):
+                                aux[j,i] = nodal_modes[Counter][j][i]
                             aux_residual[j,i] = nodal_residual_modes[Counter][j][i]####ADDEDPETROV
                     node.SetValue(romapp.ROM_BASIS, aux ) # ROM basis
                     node.SetValue(romapp.ROM_BASIS_ASSEMBLED_RESIDUALS, aux_residual)####ADDEDPETROV
