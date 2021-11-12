@@ -64,7 +64,8 @@ class ImposePerturbedInitialConditionAnalysisStage(ConvectionDiffusionAnalysis):
     def ApplyBoundaryConditions(self):
         super(ImposePerturbedInitialConditionAnalysisStage,self).ApplyBoundaryConditions()
         structure_model_part = self._GetSolver().main_model_part.GetSubModelPart(self.project_parameters["problem_data"]["structure_model_part"].GetString())
-        KratosMultiphysics.MortarUtilities.ComputeNodesMeanNormalModelPart(structure_model_part, True)
+        #KratosMultiphysics.MortarUtilities.ComputeNodesMeanNormalModelPart(structure_model_part, True)
+        KratosMultiphysics.NormalCalculationUtils().CalculateUnitNormals(structure_model_part, True)
         main_model_part_name = self.project_parameters["problem_data"]["model_part_name"].GetString()
 
         # set forcing term
@@ -236,7 +237,7 @@ class ImposePerturbedInitialConditionProcess(KratosMultiphysics.Process):
         mapper.Map(KratosMultiphysics.VELOCITY,KratosMultiphysics.VELOCITY) # map c*P(u_{cn}) + u_T into Poisson problem variable VELOCITY
         simulation._GetSolver().main_model_part.GetCommunicator().SynchronizeVariable(KratosMultiphysics.VELOCITY)
         simulation._GetSolver().main_model_part.GetCommunicator().SynchronizeVariable(KratosMultiphysics.PRESSURE)
-
+        
         # run the Poisson problem
         # restore boundary conditions
         # sum VELOCITY = u_T + c*P(u_{cn}) + c*\nabla TEMPERATURE
@@ -245,7 +246,8 @@ class ImposePerturbedInitialConditionProcess(KratosMultiphysics.Process):
 
         # map u_T + c*P(u_{cn}) + c*\nabla TEMPERATURE into current variable VELOCITY
         mapper.InverseMap(KratosMultiphysics.VELOCITY,KratosMultiphysics.VELOCITY)
-
+        self.model.GetModelPart(self.poisson_parameters["problem_data"]["model_part_name"].GetString()).GetCommunicator().SynchronizeVariable(KratosMultiphysics.VELOCITY)
+        self.model.GetModelPart(self.poisson_parameters["problem_data"]["model_part_name"].GetString()).GetCommunicator().SynchronizeVariable(KratosMultiphysics.PRESSURE)
     def GetDefaultParametersAnalysisStage(self):
         default_parameters = KratosMultiphysics.Parameters( """ {
             "problem_data"             : {
@@ -281,6 +283,15 @@ class ImposePerturbedInitialConditionProcess(KratosMultiphysics.Process):
                 },
                 "problem_domain_sub_model_part_list": [],
                 "processes_sub_model_part_list": [],
+            "linear_solver_settings":{
+                "solver_type": "amgcl",
+                "smoother_type":"ilu0",
+                "krylov_type":"gmres",
+                "coarsening_type":"aggregation",
+                "max_iteration": 5000,
+                "tolerance": 1e-9,
+                "scaling": false
+            },
                 "auxiliary_variables_list" : []
             },
             "processes" : {

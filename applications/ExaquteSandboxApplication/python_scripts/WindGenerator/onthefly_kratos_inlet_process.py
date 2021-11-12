@@ -30,7 +30,7 @@ from KratosMultiphysics import VELOCITY_Y
 from KratosMultiphysics import VELOCITY_Z
 from KratosMultiphysics import Logger
 
-from time import time
+import time as timer
 
 from KratosMultiphysics.ExaquteSandboxApplication.WindGenerator.GaussianRandomField import *
 from KratosMultiphysics.ExaquteSandboxApplication.WindGenerator.CovarianceKernels import VonKarmanCovariance, MannCovariance
@@ -57,6 +57,8 @@ class Parameters(Mapping):
             value = param.GetInt()
         elif param.IsString():
             value = param.GetString()
+        elif param.IsBool():
+            value = param.GetBool()
         else:
             value = param
         return value
@@ -481,16 +483,26 @@ class ImposeMPIWindInletProcess(ImposeWindInletProcess):
             node.Fix(KratosMultiphysics.VELOCITY_Y)
             node.Fix(KratosMultiphysics.VELOCITY_Z)
 
+        mapping_parameters = KratosMultiphysics.Parameters("""{
+                "mapper_type": "nearest_element",
+                "echo_level" : 0
+           }""")
+        self.mapper = KratosMultiphysics.MappingApplication.MapperFactory.CreateMPIMapper(self.model_part, self.mpi_model_part,mapping_parameters)
     def ExecuteInitializeSolutionStep(self):
         if self.data_comm.Rank() == 0:
             super().ExecuteInitializeSolutionStep()
-        # map from current model part of interest to reference model part
-        mapping_parameters = KratosMultiphysics.Parameters("""{
-            "mapper_type": "nearest_element",
-            "echo_level" : 0
-            }""")
-        mapper = KratosMultiphysics.MappingApplication.MapperFactory.CreateMPIMapper(self.model_part, self.mpi_model_part,mapping_parameters)
-        mapper.Map(KratosMultiphysics.VELOCITY, \
+        # map from current model part of interest to reference model parti
+        ini_time = timer.time()
+        if getattr(self, 'create_mapper_at_each_step', True):
+            mapping_parameters = KratosMultiphysics.Parameters("""{
+                "mapper_type": "nearest_element",
+                "echo_level" : 0
+                 }""")
+            self.mapper = KratosMultiphysics.MappingApplication.MapperFactory.CreateMPIMapper(self.model_part, self.mpi_model_part,mapping_parameters)
+
+        self.mapper.Map(KratosMultiphysics.VELOCITY, \
             KratosMultiphysics.VELOCITY)
         self.mpi_model_part.GetCommunicator().SynchronizeVariable(KratosMultiphysics.VELOCITY)
         self.mpi_model_part.GetCommunicator().SynchronizeVariable(KratosMultiphysics.PRESSURE)
+        mapping_time = timer.time() - ini_time
+        KratosMultiphysics.Logger.PrintInfo("ImposeWindInletProcessMPI", "TIME SPENT MAPPING:", self.data_comm.MaxAll(mapping_time))
