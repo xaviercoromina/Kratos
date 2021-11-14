@@ -503,7 +503,7 @@ def AssembleTestSuites():
               TBeamContactTest,
               TBeamContactWithTyingTest,
               TBeamContactWithFrictionTest,
-              TPlateTest,  # TODO: Fix this
+              TPlateTest,
               ### VALIDATION
               #####TComponentsALMHertzSphereTestContact,  # FIXME: This test requieres the axisymmetric to work (memmory error, correct it)
               TALMHertzSimpleTestContact,
