@@ -9,12 +9,11 @@
 
 // System includes
 #include <string>
+#include <numeric>
 #include <iostream>
+#include <random>
 
 // Project includes
-#include "includes/define.h"
-#include "DEM_application_variables.h"
-#include "includes/model_part.h"
 #include "random_variable.h"
 
 namespace Kratos {
@@ -68,8 +67,6 @@ private:
     DiscreteRandomVariable & operator=(DiscreteRandomVariable const& rOther);
 
     double mRelativeClosenessTolerance = 0.0;
-    double mMean = 0.0;
-    bool mMeanHasAlreadyBeenCalculated=false;
     std::vector<double> mRelativeFrequencies;
     std::vector<double> mPossibleValues;
     std::mt19937 mRandomNumberGenerator;
