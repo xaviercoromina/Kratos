@@ -75,7 +75,15 @@ namespace Kratos {
                 const bool Fix_Ang_vel[3]) {
 
         array_1d<double, 3 > angular_acceleration;
-        CalculateLocalAngularAcceleration(moment_of_inertia, torque, moment_reduction_factor, angular_acceleration);
+        // TODO. Ignasi
+        const array_1d<double,3>& particle_moment_intertia_array = i.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY);
+
+        for (int j = 0; j < 3; j++) {
+            double moment_of_inertia_inv_j = 1.0 / particle_moment_intertia_array[j];
+            angular_acceleration[j] = moment_reduction_factor * torque[j] * moment_of_inertia_inv_j;
+        }
+
+        // CalculateLocalAngularAcceleration(moment_of_inertia, torque, moment_reduction_factor, angular_acceleration);
 
         UpdateRotationalVariables(StepFlag, i, rotated_angle, delta_rotation, angular_velocity, angular_acceleration, delta_t, Fix_Ang_vel);
     }
@@ -140,18 +148,10 @@ namespace Kratos {
                 const double moment_reduction_factor,
                 array_1d<double, 3 >& angular_acceleration) {
 
-        // TODO. Ignasi
-        const array_1d<double,3>& particle_moment_intertia_array = i.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY);
-
+        double moment_of_inertia_inv = 1.0 / moment_of_inertia;
         for (int j = 0; j < 3; j++) {
-            double moment_of_inertia_inv_j = 1.0 / particle_moment_intertia_array[j];
             angular_acceleration[j] = moment_reduction_factor * torque[j] * moment_of_inertia_inv;
         }
-
-        // double moment_of_inertia_inv = 1.0 / moment_of_inertia;
-        // for (int j = 0; j < 3; j++) {
-        //     angular_acceleration[j] = moment_reduction_factor * torque[j] * moment_of_inertia_inv;
-        // }
     }
 
     void SymplecticEulerScheme::CalculateLocalAngularAccelerationByEulerEquations(
