@@ -192,6 +192,15 @@ class DEMAnalysisStage(AnalysisStage):
         return ParticleCreatorDestructor(self.watcher)
 
     def SelectTranslationalScheme(self):
+        # Set ProcessInfo variables
+        self.spheres_model_part.ProcessInfo.SetValue(USE_MASS_ARRAY, self.DEM_parameters["use_mass_array"].GetBool())
+        self.spheres_model_part.ProcessInfo.SetValue(MASS_ARRAY_SCALE_FACTOR, self.DEM_parameters["mass_array_scale_factor"].GetDouble())
+        self.spheres_model_part.ProcessInfo.SetValue(INERTIA_ARRAY_SCALE_FACTOR, self.DEM_parameters["mass_array_scale_factor"].GetDouble())
+        mass_array_averaging_time_interval = self.DEM_parameters["mass_array_averaging_time_interval"].GetDouble()
+        if (self.DEM_parameters["MaxTimeStep"].GetDouble() > mass_array_averaging_time_interval):
+            raise ValueError('Dt > mass_array_averaging_time_interval')
+        self.spheres_model_part.ProcessInfo.SetValue(MASS_ARRAY_AVERAGING_TIME_INTERVAL, mass_array_averaging_time_interval)
+
         if self.DEM_parameters["TranslationalIntegrationScheme"].GetString() == 'Forward_Euler':
             return ForwardEulerScheme()
         elif self.DEM_parameters["TranslationalIntegrationScheme"].GetString() == 'Symplectic_Euler':
@@ -233,13 +242,6 @@ class DEMAnalysisStage(AnalysisStage):
                 Logger.PrintInfo('DEM', 'rayleigh_alpha: ',rayleigh_alpha)
                 Logger.PrintInfo('DEM', 'rayleigh_beta: ',rayleigh_beta)
 
-            self.spheres_model_part.ProcessInfo.SetValue(USE_MASS_ARRAY, rayleigh_cd_param["use_mass_array"].GetBool())
-            self.spheres_model_part.ProcessInfo.SetValue(MASS_ARRAY_SCALE_FACTOR, rayleigh_cd_param["mass_array_scale_factor"].GetDouble())
-            self.spheres_model_part.ProcessInfo.SetValue(INERTIA_ARRAY_SCALE_FACTOR, rayleigh_cd_param["mass_array_scale_factor"].GetDouble())
-            mass_array_averaging_time_interval = rayleigh_cd_param["mass_array_averaging_time_interval"].GetDouble()
-            if (Dt > mass_array_averaging_time_interval):
-                raise ValueError('Dt > mass_array_averaging_time_interval')
-            self.spheres_model_part.ProcessInfo.SetValue(MASS_ARRAY_AVERAGING_TIME_INTERVAL, mass_array_averaging_time_interval)
             self.spheres_model_part.ProcessInfo.SetValue(RAYLEIGH_ALPHA, rayleigh_alpha)
             self.spheres_model_part.ProcessInfo.SetValue(RAYLEIGH_BETA, rayleigh_beta)
             self.spheres_model_part.ProcessInfo.SetValue(G_COEFFICIENT, g_coefficient)

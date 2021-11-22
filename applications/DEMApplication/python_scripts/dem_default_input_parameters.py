@@ -117,11 +117,11 @@ def GetDefaultInputParameters():
                 "theta_factor"                 : 1.0,
                 "g_factor"                     : 0.0,
                 "calculate_xi"                 : false,
-                "xi_1_factor"                  : 1.0,
-                "use_mass_array"               : false,
-                "mass_array_averaging_time_interval": 1.0e12,
-                "mass_array_scale_factor"      : 1.0
+                "xi_1_factor"                  : 1.0
             },
+            "use_mass_array"               : false,
+            "mass_array_averaging_time_interval": 1.0e12,
+            "mass_array_scale_factor"      : 1.0,
             "virtual_sea_surface_settings"     : {
                 "print_sea_surface"            : false,
                 "PostVirtualSeaSurfaceX1"      : 0.0,

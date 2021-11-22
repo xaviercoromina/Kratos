@@ -30,10 +30,13 @@ namespace Kratos {
             const double delta_t,
             const bool Fix_vel[3]) {
 
-        double mass_inv = 1.0 / mass;
+        // TODO. Ignasi
+        const array_1d<double,3>& nodal_mass_array = i.FastGetSolutionStepValue(NODAL_MASS_ARRAY);
+
         for (int k = 0; k < 3; k++) {
+            double mass_inv_k = 1.0 / nodal_mass_array[k];
             if (Fix_vel[k] == false) {
-                vel[k] += delta_t * force_reduction_factor * force[k] * mass_inv;
+                vel[k] += delta_t * force_reduction_factor * force[k] * mass_inv_k;
                 delta_displ[k] = delta_t * vel[k];
                 displ[k] += delta_displ[k];
                 coor[k] = initial_coor[k] + displ[k];
@@ -43,6 +46,20 @@ namespace Kratos {
                 coor[k] = initial_coor[k] + displ[k];
             }
         } // dimensions
+
+        // double mass_inv = 1.0 / mass;
+        // for (int k = 0; k < 3; k++) {
+        //     if (Fix_vel[k] == false) {
+        //         vel[k] += delta_t * force_reduction_factor * force[k] * mass_inv;
+        //         delta_displ[k] = delta_t * vel[k];
+        //         displ[k] += delta_displ[k];
+        //         coor[k] = initial_coor[k] + displ[k];
+        //     } else {
+        //         delta_displ[k] = delta_t * vel[k];
+        //         displ[k] += delta_displ[k];
+        //         coor[k] = initial_coor[k] + displ[k];
+        //     }
+        // } // dimensions
     }
 
     void SymplecticEulerScheme::CalculateNewRotationalVariablesOfSpheres(
@@ -123,10 +140,18 @@ namespace Kratos {
                 const double moment_reduction_factor,
                 array_1d<double, 3 >& angular_acceleration) {
 
-        double moment_of_inertia_inv = 1.0 / moment_of_inertia;
+        // TODO. Ignasi
+        const array_1d<double,3>& particle_moment_intertia_array = i.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY);
+
         for (int j = 0; j < 3; j++) {
+            double moment_of_inertia_inv_j = 1.0 / particle_moment_intertia_array[j];
             angular_acceleration[j] = moment_reduction_factor * torque[j] * moment_of_inertia_inv;
         }
+
+        // double moment_of_inertia_inv = 1.0 / moment_of_inertia;
+        // for (int j = 0; j < 3; j++) {
+        //     angular_acceleration[j] = moment_reduction_factor * torque[j] * moment_of_inertia_inv;
+        // }
     }
 
     void SymplecticEulerScheme::CalculateLocalAngularAccelerationByEulerEquations(
