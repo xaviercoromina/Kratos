@@ -2089,16 +2089,10 @@ void SphericParticle::ComputeStrainTensor(const ProcessInfo& r_process_info) {
 
 void SphericParticle::ComputeDifferentialStrainTensor(const ProcessInfo& r_process_info) {
 
+    // Following Bagi, Katalin. "Analysis of microstructural strain tensors for granular assemblies". 2005. Section 2.3.1.
     const int Dim = r_process_info[DOMAIN_SIZE];
-    BoundedMatrix<double, 3, 3> CoefficientsMatrix = ZeroMatrix(3, 3);
-    BoundedMatrix<double, 3, 3> RightHandSide = ZeroMatrix(3, 3);
-    array_1d<double, 3> assembly_centroid;
-    array_1d<double, 3> assembly_average_delta_displacement;
-    array_1d<double, 3> relative_position;
-    array_1d<double, 3> relative_delta_displacement;
-    assembly_centroid = this->GetGeometry()[0].Coordinates();
-    assembly_average_delta_displacement = this->GetGeometry()[0].FastGetSolutionStepValue(DELTA_DISPLACEMENT);
-
+    array_1d<double, 3> assembly_centroid = this->GetGeometry()[0].Coordinates();
+    array_1d<double, 3> assembly_average_delta_displacement = this->GetGeometry()[0].FastGetSolutionStepValue(DELTA_DISPLACEMENT);
     int total_number_of_neighbours = 0;
     for (unsigned int i = 0; i < mNeighbourElements.size(); i++) {
         if (!mNeighbourElements[i]) continue;
@@ -2109,42 +2103,47 @@ void SphericParticle::ComputeDifferentialStrainTensor(const ProcessInfo& r_proce
         assembly_average_delta_displacement += node_delta_displacement;
         total_number_of_neighbours++;
     }
+    
+    if (total_number_of_neighbours < Dim) {
+        *mDifferentialStrainTensor = ZeroMatrix(3,3);
+    } else {
+        BoundedMatrix<double, 3, 3> CoefficientsMatrix = ZeroMatrix(3, 3);
+        BoundedMatrix<double, 3, 3> RightHandSide = ZeroMatrix(3, 3);
+        assembly_centroid /= (1.0 + total_number_of_neighbours);  
+        assembly_average_delta_displacement /= (1.0 + total_number_of_neighbours);
 
-    assembly_centroid /= (1.0 + total_number_of_neighbours);  
-    assembly_average_delta_displacement /= (1.0 + total_number_of_neighbours);
-
-    relative_position = this->GetGeometry()[0].Coordinates() - assembly_centroid;
-    relative_delta_displacement = this->GetGeometry()[0].FastGetSolutionStepValue(DELTA_DISPLACEMENT) - assembly_average_delta_displacement;
-    for (int i = 0; i < Dim; i++) {
-        for (int j = 0; j < Dim; j++) {
-            CoefficientsMatrix(j,i) += relative_position[j] * relative_position[i];
-            RightHandSide(j,i) += relative_delta_displacement[i] * relative_position[j];
-        }
-    }
-
-    for (unsigned int i = 0; i < mNeighbourElements.size(); i++) {
-        if (!mNeighbourElements[i]) continue;
-        relative_position = mNeighbourElements[i]->GetGeometry()[0].Coordinates() - assembly_centroid;
-        relative_delta_displacement = mNeighbourElements[i]->GetGeometry()[0].FastGetSolutionStepValue(DELTA_DISPLACEMENT) - assembly_average_delta_displacement;
+        array_1d<double, 3> relative_position = this->GetGeometry()[0].Coordinates() - assembly_centroid;
+        array_1d<double, 3> relative_delta_displacement = this->GetGeometry()[0].FastGetSolutionStepValue(DELTA_DISPLACEMENT) - assembly_average_delta_displacement;
         for (int i = 0; i < Dim; i++) {
             for (int j = 0; j < Dim; j++) {
                 CoefficientsMatrix(j,i) += relative_position[j] * relative_position[i];
                 RightHandSide(j,i) += relative_delta_displacement[i] * relative_position[j];
             }
         }
-    }
 
-    double det = 0.0;
-    BoundedMatrix<double, 3, 3> InvertedCoefficientsMatrix = ZeroMatrix(3, 3);
+        for (unsigned int i = 0; i < mNeighbourElements.size(); i++) {
+            if (!mNeighbourElements[i]) continue;
+            relative_position = mNeighbourElements[i]->GetGeometry()[0].Coordinates() - assembly_centroid;
+            relative_delta_displacement = mNeighbourElements[i]->GetGeometry()[0].FastGetSolutionStepValue(DELTA_DISPLACEMENT) - assembly_average_delta_displacement;
+            for (int i = 0; i < Dim; i++) {
+                for (int j = 0; j < Dim; j++) {
+                    CoefficientsMatrix(j,i) += relative_position[j] * relative_position[i];
+                    RightHandSide(j,i) += relative_delta_displacement[i] * relative_position[j];
+                }
+            }
+        }
 
-    if (Dim == 2) {
-        CoefficientsMatrix(2,2) = 1.0;
-        RightHandSide(2,2) = 1.0;
-    }
-    MathUtils<double>::InvertMatrix3(CoefficientsMatrix, InvertedCoefficientsMatrix, det);
-    *mDifferentialStrainTensor = prod(InvertedCoefficientsMatrix, RightHandSide);
-    if (Dim == 2) {
-        (*mDifferentialStrainTensor)(2,2) = (*mDifferentialStrainTensor)(0,2) = (*mDifferentialStrainTensor)(1,2) = (*mDifferentialStrainTensor)(2,1) = (*mDifferentialStrainTensor)(2,0) = 0.0;
+        double det = 0.0;
+        BoundedMatrix<double, 3, 3> InvertedCoefficientsMatrix = ZeroMatrix(3, 3);
+        if (Dim == 2) {
+            CoefficientsMatrix(2,2) = 1.0;
+            RightHandSide(2,2) = 1.0;
+        }
+        MathUtils<double>::InvertMatrix3(CoefficientsMatrix, InvertedCoefficientsMatrix, det);
+        *mDifferentialStrainTensor = prod(InvertedCoefficientsMatrix, RightHandSide);
+        if (Dim == 2) {
+            (*mDifferentialStrainTensor)(2,2) = (*mDifferentialStrainTensor)(0,2) = (*mDifferentialStrainTensor)(1,2) = (*mDifferentialStrainTensor)(2,1) = (*mDifferentialStrainTensor)(2,0) = 0.0;
+        }
     }
 }
 
@@ -2372,7 +2371,7 @@ void SphericParticle::MemberDeclarationFirstStep(const ProcessInfo& r_process_in
         mStressTensor     = NULL;
         mSymmStressTensor = NULL;
         mStrainTensor     = NULL;
-        mDifferentialStrainTensor     = NULL;
+        mDifferentialStrainTensor = NULL;
     }
 
     mGlobalDamping = r_process_info[GLOBAL_DAMPING];
