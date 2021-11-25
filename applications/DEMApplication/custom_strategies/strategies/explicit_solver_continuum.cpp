@@ -97,6 +97,13 @@ namespace Kratos {
             //RebuildListsOfPointersOfEachParticle(); //Serialized pointers are lost, so we rebuild them using Id's
         }
 
+        // Set Initial Contacts
+        if (r_process_info[CASE_OPTION] != 0) {
+            SetInitialDemContacts();
+        }
+
+        ComputeNewNeighboursHistoricalData();
+
         if (fem_model_part.Nodes().size() > 0) {
             SetSearchRadiiWithFemOnAllParticles(r_model_part, mpDem_model_part->GetProcessInfo()[SEARCH_RADIUS_INCREMENT_FOR_WALLS], 1.0);
             SearchRigidFaceNeighbours();
@@ -678,11 +685,6 @@ namespace Kratos {
         p_creator_destructor->DestroyParticles(r_model_part);
 
         KRATOS_CATCH("")
-    }
-
-    void ContinuumExplicitSolverStrategy::Check_MPI(bool& has_mpi) {
-        VariablesList r_modelpart_nodal_variables_list = GetModelPart().GetNodalSolutionStepVariablesList();
-        if (r_modelpart_nodal_variables_list.Has(PARTITION_INDEX)) has_mpi = true;
     }
 
     void ContinuumExplicitSolverStrategy::CalculateMaxSearchDistance() {
