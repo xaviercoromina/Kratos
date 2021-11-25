@@ -148,8 +148,10 @@ namespace Kratos {
         r_model_part.GetCommunicator().SynchronizeElementalNonHistoricalVariable(NEIGHBOUR_IDS);
         r_model_part.GetCommunicator().SynchronizeElementalNonHistoricalVariable(NEIGHBOURS_CONTACT_AREAS);
 
-        CalculateMeanContactArea();
-        CalculateMaxSearchDistance();
+        if (r_process_info[CASE_OPTION] != 0) {
+            CalculateMeanContactArea();
+            CalculateMaxSearchDistance();
+        }
         ComputeNodalArea();
 
         //TODO. Ignasi:
