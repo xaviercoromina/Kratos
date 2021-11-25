@@ -39,6 +39,8 @@ namespace Kratos {
 
         virtual DEMDiscontinuumConstitutiveLaw::Pointer Clone() const;
 
+        virtual void CalculateContactArea(double radius, double other_radius, double &calculation_area);
+
         virtual std::unique_ptr<DEMDiscontinuumConstitutiveLaw> CloneUnique();
 
         virtual std::string GetTypeOfLaw();
@@ -80,6 +82,7 @@ namespace Kratos {
 
         virtual double CalculateCohesiveNormalForce(SphericParticle * const element1, SphericParticle * const element2, const double indentation);
         virtual double CalculateCohesiveNormalForceWithFEM(SphericParticle* const element, Condition* const wall, const double indentation);
+        virtual double LocalPeriod(const int i, SphericParticle* element1,SphericParticle* element2);
 
     private:
 
