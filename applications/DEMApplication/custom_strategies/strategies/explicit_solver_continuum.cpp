@@ -114,23 +114,17 @@ namespace Kratos {
         if (mRemoveBallsInitiallyTouchingWallsOption) {
             MarkToDeleteAllSpheresInitiallyIndentedWithFEM(*mpDem_model_part);
             mpParticleCreatorDestructor->DestroyParticles(r_model_part);
-            RebuildListOfSphericParticles <SphericContinuumParticle> (r_model_part.GetCommunicator().LocalMesh().Elements(), mListOfSphericContinuumParticles); //These lists are necessary because the elements in this partition might have changed.
-            RebuildListOfSphericParticles <SphericParticle> (r_model_part.GetCommunicator().LocalMesh().Elements(), mListOfSphericParticles);
-            RebuildListOfSphericParticles <SphericContinuumParticle> (r_model_part.GetCommunicator().GhostMesh().Elements(), mListOfGhostSphericContinuumParticles);
-            RebuildListOfSphericParticles <SphericParticle> (r_model_part.GetCommunicator().GhostMesh().Elements(), mListOfGhostSphericParticles);
+            RebuildListOfSphericParticles<SphericParticle>(r_model_part.GetCommunicator().LocalMesh().Elements(), mListOfSphericParticles);
+            RebuildListOfSphericParticles<SphericParticle>(r_model_part.GetCommunicator().GhostMesh().Elements(), mListOfGhostSphericParticles);
 
             // Search Neighbours and related operations
             SetSearchRadiiOnAllParticles(*mpDem_model_part, mpDem_model_part->GetProcessInfo()[SEARCH_RADIUS_INCREMENT_FOR_BONDS_CREATION], 1.0);
             SearchNeighbours();
-            SetInitialDemContacts();
             ComputeNewNeighboursHistoricalData();
 
             SetSearchRadiiOnAllParticles(*mpDem_model_part, mpDem_model_part->GetProcessInfo()[SEARCH_RADIUS_INCREMENT_FOR_WALLS], 1.0);
             SearchRigidFaceNeighbours(); //initial search is performed with hierarchical method in any case MSI
             ComputeNewRigidFaceNeighboursHistoricalData();
-        } else {
-            SetInitialDemContacts();
-            ComputeNewNeighboursHistoricalData();
         }
 
         if (r_process_info[CRITICAL_TIME_OPTION]) {
