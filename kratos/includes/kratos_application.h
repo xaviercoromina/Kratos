@@ -24,6 +24,7 @@
 #include "includes/element.h"
 #include "elements/mesh_element.h"
 #include "elements/distance_calculation_element_simplex.h"
+#include "elements/distance_calculation_flux_based_element_simplex.h"
 #include "elements/levelset_convection_element_simplex.h"
 #include "elements/levelset_convection_element_simplex_algebraic_stabilization.h"
 #include "includes/condition.h"
@@ -467,6 +468,8 @@ class KRATOS_API(KRATOS_CORE) KratosApplication {
 
     const DistanceCalculationElementSimplex<2> mDistanceCalculationElementSimplex2D3N;
     const DistanceCalculationElementSimplex<3> mDistanceCalculationElementSimplex3D4N;
+    const DistanceCalculationFluxBasedElement<2> mDistanceCalculationFluxBasedElement2D3N;
+    const DistanceCalculationFluxBasedElement<3> mDistanceCalculationFluxBasedElement3D4N;
 
     const LevelSetConvectionElementSimplex<2,3> mLevelSetConvectionElementSimplex2D3N;
     const LevelSetConvectionElementSimplex<3,4> mLevelSetConvectionElementSimplex3D4N;
