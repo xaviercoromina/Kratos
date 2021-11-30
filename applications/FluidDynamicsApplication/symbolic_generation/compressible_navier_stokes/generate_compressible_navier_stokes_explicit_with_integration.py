@@ -8,9 +8,19 @@ import generate_diffusive_flux
 import generate_source_term
 import generate_stabilization_matrix
 
+
 def DefineShapeFunctionsMatrix(dim, n_nodes, n_gauss):
     mat_N = DefineMatrix('mat_N', n_gauss, n_nodes)
-    if dim == 2:
+    if dim == 1:
+        if n_gauss == 1:
+            mat_N[0, 0] = 1.0 / 2.0
+            mat_N[0, 1] = 1.0 / 2.0
+        elif n_gauss == 2:
+            mat_N[0, 0] = 0.5 * (1 + 3**-0.5)
+            mat_N[0, 1] = 0.5 * (1 - 3**-0.5)
+            mat_N[1, 0] = 0.5 * (1 - 3**-0.5)
+            mat_N[1, 1] = 0.5 * (1 + 3**-0.5)
+    elif dim == 2:
         if n_gauss == 1:
             mat_N[0,0] = 1.0 / 3.0
             mat_N[0,1] = 1.0 / 3.0
@@ -61,7 +71,7 @@ def DefineShapeFunctionsMatrix(dim, n_nodes, n_gauss):
 mode = "c"                          # Output mode to a c++ file
 is_explicit = True                  # Explicit (True) or implicit (False) time integration
 do_simplifications = False          # Simplify resulting differenctiations
-dim_vector = [2,3]                  # Spatial dimensions to be computed
+dim_vector = [1,2,3]                # Spatial dimensions to be computed
 shock_capturing = True              # Add physics-based shock capturing contribution
 subscales_vector = ["ASGS","OSS"]   # Subscales types to be computed
 
@@ -91,12 +101,11 @@ for dim in dim_vector:
     params["dim"] = dim
 
     # Shape functions and Gauss pts. settings
-    if(dim == 2):
-        n_nodes = 3
-        n_gauss = 3
-    elif(dim == 3):
-        n_nodes = 4
-        n_gauss = 4
+    (n_nodes, n_gauss) = {
+        1: (2, 2),
+        2: (3, 3),
+        3: (4, 4)
+    }[dim]
 
     DN = DefineMatrix('DN', n_nodes, dim)
     mat_N = DefineShapeFunctionsMatrix(dim, n_nodes, n_gauss)

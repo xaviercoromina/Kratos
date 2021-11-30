@@ -18,6 +18,7 @@
 
 // Project includes
 #include "includes/checks.h"
+#include "utilities/atomic_utilities.h"
 #include "utilities/element_size_calculator.h"
 
 // Application includes
@@ -27,15 +28,13 @@
 namespace Kratos {
 
 template <>
-void CompressibleNavierStokesExplicit<2,3>::EquationIdVector(
+void CompressibleNavierStokesExplicit<1,2>::EquationIdVector(
     EquationIdVectorType &rResult,
     const ProcessInfo &rCurrentProcessInfo) const
 {
     KRATOS_TRY
 
-    constexpr unsigned int n_nodes = 3;
-    constexpr unsigned int block_size = 4;
-    constexpr unsigned int dof_size = n_nodes * block_size;
+    constexpr unsigned int dof_size = NumNodes * BlockSize;
 
     if (rResult.size() != dof_size) {
         rResult.resize(dof_size);
@@ -46,7 +45,35 @@ void CompressibleNavierStokesExplicit<2,3>::EquationIdVector(
     const unsigned int den_pos = r_geometry[0].GetDofPosition(DENSITY);
     const unsigned int mom_pos = r_geometry[0].GetDofPosition(MOMENTUM);
     const unsigned int enr_pos = r_geometry[0].GetDofPosition(TOTAL_ENERGY);
-    for (unsigned int i_node = 0; i_node < n_nodes; ++i_node) {
+    for (unsigned int i_node = 0; i_node < NumNodes; ++i_node) {
+        rResult[local_index++] = r_geometry[i_node].GetDof(DENSITY, den_pos).EquationId();
+        rResult[local_index++] = r_geometry[i_node].GetDof(MOMENTUM_X, mom_pos).EquationId();
+        rResult[local_index++] = r_geometry[i_node].GetDof(TOTAL_ENERGY, enr_pos).EquationId();
+    }
+
+    KRATOS_CATCH("");
+}
+
+
+template <>
+void CompressibleNavierStokesExplicit<2,3>::EquationIdVector(
+    EquationIdVectorType &rResult,
+    const ProcessInfo &rCurrentProcessInfo) const
+{
+    KRATOS_TRY
+
+    constexpr unsigned int dof_size = NumNodes * BlockSize;
+
+    if (rResult.size() != dof_size) {
+        rResult.resize(dof_size);
+    }
+
+    unsigned int local_index = 0;
+    const auto& r_geometry = GetGeometry();
+    const unsigned int den_pos = r_geometry[0].GetDofPosition(DENSITY);
+    const unsigned int mom_pos = r_geometry[0].GetDofPosition(MOMENTUM);
+    const unsigned int enr_pos = r_geometry[0].GetDofPosition(TOTAL_ENERGY);
+    for (unsigned int i_node = 0; i_node < NumNodes; ++i_node) {
         rResult[local_index++] = r_geometry[i_node].GetDof(DENSITY, den_pos).EquationId();
         rResult[local_index++] = r_geometry[i_node].GetDof(MOMENTUM_X, mom_pos).EquationId();
         rResult[local_index++] = r_geometry[i_node].GetDof(MOMENTUM_Y, mom_pos + 1).EquationId();
@@ -63,9 +90,7 @@ void CompressibleNavierStokesExplicit<3,4>::EquationIdVector(
 {
     KRATOS_TRY
 
-    constexpr unsigned int n_nodes = 4;
-    constexpr unsigned int block_size = 5;
-    constexpr unsigned int dof_size = n_nodes * block_size;
+    constexpr unsigned int dof_size = NumNodes * BlockSize;
 
     if (rResult.size() != dof_size) {
         rResult.resize(dof_size);
@@ -76,7 +101,7 @@ void CompressibleNavierStokesExplicit<3,4>::EquationIdVector(
     const unsigned int den_pos = r_geometry[0].GetDofPosition(DENSITY);
     const unsigned int mom_pos = r_geometry[0].GetDofPosition(MOMENTUM);
     const unsigned int enr_pos = r_geometry[0].GetDofPosition(TOTAL_ENERGY);
-    for (unsigned int i_node = 0; i_node < n_nodes; ++i_node) {
+    for (unsigned int i_node = 0; i_node < NumNodes; ++i_node) {
         rResult[local_index++] = r_geometry[i_node].GetDof(DENSITY, den_pos).EquationId();
         rResult[local_index++] = r_geometry[i_node].GetDof(MOMENTUM_X, mom_pos).EquationId();
         rResult[local_index++] = r_geometry[i_node].GetDof(MOMENTUM_Y, mom_pos + 1).EquationId();
@@ -87,16 +112,15 @@ void CompressibleNavierStokesExplicit<3,4>::EquationIdVector(
     KRATOS_CATCH("");
 }
 
+
 template <>
-void CompressibleNavierStokesExplicit<2,3>::GetDofList(
+void CompressibleNavierStokesExplicit<1,2>::GetDofList(
     DofsVectorType &ElementalDofList,
     const ProcessInfo &rCurrentProcessInfo) const
 {
     KRATOS_TRY
 
-    constexpr unsigned int n_nodes = 3;
-    constexpr unsigned int block_size = 4;
-    constexpr unsigned int dof_size = n_nodes * block_size;
+    constexpr unsigned int dof_size = NumNodes * BlockSize;
 
     if (ElementalDofList.size() != dof_size) {
         ElementalDofList.resize(dof_size);
@@ -107,7 +131,35 @@ void CompressibleNavierStokesExplicit<2,3>::GetDofList(
     const unsigned int den_pos = r_geometry[0].GetDofPosition(DENSITY);
     const unsigned int mom_pos = r_geometry[0].GetDofPosition(MOMENTUM);
     const unsigned int enr_pos = r_geometry[0].GetDofPosition(TOTAL_ENERGY);
-    for (unsigned int i_node = 0; i_node < n_nodes; ++i_node) {
+    for (unsigned int i_node = 0; i_node < NumNodes; ++i_node) {
+        ElementalDofList[local_index++] = r_geometry[i_node].pGetDof(DENSITY, den_pos);
+        ElementalDofList[local_index++] = r_geometry[i_node].pGetDof(MOMENTUM_X, mom_pos);
+        ElementalDofList[local_index++] = r_geometry[i_node].pGetDof(TOTAL_ENERGY, enr_pos);
+    }
+
+    KRATOS_CATCH("");
+}
+
+
+template <>
+void CompressibleNavierStokesExplicit<2,3>::GetDofList(
+    DofsVectorType &ElementalDofList,
+    const ProcessInfo &rCurrentProcessInfo) const
+{
+    KRATOS_TRY
+
+    constexpr unsigned int dof_size = NumNodes * BlockSize;
+
+    if (ElementalDofList.size() != dof_size) {
+        ElementalDofList.resize(dof_size);
+    }
+
+    unsigned int local_index = 0;
+    const auto& r_geometry = GetGeometry();
+    const unsigned int den_pos = r_geometry[0].GetDofPosition(DENSITY);
+    const unsigned int mom_pos = r_geometry[0].GetDofPosition(MOMENTUM);
+    const unsigned int enr_pos = r_geometry[0].GetDofPosition(TOTAL_ENERGY);
+    for (unsigned int i_node = 0; i_node < NumNodes; ++i_node) {
         ElementalDofList[local_index++] = r_geometry[i_node].pGetDof(DENSITY, den_pos);
         ElementalDofList[local_index++] = r_geometry[i_node].pGetDof(MOMENTUM_X, mom_pos);
         ElementalDofList[local_index++] = r_geometry[i_node].pGetDof(MOMENTUM_Y, mom_pos + 1);
@@ -124,9 +176,7 @@ void CompressibleNavierStokesExplicit<3,4>::GetDofList(
 {
     KRATOS_TRY
 
-    constexpr unsigned int n_nodes = 4;
-    constexpr unsigned int block_size = 5;
-    unsigned int dof_size = n_nodes * block_size;
+    unsigned int dof_size = NumNodes * BlockSize;
 
     if (ElementalDofList.size() != dof_size) {
         ElementalDofList.resize(dof_size);
@@ -137,7 +187,7 @@ void CompressibleNavierStokesExplicit<3,4>::GetDofList(
     const unsigned int den_pos = r_geometry[0].GetDofPosition(DENSITY);
     const unsigned int mom_pos = r_geometry[0].GetDofPosition(MOMENTUM);
     const unsigned int enr_pos = r_geometry[0].GetDofPosition(TOTAL_ENERGY);
-    for (unsigned int i_node = 0; i_node < n_nodes; ++i_node) {
+    for (unsigned int i_node = 0; i_node < NumNodes; ++i_node) {
         ElementalDofList[local_index++] = this->GetGeometry()[i_node].pGetDof(DENSITY, den_pos);
         ElementalDofList[local_index++] = this->GetGeometry()[i_node].pGetDof(MOMENTUM_X, mom_pos);
         ElementalDofList[local_index++] = this->GetGeometry()[i_node].pGetDof(MOMENTUM_Y, mom_pos + 1);
@@ -168,12 +218,14 @@ int CompressibleNavierStokesExplicit<TDim, TNumNodes>::Check(const ProcessInfo &
         KRATOS_ERROR_IF_NOT(this->GetGeometry()[i].SolutionStepsDataHas(HEAT_SOURCE)) << "Missing HEAT_SOURCE variable on solution step data for node " << this->GetGeometry()[i].Id();
 
         // Activate as soon as we start using the explicit DOF based strategy
-        KRATOS_ERROR_IF_NOT(this->GetGeometry()[i].HasDofFor(DENSITY)) << "Missing DENSITY DOF in node ", this->GetGeometry()[i].Id();
-        KRATOS_ERROR_IF_NOT(this->GetGeometry()[i].HasDofFor(MOMENTUM_X) || this->GetGeometry()[i].HasDofFor(MOMENTUM_Y)) << "Missing MOMENTUM component DOF in node ", this->GetGeometry()[i].Id();
-        if (TDim == 3) {
-            KRATOS_ERROR_IF_NOT(this->GetGeometry()[i].HasDofFor(MOMENTUM_Z)) << "Missing MOMENTUM component DOF in node ", this->GetGeometry()[i].Id();
-        }
-        KRATOS_ERROR_IF_NOT(this->GetGeometry()[i].HasDofFor(TOTAL_ENERGY)) << "Missing TOTAL_ENERGY DOF in node ", this->GetGeometry()[i].Id();
+        KRATOS_ERROR_IF_NOT(this->GetGeometry()[i].HasDofFor(DENSITY)) << "Missing DENSITY DOF in node " << this->GetGeometry()[i].Id();
+        KRATOS_ERROR_IF_NOT(this->GetGeometry()[i].HasDofFor(TOTAL_ENERGY)) << "Missing TOTAL_ENERGY DOF in node " << this->GetGeometry()[i].Id();
+        
+        KRATOS_ERROR_IF_NOT(this->GetGeometry()[i].HasDofFor(MOMENTUM_X)) << "Missing MOMENTUM_X component DOF in node " << this->GetGeometry()[i].Id();
+        if(TDim == 1) continue;
+        KRATOS_ERROR_IF_NOT(this->GetGeometry()[i].HasDofFor(MOMENTUM_Y)) << "Missing MOMENTUM_Y component DOF in node " << this->GetGeometry()[i].Id();
+        if (TDim == 2) continue;
+        KRATOS_ERROR_IF_NOT(this->GetGeometry()[i].HasDofFor(MOMENTUM_Z)) << "Missing MOMENTUM component DOF in node " << this->GetGeometry()[i].Id();
     }
 
     return 0;
@@ -324,7 +376,7 @@ void CompressibleNavierStokesExplicit<TDim, TNumNodes>::FillElementData(
     GeometryUtils::CalculateGeometryData(r_geometry, rData.DN_DX, rData.N, rData.volume);
 
     // Compute element size
-    rData.h = ElementSizeCalculator<TDim, TNumNodes>::GradientsElementSize(rData.DN_DX);
+    rData.h = ElementSize(rData.DN_DX);
 
     // Database access to all of the variables needed
     Properties &r_properties = this->GetProperties();
@@ -420,14 +472,13 @@ array_1d<double,3> CompressibleNavierStokesExplicit<TDim, TNumNodes>::CalculateM
 {
     // Get geometry data
     const auto& r_geom = GetGeometry();
-    const unsigned int n_nodes = r_geom.PointsNumber();
     Geometry<Node<3>>::ShapeFunctionsGradientsType dNdX_container;
     r_geom.ShapeFunctionsIntegrationPointsGradients(dNdX_container, GeometryData::IntegrationMethod::GI_GAUSS_1);
     const auto& r_dNdX = dNdX_container[0];
 
     // Calculate midpoint magnitudes
     array_1d<double,3> midpoint_grad_rho = ZeroVector(3);
-    for (unsigned int i_node = 0; i_node < n_nodes; ++i_node) {
+    for (unsigned int i_node = 0; i_node < NumNodes; ++i_node) {
         auto& r_node = r_geom[i_node];
         const auto node_dNdX = row(r_dNdX, i_node);
         const double& r_rho = r_node.FastGetSolutionStepValue(DENSITY);
@@ -451,7 +502,6 @@ array_1d<double,3> CompressibleNavierStokesExplicit<TDim, TNumNodes>::CalculateM
 {
     // Get geometry data
     const auto& r_geom = GetGeometry();
-    const unsigned int n_nodes = r_geom.PointsNumber();
     Geometry<Node<3>>::ShapeFunctionsGradientsType dNdX_container;
     r_geom.ShapeFunctionsIntegrationPointsGradients(dNdX_container, GeometryData::IntegrationMethod::GI_GAUSS_1);
     const auto& r_dNdX = dNdX_container[0];
@@ -459,7 +509,7 @@ array_1d<double,3> CompressibleNavierStokesExplicit<TDim, TNumNodes>::CalculateM
     // Calculate midpoint magnitudes
     const double c_v = GetProperties()[SPECIFIC_HEAT];
     array_1d<double,3> midpoint_grad_temp = ZeroVector(3);
-    for (unsigned int i_node = 0; i_node < n_nodes; ++i_node) {
+    for (unsigned int i_node = 0; i_node < NumNodes; ++i_node) {
         auto& r_node = r_geom[i_node];
         const auto node_dNdX = row(r_dNdX, i_node);
         const auto& r_mom = r_node.FastGetSolutionStepValue(MOMENTUM);
@@ -480,13 +530,12 @@ double CompressibleNavierStokesExplicit<TDim, TNumNodes>::CalculateMidPointSound
 {
     // Get geometry data
     const auto& r_geom = GetGeometry();
-    const unsigned int n_nodes = r_geom.PointsNumber();
 
     // Calculate midpoint magnitudes
     double midpoint_rho = 0.0;
     double midpoint_tot_ener = 0.0;
     array_1d<double,TDim> midpoint_mom = ZeroVector(TDim);
-    for (unsigned int i_node = 0; i_node < n_nodes; ++i_node) {
+    for (unsigned int i_node = 0; i_node < NumNodes; ++i_node) {
         auto& r_node = r_geom[i_node];
         const auto& r_mom = r_node.FastGetSolutionStepValue(MOMENTUM);
         const double& r_rho = r_node.FastGetSolutionStepValue(DENSITY);
@@ -497,9 +546,9 @@ double CompressibleNavierStokesExplicit<TDim, TNumNodes>::CalculateMidPointSound
             midpoint_mom[d1] += r_mom(d1);
         }
     }
-    midpoint_rho /= n_nodes;
-    midpoint_mom /= n_nodes;
-    midpoint_tot_ener /= n_nodes;
+    midpoint_rho /= NumNodes;
+    midpoint_mom /= NumNodes;
+    midpoint_tot_ener /= NumNodes;
 
     // Calculate midpoint speed of sound
     const auto& r_prop = GetProperties();
@@ -515,7 +564,6 @@ double CompressibleNavierStokesExplicit<TDim, TNumNodes>::CalculateMidPointVeloc
 {
     // Get geometry data
     const auto& r_geom = GetGeometry();
-    const unsigned int n_nodes = r_geom.PointsNumber();
     Geometry<Node<3>>::ShapeFunctionsGradientsType dNdX_container;
     r_geom.ShapeFunctionsIntegrationPointsGradients(dNdX_container, GeometryData::IntegrationMethod::GI_GAUSS_1);
     const auto& r_dNdX = dNdX_container[0];
@@ -525,7 +573,7 @@ double CompressibleNavierStokesExplicit<TDim, TNumNodes>::CalculateMidPointVeloc
     double midpoint_div_mom = 0.0;
     array_1d<double,TDim> midpoint_mom = ZeroVector(TDim);
     array_1d<double,TDim> midpoint_grad_rho = ZeroVector(TDim);
-    for (unsigned int i_node = 0; i_node < n_nodes; ++i_node) {
+    for (unsigned int i_node = 0; i_node < NumNodes; ++i_node) {
         auto& r_node = r_geom[i_node];
         const auto node_dNdX = row(r_dNdX, i_node);
         const auto& r_mom = r_node.FastGetSolutionStepValue(MOMENTUM);
@@ -537,8 +585,8 @@ double CompressibleNavierStokesExplicit<TDim, TNumNodes>::CalculateMidPointVeloc
             midpoint_grad_rho[d1] += node_dNdX(d1) * r_rho;
         }
     }
-    midpoint_rho /= n_nodes;
-    midpoint_mom /= n_nodes;
+    midpoint_rho /= NumNodes;
+    midpoint_mom /= NumNodes;
 
     // Calculate velocity divergence
     // Note that the formulation is written in conservative variables. Hence we do div(mom/rho).
@@ -546,12 +594,19 @@ double CompressibleNavierStokesExplicit<TDim, TNumNodes>::CalculateMidPointVeloc
     return midpoint_div_v;
 }
 
+
+template <>
+array_1d<double,3> CompressibleNavierStokesExplicit<1,2>::CalculateMidPointVelocityRotational() const
+{
+    return array_1d<double, 2>{3, 0.0};
+}
+
+
 template <>
 array_1d<double,3> CompressibleNavierStokesExplicit<2,3>::CalculateMidPointVelocityRotational() const
 {
     // Get geometry data
     const auto& r_geom = GetGeometry();
-    const unsigned int n_nodes = r_geom.PointsNumber();
     Geometry<Node<3>>::ShapeFunctionsGradientsType dNdX_container;
     r_geom.ShapeFunctionsIntegrationPointsGradients(dNdX_container, GeometryData::IntegrationMethod::GI_GAUSS_1);
     const auto& r_dNdX = dNdX_container[0];
@@ -563,7 +618,7 @@ array_1d<double,3> CompressibleNavierStokesExplicit<2,3>::CalculateMidPointVeloc
     double midpoint_rho_dx = 0.0;
     double midpoint_rho_dy = 0.0;
     array_1d<double,3> midpoint_mom = ZeroVector(3);
-    for (unsigned int i_node = 0; i_node < n_nodes; ++i_node) {
+    for (unsigned int i_node = 0; i_node < NumNodes; ++i_node) {
         auto& r_node = r_geom[i_node];
         const auto node_dNdX = row(r_dNdX, i_node);
         const auto& r_mom = r_node.FastGetSolutionStepValue(MOMENTUM);
@@ -575,8 +630,8 @@ array_1d<double,3> CompressibleNavierStokesExplicit<2,3>::CalculateMidPointVeloc
         midpoint_rho_dx += r_rho * node_dNdX[0];
         midpoint_rho_dy += r_rho * node_dNdX[1];
     }
-    midpoint_rho /= n_nodes;
-    midpoint_mom /= n_nodes;
+    midpoint_rho /= NumNodes;
+    midpoint_mom /= NumNodes;
 
     // Calculate velocity rotational
     // Note that the formulation is written in conservative variables. Hence we do rot(mom/rho).
@@ -594,7 +649,6 @@ array_1d<double,3> CompressibleNavierStokesExplicit<3,4>::CalculateMidPointVeloc
 {
     // Get geometry data
     const auto& r_geom = GetGeometry();
-    const unsigned int n_nodes = r_geom.PointsNumber();
     Geometry<Node<3>>::ShapeFunctionsGradientsType dNdX_container;
     r_geom.ShapeFunctionsIntegrationPointsGradients(dNdX_container, GeometryData::IntegrationMethod::GI_GAUSS_1);
     const auto& r_dNdX = dNdX_container[0];
@@ -611,7 +665,7 @@ array_1d<double,3> CompressibleNavierStokesExplicit<3,4>::CalculateMidPointVeloc
     double midpoint_rho_dy = 0.0;
     double midpoint_rho_dz = 0.0;
     array_1d<double,3> midpoint_mom = ZeroVector(3);
-    for (unsigned int i_node = 0; i_node < n_nodes; ++i_node) {
+    for (unsigned int i_node = 0; i_node < NumNodes; ++i_node) {
         auto& r_node = r_geom[i_node];
         const auto node_dNdX = row(r_dNdX, i_node);
         const auto& r_mom = r_node.FastGetSolutionStepValue(MOMENTUM);
@@ -628,8 +682,8 @@ array_1d<double,3> CompressibleNavierStokesExplicit<3,4>::CalculateMidPointVeloc
         midpoint_rho_dy += r_rho * node_dNdX[1];
         midpoint_rho_dz += r_rho * node_dNdX[2];
     }
-    midpoint_rho /= n_nodes;
-    midpoint_mom /= n_nodes;
+    midpoint_rho /= NumNodes;
+    midpoint_mom /= NumNodes;
 
     // Calculate velocity rotational
     // Note that the formulation is written in conservative variables. Hence we do rot(mom/rho).
@@ -647,6 +701,49 @@ array_1d<double,3> CompressibleNavierStokesExplicit<3,4>::CalculateMidPointVeloc
     return midpoint_rot_v;
 }
 
+
+template <>
+BoundedMatrix<double, 3, 3> CompressibleNavierStokesExplicit<1, 2>::CalculateMidPointVelocityGradient() const
+{
+    KRATOS_TRY
+
+    // Get geometry data
+    const auto& r_geom = GetGeometry();
+    Geometry<Node<3>>::ShapeFunctionsGradientsType dNdX_container;
+    r_geom.ShapeFunctionsIntegrationPointsGradients(dNdX_container, GeometryData::IntegrationMethod::GI_GAUSS_1);
+    const auto& r_dNdX = dNdX_container[0];
+
+    // Calculate midpoint magnitudes
+    double midpoint_rho = 0.0;
+    double midpoint_dmx_dx = 0.0;
+    double midpoint_rho_dx = 0.0;
+    double midpoint_mom = 0.0;
+
+    for (unsigned int i_node = 0; i_node < NumNodes; ++i_node) {
+        auto& r_node = r_geom[i_node];
+        const auto node_dNdX = row(r_dNdX, i_node);
+        const auto& r_mom = r_node.FastGetSolutionStepValue(MOMENTUM_X);
+        const double& r_rho = r_node.FastGetSolutionStepValue(DENSITY);
+        midpoint_rho += r_rho;
+        midpoint_mom += r_mom;
+        midpoint_dmx_dx += r_mom * node_dNdX[0];
+        midpoint_rho_dx += r_rho * node_dNdX[0];
+    }
+    midpoint_rho /= NumNodes;
+    midpoint_mom /= NumNodes;
+
+    // Calculate velocity gradient
+    // Note that the formulation is written in conservative variables. Hence we do grad(mom/rho).
+    BoundedMatrix<double, 3, 3> midpoint_grad_v = ZeroMatrix(3, 3);
+    midpoint_grad_v(0,0) = (midpoint_dmx_dx * midpoint_rho - midpoint_mom * midpoint_rho_dx);
+    midpoint_grad_v /= std::pow(midpoint_rho, 2);
+
+    return midpoint_grad_v;
+
+    KRATOS_CATCH("")
+}
+
+
 template <>
 BoundedMatrix<double, 3, 3> CompressibleNavierStokesExplicit<2, 3>::CalculateMidPointVelocityGradient() const
 {
@@ -654,7 +751,6 @@ BoundedMatrix<double, 3, 3> CompressibleNavierStokesExplicit<2, 3>::CalculateMid
 
     // Get geometry data
     const auto& r_geom = GetGeometry();
-    const unsigned int n_nodes = r_geom.PointsNumber();
     Geometry<Node<3>>::ShapeFunctionsGradientsType dNdX_container;
     r_geom.ShapeFunctionsIntegrationPointsGradients(dNdX_container, GeometryData::IntegrationMethod::GI_GAUSS_1);
     const auto& r_dNdX = dNdX_container[0];
@@ -668,7 +764,7 @@ BoundedMatrix<double, 3, 3> CompressibleNavierStokesExplicit<2, 3>::CalculateMid
     double midpoint_rho_dx = 0.0;
     double midpoint_rho_dy = 0.0;
     array_1d<double,3> midpoint_mom = ZeroVector(3);
-    for (unsigned int i_node = 0; i_node < n_nodes; ++i_node) {
+    for (unsigned int i_node = 0; i_node < NumNodes; ++i_node) {
         auto& r_node = r_geom[i_node];
         const auto node_dNdX = row(r_dNdX, i_node);
         const auto& r_mom = r_node.FastGetSolutionStepValue(MOMENTUM);
@@ -682,8 +778,8 @@ BoundedMatrix<double, 3, 3> CompressibleNavierStokesExplicit<2, 3>::CalculateMid
         midpoint_rho_dx += r_rho * node_dNdX[0];
         midpoint_rho_dy += r_rho * node_dNdX[1];
     }
-    midpoint_rho /= n_nodes;
-    midpoint_mom /= n_nodes;
+    midpoint_rho /= NumNodes;
+    midpoint_mom /= NumNodes;
 
     // Calculate velocity gradient
     // Note that the formulation is written in conservative variables. Hence we do grad(mom/rho).
@@ -706,7 +802,6 @@ BoundedMatrix<double, 3, 3> CompressibleNavierStokesExplicit<3, 4>::CalculateMid
 
     // Get geometry data
     const auto& r_geom = GetGeometry();
-    const unsigned int n_nodes = r_geom.PointsNumber();
     Geometry<Node<3>>::ShapeFunctionsGradientsType dNdX_container;
     r_geom.ShapeFunctionsIntegrationPointsGradients(dNdX_container, GeometryData::IntegrationMethod::GI_GAUSS_1);
     const auto& r_dNdX = dNdX_container[0];
@@ -726,7 +821,7 @@ BoundedMatrix<double, 3, 3> CompressibleNavierStokesExplicit<3, 4>::CalculateMid
     double midpoint_rho_dy = 0.0;
     double midpoint_rho_dz = 0.0;
     array_1d<double,3> midpoint_mom = ZeroVector(3);
-    for (unsigned int i_node = 0; i_node < n_nodes; ++i_node) {
+    for (unsigned int i_node = 0; i_node < NumNodes; ++i_node) {
         auto& r_node = r_geom[i_node];
         const auto node_dNdX = row(r_dNdX, i_node);
         const auto& r_mom = r_node.FastGetSolutionStepValue(MOMENTUM);
@@ -746,8 +841,8 @@ BoundedMatrix<double, 3, 3> CompressibleNavierStokesExplicit<3, 4>::CalculateMid
         midpoint_rho_dy += r_rho * node_dNdX[1];
         midpoint_rho_dz += r_rho * node_dNdX[2];
     }
-    midpoint_rho /= n_nodes;
-    midpoint_mom /= n_nodes;
+    midpoint_rho /= NumNodes;
+    midpoint_mom /= NumNodes;
 
     // Calculate velocity gradient
     // Note that the formulation is written in conservative variables. Hence we do grad(mom/rho).
@@ -768,20 +863,90 @@ BoundedMatrix<double, 3, 3> CompressibleNavierStokesExplicit<3, 4>::CalculateMid
     KRATOS_CATCH("")
 }
 
+
 template <>
-void CompressibleNavierStokesExplicit<2,3>::CalculateMomentumProjection(const ProcessInfo& rCurrentProcessInfo)
+void CompressibleNavierStokesExplicit<1,2>::CalculateMomentumProjection(const ProcessInfo& rCurrentProcessInfo)
 {
     KRATOS_TRY
 
-    constexpr unsigned int dim = 2;
-    constexpr unsigned int n_nodes = 3;
 
     // Struct to pass around the data
     ElementDataStruct data;
     this->FillElementData(data, rCurrentProcessInfo);
 
     // Substitute the formulation symbols by the data structure values
-    const BoundedMatrix<double, n_nodes, 2> &f_ext = data.f_ext;
+    const BoundedMatrix<double, NumNodes, 2> &f_ext = data.f_ext;
+    const double gamma = data.gamma;
+
+    // Solution vector values and time derivatives from nodal data
+    // This is intentionally done in this way to limit the matrix acceses
+    // The notation U_i_j DOF j value in node i
+    const double &U_0_0 = data.U(0, 0);
+    const double &U_0_1 = data.U(0, 1);
+    const double &U_0_2 = data.U(0, 2);
+    const double &U_1_0 = data.U(1, 0);
+    const double &U_1_1 = data.U(1, 1);
+    const double &U_1_2 = data.U(1, 2);
+
+    const double &dUdt_0_1 = data.dUdt(0, 1);
+    const double &dUdt_1_1 = data.dUdt(1, 1);
+
+    // Hardcoded shape functions gradients for linear element
+    // This is explicitly done to minimize the matrix acceses
+    // The notation DN_i_j means shape function for node i in dimension j
+    const double &DN_DX_0_0 = data.DN_DX(0, 0);
+    const double &DN_DX_1_0 = data.DN_DX(1, 0);
+
+    // Calculate shock capturing values
+    BoundedVector<double, Dim * NumNodes> mom_proj;
+
+    const double cmom_proj0 =             -1.0*(gamma - 1)*(DN_DX_0_0*U_0_2 + DN_DX_1_0*U_1_2);
+const double cmom_proj1 =             0.21132486540518713*U_0_0 + 0.78867513459481287*U_1_0;
+const double cmom_proj2 =             cmom_proj1*(0.21132486540518713*f_ext(0,0) + 0.78867513459481287*f_ext(1,0));
+const double cmom_proj3 =             0.78867513459481287*U_0_0 + 0.21132486540518713*U_1_0;
+const double cmom_proj4 =             cmom_proj3*(0.78867513459481287*f_ext(0,0) + 0.21132486540518713*f_ext(1,0));
+const double cmom_proj5 =             (0.50000000000000011*gamma - 1.5000000000000004)*(DN_DX_0_0*U_0_0 + DN_DX_1_0*U_1_0);
+const double cmom_proj6 =             0.21132486540518713*cmom_proj5;
+const double cmom_proj7 =             pow(0.26794919243112275*U_0_1 + U_1_1, 2)/pow(0.26794919243112275*U_0_0 + U_1_0, 2);
+const double cmom_proj8 =             pow(U_0_1 + 0.26794919243112275*U_1_1, 2)/pow(U_0_0 + 0.26794919243112275*U_1_0, 2);
+const double cmom_proj9 =             0.78867513459481287*cmom_proj5;
+const double cmom_proj10 =             (1.0*gamma - 3.0)*(DN_DX_0_0*U_0_1 + DN_DX_1_0*U_1_1);
+const double cmom_proj11 =             0.21132486540518713*cmom_proj10;
+const double cmom_proj12 =             (0.21132486540518713*U_0_1 + 0.78867513459481287*U_1_1)/cmom_proj1;
+const double cmom_proj13 =             (0.78867513459481287*U_0_1 + 0.21132486540518713*U_1_1)/cmom_proj3;
+const double cmom_proj14 =             0.78867513459481287*cmom_proj10;
+            mom_proj[0]=cmom_proj0 + cmom_proj11*cmom_proj12 + cmom_proj13*cmom_proj14 + 0.21132486540518713*cmom_proj2 + 0.78867513459481287*cmom_proj4 - cmom_proj6*cmom_proj7 - cmom_proj8*cmom_proj9 - 0.66666666666666674*dUdt_0_1 - 0.33333333333333337*dUdt_1_1;
+            mom_proj[1]=cmom_proj0 + cmom_proj11*cmom_proj13 + cmom_proj12*cmom_proj14 + 0.78867513459481287*cmom_proj2 + 0.21132486540518713*cmom_proj4 - cmom_proj6*cmom_proj8 - cmom_proj7*cmom_proj9 - 0.33333333333333337*dUdt_0_1 - 0.66666666666666674*dUdt_1_1;
+
+    // Here we assume that all the weights of the gauss points are the same so we multiply at the end by Volume/NumNodes
+    mom_proj *= data.volume / NumNodes;
+
+    // Assembly the projection contributions
+    auto& r_geometry = GetGeometry();
+    for (IndexType i_node = 0; i_node < NumNodes; ++i_node) {
+        const IndexType aux = i_node * Dim;
+        auto& r_mom_proj = r_geometry[i_node].GetValue(MOMENTUM_PROJECTION);
+        for (IndexType d = 0; d < Dim; ++d) {
+            AtomicAdd(r_mom_proj[d], mom_proj[aux + d]);
+        }
+    }
+
+    KRATOS_CATCH("")
+}
+
+
+template <>
+void CompressibleNavierStokesExplicit<2,3>::CalculateMomentumProjection(const ProcessInfo& rCurrentProcessInfo)
+{
+    KRATOS_TRY
+
+
+    // Struct to pass around the data
+    ElementDataStruct data;
+    this->FillElementData(data, rCurrentProcessInfo);
+
+    // Substitute the formulation symbols by the data structure values
+    const BoundedMatrix<double, NumNodes, 2> &f_ext = data.f_ext;
     const double gamma = data.gamma;
 
     // Solution vector values and time derivatives from nodal data
@@ -818,7 +983,7 @@ void CompressibleNavierStokesExplicit<2,3>::CalculateMomentumProjection(const Pr
     const double &DN_DX_2_1 = data.DN_DX(2, 1);
 
     // Calculate shock capturing values
-    BoundedVector<double, 6> mom_proj;
+    BoundedVector<double, Dim * NumNodes> mom_proj;
 
     const double cmom_proj0 =             0.16666666666666666*f_ext(1,0);
 const double cmom_proj1 =             0.16666666666666666*f_ext(2,0);
@@ -946,17 +1111,16 @@ const double cmom_proj118 =             cmom_proj116*cmom_proj81;
             mom_proj[4]=-cmom_proj103*cmom_proj76 + cmom_proj111 + cmom_proj114*cmom_proj67 - cmom_proj115*cmom_proj70 - cmom_proj117*cmom_proj22 + cmom_proj117*cmom_proj38 - cmom_proj118*cmom_proj29 + cmom_proj118*cmom_proj35 + cmom_proj40*cmom_proj83 + cmom_proj66 - 0.5*dUdt_2_1;
             mom_proj[5]=-cmom_proj100*cmom_proj112 + cmom_proj113 + cmom_proj114*cmom_proj98 - cmom_proj115*cmom_proj99 - cmom_proj117*cmom_proj34 + cmom_proj117*cmom_proj89 - cmom_proj118*cmom_proj36 + cmom_proj118*cmom_proj90 + cmom_proj83*cmom_proj91 + cmom_proj97 - 0.5*dUdt_2_2;
 
-    // Here we assume that all the weights of the gauss points are the same so we multiply at the end by Volume/n_nodes
-    mom_proj *= data.volume / static_cast<double>(n_nodes);
+    // Here we assume that all the weights of the gauss points are the same so we multiply at the end by Volume/NumNodes
+    mom_proj *= data.volume / NumNodes;
 
     // Assembly the projection contributions
     auto& r_geometry = GetGeometry();
-    for (IndexType i_node = 0; i_node < n_nodes; ++i_node) {
-        const IndexType aux = i_node * dim;
+    for (IndexType i_node = 0; i_node < NumNodes; ++i_node) {
+        const IndexType aux = i_node * Dim;
         auto& r_mom_proj = r_geometry[i_node].GetValue(MOMENTUM_PROJECTION);
-        for (IndexType d = 0; d < dim; ++d) {
-#pragma omp atomic
-            r_mom_proj[d] += mom_proj[aux + d];
+        for (IndexType d = 0; d < Dim; ++d) {
+            AtomicAdd(r_mom_proj[d], mom_proj[aux + d]);
         }
     }
 
@@ -968,15 +1132,13 @@ void CompressibleNavierStokesExplicit<3,4>::CalculateMomentumProjection(const Pr
 {
     KRATOS_TRY
 
-    constexpr unsigned int dim = 3;
-    constexpr unsigned int n_nodes = 4;
 
     // Struct to pass around the data
     ElementDataStruct data;
     this->FillElementData(data, rCurrentProcessInfo);
 
     // Substitute the formulation symbols by the data structure values
-    const BoundedMatrix<double, n_nodes, 3> &f_ext = data.f_ext;
+    const BoundedMatrix<double, NumNodes, 3> &f_ext = data.f_ext;
     const double gamma = data.gamma;
 
     // Solution vector values and time derivatives from nodal data
@@ -1033,7 +1195,7 @@ void CompressibleNavierStokesExplicit<3,4>::CalculateMomentumProjection(const Pr
     const double &DN_DX_3_2 = data.DN_DX(3, 2);
 
     // Calculate shock capturing values
-    BoundedVector<double, 12> mom_proj;
+    BoundedVector<double, Dim * NumNodes> mom_proj;
 
     const double cmom_proj0 =             0.1381966*f_ext(1,0);
 const double cmom_proj1 =             0.1381966*f_ext(2,0);
@@ -1363,36 +1525,84 @@ const double cmom_proj314 =             cmom_proj128*cmom_proj311;
             mom_proj[10]=cmom_proj157*cmom_proj194 - cmom_proj189*cmom_proj314 + cmom_proj190*cmom_proj312 + cmom_proj192*cmom_proj314 + cmom_proj193*cmom_proj313 + cmom_proj199*cmom_proj310 + cmom_proj202 + cmom_proj206 - cmom_proj207*cmom_proj296 + cmom_proj213 + cmom_proj214 + cmom_proj215 + cmom_proj216 + cmom_proj220 + cmom_proj221 + cmom_proj222 + cmom_proj224 + cmom_proj226 + cmom_proj275*cmom_proj74 + cmom_proj298 + cmom_proj308 - cmom_proj312*cmom_proj61 - cmom_proj313*cmom_proj46 - cmom_proj313*cmom_proj65 - 0.40000000301872002*dUdt_3_2;
             mom_proj[11]=-cmom_proj191*cmom_proj313 + cmom_proj194*cmom_proj273 + cmom_proj241*cmom_proj312 + cmom_proj242*cmom_proj313 + cmom_proj243*cmom_proj314 + cmom_proj247*cmom_proj310 + cmom_proj250 + cmom_proj254 - cmom_proj255*cmom_proj299 + cmom_proj261 + cmom_proj262 + cmom_proj263 + cmom_proj264 + cmom_proj268 + cmom_proj269 + cmom_proj270 + cmom_proj271 + cmom_proj272 + cmom_proj275*cmom_proj69 + cmom_proj301 + cmom_proj309 - cmom_proj312*cmom_proj63 - cmom_proj314*cmom_proj37 - cmom_proj314*cmom_proj65 - 0.40000000301872002*dUdt_3_3;
 
-    // Here we assume that all the weights of the gauss points are the same so we multiply at the end by Volume/n_nodes
-    mom_proj *= data.volume / static_cast<double>(n_nodes);
+    // Here we assume that all the weights of the gauss points are the same so we multiply at the end by Volume/NumNodes
+    mom_proj *= data.volume / NumNodes;
 
     // Assembly the projection contributions
     auto& r_geometry = GetGeometry();
-    for (IndexType i_node = 0; i_node < n_nodes; ++i_node) {
-        const IndexType aux = i_node * dim;
+    for (IndexType i_node = 0; i_node < NumNodes; ++i_node) {
+        const IndexType aux = i_node * Dim;
         auto& r_mom_proj = r_geometry[i_node].GetValue(MOMENTUM_PROJECTION);
-        for (IndexType d = 0; d < dim; ++d) {
-#pragma omp atomic
-            r_mom_proj[d] += mom_proj[aux + d];
+        for (IndexType d = 0; d < Dim; ++d) {
+            AtomicAdd(r_mom_proj[d], mom_proj[aux + d]);
         }
     }
 
     KRATOS_CATCH("")
 }
 
+
 template <>
-void CompressibleNavierStokesExplicit<2,3>::CalculateDensityProjection(const ProcessInfo& rCurrentProcessInfo)
+void CompressibleNavierStokesExplicit<1,2>::CalculateDensityProjection(const ProcessInfo& rCurrentProcessInfo)
 {
     KRATOS_TRY
 
-    constexpr unsigned int n_nodes = 3;
 
     // Struct to pass around the data
     ElementDataStruct data;
     this->FillElementData(data, rCurrentProcessInfo);
 
     // Substitute the formulation symbols by the data structure values
-    const array_1d<double, n_nodes> &m_ext = data.m_ext;
+    const array_1d<double, NumNodes> &m_ext = data.m_ext;
+
+    // Solution vector values and time derivatives from nodal data
+    // This is intentionally done in this way to limit the matrix acceses
+    // The notation U_i_j DOF j value in node i
+    const double &U_0_1 = data.U(0, 1);
+    const double &U_1_1 = data.U(1, 1);
+
+    const double &dUdt_0_0 = data.dUdt(0, 0);
+    const double &dUdt_1_0 = data.dUdt(1, 0);
+
+    // Hardcoded shape functions gradients for linear element
+    // This is explicitly done to minimize the matrix acceses
+    // The notation DN_i_j means shape function for node i in dimension j
+    const double &DN_DX_0_0 = data.DN_DX(0, 0);
+    const double &DN_DX_1_0 = data.DN_DX(1, 0);
+
+    // Calculate shock capturing values
+    BoundedVector<double, 3> rho_proj;
+
+    const double crho_proj0 =             -1.0*DN_DX_0_0*U_0_1 - 1.0*DN_DX_1_0*U_1_1;
+            rho_proj[0]=crho_proj0 - 0.66666666666666674*dUdt_0_0 - 0.33333333333333337*dUdt_1_0 + 0.66666666666666674*m_ext[0] + 0.33333333333333337*m_ext[1];
+            rho_proj[1]=crho_proj0 - 0.33333333333333337*dUdt_0_0 - 0.66666666666666674*dUdt_1_0 + 0.33333333333333337*m_ext[0] + 0.66666666666666674*m_ext[1];
+
+    // Here we assume that all the weights of the gauss points are the same so we multiply at the end by Volume/NumNodes
+    rho_proj *= data.volume / NumNodes;
+
+    // Assembly the projection contributions
+    auto& r_geometry = GetGeometry();
+    for (IndexType i_node = 0; i_node < NumNodes; ++i_node) {
+        double& nodal_value = r_geometry[i_node].GetValue(DENSITY_PROJECTION);
+        AtomicAdd(nodal_value, rho_proj[i_node]);
+    }
+
+    KRATOS_CATCH("")
+}
+
+
+template <>
+void CompressibleNavierStokesExplicit<2,3>::CalculateDensityProjection(const ProcessInfo& rCurrentProcessInfo)
+{
+    KRATOS_TRY
+
+
+    // Struct to pass around the data
+    ElementDataStruct data;
+    this->FillElementData(data, rCurrentProcessInfo);
+
+    // Substitute the formulation symbols by the data structure values
+    const array_1d<double, NumNodes> &m_ext = data.m_ext;
 
     // Solution vector values and time derivatives from nodal data
     // This is intentionally done in this way to limit the matrix acceses
@@ -1434,14 +1644,14 @@ const double crho_proj8 =             -0.25*dUdt_0_0 + 0.25*m_ext[0];
             rho_proj[1]=crho_proj7 + crho_proj8 - 0.5*dUdt_1_0 + 0.5*m_ext[1];
             rho_proj[2]=crho_proj0 - 1.0*crho_proj1 - 1.0*crho_proj2 - 1.0*crho_proj3 - 1.0*crho_proj4 - 1.0*crho_proj5 - 1.0*crho_proj6 + crho_proj8 - 0.5*dUdt_2_0 + 0.5*m_ext[2];
 
-    // Here we assume that all the weights of the gauss points are the same so we multiply at the end by Volume/n_nodes
-    rho_proj *= data.volume / static_cast<double>(n_nodes);
+    // Here we assume that all the weights of the gauss points are the same so we multiply at the end by Volume/NumNodes
+    rho_proj *= data.volume / NumNodes;
 
     // Assembly the projection contributions
     auto& r_geometry = GetGeometry();
-    for (IndexType i_node = 0; i_node < n_nodes; ++i_node) {
-#pragma omp atomic
-        r_geometry[i_node].GetValue(DENSITY_PROJECTION) += rho_proj[i_node];
+    for (IndexType i_node = 0; i_node < NumNodes; ++i_node) {
+        double& nodal_value = r_geometry[i_node].GetValue(DENSITY_PROJECTION);
+        AtomicAdd(nodal_value, rho_proj[i_node]);
     }
 
     KRATOS_CATCH("")
@@ -1452,14 +1662,13 @@ void CompressibleNavierStokesExplicit<3,4>::CalculateDensityProjection(const Pro
 {
     KRATOS_TRY
 
-    constexpr unsigned int n_nodes = 4;
 
     // Struct to pass around the data
     ElementDataStruct data;
     this->FillElementData(data, rCurrentProcessInfo);
 
     // Substitute the formulation symbols by the data structure values
-    const array_1d<double, n_nodes> &m_ext = data.m_ext;
+    const array_1d<double, NumNodes> &m_ext = data.m_ext;
 
     // Solution vector values and time derivatives from nodal data
     // This is intentionally done in this way to limit the matrix acceses
@@ -1522,33 +1731,127 @@ const double crho_proj15 =             -0.19999999899375998*dUdt_0_0 - 0.1999999
             rho_proj[2]=crho_proj12 + crho_proj15 - 0.40000000301872002*dUdt_2_0 + 0.40000000301872002*m_ext[2];
             rho_proj[3]=crho_proj0 + crho_proj1 + crho_proj10 + crho_proj11 + crho_proj13 + crho_proj15 + crho_proj2 + crho_proj3 + crho_proj4 + crho_proj5 + crho_proj6 + crho_proj7 + crho_proj8 + crho_proj9 - 0.40000000301872002*dUdt_3_0 + 0.40000000301872002*m_ext[3];
 
-    // Here we assume that all the weights of the gauss points are the same so we multiply at the end by Volume/n_nodes
-    rho_proj *= data.volume / static_cast<double>(n_nodes);
+    // Here we assume that all the weights of the gauss points are the same so we multiply at the end by Volume/NumNodes
+    rho_proj *= data.volume / NumNodes;
 
     // Assembly the projection contributions
     auto& r_geometry = GetGeometry();
-    for (IndexType i_node = 0; i_node < n_nodes; ++i_node) {
-#pragma omp atomic
-        r_geometry[i_node].GetValue(DENSITY_PROJECTION) += rho_proj[i_node];
+    for (IndexType i_node = 0; i_node < NumNodes; ++i_node) {
+        double& nodal_value = r_geometry[i_node].GetValue(DENSITY_PROJECTION);
+        AtomicAdd(nodal_value, rho_proj[i_node]);
     }
 
     KRATOS_CATCH("")
 }
 
+
 template <>
-void CompressibleNavierStokesExplicit<2,3>::CalculateTotalEnergyProjection(const ProcessInfo& rCurrentProcessInfo)
+void CompressibleNavierStokesExplicit<1,2>::CalculateTotalEnergyProjection(const ProcessInfo& rCurrentProcessInfo)
 {
     KRATOS_TRY
 
-    constexpr unsigned int n_nodes = 3;
 
     // Struct to pass around the data
     ElementDataStruct data;
     this->FillElementData(data, rCurrentProcessInfo);
 
     // Substitute the formulation symbols by the data structure values
-    const array_1d<double, n_nodes> &r_ext = data.r_ext;
-    const BoundedMatrix<double, n_nodes, 2> &f_ext = data.f_ext;
+    const array_1d<double, NumNodes> &r_ext = data.r_ext;
+    const BoundedMatrix<double, NumNodes, 2> &f_ext = data.f_ext;
+    const double gamma = data.gamma;
+
+    // Solution vector values and time derivatives from nodal data
+    // This is intentionally done in this way to limit the matrix acceses
+    // The notation U_i_j DOF j value in node i
+    const double &U_0_0 = data.U(0, 0);
+    const double &U_0_1 = data.U(0, 1);
+    const double &U_0_2 = data.U(0, 2);
+    const double &U_1_0 = data.U(1, 0);
+    const double &U_1_1 = data.U(1, 1);
+    const double &U_1_2 = data.U(1, 2);
+
+    const double &dUdt_0_2 = data.dUdt(0, 2);
+    const double &dUdt_1_2 = data.dUdt(1, 2);
+
+    // Hardcoded shape functions gradients for linear element
+    // This is explicitly done to minimize the matrix acceses
+    // The notation DN_i_j means shape function for node i in dimension j
+    const double &DN_DX_0_0 = data.DN_DX(0, 0);
+    const double &DN_DX_1_0 = data.DN_DX(1, 0);
+
+    // Calculate shock capturing values
+    BoundedVector<double, 3> tot_ener_proj;
+
+    const double ctot_ener_proj0 =             0.21132486540518713*U_0_0 + 0.78867513459481287*U_1_0;
+const double ctot_ener_proj1 =             ctot_ener_proj0*(0.21132486540518713*r_ext[0] + 0.78867513459481287*r_ext[1]);
+const double ctot_ener_proj2 =             0.78867513459481287*U_0_0 + 0.21132486540518713*U_1_0;
+const double ctot_ener_proj3 =             ctot_ener_proj2*(0.78867513459481287*r_ext[0] + 0.21132486540518713*r_ext[1]);
+const double ctot_ener_proj4 =             0.21132486540518713*U_0_1 + 0.78867513459481287*U_1_1;
+const double ctot_ener_proj5 =             ctot_ener_proj4*(0.21132486540518713*f_ext(0,0) + 0.78867513459481287*f_ext(1,0));
+const double ctot_ener_proj6 =             0.78867513459481287*U_0_1 + 0.21132486540518713*U_1_1;
+const double ctot_ener_proj7 =             ctot_ener_proj6*(0.78867513459481287*f_ext(0,0) + 0.21132486540518713*f_ext(1,0));
+const double ctot_ener_proj8 =             gamma*(DN_DX_0_0*U_0_2 + DN_DX_1_0*U_1_2);
+const double ctot_ener_proj9 =             0.21132486540518713*ctot_ener_proj8;
+const double ctot_ener_proj10 =             1.0/ctot_ener_proj0;
+const double ctot_ener_proj11 =             ctot_ener_proj10*ctot_ener_proj4;
+const double ctot_ener_proj12 =             1.0/ctot_ener_proj2;
+const double ctot_ener_proj13 =             ctot_ener_proj12*ctot_ener_proj6;
+const double ctot_ener_proj14 =             0.78867513459481287*ctot_ener_proj8;
+const double ctot_ener_proj15 =             0.26794919243112275*U_0_1 + U_1_1;
+const double ctot_ener_proj16 =             pow(ctot_ener_proj15, 2);
+const double ctot_ener_proj17 =             0.26794919243112275*U_0_0 + U_1_0;
+const double ctot_ener_proj18 =             pow(ctot_ener_proj17, -2);
+const double ctot_ener_proj19 =             gamma - 1;
+const double ctot_ener_proj20 =             1.0000000000000002*ctot_ener_proj19;
+const double ctot_ener_proj21 =             0.21132486540518713*U_0_2 + 0.78867513459481287*U_1_2;
+const double ctot_ener_proj22 =             ctot_ener_proj19*(-0.31100423396407312*ctot_ener_proj10*ctot_ener_proj16 + ctot_ener_proj21) + ctot_ener_proj21;
+const double ctot_ener_proj23 =             -ctot_ener_proj10*ctot_ener_proj22 + ctot_ener_proj16*ctot_ener_proj18*ctot_ener_proj20;
+const double ctot_ener_proj24 =             DN_DX_0_0*U_0_1 + DN_DX_1_0*U_1_1;
+const double ctot_ener_proj25 =             0.21132486540518713*ctot_ener_proj24;
+const double ctot_ener_proj26 =             U_0_1 + 0.26794919243112275*U_1_1;
+const double ctot_ener_proj27 =             pow(ctot_ener_proj26, 2);
+const double ctot_ener_proj28 =             U_0_0 + 0.26794919243112275*U_1_0;
+const double ctot_ener_proj29 =             pow(ctot_ener_proj28, -2);
+const double ctot_ener_proj30 =             0.78867513459481287*U_0_2 + 0.21132486540518713*U_1_2;
+const double ctot_ener_proj31 =             ctot_ener_proj19*(-0.31100423396407312*ctot_ener_proj12*ctot_ener_proj27 + ctot_ener_proj30) + ctot_ener_proj30;
+const double ctot_ener_proj32 =             -ctot_ener_proj12*ctot_ener_proj31 + ctot_ener_proj20*ctot_ener_proj27*ctot_ener_proj29;
+const double ctot_ener_proj33 =             0.78867513459481287*ctot_ener_proj24;
+const double ctot_ener_proj34 =             DN_DX_0_0*U_0_0 + DN_DX_1_0*U_1_0;
+const double ctot_ener_proj35 =             0.21132486540518713*ctot_ener_proj34;
+const double ctot_ener_proj36 =             0.5*ctot_ener_proj19;
+const double ctot_ener_proj37 =             ctot_ener_proj18*(-pow(ctot_ener_proj15, 3)*ctot_ener_proj36/ctot_ener_proj17 + 1.6076951545867364*ctot_ener_proj22*ctot_ener_proj4);
+const double ctot_ener_proj38 =             ctot_ener_proj29*(-pow(ctot_ener_proj26, 3)*ctot_ener_proj36/ctot_ener_proj28 + 1.6076951545867364*ctot_ener_proj31*ctot_ener_proj6);
+const double ctot_ener_proj39 =             0.78867513459481287*ctot_ener_proj34;
+            tot_ener_proj[0]=0.21132486540518713*ctot_ener_proj1 - ctot_ener_proj11*ctot_ener_proj9 - ctot_ener_proj13*ctot_ener_proj14 + ctot_ener_proj23*ctot_ener_proj25 + 0.78867513459481287*ctot_ener_proj3 + ctot_ener_proj32*ctot_ener_proj33 + ctot_ener_proj35*ctot_ener_proj37 + ctot_ener_proj38*ctot_ener_proj39 + 0.21132486540518713*ctot_ener_proj5 + 0.78867513459481287*ctot_ener_proj7 - 0.66666666666666674*dUdt_0_2 - 0.33333333333333337*dUdt_1_2;
+            tot_ener_proj[1]=0.78867513459481287*ctot_ener_proj1 - ctot_ener_proj11*ctot_ener_proj14 - ctot_ener_proj13*ctot_ener_proj9 + ctot_ener_proj23*ctot_ener_proj33 + ctot_ener_proj25*ctot_ener_proj32 + 0.21132486540518713*ctot_ener_proj3 + ctot_ener_proj35*ctot_ener_proj38 + ctot_ener_proj37*ctot_ener_proj39 + 0.78867513459481287*ctot_ener_proj5 + 0.21132486540518713*ctot_ener_proj7 - 0.33333333333333337*dUdt_0_2 - 0.66666666666666674*dUdt_1_2;
+
+    // Here we assume that all the weights of the gauss points are the same so we multiply at the end by Volume/NumNodes
+    tot_ener_proj *= data.volume / static_cast<double>(NumNodes);
+
+    // Assembly the projection contributions
+    auto& r_geometry = GetGeometry();
+    for (IndexType i_node = 0; i_node < NumNodes; ++i_node) {
+        double& nodal_value = r_geometry[i_node].GetValue(TOTAL_ENERGY_PROJECTION);
+        AtomicAdd(nodal_value, tot_ener_proj[i_node]);
+    }
+
+    KRATOS_CATCH("")
+}
+
+
+template <>
+void CompressibleNavierStokesExplicit<2,3>::CalculateTotalEnergyProjection(const ProcessInfo& rCurrentProcessInfo)
+{
+    KRATOS_TRY
+
+
+    // Struct to pass around the data
+    ElementDataStruct data;
+    this->FillElementData(data, rCurrentProcessInfo);
+
+    // Substitute the formulation symbols by the data structure values
+    const array_1d<double, NumNodes> &r_ext = data.r_ext;
+    const BoundedMatrix<double, NumNodes, 2> &f_ext = data.f_ext;
     const double gamma = data.gamma;
 
     // Solution vector values and time derivatives from nodal data
@@ -1724,14 +2027,14 @@ const double ctot_ener_proj135 =             ctot_ener_proj129*ctot_ener_proj68;
             tot_ener_proj[1]=ctot_ener_proj103 + ctot_ener_proj114*ctot_ener_proj24 + ctot_ener_proj115*ctot_ener_proj27 + 0.66666666666666663*ctot_ener_proj116 + 0.66666666666666663*ctot_ener_proj118 + 0.66666666666666663*ctot_ener_proj120 - ctot_ener_proj122*ctot_ener_proj130 - ctot_ener_proj123*ctot_ener_proj130 - ctot_ener_proj125*ctot_ener_proj131 - ctot_ener_proj126*ctot_ener_proj132 + ctot_ener_proj127*ctot_ener_proj57 + ctot_ener_proj127*ctot_ener_proj59 + ctot_ener_proj134 - 0.5*dUdt_1_3;
             tot_ener_proj[2]=ctot_ener_proj101*ctot_ener_proj57 + ctot_ener_proj101*ctot_ener_proj59 + ctot_ener_proj128 - ctot_ener_proj131*ctot_ener_proj96 - ctot_ener_proj132*ctot_ener_proj98 + ctot_ener_proj134 - ctot_ener_proj135*ctot_ener_proj91 - ctot_ener_proj135*ctot_ener_proj92 + ctot_ener_proj24*ctot_ener_proj75 + ctot_ener_proj27*ctot_ener_proj77 + 0.66666666666666663*ctot_ener_proj80 + 0.66666666666666663*ctot_ener_proj84 + 0.66666666666666663*ctot_ener_proj88 - 0.5*dUdt_2_3;
 
-    // Here we assume that all the weights of the gauss points are the same so we multiply at the end by Volume/n_nodes
-    tot_ener_proj *= data.volume / static_cast<double>(n_nodes);
+    // Here we assume that all the weights of the gauss points are the same so we multiply at the end by Volume/NumNodes
+    tot_ener_proj *= data.volume / static_cast<double>(NumNodes);
 
     // Assembly the projection contributions
     auto& r_geometry = GetGeometry();
-    for (IndexType i_node = 0; i_node < n_nodes; ++i_node) {
-#pragma omp atomic
-        r_geometry[i_node].GetValue(TOTAL_ENERGY_PROJECTION) += tot_ener_proj[i_node];
+    for (IndexType i_node = 0; i_node < NumNodes; ++i_node) {
+        double& nodal_value = r_geometry[i_node].GetValue(TOTAL_ENERGY_PROJECTION);
+        AtomicAdd(nodal_value, tot_ener_proj[i_node]);
     }
 
     KRATOS_CATCH("")
@@ -1742,15 +2045,14 @@ void CompressibleNavierStokesExplicit<3,4>::CalculateTotalEnergyProjection(const
 {
     KRATOS_TRY
 
-    constexpr unsigned int n_nodes = 4;
 
     // Struct to pass around the data
     ElementDataStruct data;
     this->FillElementData(data, rCurrentProcessInfo);
 
     // Substitute the formulation symbols by the data structure values
-    const array_1d<double, n_nodes> &r_ext = data.r_ext;
-    const BoundedMatrix<double, n_nodes, 3> &f_ext = data.f_ext;
+    const array_1d<double, NumNodes> &r_ext = data.r_ext;
+    const BoundedMatrix<double, NumNodes, 3> &f_ext = data.f_ext;
     const double gamma = data.gamma;
 
     // Solution vector values and time derivatives from nodal data
@@ -2132,18 +2434,498 @@ const double ctot_ener_proj325 =             ctot_ener_proj259*ctot_ener_proj323
             tot_ener_proj[2]=ctot_ener_proj105*ctot_ener_proj295 + ctot_ener_proj107*ctot_ener_proj295 + ctot_ener_proj108*ctot_ener_proj318 + ctot_ener_proj111*ctot_ener_proj318 + ctot_ener_proj112*ctot_ener_proj319 + ctot_ener_proj115*ctot_ener_proj319 + ctot_ener_proj263 + ctot_ener_proj275*ctot_ener_proj39 + ctot_ener_proj276*ctot_ener_proj42 + ctot_ener_proj277*ctot_ener_proj45 + 0.58541019999999999*ctot_ener_proj278 + 0.58541019999999999*ctot_ener_proj280 + 0.58541019999999999*ctot_ener_proj282 + 0.58541019999999999*ctot_ener_proj284 - ctot_ener_proj286*ctot_ener_proj315 - ctot_ener_proj287*ctot_ener_proj315 - ctot_ener_proj288*ctot_ener_proj315 - ctot_ener_proj290*ctot_ener_proj303 - ctot_ener_proj292*ctot_ener_proj316 - ctot_ener_proj293*ctot_ener_proj316 + ctot_ener_proj313 + ctot_ener_proj320 - 0.40000000301872002*dUdt_2_4;
             tot_ener_proj[3]=ctot_ener_proj105*ctot_ener_proj252 + ctot_ener_proj107*ctot_ener_proj252 + ctot_ener_proj108*ctot_ener_proj324 + ctot_ener_proj111*ctot_ener_proj324 + ctot_ener_proj112*ctot_ener_proj325 + ctot_ener_proj115*ctot_ener_proj325 + ctot_ener_proj140*ctot_ener_proj39 + ctot_ener_proj143*ctot_ener_proj42 + ctot_ener_proj146*ctot_ener_proj45 + ctot_ener_proj161 + ctot_ener_proj163 + ctot_ener_proj165 + 0.58541019999999999*ctot_ener_proj168 + ctot_ener_proj171 + 0.58541019999999999*ctot_ener_proj177 + ctot_ener_proj181 + 0.58541019999999999*ctot_ener_proj187 + ctot_ener_proj191 + 0.58541019999999999*ctot_ener_proj197 + ctot_ener_proj201 - ctot_ener_proj204*ctot_ener_proj321 - ctot_ener_proj206*ctot_ener_proj321 - ctot_ener_proj208*ctot_ener_proj321 + ctot_ener_proj212 + ctot_ener_proj214 + ctot_ener_proj216 + ctot_ener_proj222 + ctot_ener_proj225 + ctot_ener_proj227 - ctot_ener_proj229*ctot_ener_proj303 - ctot_ener_proj232*ctot_ener_proj322 - ctot_ener_proj234*ctot_ener_proj322 + ctot_ener_proj240 + ctot_ener_proj242 + ctot_ener_proj245 + ctot_ener_proj246 + ctot_ener_proj249 + ctot_ener_proj250 + ctot_ener_proj314 + ctot_ener_proj320 - 0.40000000301872002*dUdt_3_4;
 
-    // Here we assume that all the weights of the gauss points are the same so we multiply at the end by Volume/n_nodes
-    tot_ener_proj *= data.volume / static_cast<double>(n_nodes);
+    // Here we assume that all the weights of the gauss points are the same so we multiply at the end by Volume/NumNodes
+    tot_ener_proj *= data.volume / static_cast<double>(NumNodes);
 
     // Assembly the projection contributions
     auto& r_geometry = GetGeometry();
-    for (IndexType i_node = 0; i_node < n_nodes; ++i_node) {
-#pragma omp atomic
-        r_geometry[i_node].GetValue(TOTAL_ENERGY_PROJECTION) += tot_ener_proj[i_node];
+    for (IndexType i_node = 0; i_node < NumNodes; ++i_node) {
+        double& nodal_value = r_geometry[i_node].GetValue(TOTAL_ENERGY_PROJECTION);
+        AtomicAdd(nodal_value, tot_ener_proj[i_node]);
     }
 
     KRATOS_CATCH("")
 }
+
+
+template <>
+void CompressibleNavierStokesExplicit<1,2>::CalculateRightHandSideInternal(
+    BoundedVector<double, 6> &rRightHandSideBoundedVector,
+    const ProcessInfo &rCurrentProcessInfo)
+{
+    KRATOS_TRY
+
+
+    // Struct to pass around the data
+    ElementDataStruct data;
+    this->FillElementData(data, rCurrentProcessInfo);
+
+    // Substitute the formulation symbols by the data structure values
+    const double h = data.h;
+    const array_1d<double, NumNodes>& r_ext = data.r_ext;
+    const array_1d<double, NumNodes>& m_ext = data.m_ext;
+    const array_1d<double, NumNodes>& alpha_sc_nodes = data.alpha_sc_nodes;
+    const array_1d<double, NumNodes>& mu_sc_nodes = data.mu_sc_nodes;
+    const array_1d<double, NumNodes>& beta_sc_nodes = data.beta_sc_nodes;
+    const array_1d<double, NumNodes>& lamb_sc_nodes = data.lamb_sc_nodes;
+    const BoundedMatrix<double, NumNodes, 2>& f_ext = data.f_ext;
+    const double mu = data.mu;
+    const double c_v = data.c_v;
+    const double gamma = data.gamma;
+    const double lambda = data.lambda;
+
+    // Stabilization parameters
+    const double stab_c1 = 12.0;
+    const double stab_c2 = 2.0;
+    const double stab_c3 = 1.0;
+
+    // Solution vector values and time derivatives from nodal data
+    // This is intentionally done in this way to limit the matrix acceses
+    // The notation U_i_j DOF j value in node i
+    const double& U_0_0 = data.U(0, 0);
+    const double& U_0_1 = data.U(0, 1);
+    const double& U_0_2 = data.U(0, 2);
+    const double& U_1_0 = data.U(1, 0);
+    const double& U_1_1 = data.U(1, 1);
+    const double& U_1_2 = data.U(1, 2);
+
+    const double& dUdt_0_0 = data.dUdt(0, 0);
+    const double& dUdt_0_1 = data.dUdt(0, 1);
+    const double& dUdt_0_2 = data.dUdt(0, 2);
+    const double& dUdt_1_0 = data.dUdt(1, 0);
+    const double& dUdt_1_1 = data.dUdt(1, 1);
+    const double& dUdt_1_2 = data.dUdt(1, 2);
+
+    // Hardcoded shape functions gradients for linear element
+    // This is explicitly done to minimize the matrix acceses
+    // The notation DN_i_j means shape function for node i in dimension j
+    const double& DN_DX_0_0 = data.DN_DX(0, 0);
+    const double& DN_DX_1_0 = data.DN_DX(1, 0);
+
+    if (data.UseOSS) {
+        // Projections container accesses
+        const double& ResProj_0_0 = data.ResProj(0, 0);
+        const double& ResProj_0_1 = data.ResProj(0, 1);
+        const double& ResProj_0_2 = data.ResProj(0, 2);
+        const double& ResProj_1_0 = data.ResProj(1, 0);
+        const double& ResProj_1_1 = data.ResProj(1, 1);
+        const double& ResProj_1_2 = data.ResProj(1, 2);
+
+        const double crRightHandSideBoundedVector0 =             0.21132486540518713*alpha_sc_nodes[0] + 0.78867513459481287*alpha_sc_nodes[1];
+const double crRightHandSideBoundedVector1 =             DN_DX_0_0*U_0_0 + DN_DX_1_0*U_1_0;
+const double crRightHandSideBoundedVector2 =             DN_DX_0_0*crRightHandSideBoundedVector1;
+const double crRightHandSideBoundedVector3 =             0.78867513459481287*alpha_sc_nodes[0] + 0.21132486540518713*alpha_sc_nodes[1];
+const double crRightHandSideBoundedVector4 =             1.0*DN_DX_0_0;
+const double crRightHandSideBoundedVector5 =             0.78867513459481287*U_0_0 + 0.21132486540518713*U_1_0;
+const double crRightHandSideBoundedVector6 =             1.0/crRightHandSideBoundedVector5;
+const double crRightHandSideBoundedVector7 =             stab_c1/pow(h, 2);
+const double crRightHandSideBoundedVector8 =             1.3333333333333333*crRightHandSideBoundedVector7;
+const double crRightHandSideBoundedVector9 =             U_0_0 + 0.26794919243112275*U_1_0;
+const double crRightHandSideBoundedVector10 =             pow(crRightHandSideBoundedVector9, -2);
+const double crRightHandSideBoundedVector11 =             U_0_1 + 0.26794919243112275*U_1_1;
+const double crRightHandSideBoundedVector12 =             pow(crRightHandSideBoundedVector11, 2);
+const double crRightHandSideBoundedVector13 =             crRightHandSideBoundedVector10*crRightHandSideBoundedVector12;
+const double crRightHandSideBoundedVector14 =             sqrt(gamma);
+const double crRightHandSideBoundedVector15 =             gamma - 1;
+const double crRightHandSideBoundedVector16 =             0.78867513459481287*U_0_2 + 0.21132486540518713*U_1_2;
+const double crRightHandSideBoundedVector17 =             0.5*crRightHandSideBoundedVector13 - crRightHandSideBoundedVector16*crRightHandSideBoundedVector6;
+const double crRightHandSideBoundedVector18 =             crRightHandSideBoundedVector15*crRightHandSideBoundedVector17;
+const double crRightHandSideBoundedVector19 =             stab_c2/h;
+const double crRightHandSideBoundedVector20 =             pow(crRightHandSideBoundedVector15, -2);
+const double crRightHandSideBoundedVector21 =             pow(r_ext[0] + 0.26794919243112275*r_ext[1], 2);
+const double crRightHandSideBoundedVector22 =             crRightHandSideBoundedVector18*gamma*pow(f_ext(0,0) + 0.26794919243112275*f_ext(1,0), 2);
+const double crRightHandSideBoundedVector23 =             1.0/gamma;
+const double crRightHandSideBoundedVector24 =             0.70710678118654757*crRightHandSideBoundedVector23*stab_c3;
+const double crRightHandSideBoundedVector25 =             crRightHandSideBoundedVector19*(1.0*sqrt(crRightHandSideBoundedVector13) + crRightHandSideBoundedVector14*sqrt(-crRightHandSideBoundedVector18)) + crRightHandSideBoundedVector24*sqrt(crRightHandSideBoundedVector20*(0.62200846792814624*crRightHandSideBoundedVector21 - 1.2440169358562925*crRightHandSideBoundedVector22 + 1.2440169358562925*sqrt(crRightHandSideBoundedVector21*(0.24999999999999997*crRightHandSideBoundedVector21 - crRightHandSideBoundedVector22)))/pow(crRightHandSideBoundedVector17, 2));
+const double crRightHandSideBoundedVector26 =             DN_DX_0_0*U_0_2 + DN_DX_1_0*U_1_2;
+const double crRightHandSideBoundedVector27 =             crRightHandSideBoundedVector15*crRightHandSideBoundedVector26;
+const double crRightHandSideBoundedVector28 =             0.78867513459481287*f_ext(0,0) + 0.21132486540518713*f_ext(1,0);
+const double crRightHandSideBoundedVector29 =             crRightHandSideBoundedVector28*crRightHandSideBoundedVector5;
+const double crRightHandSideBoundedVector30 =             0.50000000000000011*gamma - 1.5000000000000004;
+const double crRightHandSideBoundedVector31 =             crRightHandSideBoundedVector1*crRightHandSideBoundedVector30;
+const double crRightHandSideBoundedVector32 =             crRightHandSideBoundedVector13*crRightHandSideBoundedVector31;
+const double crRightHandSideBoundedVector33 =             0.78867513459481287*U_0_1;
+const double crRightHandSideBoundedVector34 =             0.21132486540518713*U_1_1;
+const double crRightHandSideBoundedVector35 =             crRightHandSideBoundedVector33 + crRightHandSideBoundedVector34;
+const double crRightHandSideBoundedVector36 =             crRightHandSideBoundedVector35*crRightHandSideBoundedVector6;
+const double crRightHandSideBoundedVector37 =             DN_DX_0_0*U_0_1;
+const double crRightHandSideBoundedVector38 =             DN_DX_1_0*U_1_1;
+const double crRightHandSideBoundedVector39 =             crRightHandSideBoundedVector37 + crRightHandSideBoundedVector38;
+const double crRightHandSideBoundedVector40 =             1.0*gamma;
+const double crRightHandSideBoundedVector41 =             crRightHandSideBoundedVector39*(3.0 - crRightHandSideBoundedVector40);
+const double crRightHandSideBoundedVector42 =             (0.78867513459481287*ResProj_0_1 + 0.21132486540518713*ResProj_1_1 + crRightHandSideBoundedVector27 - crRightHandSideBoundedVector29 + crRightHandSideBoundedVector32 + crRightHandSideBoundedVector36*crRightHandSideBoundedVector41 + 0.78867513459481287*dUdt_0_1 + 0.21132486540518713*dUdt_1_1)/(crRightHandSideBoundedVector25 + crRightHandSideBoundedVector6*crRightHandSideBoundedVector8*(mu + 0.78867513459481287*mu_sc_nodes[0] + 0.21132486540518713*mu_sc_nodes[1]));
+const double crRightHandSideBoundedVector43 =             0.21132486540518713*U_0_0 + 0.78867513459481287*U_1_0;
+const double crRightHandSideBoundedVector44 =             1.0/crRightHandSideBoundedVector43;
+const double crRightHandSideBoundedVector45 =             0.26794919243112275*U_0_0 + U_1_0;
+const double crRightHandSideBoundedVector46 =             pow(crRightHandSideBoundedVector45, -2);
+const double crRightHandSideBoundedVector47 =             0.26794919243112275*U_0_1 + U_1_1;
+const double crRightHandSideBoundedVector48 =             pow(crRightHandSideBoundedVector47, 2);
+const double crRightHandSideBoundedVector49 =             crRightHandSideBoundedVector46*crRightHandSideBoundedVector48;
+const double crRightHandSideBoundedVector50 =             0.21132486540518713*U_0_2 + 0.78867513459481287*U_1_2;
+const double crRightHandSideBoundedVector51 =             -crRightHandSideBoundedVector44*crRightHandSideBoundedVector50 + 0.5*crRightHandSideBoundedVector49;
+const double crRightHandSideBoundedVector52 =             crRightHandSideBoundedVector15*crRightHandSideBoundedVector51;
+const double crRightHandSideBoundedVector53 =             pow(0.26794919243112275*r_ext[0] + r_ext[1], 2);
+const double crRightHandSideBoundedVector54 =             crRightHandSideBoundedVector52*gamma*pow(0.26794919243112275*f_ext(0,0) + f_ext(1,0), 2);
+const double crRightHandSideBoundedVector55 =             crRightHandSideBoundedVector19*(crRightHandSideBoundedVector14*sqrt(-crRightHandSideBoundedVector52) + 1.0*sqrt(crRightHandSideBoundedVector49)) + crRightHandSideBoundedVector24*sqrt(crRightHandSideBoundedVector20*(0.62200846792814624*crRightHandSideBoundedVector53 - 1.2440169358562925*crRightHandSideBoundedVector54 + 1.2440169358562925*sqrt(crRightHandSideBoundedVector53*(0.24999999999999997*crRightHandSideBoundedVector53 - crRightHandSideBoundedVector54)))/pow(crRightHandSideBoundedVector51, 2));
+const double crRightHandSideBoundedVector56 =             0.21132486540518713*f_ext(0,0) + 0.78867513459481287*f_ext(1,0);
+const double crRightHandSideBoundedVector57 =             crRightHandSideBoundedVector43*crRightHandSideBoundedVector56;
+const double crRightHandSideBoundedVector58 =             crRightHandSideBoundedVector31*crRightHandSideBoundedVector49;
+const double crRightHandSideBoundedVector59 =             0.21132486540518713*U_0_1 + 0.78867513459481287*U_1_1;
+const double crRightHandSideBoundedVector60 =             crRightHandSideBoundedVector44*crRightHandSideBoundedVector59;
+const double crRightHandSideBoundedVector61 =             (0.21132486540518713*ResProj_0_1 + 0.78867513459481287*ResProj_1_1 + crRightHandSideBoundedVector27 + crRightHandSideBoundedVector41*crRightHandSideBoundedVector60 - crRightHandSideBoundedVector57 + crRightHandSideBoundedVector58 + 0.21132486540518713*dUdt_0_1 + 0.78867513459481287*dUdt_1_1)/(crRightHandSideBoundedVector44*crRightHandSideBoundedVector8*(mu + 0.21132486540518713*mu_sc_nodes[0] + 0.78867513459481287*mu_sc_nodes[1]) + crRightHandSideBoundedVector55);
+const double crRightHandSideBoundedVector62 =             0.21132486540518713*m_ext[0];
+const double crRightHandSideBoundedVector63 =             0.78867513459481287*m_ext[1];
+const double crRightHandSideBoundedVector64 =             (0.21132486540518713*ResProj_0_0 + 0.78867513459481287*ResProj_1_0 + crRightHandSideBoundedVector39 - crRightHandSideBoundedVector62 - crRightHandSideBoundedVector63 + 0.21132486540518713*dUdt_0_0 + 0.78867513459481287*dUdt_1_0)/crRightHandSideBoundedVector55;
+const double crRightHandSideBoundedVector65 =             crRightHandSideBoundedVector44*crRightHandSideBoundedVector64*(crRightHandSideBoundedVector62 + crRightHandSideBoundedVector63);
+const double crRightHandSideBoundedVector66 =             0.78867513459481287*m_ext[0];
+const double crRightHandSideBoundedVector67 =             0.21132486540518713*m_ext[1];
+const double crRightHandSideBoundedVector68 =             (0.78867513459481287*ResProj_0_0 + 0.21132486540518713*ResProj_1_0 + crRightHandSideBoundedVector39 - crRightHandSideBoundedVector66 - crRightHandSideBoundedVector67 + 0.78867513459481287*dUdt_0_0 + 0.21132486540518713*dUdt_1_0)/crRightHandSideBoundedVector25;
+const double crRightHandSideBoundedVector69 =             crRightHandSideBoundedVector6*crRightHandSideBoundedVector68*(crRightHandSideBoundedVector66 + crRightHandSideBoundedVector67);
+const double crRightHandSideBoundedVector70 =             -1.0*crRightHandSideBoundedVector37 - 1.0*crRightHandSideBoundedVector38;
+const double crRightHandSideBoundedVector71 =             -1.0*crRightHandSideBoundedVector27;
+const double crRightHandSideBoundedVector72 =             crRightHandSideBoundedVector40 - 3.0;
+const double crRightHandSideBoundedVector73 =             0.21132486540518713*crRightHandSideBoundedVector39;
+const double crRightHandSideBoundedVector74 =             crRightHandSideBoundedVector72*crRightHandSideBoundedVector73;
+const double crRightHandSideBoundedVector75 =             0.78867513459481287*crRightHandSideBoundedVector39;
+const double crRightHandSideBoundedVector76 =             crRightHandSideBoundedVector72*crRightHandSideBoundedVector75;
+const double crRightHandSideBoundedVector77 =             DN_DX_0_0*crRightHandSideBoundedVector46;
+const double crRightHandSideBoundedVector78 =             crRightHandSideBoundedVector1*crRightHandSideBoundedVector59;
+const double crRightHandSideBoundedVector79 =             2.143593539448982*mu;
+const double crRightHandSideBoundedVector80 =             (crRightHandSideBoundedVector39*crRightHandSideBoundedVector43 - crRightHandSideBoundedVector78)*(0.33974596215561359*beta_sc_nodes[0] + 1.2679491924311228*beta_sc_nodes[1] + crRightHandSideBoundedVector79 + 0.45299461620748482*mu_sc_nodes[0] + 1.6905989232414971*mu_sc_nodes[1]);
+const double crRightHandSideBoundedVector81 =             DN_DX_0_0*crRightHandSideBoundedVector10;
+const double crRightHandSideBoundedVector82 =             crRightHandSideBoundedVector1*crRightHandSideBoundedVector35;
+const double crRightHandSideBoundedVector83 =             (crRightHandSideBoundedVector39*crRightHandSideBoundedVector5 - crRightHandSideBoundedVector82)*(1.2679491924311228*beta_sc_nodes[0] + 0.33974596215561359*beta_sc_nodes[1] + crRightHandSideBoundedVector79 + 1.6905989232414971*mu_sc_nodes[0] + 0.45299461620748482*mu_sc_nodes[1]);
+const double crRightHandSideBoundedVector84 =             DN_DX_0_0*crRightHandSideBoundedVector30;
+const double crRightHandSideBoundedVector85 =             crRightHandSideBoundedVector46*crRightHandSideBoundedVector59;
+const double crRightHandSideBoundedVector86 =             1.6076951545867364*gamma - 4.8230854637602096;
+const double crRightHandSideBoundedVector87 =             crRightHandSideBoundedVector73*crRightHandSideBoundedVector86;
+const double crRightHandSideBoundedVector88 =             1.267949192431123*gamma - 3.8038475772933689;
+const double crRightHandSideBoundedVector89 =             0.21132486540518713*crRightHandSideBoundedVector1;
+const double crRightHandSideBoundedVector90 =             crRightHandSideBoundedVector88*crRightHandSideBoundedVector89;
+const double crRightHandSideBoundedVector91 =             pow(crRightHandSideBoundedVector45, -3);
+const double crRightHandSideBoundedVector92 =             crRightHandSideBoundedVector48*crRightHandSideBoundedVector91;
+const double crRightHandSideBoundedVector93 =             0.16666666666666669*f_ext(1,0);
+const double crRightHandSideBoundedVector94 =             crRightHandSideBoundedVector93 + 0.044658198738520456*f_ext(0,0);
+const double crRightHandSideBoundedVector95 =             1.0*crRightHandSideBoundedVector64;
+const double crRightHandSideBoundedVector96 =             crRightHandSideBoundedVector10*crRightHandSideBoundedVector35;
+const double crRightHandSideBoundedVector97 =             crRightHandSideBoundedVector75*crRightHandSideBoundedVector86;
+const double crRightHandSideBoundedVector98 =             0.78867513459481287*crRightHandSideBoundedVector1;
+const double crRightHandSideBoundedVector99 =             crRightHandSideBoundedVector88*crRightHandSideBoundedVector98;
+const double crRightHandSideBoundedVector100 =             pow(crRightHandSideBoundedVector9, -3);
+const double crRightHandSideBoundedVector101 =             crRightHandSideBoundedVector100*crRightHandSideBoundedVector12;
+const double crRightHandSideBoundedVector102 =             crRightHandSideBoundedVector93 + 0.62200846792814624*f_ext(0,0);
+const double crRightHandSideBoundedVector103 =             1.0*crRightHandSideBoundedVector68;
+const double crRightHandSideBoundedVector104 =             crRightHandSideBoundedVector44*crRightHandSideBoundedVector72;
+const double crRightHandSideBoundedVector105 =             DN_DX_0_0*crRightHandSideBoundedVector60;
+const double crRightHandSideBoundedVector106 =             crRightHandSideBoundedVector46*crRightHandSideBoundedVector78;
+const double crRightHandSideBoundedVector107 =             crRightHandSideBoundedVector106*crRightHandSideBoundedVector86;
+const double crRightHandSideBoundedVector108 =             1.0*crRightHandSideBoundedVector61;
+const double crRightHandSideBoundedVector109 =             crRightHandSideBoundedVector6*crRightHandSideBoundedVector72;
+const double crRightHandSideBoundedVector110 =             DN_DX_0_0*crRightHandSideBoundedVector36;
+const double crRightHandSideBoundedVector111 =             crRightHandSideBoundedVector10*crRightHandSideBoundedVector82;
+const double crRightHandSideBoundedVector112 =             crRightHandSideBoundedVector111*crRightHandSideBoundedVector86;
+const double crRightHandSideBoundedVector113 =             1.0*crRightHandSideBoundedVector42;
+const double crRightHandSideBoundedVector114 =             crRightHandSideBoundedVector15*crRightHandSideBoundedVector4;
+const double crRightHandSideBoundedVector115 =             1.0/c_v;
+const double crRightHandSideBoundedVector116 =             crRightHandSideBoundedVector115*(0.21132486540518713*lamb_sc_nodes[0] + 0.78867513459481287*lamb_sc_nodes[1] + lambda);
+const double crRightHandSideBoundedVector117 =             crRightHandSideBoundedVector23*crRightHandSideBoundedVector7;
+const double crRightHandSideBoundedVector118 =             crRightHandSideBoundedVector43*(0.21132486540518713*r_ext[0] + 0.78867513459481287*r_ext[1]);
+const double crRightHandSideBoundedVector119 =             crRightHandSideBoundedVector56*crRightHandSideBoundedVector59;
+const double crRightHandSideBoundedVector120 =             crRightHandSideBoundedVector26*gamma;
+const double crRightHandSideBoundedVector121 =             crRightHandSideBoundedVector120*crRightHandSideBoundedVector60;
+const double crRightHandSideBoundedVector122 =             1.0000000000000002*crRightHandSideBoundedVector15;
+const double crRightHandSideBoundedVector123 =             crRightHandSideBoundedVector122*crRightHandSideBoundedVector49;
+const double crRightHandSideBoundedVector124 =             crRightHandSideBoundedVector15*(-0.31100423396407312*crRightHandSideBoundedVector44*crRightHandSideBoundedVector48 + crRightHandSideBoundedVector50);
+const double crRightHandSideBoundedVector125 =             crRightHandSideBoundedVector124 + crRightHandSideBoundedVector50;
+const double crRightHandSideBoundedVector126 =             crRightHandSideBoundedVector125*crRightHandSideBoundedVector44;
+const double crRightHandSideBoundedVector127 =             0.5*crRightHandSideBoundedVector15;
+const double crRightHandSideBoundedVector128 =             1.0/crRightHandSideBoundedVector45;
+const double crRightHandSideBoundedVector129 =             crRightHandSideBoundedVector128*pow(crRightHandSideBoundedVector47, 3);
+const double crRightHandSideBoundedVector130 =             crRightHandSideBoundedVector127*crRightHandSideBoundedVector129;
+const double crRightHandSideBoundedVector131 =             1.6076951545867364*crRightHandSideBoundedVector59;
+const double crRightHandSideBoundedVector132 =             crRightHandSideBoundedVector125*crRightHandSideBoundedVector131;
+const double crRightHandSideBoundedVector133 =             crRightHandSideBoundedVector1*crRightHandSideBoundedVector46;
+const double crRightHandSideBoundedVector134 =             (0.21132486540518713*ResProj_0_2 + 0.78867513459481287*ResProj_1_2 - crRightHandSideBoundedVector118 - crRightHandSideBoundedVector119 + crRightHandSideBoundedVector121 + crRightHandSideBoundedVector133*(crRightHandSideBoundedVector130 - crRightHandSideBoundedVector132) + crRightHandSideBoundedVector39*(-crRightHandSideBoundedVector123 + crRightHandSideBoundedVector126) + 0.21132486540518713*dUdt_0_2 + 0.78867513459481287*dUdt_1_2)/(crRightHandSideBoundedVector116*crRightHandSideBoundedVector117*crRightHandSideBoundedVector44 + crRightHandSideBoundedVector55);
+const double crRightHandSideBoundedVector135 =             crRightHandSideBoundedVector115*(0.78867513459481287*lamb_sc_nodes[0] + 0.21132486540518713*lamb_sc_nodes[1] + lambda);
+const double crRightHandSideBoundedVector136 =             crRightHandSideBoundedVector5*(0.78867513459481287*r_ext[0] + 0.21132486540518713*r_ext[1]);
+const double crRightHandSideBoundedVector137 =             crRightHandSideBoundedVector28*crRightHandSideBoundedVector35;
+const double crRightHandSideBoundedVector138 =             crRightHandSideBoundedVector120*crRightHandSideBoundedVector36;
+const double crRightHandSideBoundedVector139 =             crRightHandSideBoundedVector122*crRightHandSideBoundedVector13;
+const double crRightHandSideBoundedVector140 =             crRightHandSideBoundedVector15*(-0.31100423396407312*crRightHandSideBoundedVector12*crRightHandSideBoundedVector6 + crRightHandSideBoundedVector16);
+const double crRightHandSideBoundedVector141 =             crRightHandSideBoundedVector140 + crRightHandSideBoundedVector16;
+const double crRightHandSideBoundedVector142 =             crRightHandSideBoundedVector141*crRightHandSideBoundedVector6;
+const double crRightHandSideBoundedVector143 =             1.0/crRightHandSideBoundedVector9;
+const double crRightHandSideBoundedVector144 =             pow(crRightHandSideBoundedVector11, 3)*crRightHandSideBoundedVector143;
+const double crRightHandSideBoundedVector145 =             crRightHandSideBoundedVector127*crRightHandSideBoundedVector144;
+const double crRightHandSideBoundedVector146 =             1.6076951545867364*crRightHandSideBoundedVector35;
+const double crRightHandSideBoundedVector147 =             crRightHandSideBoundedVector141*crRightHandSideBoundedVector146;
+const double crRightHandSideBoundedVector148 =             crRightHandSideBoundedVector1*crRightHandSideBoundedVector10;
+const double crRightHandSideBoundedVector149 =             (0.78867513459481287*ResProj_0_2 + 0.21132486540518713*ResProj_1_2 - crRightHandSideBoundedVector136 - crRightHandSideBoundedVector137 + crRightHandSideBoundedVector138 + crRightHandSideBoundedVector148*(crRightHandSideBoundedVector145 - crRightHandSideBoundedVector147) + crRightHandSideBoundedVector39*(-crRightHandSideBoundedVector139 + crRightHandSideBoundedVector142) + 0.78867513459481287*dUdt_0_2 + 0.21132486540518713*dUdt_1_2)/(crRightHandSideBoundedVector117*crRightHandSideBoundedVector135*crRightHandSideBoundedVector6 + crRightHandSideBoundedVector25);
+const double crRightHandSideBoundedVector150 =             crRightHandSideBoundedVector123 - crRightHandSideBoundedVector126;
+const double crRightHandSideBoundedVector151 =             crRightHandSideBoundedVector139 - crRightHandSideBoundedVector142;
+const double crRightHandSideBoundedVector152 =             -crRightHandSideBoundedVector130 + crRightHandSideBoundedVector132;
+const double crRightHandSideBoundedVector153 =             0.21132486540518713*crRightHandSideBoundedVector133;
+const double crRightHandSideBoundedVector154 =             -crRightHandSideBoundedVector145 + crRightHandSideBoundedVector147;
+const double crRightHandSideBoundedVector155 =             0.78867513459481287*crRightHandSideBoundedVector148;
+const double crRightHandSideBoundedVector156 =             1.6076951545867364*crRightHandSideBoundedVector26;
+const double crRightHandSideBoundedVector157 =             1.6076951545867364*crRightHandSideBoundedVector1;
+const double crRightHandSideBoundedVector158 =             1.267949192431123*crRightHandSideBoundedVector1;
+const double crRightHandSideBoundedVector159 =             crRightHandSideBoundedVector128*crRightHandSideBoundedVector48;
+const double crRightHandSideBoundedVector160 =             crRightHandSideBoundedVector116*(-crRightHandSideBoundedVector131*crRightHandSideBoundedVector39 + crRightHandSideBoundedVector156*crRightHandSideBoundedVector43 - crRightHandSideBoundedVector157*crRightHandSideBoundedVector50 + crRightHandSideBoundedVector158*crRightHandSideBoundedVector159) + crRightHandSideBoundedVector60*crRightHandSideBoundedVector80;
+const double crRightHandSideBoundedVector161 =             crRightHandSideBoundedVector12*crRightHandSideBoundedVector143;
+const double crRightHandSideBoundedVector162 =             crRightHandSideBoundedVector135*(-crRightHandSideBoundedVector146*crRightHandSideBoundedVector39 + crRightHandSideBoundedVector156*crRightHandSideBoundedVector5 - crRightHandSideBoundedVector157*crRightHandSideBoundedVector16 + crRightHandSideBoundedVector158*crRightHandSideBoundedVector161) + crRightHandSideBoundedVector36*crRightHandSideBoundedVector83;
+const double crRightHandSideBoundedVector163 =             0.16666666666666669*r_ext[1];
+const double crRightHandSideBoundedVector164 =             crRightHandSideBoundedVector120*crRightHandSideBoundedVector85;
+const double crRightHandSideBoundedVector165 =             3.1698729810778072*crRightHandSideBoundedVector15;
+const double crRightHandSideBoundedVector166 =             0.33974596215561359*U_0_2 + 1.2679491924311228*U_1_2 + 1.6076951545867364*crRightHandSideBoundedVector124 - crRightHandSideBoundedVector159*crRightHandSideBoundedVector165;
+const double crRightHandSideBoundedVector167 =             crRightHandSideBoundedVector166*crRightHandSideBoundedVector46;
+const double crRightHandSideBoundedVector168 =             2.5358983848622456*crRightHandSideBoundedVector15;
+const double crRightHandSideBoundedVector169 =             crRightHandSideBoundedVector91*(4.0769515458673631*crRightHandSideBoundedVector125*crRightHandSideBoundedVector59 - crRightHandSideBoundedVector129*crRightHandSideBoundedVector168);
+const double crRightHandSideBoundedVector170 =             crRightHandSideBoundedVector120*crRightHandSideBoundedVector96;
+const double crRightHandSideBoundedVector171 =             1.2679491924311228*U_0_2 + 0.33974596215561359*U_1_2 + 1.6076951545867364*crRightHandSideBoundedVector140 - crRightHandSideBoundedVector161*crRightHandSideBoundedVector165;
+const double crRightHandSideBoundedVector172 =             crRightHandSideBoundedVector10*crRightHandSideBoundedVector171;
+const double crRightHandSideBoundedVector173 =             crRightHandSideBoundedVector100*(4.0769515458673631*crRightHandSideBoundedVector141*crRightHandSideBoundedVector35 - crRightHandSideBoundedVector144*crRightHandSideBoundedVector168);
+const double crRightHandSideBoundedVector174 =             crRightHandSideBoundedVector120*crRightHandSideBoundedVector44;
+const double crRightHandSideBoundedVector175 =             crRightHandSideBoundedVector15*crRightHandSideBoundedVector39;
+const double crRightHandSideBoundedVector176 =             crRightHandSideBoundedVector175*crRightHandSideBoundedVector85;
+const double crRightHandSideBoundedVector177 =             crRightHandSideBoundedVector120*crRightHandSideBoundedVector6;
+const double crRightHandSideBoundedVector178 =             crRightHandSideBoundedVector175*crRightHandSideBoundedVector96;
+const double crRightHandSideBoundedVector179 =             DN_DX_1_0*crRightHandSideBoundedVector34 + 0.21132486540518713*crRightHandSideBoundedVector37;
+const double crRightHandSideBoundedVector180 =             crRightHandSideBoundedVector134*crRightHandSideBoundedVector40;
+const double crRightHandSideBoundedVector181 =             DN_DX_0_0*crRightHandSideBoundedVector33 + 0.78867513459481287*crRightHandSideBoundedVector38;
+const double crRightHandSideBoundedVector182 =             crRightHandSideBoundedVector149*crRightHandSideBoundedVector40;
+const double crRightHandSideBoundedVector183 =             DN_DX_1_0*crRightHandSideBoundedVector1;
+const double crRightHandSideBoundedVector184 =             DN_DX_1_0*crRightHandSideBoundedVector46;
+const double crRightHandSideBoundedVector185 =             DN_DX_1_0*crRightHandSideBoundedVector10;
+const double crRightHandSideBoundedVector186 =             DN_DX_1_0*crRightHandSideBoundedVector30;
+const double crRightHandSideBoundedVector187 =             0.16666666666666669*f_ext(0,0);
+const double crRightHandSideBoundedVector188 =             crRightHandSideBoundedVector187 + 0.62200846792814624*f_ext(1,0);
+const double crRightHandSideBoundedVector189 =             crRightHandSideBoundedVector187 + 0.044658198738520456*f_ext(1,0);
+const double crRightHandSideBoundedVector190 =             DN_DX_1_0*crRightHandSideBoundedVector60;
+const double crRightHandSideBoundedVector191 =             DN_DX_1_0*crRightHandSideBoundedVector36;
+const double crRightHandSideBoundedVector192 =             1.0*DN_DX_1_0*crRightHandSideBoundedVector15;
+const double crRightHandSideBoundedVector193 =             0.78867513459481287*crRightHandSideBoundedVector133;
+const double crRightHandSideBoundedVector194 =             0.21132486540518713*crRightHandSideBoundedVector148;
+const double crRightHandSideBoundedVector195 =             0.16666666666666669*r_ext[0];
+            rRightHandSideBoundedVector[0]=crRightHandSideBoundedVector0*crRightHandSideBoundedVector2 + crRightHandSideBoundedVector2*crRightHandSideBoundedVector3 - crRightHandSideBoundedVector4*crRightHandSideBoundedVector42 - crRightHandSideBoundedVector4*crRightHandSideBoundedVector61 - 0.21132486540518713*crRightHandSideBoundedVector65 - 0.78867513459481287*crRightHandSideBoundedVector69 + crRightHandSideBoundedVector70 + 0.66666666666666674*m_ext[0] + 0.33333333333333337*m_ext[1];
+            rRightHandSideBoundedVector[1]=-crRightHandSideBoundedVector103*(-crRightHandSideBoundedVector101*crRightHandSideBoundedVector99 + crRightHandSideBoundedVector102 + crRightHandSideBoundedVector13*crRightHandSideBoundedVector84 + crRightHandSideBoundedVector96*crRightHandSideBoundedVector97) - crRightHandSideBoundedVector108*(-crRightHandSideBoundedVector104*crRightHandSideBoundedVector73 - crRightHandSideBoundedVector105*crRightHandSideBoundedVector72 + 0.21132486540518713*crRightHandSideBoundedVector107) - crRightHandSideBoundedVector113*(-crRightHandSideBoundedVector109*crRightHandSideBoundedVector75 - crRightHandSideBoundedVector110*crRightHandSideBoundedVector72 + 0.78867513459481287*crRightHandSideBoundedVector112) - crRightHandSideBoundedVector114*crRightHandSideBoundedVector134 - crRightHandSideBoundedVector114*crRightHandSideBoundedVector149 + 0.78867513459481287*crRightHandSideBoundedVector29 - 0.78867513459481287*crRightHandSideBoundedVector32 + crRightHandSideBoundedVector36*crRightHandSideBoundedVector76 + 0.21132486540518713*crRightHandSideBoundedVector57 - 0.21132486540518713*crRightHandSideBoundedVector58 + crRightHandSideBoundedVector60*crRightHandSideBoundedVector74 + crRightHandSideBoundedVector71 - crRightHandSideBoundedVector77*crRightHandSideBoundedVector80 - crRightHandSideBoundedVector81*crRightHandSideBoundedVector83 - crRightHandSideBoundedVector95*(crRightHandSideBoundedVector49*crRightHandSideBoundedVector84 + crRightHandSideBoundedVector85*crRightHandSideBoundedVector87 - crRightHandSideBoundedVector90*crRightHandSideBoundedVector92 + crRightHandSideBoundedVector94);
+            rRightHandSideBoundedVector[2]=-crRightHandSideBoundedVector103*(-crRightHandSideBoundedVector154*crRightHandSideBoundedVector81 + crRightHandSideBoundedVector163 - 1.2679491924311228*crRightHandSideBoundedVector170 - crRightHandSideBoundedVector172*crRightHandSideBoundedVector75 + crRightHandSideBoundedVector173*crRightHandSideBoundedVector98 + 0.62200846792814624*r_ext[0]) - crRightHandSideBoundedVector108*(-DN_DX_0_0*crRightHandSideBoundedVector150 - crRightHandSideBoundedVector153*crRightHandSideBoundedVector166 + 0.21132486540518713*crRightHandSideBoundedVector174 - 1.0192378864668408*crRightHandSideBoundedVector176 + crRightHandSideBoundedVector94) - crRightHandSideBoundedVector113*(-DN_DX_0_0*crRightHandSideBoundedVector151 + crRightHandSideBoundedVector102 - crRightHandSideBoundedVector155*crRightHandSideBoundedVector171 + 0.78867513459481287*crRightHandSideBoundedVector177 - 3.8038475772933689*crRightHandSideBoundedVector178) + 0.21132486540518713*crRightHandSideBoundedVector118 + 0.21132486540518713*crRightHandSideBoundedVector119 - 0.21132486540518713*crRightHandSideBoundedVector121 + 0.78867513459481287*crRightHandSideBoundedVector136 + 0.78867513459481287*crRightHandSideBoundedVector137 - 0.78867513459481287*crRightHandSideBoundedVector138 + crRightHandSideBoundedVector150*crRightHandSideBoundedVector73 + crRightHandSideBoundedVector151*crRightHandSideBoundedVector75 + crRightHandSideBoundedVector152*crRightHandSideBoundedVector153 + crRightHandSideBoundedVector154*crRightHandSideBoundedVector155 - crRightHandSideBoundedVector160*crRightHandSideBoundedVector77 - crRightHandSideBoundedVector162*crRightHandSideBoundedVector81 - crRightHandSideBoundedVector180*(crRightHandSideBoundedVector105 - 0.33974596215561359*crRightHandSideBoundedVector106 + crRightHandSideBoundedVector179*crRightHandSideBoundedVector44) - crRightHandSideBoundedVector182*(crRightHandSideBoundedVector110 - 1.2679491924311228*crRightHandSideBoundedVector111 + crRightHandSideBoundedVector181*crRightHandSideBoundedVector6) - crRightHandSideBoundedVector95*(-crRightHandSideBoundedVector152*crRightHandSideBoundedVector77 + crRightHandSideBoundedVector163 - 0.33974596215561359*crRightHandSideBoundedVector164 - crRightHandSideBoundedVector167*crRightHandSideBoundedVector73 + crRightHandSideBoundedVector169*crRightHandSideBoundedVector89 + 0.044658198738520456*r_ext[0]);
+            rRightHandSideBoundedVector[3]=-DN_DX_1_0*crRightHandSideBoundedVector108 - DN_DX_1_0*crRightHandSideBoundedVector113 + crRightHandSideBoundedVector0*crRightHandSideBoundedVector183 + crRightHandSideBoundedVector183*crRightHandSideBoundedVector3 - 0.78867513459481287*crRightHandSideBoundedVector65 - 0.21132486540518713*crRightHandSideBoundedVector69 + crRightHandSideBoundedVector70 + 0.33333333333333337*m_ext[0] + 0.66666666666666674*m_ext[1];
+            rRightHandSideBoundedVector[4]=-crRightHandSideBoundedVector103*(-crRightHandSideBoundedVector101*crRightHandSideBoundedVector90 + crRightHandSideBoundedVector13*crRightHandSideBoundedVector186 + crRightHandSideBoundedVector189 + crRightHandSideBoundedVector87*crRightHandSideBoundedVector96) - crRightHandSideBoundedVector108*(-crRightHandSideBoundedVector104*crRightHandSideBoundedVector75 + 0.78867513459481287*crRightHandSideBoundedVector107 - crRightHandSideBoundedVector190*crRightHandSideBoundedVector72) - crRightHandSideBoundedVector113*(-crRightHandSideBoundedVector109*crRightHandSideBoundedVector73 + 0.21132486540518713*crRightHandSideBoundedVector112 - crRightHandSideBoundedVector191*crRightHandSideBoundedVector72) - crRightHandSideBoundedVector134*crRightHandSideBoundedVector192 - crRightHandSideBoundedVector149*crRightHandSideBoundedVector192 - crRightHandSideBoundedVector184*crRightHandSideBoundedVector80 - crRightHandSideBoundedVector185*crRightHandSideBoundedVector83 + 0.21132486540518713*crRightHandSideBoundedVector29 - 0.21132486540518713*crRightHandSideBoundedVector32 + crRightHandSideBoundedVector36*crRightHandSideBoundedVector74 + 0.78867513459481287*crRightHandSideBoundedVector57 - 0.78867513459481287*crRightHandSideBoundedVector58 + crRightHandSideBoundedVector60*crRightHandSideBoundedVector76 + crRightHandSideBoundedVector71 - crRightHandSideBoundedVector95*(crRightHandSideBoundedVector186*crRightHandSideBoundedVector49 + crRightHandSideBoundedVector188 + crRightHandSideBoundedVector85*crRightHandSideBoundedVector97 - crRightHandSideBoundedVector92*crRightHandSideBoundedVector99);
+            rRightHandSideBoundedVector[5]=-crRightHandSideBoundedVector103*(-crRightHandSideBoundedVector154*crRightHandSideBoundedVector185 - 0.33974596215561359*crRightHandSideBoundedVector170 - crRightHandSideBoundedVector172*crRightHandSideBoundedVector73 + crRightHandSideBoundedVector173*crRightHandSideBoundedVector89 + crRightHandSideBoundedVector195 + 0.044658198738520456*r_ext[1]) - crRightHandSideBoundedVector108*(-DN_DX_1_0*crRightHandSideBoundedVector150 - crRightHandSideBoundedVector166*crRightHandSideBoundedVector193 + 0.78867513459481287*crRightHandSideBoundedVector174 - 3.8038475772933689*crRightHandSideBoundedVector176 + crRightHandSideBoundedVector188) - crRightHandSideBoundedVector113*(-DN_DX_1_0*crRightHandSideBoundedVector151 - crRightHandSideBoundedVector171*crRightHandSideBoundedVector194 + 0.21132486540518713*crRightHandSideBoundedVector177 - 1.0192378864668408*crRightHandSideBoundedVector178 + crRightHandSideBoundedVector189) + 0.78867513459481287*crRightHandSideBoundedVector118 + 0.78867513459481287*crRightHandSideBoundedVector119 - 0.78867513459481287*crRightHandSideBoundedVector121 + 0.21132486540518713*crRightHandSideBoundedVector136 + 0.21132486540518713*crRightHandSideBoundedVector137 - 0.21132486540518713*crRightHandSideBoundedVector138 + crRightHandSideBoundedVector150*crRightHandSideBoundedVector75 + crRightHandSideBoundedVector151*crRightHandSideBoundedVector73 + crRightHandSideBoundedVector152*crRightHandSideBoundedVector193 + crRightHandSideBoundedVector154*crRightHandSideBoundedVector194 - crRightHandSideBoundedVector160*crRightHandSideBoundedVector184 - crRightHandSideBoundedVector162*crRightHandSideBoundedVector185 - crRightHandSideBoundedVector180*(-1.2679491924311228*crRightHandSideBoundedVector106 + crRightHandSideBoundedVector181*crRightHandSideBoundedVector44 + crRightHandSideBoundedVector190) - crRightHandSideBoundedVector182*(-0.33974596215561359*crRightHandSideBoundedVector111 + crRightHandSideBoundedVector179*crRightHandSideBoundedVector6 + crRightHandSideBoundedVector191) - crRightHandSideBoundedVector95*(-crRightHandSideBoundedVector152*crRightHandSideBoundedVector184 - 1.2679491924311228*crRightHandSideBoundedVector164 - crRightHandSideBoundedVector167*crRightHandSideBoundedVector75 + crRightHandSideBoundedVector169*crRightHandSideBoundedVector98 + crRightHandSideBoundedVector195 + 0.62200846792814624*r_ext[1]);
+
+    } else {
+        const double crRightHandSideBoundedVector0 =             0.21132486540518713*alpha_sc_nodes[0] + 0.78867513459481287*alpha_sc_nodes[1];
+const double crRightHandSideBoundedVector1 =             DN_DX_0_0*U_0_0 + DN_DX_1_0*U_1_0;
+const double crRightHandSideBoundedVector2 =             DN_DX_0_0*crRightHandSideBoundedVector1;
+const double crRightHandSideBoundedVector3 =             0.78867513459481287*alpha_sc_nodes[0] + 0.21132486540518713*alpha_sc_nodes[1];
+const double crRightHandSideBoundedVector4 =             1.0*DN_DX_0_0;
+const double crRightHandSideBoundedVector5 =             0.78867513459481287*U_0_0 + 0.21132486540518713*U_1_0;
+const double crRightHandSideBoundedVector6 =             1.0/crRightHandSideBoundedVector5;
+const double crRightHandSideBoundedVector7 =             stab_c1/pow(h, 2);
+const double crRightHandSideBoundedVector8 =             1.3333333333333333*crRightHandSideBoundedVector7;
+const double crRightHandSideBoundedVector9 =             U_0_0 + 0.26794919243112275*U_1_0;
+const double crRightHandSideBoundedVector10 =             pow(crRightHandSideBoundedVector9, -2);
+const double crRightHandSideBoundedVector11 =             U_0_1 + 0.26794919243112275*U_1_1;
+const double crRightHandSideBoundedVector12 =             pow(crRightHandSideBoundedVector11, 2);
+const double crRightHandSideBoundedVector13 =             crRightHandSideBoundedVector10*crRightHandSideBoundedVector12;
+const double crRightHandSideBoundedVector14 =             sqrt(gamma);
+const double crRightHandSideBoundedVector15 =             gamma - 1;
+const double crRightHandSideBoundedVector16 =             0.78867513459481287*U_0_2 + 0.21132486540518713*U_1_2;
+const double crRightHandSideBoundedVector17 =             0.5*crRightHandSideBoundedVector13 - crRightHandSideBoundedVector16*crRightHandSideBoundedVector6;
+const double crRightHandSideBoundedVector18 =             crRightHandSideBoundedVector15*crRightHandSideBoundedVector17;
+const double crRightHandSideBoundedVector19 =             stab_c2/h;
+const double crRightHandSideBoundedVector20 =             pow(crRightHandSideBoundedVector15, -2);
+const double crRightHandSideBoundedVector21 =             pow(r_ext[0] + 0.26794919243112275*r_ext[1], 2);
+const double crRightHandSideBoundedVector22 =             crRightHandSideBoundedVector18*gamma*pow(f_ext(0,0) + 0.26794919243112275*f_ext(1,0), 2);
+const double crRightHandSideBoundedVector23 =             1.0/gamma;
+const double crRightHandSideBoundedVector24 =             0.70710678118654757*crRightHandSideBoundedVector23*stab_c3;
+const double crRightHandSideBoundedVector25 =             crRightHandSideBoundedVector19*(1.0*sqrt(crRightHandSideBoundedVector13) + crRightHandSideBoundedVector14*sqrt(-crRightHandSideBoundedVector18)) + crRightHandSideBoundedVector24*sqrt(crRightHandSideBoundedVector20*(0.62200846792814624*crRightHandSideBoundedVector21 - 1.2440169358562925*crRightHandSideBoundedVector22 + 1.2440169358562925*sqrt(crRightHandSideBoundedVector21*(0.24999999999999997*crRightHandSideBoundedVector21 - crRightHandSideBoundedVector22)))/pow(crRightHandSideBoundedVector17, 2));
+const double crRightHandSideBoundedVector26 =             DN_DX_0_0*U_0_2 + DN_DX_1_0*U_1_2;
+const double crRightHandSideBoundedVector27 =             crRightHandSideBoundedVector15*crRightHandSideBoundedVector26;
+const double crRightHandSideBoundedVector28 =             0.78867513459481287*f_ext(0,0) + 0.21132486540518713*f_ext(1,0);
+const double crRightHandSideBoundedVector29 =             crRightHandSideBoundedVector28*crRightHandSideBoundedVector5;
+const double crRightHandSideBoundedVector30 =             0.50000000000000011*gamma - 1.5000000000000004;
+const double crRightHandSideBoundedVector31 =             crRightHandSideBoundedVector1*crRightHandSideBoundedVector30;
+const double crRightHandSideBoundedVector32 =             crRightHandSideBoundedVector13*crRightHandSideBoundedVector31;
+const double crRightHandSideBoundedVector33 =             0.78867513459481287*U_0_1;
+const double crRightHandSideBoundedVector34 =             0.21132486540518713*U_1_1;
+const double crRightHandSideBoundedVector35 =             crRightHandSideBoundedVector33 + crRightHandSideBoundedVector34;
+const double crRightHandSideBoundedVector36 =             crRightHandSideBoundedVector35*crRightHandSideBoundedVector6;
+const double crRightHandSideBoundedVector37 =             DN_DX_0_0*U_0_1;
+const double crRightHandSideBoundedVector38 =             DN_DX_1_0*U_1_1;
+const double crRightHandSideBoundedVector39 =             crRightHandSideBoundedVector37 + crRightHandSideBoundedVector38;
+const double crRightHandSideBoundedVector40 =             1.0*gamma;
+const double crRightHandSideBoundedVector41 =             crRightHandSideBoundedVector39*(3.0 - crRightHandSideBoundedVector40);
+const double crRightHandSideBoundedVector42 =             (crRightHandSideBoundedVector27 - crRightHandSideBoundedVector29 + crRightHandSideBoundedVector32 + crRightHandSideBoundedVector36*crRightHandSideBoundedVector41 + 0.78867513459481287*dUdt_0_1 + 0.21132486540518713*dUdt_1_1)/(crRightHandSideBoundedVector25 + crRightHandSideBoundedVector6*crRightHandSideBoundedVector8*(mu + 0.78867513459481287*mu_sc_nodes[0] + 0.21132486540518713*mu_sc_nodes[1]));
+const double crRightHandSideBoundedVector43 =             0.21132486540518713*U_0_0 + 0.78867513459481287*U_1_0;
+const double crRightHandSideBoundedVector44 =             1.0/crRightHandSideBoundedVector43;
+const double crRightHandSideBoundedVector45 =             0.26794919243112275*U_0_0 + U_1_0;
+const double crRightHandSideBoundedVector46 =             pow(crRightHandSideBoundedVector45, -2);
+const double crRightHandSideBoundedVector47 =             0.26794919243112275*U_0_1 + U_1_1;
+const double crRightHandSideBoundedVector48 =             pow(crRightHandSideBoundedVector47, 2);
+const double crRightHandSideBoundedVector49 =             crRightHandSideBoundedVector46*crRightHandSideBoundedVector48;
+const double crRightHandSideBoundedVector50 =             0.21132486540518713*U_0_2 + 0.78867513459481287*U_1_2;
+const double crRightHandSideBoundedVector51 =             -crRightHandSideBoundedVector44*crRightHandSideBoundedVector50 + 0.5*crRightHandSideBoundedVector49;
+const double crRightHandSideBoundedVector52 =             crRightHandSideBoundedVector15*crRightHandSideBoundedVector51;
+const double crRightHandSideBoundedVector53 =             pow(0.26794919243112275*r_ext[0] + r_ext[1], 2);
+const double crRightHandSideBoundedVector54 =             crRightHandSideBoundedVector52*gamma*pow(0.26794919243112275*f_ext(0,0) + f_ext(1,0), 2);
+const double crRightHandSideBoundedVector55 =             crRightHandSideBoundedVector19*(crRightHandSideBoundedVector14*sqrt(-crRightHandSideBoundedVector52) + 1.0*sqrt(crRightHandSideBoundedVector49)) + crRightHandSideBoundedVector24*sqrt(crRightHandSideBoundedVector20*(0.62200846792814624*crRightHandSideBoundedVector53 - 1.2440169358562925*crRightHandSideBoundedVector54 + 1.2440169358562925*sqrt(crRightHandSideBoundedVector53*(0.24999999999999997*crRightHandSideBoundedVector53 - crRightHandSideBoundedVector54)))/pow(crRightHandSideBoundedVector51, 2));
+const double crRightHandSideBoundedVector56 =             0.21132486540518713*f_ext(0,0) + 0.78867513459481287*f_ext(1,0);
+const double crRightHandSideBoundedVector57 =             crRightHandSideBoundedVector43*crRightHandSideBoundedVector56;
+const double crRightHandSideBoundedVector58 =             crRightHandSideBoundedVector31*crRightHandSideBoundedVector49;
+const double crRightHandSideBoundedVector59 =             0.21132486540518713*U_0_1 + 0.78867513459481287*U_1_1;
+const double crRightHandSideBoundedVector60 =             crRightHandSideBoundedVector44*crRightHandSideBoundedVector59;
+const double crRightHandSideBoundedVector61 =             (crRightHandSideBoundedVector27 + crRightHandSideBoundedVector41*crRightHandSideBoundedVector60 - crRightHandSideBoundedVector57 + crRightHandSideBoundedVector58 + 0.21132486540518713*dUdt_0_1 + 0.78867513459481287*dUdt_1_1)/(crRightHandSideBoundedVector44*crRightHandSideBoundedVector8*(mu + 0.21132486540518713*mu_sc_nodes[0] + 0.78867513459481287*mu_sc_nodes[1]) + crRightHandSideBoundedVector55);
+const double crRightHandSideBoundedVector62 =             0.21132486540518713*m_ext[0];
+const double crRightHandSideBoundedVector63 =             0.78867513459481287*m_ext[1];
+const double crRightHandSideBoundedVector64 =             (crRightHandSideBoundedVector39 - crRightHandSideBoundedVector62 - crRightHandSideBoundedVector63 + 0.21132486540518713*dUdt_0_0 + 0.78867513459481287*dUdt_1_0)/crRightHandSideBoundedVector55;
+const double crRightHandSideBoundedVector65 =             crRightHandSideBoundedVector44*crRightHandSideBoundedVector64*(crRightHandSideBoundedVector62 + crRightHandSideBoundedVector63);
+const double crRightHandSideBoundedVector66 =             0.78867513459481287*m_ext[0];
+const double crRightHandSideBoundedVector67 =             0.21132486540518713*m_ext[1];
+const double crRightHandSideBoundedVector68 =             (crRightHandSideBoundedVector39 - crRightHandSideBoundedVector66 - crRightHandSideBoundedVector67 + 0.78867513459481287*dUdt_0_0 + 0.21132486540518713*dUdt_1_0)/crRightHandSideBoundedVector25;
+const double crRightHandSideBoundedVector69 =             crRightHandSideBoundedVector6*crRightHandSideBoundedVector68*(crRightHandSideBoundedVector66 + crRightHandSideBoundedVector67);
+const double crRightHandSideBoundedVector70 =             -1.0*crRightHandSideBoundedVector37 - 1.0*crRightHandSideBoundedVector38;
+const double crRightHandSideBoundedVector71 =             -1.0*crRightHandSideBoundedVector27;
+const double crRightHandSideBoundedVector72 =             crRightHandSideBoundedVector40 - 3.0;
+const double crRightHandSideBoundedVector73 =             0.21132486540518713*crRightHandSideBoundedVector39;
+const double crRightHandSideBoundedVector74 =             crRightHandSideBoundedVector72*crRightHandSideBoundedVector73;
+const double crRightHandSideBoundedVector75 =             0.78867513459481287*crRightHandSideBoundedVector39;
+const double crRightHandSideBoundedVector76 =             crRightHandSideBoundedVector72*crRightHandSideBoundedVector75;
+const double crRightHandSideBoundedVector77 =             DN_DX_0_0*crRightHandSideBoundedVector46;
+const double crRightHandSideBoundedVector78 =             crRightHandSideBoundedVector1*crRightHandSideBoundedVector59;
+const double crRightHandSideBoundedVector79 =             2.143593539448982*mu;
+const double crRightHandSideBoundedVector80 =             (crRightHandSideBoundedVector39*crRightHandSideBoundedVector43 - crRightHandSideBoundedVector78)*(0.33974596215561359*beta_sc_nodes[0] + 1.2679491924311228*beta_sc_nodes[1] + crRightHandSideBoundedVector79 + 0.45299461620748482*mu_sc_nodes[0] + 1.6905989232414971*mu_sc_nodes[1]);
+const double crRightHandSideBoundedVector81 =             DN_DX_0_0*crRightHandSideBoundedVector10;
+const double crRightHandSideBoundedVector82 =             crRightHandSideBoundedVector1*crRightHandSideBoundedVector35;
+const double crRightHandSideBoundedVector83 =             (crRightHandSideBoundedVector39*crRightHandSideBoundedVector5 - crRightHandSideBoundedVector82)*(1.2679491924311228*beta_sc_nodes[0] + 0.33974596215561359*beta_sc_nodes[1] + crRightHandSideBoundedVector79 + 1.6905989232414971*mu_sc_nodes[0] + 0.45299461620748482*mu_sc_nodes[1]);
+const double crRightHandSideBoundedVector84 =             DN_DX_0_0*crRightHandSideBoundedVector30;
+const double crRightHandSideBoundedVector85 =             crRightHandSideBoundedVector46*crRightHandSideBoundedVector59;
+const double crRightHandSideBoundedVector86 =             1.6076951545867364*gamma - 4.8230854637602096;
+const double crRightHandSideBoundedVector87 =             crRightHandSideBoundedVector73*crRightHandSideBoundedVector86;
+const double crRightHandSideBoundedVector88 =             1.267949192431123*gamma - 3.8038475772933689;
+const double crRightHandSideBoundedVector89 =             0.21132486540518713*crRightHandSideBoundedVector1;
+const double crRightHandSideBoundedVector90 =             crRightHandSideBoundedVector88*crRightHandSideBoundedVector89;
+const double crRightHandSideBoundedVector91 =             pow(crRightHandSideBoundedVector45, -3);
+const double crRightHandSideBoundedVector92 =             crRightHandSideBoundedVector48*crRightHandSideBoundedVector91;
+const double crRightHandSideBoundedVector93 =             0.16666666666666669*f_ext(1,0);
+const double crRightHandSideBoundedVector94 =             crRightHandSideBoundedVector93 + 0.044658198738520456*f_ext(0,0);
+const double crRightHandSideBoundedVector95 =             1.0*crRightHandSideBoundedVector64;
+const double crRightHandSideBoundedVector96 =             crRightHandSideBoundedVector10*crRightHandSideBoundedVector35;
+const double crRightHandSideBoundedVector97 =             crRightHandSideBoundedVector75*crRightHandSideBoundedVector86;
+const double crRightHandSideBoundedVector98 =             0.78867513459481287*crRightHandSideBoundedVector1;
+const double crRightHandSideBoundedVector99 =             crRightHandSideBoundedVector88*crRightHandSideBoundedVector98;
+const double crRightHandSideBoundedVector100 =             pow(crRightHandSideBoundedVector9, -3);
+const double crRightHandSideBoundedVector101 =             crRightHandSideBoundedVector100*crRightHandSideBoundedVector12;
+const double crRightHandSideBoundedVector102 =             crRightHandSideBoundedVector93 + 0.62200846792814624*f_ext(0,0);
+const double crRightHandSideBoundedVector103 =             1.0*crRightHandSideBoundedVector68;
+const double crRightHandSideBoundedVector104 =             crRightHandSideBoundedVector44*crRightHandSideBoundedVector72;
+const double crRightHandSideBoundedVector105 =             DN_DX_0_0*crRightHandSideBoundedVector60;
+const double crRightHandSideBoundedVector106 =             crRightHandSideBoundedVector46*crRightHandSideBoundedVector78;
+const double crRightHandSideBoundedVector107 =             crRightHandSideBoundedVector106*crRightHandSideBoundedVector86;
+const double crRightHandSideBoundedVector108 =             1.0*crRightHandSideBoundedVector61;
+const double crRightHandSideBoundedVector109 =             crRightHandSideBoundedVector6*crRightHandSideBoundedVector72;
+const double crRightHandSideBoundedVector110 =             DN_DX_0_0*crRightHandSideBoundedVector36;
+const double crRightHandSideBoundedVector111 =             crRightHandSideBoundedVector10*crRightHandSideBoundedVector82;
+const double crRightHandSideBoundedVector112 =             crRightHandSideBoundedVector111*crRightHandSideBoundedVector86;
+const double crRightHandSideBoundedVector113 =             1.0*crRightHandSideBoundedVector42;
+const double crRightHandSideBoundedVector114 =             crRightHandSideBoundedVector15*crRightHandSideBoundedVector4;
+const double crRightHandSideBoundedVector115 =             1.0/c_v;
+const double crRightHandSideBoundedVector116 =             crRightHandSideBoundedVector115*(0.21132486540518713*lamb_sc_nodes[0] + 0.78867513459481287*lamb_sc_nodes[1] + lambda);
+const double crRightHandSideBoundedVector117 =             crRightHandSideBoundedVector23*crRightHandSideBoundedVector7;
+const double crRightHandSideBoundedVector118 =             crRightHandSideBoundedVector43*(0.21132486540518713*r_ext[0] + 0.78867513459481287*r_ext[1]);
+const double crRightHandSideBoundedVector119 =             crRightHandSideBoundedVector56*crRightHandSideBoundedVector59;
+const double crRightHandSideBoundedVector120 =             crRightHandSideBoundedVector26*gamma;
+const double crRightHandSideBoundedVector121 =             crRightHandSideBoundedVector120*crRightHandSideBoundedVector60;
+const double crRightHandSideBoundedVector122 =             1.0000000000000002*crRightHandSideBoundedVector15;
+const double crRightHandSideBoundedVector123 =             crRightHandSideBoundedVector122*crRightHandSideBoundedVector49;
+const double crRightHandSideBoundedVector124 =             crRightHandSideBoundedVector15*(-0.31100423396407312*crRightHandSideBoundedVector44*crRightHandSideBoundedVector48 + crRightHandSideBoundedVector50);
+const double crRightHandSideBoundedVector125 =             crRightHandSideBoundedVector124 + crRightHandSideBoundedVector50;
+const double crRightHandSideBoundedVector126 =             crRightHandSideBoundedVector125*crRightHandSideBoundedVector44;
+const double crRightHandSideBoundedVector127 =             0.5*crRightHandSideBoundedVector15;
+const double crRightHandSideBoundedVector128 =             1.0/crRightHandSideBoundedVector45;
+const double crRightHandSideBoundedVector129 =             crRightHandSideBoundedVector128*pow(crRightHandSideBoundedVector47, 3);
+const double crRightHandSideBoundedVector130 =             crRightHandSideBoundedVector127*crRightHandSideBoundedVector129;
+const double crRightHandSideBoundedVector131 =             1.6076951545867364*crRightHandSideBoundedVector59;
+const double crRightHandSideBoundedVector132 =             crRightHandSideBoundedVector125*crRightHandSideBoundedVector131;
+const double crRightHandSideBoundedVector133 =             crRightHandSideBoundedVector1*crRightHandSideBoundedVector46;
+const double crRightHandSideBoundedVector134 =             (-crRightHandSideBoundedVector118 - crRightHandSideBoundedVector119 + crRightHandSideBoundedVector121 + crRightHandSideBoundedVector133*(crRightHandSideBoundedVector130 - crRightHandSideBoundedVector132) + crRightHandSideBoundedVector39*(-crRightHandSideBoundedVector123 + crRightHandSideBoundedVector126) + 0.21132486540518713*dUdt_0_2 + 0.78867513459481287*dUdt_1_2)/(crRightHandSideBoundedVector116*crRightHandSideBoundedVector117*crRightHandSideBoundedVector44 + crRightHandSideBoundedVector55);
+const double crRightHandSideBoundedVector135 =             crRightHandSideBoundedVector115*(0.78867513459481287*lamb_sc_nodes[0] + 0.21132486540518713*lamb_sc_nodes[1] + lambda);
+const double crRightHandSideBoundedVector136 =             crRightHandSideBoundedVector5*(0.78867513459481287*r_ext[0] + 0.21132486540518713*r_ext[1]);
+const double crRightHandSideBoundedVector137 =             crRightHandSideBoundedVector28*crRightHandSideBoundedVector35;
+const double crRightHandSideBoundedVector138 =             crRightHandSideBoundedVector120*crRightHandSideBoundedVector36;
+const double crRightHandSideBoundedVector139 =             crRightHandSideBoundedVector122*crRightHandSideBoundedVector13;
+const double crRightHandSideBoundedVector140 =             crRightHandSideBoundedVector15*(-0.31100423396407312*crRightHandSideBoundedVector12*crRightHandSideBoundedVector6 + crRightHandSideBoundedVector16);
+const double crRightHandSideBoundedVector141 =             crRightHandSideBoundedVector140 + crRightHandSideBoundedVector16;
+const double crRightHandSideBoundedVector142 =             crRightHandSideBoundedVector141*crRightHandSideBoundedVector6;
+const double crRightHandSideBoundedVector143 =             1.0/crRightHandSideBoundedVector9;
+const double crRightHandSideBoundedVector144 =             pow(crRightHandSideBoundedVector11, 3)*crRightHandSideBoundedVector143;
+const double crRightHandSideBoundedVector145 =             crRightHandSideBoundedVector127*crRightHandSideBoundedVector144;
+const double crRightHandSideBoundedVector146 =             1.6076951545867364*crRightHandSideBoundedVector35;
+const double crRightHandSideBoundedVector147 =             crRightHandSideBoundedVector141*crRightHandSideBoundedVector146;
+const double crRightHandSideBoundedVector148 =             crRightHandSideBoundedVector1*crRightHandSideBoundedVector10;
+const double crRightHandSideBoundedVector149 =             (-crRightHandSideBoundedVector136 - crRightHandSideBoundedVector137 + crRightHandSideBoundedVector138 + crRightHandSideBoundedVector148*(crRightHandSideBoundedVector145 - crRightHandSideBoundedVector147) + crRightHandSideBoundedVector39*(-crRightHandSideBoundedVector139 + crRightHandSideBoundedVector142) + 0.78867513459481287*dUdt_0_2 + 0.21132486540518713*dUdt_1_2)/(crRightHandSideBoundedVector117*crRightHandSideBoundedVector135*crRightHandSideBoundedVector6 + crRightHandSideBoundedVector25);
+const double crRightHandSideBoundedVector150 =             crRightHandSideBoundedVector123 - crRightHandSideBoundedVector126;
+const double crRightHandSideBoundedVector151 =             crRightHandSideBoundedVector139 - crRightHandSideBoundedVector142;
+const double crRightHandSideBoundedVector152 =             -crRightHandSideBoundedVector130 + crRightHandSideBoundedVector132;
+const double crRightHandSideBoundedVector153 =             0.21132486540518713*crRightHandSideBoundedVector133;
+const double crRightHandSideBoundedVector154 =             -crRightHandSideBoundedVector145 + crRightHandSideBoundedVector147;
+const double crRightHandSideBoundedVector155 =             0.78867513459481287*crRightHandSideBoundedVector148;
+const double crRightHandSideBoundedVector156 =             1.6076951545867364*crRightHandSideBoundedVector26;
+const double crRightHandSideBoundedVector157 =             1.6076951545867364*crRightHandSideBoundedVector1;
+const double crRightHandSideBoundedVector158 =             1.267949192431123*crRightHandSideBoundedVector1;
+const double crRightHandSideBoundedVector159 =             crRightHandSideBoundedVector128*crRightHandSideBoundedVector48;
+const double crRightHandSideBoundedVector160 =             crRightHandSideBoundedVector116*(-crRightHandSideBoundedVector131*crRightHandSideBoundedVector39 + crRightHandSideBoundedVector156*crRightHandSideBoundedVector43 - crRightHandSideBoundedVector157*crRightHandSideBoundedVector50 + crRightHandSideBoundedVector158*crRightHandSideBoundedVector159) + crRightHandSideBoundedVector60*crRightHandSideBoundedVector80;
+const double crRightHandSideBoundedVector161 =             crRightHandSideBoundedVector12*crRightHandSideBoundedVector143;
+const double crRightHandSideBoundedVector162 =             crRightHandSideBoundedVector135*(-crRightHandSideBoundedVector146*crRightHandSideBoundedVector39 + crRightHandSideBoundedVector156*crRightHandSideBoundedVector5 - crRightHandSideBoundedVector157*crRightHandSideBoundedVector16 + crRightHandSideBoundedVector158*crRightHandSideBoundedVector161) + crRightHandSideBoundedVector36*crRightHandSideBoundedVector83;
+const double crRightHandSideBoundedVector163 =             0.16666666666666669*r_ext[1];
+const double crRightHandSideBoundedVector164 =             crRightHandSideBoundedVector120*crRightHandSideBoundedVector85;
+const double crRightHandSideBoundedVector165 =             3.1698729810778072*crRightHandSideBoundedVector15;
+const double crRightHandSideBoundedVector166 =             0.33974596215561359*U_0_2 + 1.2679491924311228*U_1_2 + 1.6076951545867364*crRightHandSideBoundedVector124 - crRightHandSideBoundedVector159*crRightHandSideBoundedVector165;
+const double crRightHandSideBoundedVector167 =             crRightHandSideBoundedVector166*crRightHandSideBoundedVector46;
+const double crRightHandSideBoundedVector168 =             2.5358983848622456*crRightHandSideBoundedVector15;
+const double crRightHandSideBoundedVector169 =             crRightHandSideBoundedVector91*(4.0769515458673631*crRightHandSideBoundedVector125*crRightHandSideBoundedVector59 - crRightHandSideBoundedVector129*crRightHandSideBoundedVector168);
+const double crRightHandSideBoundedVector170 =             crRightHandSideBoundedVector120*crRightHandSideBoundedVector96;
+const double crRightHandSideBoundedVector171 =             1.2679491924311228*U_0_2 + 0.33974596215561359*U_1_2 + 1.6076951545867364*crRightHandSideBoundedVector140 - crRightHandSideBoundedVector161*crRightHandSideBoundedVector165;
+const double crRightHandSideBoundedVector172 =             crRightHandSideBoundedVector10*crRightHandSideBoundedVector171;
+const double crRightHandSideBoundedVector173 =             crRightHandSideBoundedVector100*(4.0769515458673631*crRightHandSideBoundedVector141*crRightHandSideBoundedVector35 - crRightHandSideBoundedVector144*crRightHandSideBoundedVector168);
+const double crRightHandSideBoundedVector174 =             crRightHandSideBoundedVector120*crRightHandSideBoundedVector44;
+const double crRightHandSideBoundedVector175 =             crRightHandSideBoundedVector15*crRightHandSideBoundedVector39;
+const double crRightHandSideBoundedVector176 =             crRightHandSideBoundedVector175*crRightHandSideBoundedVector85;
+const double crRightHandSideBoundedVector177 =             crRightHandSideBoundedVector120*crRightHandSideBoundedVector6;
+const double crRightHandSideBoundedVector178 =             crRightHandSideBoundedVector175*crRightHandSideBoundedVector96;
+const double crRightHandSideBoundedVector179 =             DN_DX_1_0*crRightHandSideBoundedVector34 + 0.21132486540518713*crRightHandSideBoundedVector37;
+const double crRightHandSideBoundedVector180 =             crRightHandSideBoundedVector134*crRightHandSideBoundedVector40;
+const double crRightHandSideBoundedVector181 =             DN_DX_0_0*crRightHandSideBoundedVector33 + 0.78867513459481287*crRightHandSideBoundedVector38;
+const double crRightHandSideBoundedVector182 =             crRightHandSideBoundedVector149*crRightHandSideBoundedVector40;
+const double crRightHandSideBoundedVector183 =             DN_DX_1_0*crRightHandSideBoundedVector1;
+const double crRightHandSideBoundedVector184 =             DN_DX_1_0*crRightHandSideBoundedVector46;
+const double crRightHandSideBoundedVector185 =             DN_DX_1_0*crRightHandSideBoundedVector10;
+const double crRightHandSideBoundedVector186 =             DN_DX_1_0*crRightHandSideBoundedVector30;
+const double crRightHandSideBoundedVector187 =             0.16666666666666669*f_ext(0,0);
+const double crRightHandSideBoundedVector188 =             crRightHandSideBoundedVector187 + 0.62200846792814624*f_ext(1,0);
+const double crRightHandSideBoundedVector189 =             crRightHandSideBoundedVector187 + 0.044658198738520456*f_ext(1,0);
+const double crRightHandSideBoundedVector190 =             DN_DX_1_0*crRightHandSideBoundedVector60;
+const double crRightHandSideBoundedVector191 =             DN_DX_1_0*crRightHandSideBoundedVector36;
+const double crRightHandSideBoundedVector192 =             1.0*DN_DX_1_0*crRightHandSideBoundedVector15;
+const double crRightHandSideBoundedVector193 =             0.78867513459481287*crRightHandSideBoundedVector133;
+const double crRightHandSideBoundedVector194 =             0.21132486540518713*crRightHandSideBoundedVector148;
+const double crRightHandSideBoundedVector195 =             0.16666666666666669*r_ext[0];
+            rRightHandSideBoundedVector[0]=crRightHandSideBoundedVector0*crRightHandSideBoundedVector2 + crRightHandSideBoundedVector2*crRightHandSideBoundedVector3 - crRightHandSideBoundedVector4*crRightHandSideBoundedVector42 - crRightHandSideBoundedVector4*crRightHandSideBoundedVector61 - 0.21132486540518713*crRightHandSideBoundedVector65 - 0.78867513459481287*crRightHandSideBoundedVector69 + crRightHandSideBoundedVector70 + 0.66666666666666674*m_ext[0] + 0.33333333333333337*m_ext[1];
+            rRightHandSideBoundedVector[1]=-crRightHandSideBoundedVector103*(-crRightHandSideBoundedVector101*crRightHandSideBoundedVector99 + crRightHandSideBoundedVector102 + crRightHandSideBoundedVector13*crRightHandSideBoundedVector84 + crRightHandSideBoundedVector96*crRightHandSideBoundedVector97) - crRightHandSideBoundedVector108*(-crRightHandSideBoundedVector104*crRightHandSideBoundedVector73 - crRightHandSideBoundedVector105*crRightHandSideBoundedVector72 + 0.21132486540518713*crRightHandSideBoundedVector107) - crRightHandSideBoundedVector113*(-crRightHandSideBoundedVector109*crRightHandSideBoundedVector75 - crRightHandSideBoundedVector110*crRightHandSideBoundedVector72 + 0.78867513459481287*crRightHandSideBoundedVector112) - crRightHandSideBoundedVector114*crRightHandSideBoundedVector134 - crRightHandSideBoundedVector114*crRightHandSideBoundedVector149 + 0.78867513459481287*crRightHandSideBoundedVector29 - 0.78867513459481287*crRightHandSideBoundedVector32 + crRightHandSideBoundedVector36*crRightHandSideBoundedVector76 + 0.21132486540518713*crRightHandSideBoundedVector57 - 0.21132486540518713*crRightHandSideBoundedVector58 + crRightHandSideBoundedVector60*crRightHandSideBoundedVector74 + crRightHandSideBoundedVector71 - crRightHandSideBoundedVector77*crRightHandSideBoundedVector80 - crRightHandSideBoundedVector81*crRightHandSideBoundedVector83 - crRightHandSideBoundedVector95*(crRightHandSideBoundedVector49*crRightHandSideBoundedVector84 + crRightHandSideBoundedVector85*crRightHandSideBoundedVector87 - crRightHandSideBoundedVector90*crRightHandSideBoundedVector92 + crRightHandSideBoundedVector94);
+            rRightHandSideBoundedVector[2]=-crRightHandSideBoundedVector103*(-crRightHandSideBoundedVector154*crRightHandSideBoundedVector81 + crRightHandSideBoundedVector163 - 1.2679491924311228*crRightHandSideBoundedVector170 - crRightHandSideBoundedVector172*crRightHandSideBoundedVector75 + crRightHandSideBoundedVector173*crRightHandSideBoundedVector98 + 0.62200846792814624*r_ext[0]) - crRightHandSideBoundedVector108*(-DN_DX_0_0*crRightHandSideBoundedVector150 - crRightHandSideBoundedVector153*crRightHandSideBoundedVector166 + 0.21132486540518713*crRightHandSideBoundedVector174 - 1.0192378864668408*crRightHandSideBoundedVector176 + crRightHandSideBoundedVector94) - crRightHandSideBoundedVector113*(-DN_DX_0_0*crRightHandSideBoundedVector151 + crRightHandSideBoundedVector102 - crRightHandSideBoundedVector155*crRightHandSideBoundedVector171 + 0.78867513459481287*crRightHandSideBoundedVector177 - 3.8038475772933689*crRightHandSideBoundedVector178) + 0.21132486540518713*crRightHandSideBoundedVector118 + 0.21132486540518713*crRightHandSideBoundedVector119 - 0.21132486540518713*crRightHandSideBoundedVector121 + 0.78867513459481287*crRightHandSideBoundedVector136 + 0.78867513459481287*crRightHandSideBoundedVector137 - 0.78867513459481287*crRightHandSideBoundedVector138 + crRightHandSideBoundedVector150*crRightHandSideBoundedVector73 + crRightHandSideBoundedVector151*crRightHandSideBoundedVector75 + crRightHandSideBoundedVector152*crRightHandSideBoundedVector153 + crRightHandSideBoundedVector154*crRightHandSideBoundedVector155 - crRightHandSideBoundedVector160*crRightHandSideBoundedVector77 - crRightHandSideBoundedVector162*crRightHandSideBoundedVector81 - crRightHandSideBoundedVector180*(crRightHandSideBoundedVector105 - 0.33974596215561359*crRightHandSideBoundedVector106 + crRightHandSideBoundedVector179*crRightHandSideBoundedVector44) - crRightHandSideBoundedVector182*(crRightHandSideBoundedVector110 - 1.2679491924311228*crRightHandSideBoundedVector111 + crRightHandSideBoundedVector181*crRightHandSideBoundedVector6) - crRightHandSideBoundedVector95*(-crRightHandSideBoundedVector152*crRightHandSideBoundedVector77 + crRightHandSideBoundedVector163 - 0.33974596215561359*crRightHandSideBoundedVector164 - crRightHandSideBoundedVector167*crRightHandSideBoundedVector73 + crRightHandSideBoundedVector169*crRightHandSideBoundedVector89 + 0.044658198738520456*r_ext[0]);
+            rRightHandSideBoundedVector[3]=-DN_DX_1_0*crRightHandSideBoundedVector108 - DN_DX_1_0*crRightHandSideBoundedVector113 + crRightHandSideBoundedVector0*crRightHandSideBoundedVector183 + crRightHandSideBoundedVector183*crRightHandSideBoundedVector3 - 0.78867513459481287*crRightHandSideBoundedVector65 - 0.21132486540518713*crRightHandSideBoundedVector69 + crRightHandSideBoundedVector70 + 0.33333333333333337*m_ext[0] + 0.66666666666666674*m_ext[1];
+            rRightHandSideBoundedVector[4]=-crRightHandSideBoundedVector103*(-crRightHandSideBoundedVector101*crRightHandSideBoundedVector90 + crRightHandSideBoundedVector13*crRightHandSideBoundedVector186 + crRightHandSideBoundedVector189 + crRightHandSideBoundedVector87*crRightHandSideBoundedVector96) - crRightHandSideBoundedVector108*(-crRightHandSideBoundedVector104*crRightHandSideBoundedVector75 + 0.78867513459481287*crRightHandSideBoundedVector107 - crRightHandSideBoundedVector190*crRightHandSideBoundedVector72) - crRightHandSideBoundedVector113*(-crRightHandSideBoundedVector109*crRightHandSideBoundedVector73 + 0.21132486540518713*crRightHandSideBoundedVector112 - crRightHandSideBoundedVector191*crRightHandSideBoundedVector72) - crRightHandSideBoundedVector134*crRightHandSideBoundedVector192 - crRightHandSideBoundedVector149*crRightHandSideBoundedVector192 - crRightHandSideBoundedVector184*crRightHandSideBoundedVector80 - crRightHandSideBoundedVector185*crRightHandSideBoundedVector83 + 0.21132486540518713*crRightHandSideBoundedVector29 - 0.21132486540518713*crRightHandSideBoundedVector32 + crRightHandSideBoundedVector36*crRightHandSideBoundedVector74 + 0.78867513459481287*crRightHandSideBoundedVector57 - 0.78867513459481287*crRightHandSideBoundedVector58 + crRightHandSideBoundedVector60*crRightHandSideBoundedVector76 + crRightHandSideBoundedVector71 - crRightHandSideBoundedVector95*(crRightHandSideBoundedVector186*crRightHandSideBoundedVector49 + crRightHandSideBoundedVector188 + crRightHandSideBoundedVector85*crRightHandSideBoundedVector97 - crRightHandSideBoundedVector92*crRightHandSideBoundedVector99);
+            rRightHandSideBoundedVector[5]=-crRightHandSideBoundedVector103*(-crRightHandSideBoundedVector154*crRightHandSideBoundedVector185 - 0.33974596215561359*crRightHandSideBoundedVector170 - crRightHandSideBoundedVector172*crRightHandSideBoundedVector73 + crRightHandSideBoundedVector173*crRightHandSideBoundedVector89 + crRightHandSideBoundedVector195 + 0.044658198738520456*r_ext[1]) - crRightHandSideBoundedVector108*(-DN_DX_1_0*crRightHandSideBoundedVector150 - crRightHandSideBoundedVector166*crRightHandSideBoundedVector193 + 0.78867513459481287*crRightHandSideBoundedVector174 - 3.8038475772933689*crRightHandSideBoundedVector176 + crRightHandSideBoundedVector188) - crRightHandSideBoundedVector113*(-DN_DX_1_0*crRightHandSideBoundedVector151 - crRightHandSideBoundedVector171*crRightHandSideBoundedVector194 + 0.21132486540518713*crRightHandSideBoundedVector177 - 1.0192378864668408*crRightHandSideBoundedVector178 + crRightHandSideBoundedVector189) + 0.78867513459481287*crRightHandSideBoundedVector118 + 0.78867513459481287*crRightHandSideBoundedVector119 - 0.78867513459481287*crRightHandSideBoundedVector121 + 0.21132486540518713*crRightHandSideBoundedVector136 + 0.21132486540518713*crRightHandSideBoundedVector137 - 0.21132486540518713*crRightHandSideBoundedVector138 + crRightHandSideBoundedVector150*crRightHandSideBoundedVector75 + crRightHandSideBoundedVector151*crRightHandSideBoundedVector73 + crRightHandSideBoundedVector152*crRightHandSideBoundedVector193 + crRightHandSideBoundedVector154*crRightHandSideBoundedVector194 - crRightHandSideBoundedVector160*crRightHandSideBoundedVector184 - crRightHandSideBoundedVector162*crRightHandSideBoundedVector185 - crRightHandSideBoundedVector180*(-1.2679491924311228*crRightHandSideBoundedVector106 + crRightHandSideBoundedVector181*crRightHandSideBoundedVector44 + crRightHandSideBoundedVector190) - crRightHandSideBoundedVector182*(-0.33974596215561359*crRightHandSideBoundedVector111 + crRightHandSideBoundedVector179*crRightHandSideBoundedVector6 + crRightHandSideBoundedVector191) - crRightHandSideBoundedVector95*(-crRightHandSideBoundedVector152*crRightHandSideBoundedVector184 - 1.2679491924311228*crRightHandSideBoundedVector164 - crRightHandSideBoundedVector167*crRightHandSideBoundedVector75 + crRightHandSideBoundedVector169*crRightHandSideBoundedVector98 + crRightHandSideBoundedVector195 + 0.62200846792814624*r_ext[1]);
+
+    }
+
+    // Here we assume that all the weights of the gauss points are the same so we multiply at the end by Volume/NumNodes
+    rRightHandSideBoundedVector *= data.volume / NumNodes;
+
+    KRATOS_CATCH("")
+}
+
 
 template <>
 void CompressibleNavierStokesExplicit<2,3>::CalculateRightHandSideInternal(
@@ -2152,7 +2934,6 @@ void CompressibleNavierStokesExplicit<2,3>::CalculateRightHandSideInternal(
 {
     KRATOS_TRY
 
-    constexpr unsigned int n_nodes = 3;
 
     // Struct to pass around the data
     ElementDataStruct data;
@@ -2160,13 +2941,13 @@ void CompressibleNavierStokesExplicit<2,3>::CalculateRightHandSideInternal(
 
     // Substitute the formulation symbols by the data structure values
     const double h = data.h;
-    const array_1d<double, n_nodes>& r_ext = data.r_ext;
-    const array_1d<double, n_nodes>& m_ext = data.m_ext;
-    const array_1d<double, n_nodes>& alpha_sc_nodes = data.alpha_sc_nodes;
-    const array_1d<double, n_nodes>& mu_sc_nodes = data.mu_sc_nodes;
-    const array_1d<double, n_nodes>& beta_sc_nodes = data.beta_sc_nodes;
-    const array_1d<double, n_nodes>& lamb_sc_nodes = data.lamb_sc_nodes;
-    const BoundedMatrix<double, n_nodes, 2>& f_ext = data.f_ext;
+    const array_1d<double, NumNodes>& r_ext = data.r_ext;
+    const array_1d<double, NumNodes>& m_ext = data.m_ext;
+    const array_1d<double, NumNodes>& alpha_sc_nodes = data.alpha_sc_nodes;
+    const array_1d<double, NumNodes>& mu_sc_nodes = data.mu_sc_nodes;
+    const array_1d<double, NumNodes>& beta_sc_nodes = data.beta_sc_nodes;
+    const array_1d<double, NumNodes>& lamb_sc_nodes = data.lamb_sc_nodes;
+    const BoundedMatrix<double, NumNodes, 2>& f_ext = data.f_ext;
     const double mu = data.mu;
     const double c_v = data.c_v;
     const double gamma = data.gamma;
@@ -3818,8 +4599,8 @@ const double crRightHandSideBoundedVector778 =             crRightHandSideBounde
 
     }
 
-    // Here we assume that all the weights of the gauss points are the same so we multiply at the end by Volume/n_nodes
-    rRightHandSideBoundedVector *= data.volume / static_cast<double>(n_nodes);
+    // Here we assume that all the weights of the gauss points are the same so we multiply at the end by Volume/NumNodes
+    rRightHandSideBoundedVector *= data.volume / NumNodes;
 
     KRATOS_CATCH("")
 }
@@ -3831,7 +4612,6 @@ void CompressibleNavierStokesExplicit<3,4>::CalculateRightHandSideInternal(
 {
     KRATOS_TRY
 
-    constexpr unsigned int n_nodes = 4;
 
     // Struct to pass around the data
     ElementDataStruct data;
@@ -3839,13 +4619,13 @@ void CompressibleNavierStokesExplicit<3,4>::CalculateRightHandSideInternal(
 
     // Substitute the formulation symbols by the data structure values
     const double h = data.h;
-    const array_1d<double, n_nodes>& r_ext = data.r_ext;
-    const array_1d<double, n_nodes>& m_ext = data.m_ext;
-    const array_1d<double, n_nodes>& alpha_sc_nodes = data.alpha_sc_nodes;
-    const array_1d<double, n_nodes>& mu_sc_nodes = data.mu_sc_nodes;
-    const array_1d<double, n_nodes>& beta_sc_nodes = data.beta_sc_nodes;
-    const array_1d<double, n_nodes>& lamb_sc_nodes = data.lamb_sc_nodes;
-    const BoundedMatrix<double, n_nodes, 3>& f_ext = data.f_ext;
+    const array_1d<double, NumNodes>& r_ext = data.r_ext;
+    const array_1d<double, NumNodes>& m_ext = data.m_ext;
+    const array_1d<double, NumNodes>& alpha_sc_nodes = data.alpha_sc_nodes;
+    const array_1d<double, NumNodes>& mu_sc_nodes = data.mu_sc_nodes;
+    const array_1d<double, NumNodes>& beta_sc_nodes = data.beta_sc_nodes;
+    const array_1d<double, NumNodes>& lamb_sc_nodes = data.lamb_sc_nodes;
+    const BoundedMatrix<double, NumNodes, 3>& f_ext = data.f_ext;
     const double mu = data.mu;
     const double c_v = data.c_v;
     const double gamma = data.gamma;
@@ -8199,135 +8979,79 @@ const double crRightHandSideBoundedVector2101 =             crRightHandSideBound
 
     }
 
-    // Here we assume that all the weights of the gauss points are the same so we multiply at the end by Volume/n_nodes
-    rRightHandSideBoundedVector *= data.volume / static_cast<double>(n_nodes);
+    // Here we assume that all the weights of the gauss points are the same so we multiply at the end by Volume/NumNodes
+    rRightHandSideBoundedVector *= data.volume / NumNodes;
 
     KRATOS_CATCH("")
 }
 
-template <>
-void CompressibleNavierStokesExplicit<2,3>::AddExplicitContribution(const ProcessInfo &rCurrentProcessInfo)
+
+template<unsigned int TDim, unsigned int TNumNodes>
+void CompressibleNavierStokesExplicit<TDim, TNumNodes>::AddExplicitContribution(const ProcessInfo &rCurrentProcessInfo)
 {
-    constexpr IndexType dim = 2;
-    constexpr IndexType n_nodes = 3;
-    constexpr IndexType block_size = 4;
+    constexpr IndexType BlockSize = TDim + 2;
+
+    constexpr IndexType rho_dof = 0;
+    constexpr IndexType momx_dof = rho_dof + 1;
+    constexpr IndexType ener_dof = momx_dof + TDim;
 
     // Calculate the explicit residual vector
-    BoundedVector<double, 12> rhs;
+    BoundedVector<double, BlockSize * TNumNodes> rhs;
     CalculateRightHandSideInternal(rhs, rCurrentProcessInfo);
 
     // Add the residual contribution
     // Note that the reaction is indeed the formulation residual
     auto& r_geometry = GetGeometry();
-    for (IndexType i_node = 0; i_node < n_nodes; ++i_node) {
-        const IndexType aux = i_node * block_size;
-#pragma omp atomic
-        r_geometry[i_node].FastGetSolutionStepValue(REACTION_DENSITY) += rhs[aux];
+    for (IndexType i_node = 0; i_node < TNumNodes; ++i_node) {
+        const IndexType aux = i_node * BlockSize;
+        AtomicAdd(r_geometry[i_node].FastGetSolutionStepValue(REACTION_DENSITY), rhs[aux + rho_dof]);
+        
         auto& r_mom = r_geometry[i_node].FastGetSolutionStepValue(REACTION);
-        for (IndexType d = 0; d < dim; ++d) {
-#pragma omp atomic
-            r_mom[d] += rhs[aux + (d + 1)];
+        for (IndexType d = 0; d < TDim; ++d) {
+            AtomicAdd(r_mom[d], rhs[aux + momx_dof + d]);
         }
-#pragma omp atomic
-        r_geometry[i_node].FastGetSolutionStepValue(REACTION_ENERGY) += rhs[aux + 3];
+
+        AtomicAdd(r_geometry[i_node].FastGetSolutionStepValue(REACTION_ENERGY), rhs[aux + ener_dof]);
     }
 }
 
-template <>
-void CompressibleNavierStokesExplicit<3,4>::AddExplicitContribution(const ProcessInfo &rCurrentProcessInfo)
-{
-    constexpr IndexType dim = 3;
-    constexpr IndexType n_nodes = 4;
-    constexpr IndexType block_size = 5;
-
-    // Calculate the explicit residual vector
-    BoundedVector<double, 20> rhs;
-    CalculateRightHandSideInternal(rhs, rCurrentProcessInfo);
-
-    // Add the residual contribution
-    // Note that the reaction is indeed the formulation residual
-    auto& r_geometry = GetGeometry();
-    for (IndexType i_node = 0; i_node < n_nodes; ++i_node) {
-        const IndexType aux = i_node * block_size;
-#pragma omp atomic
-        r_geometry[i_node].FastGetSolutionStepValue(REACTION_DENSITY) += rhs[aux];
-        auto& r_mom = r_geometry[i_node].FastGetSolutionStepValue(REACTION);
-        for (IndexType d = 0; d < dim; ++d) {
-#pragma omp atomic
-            r_mom[d] += rhs[aux + (d + 1)];
-        }
-#pragma omp atomic
-        r_geometry[i_node].FastGetSolutionStepValue(REACTION_ENERGY) += rhs[aux + 4];
-    }
-}
-
-template <>
-void CompressibleNavierStokesExplicit<2,3>::CalculateMassMatrix(
+/// This pattern works for n-dimensional tetrahedra.
+/// The template must be overriden for other geometries such as quads
+template<unsigned int TDim, unsigned int TNumNodes>
+void CompressibleNavierStokesExplicit<TDim, TNumNodes>::CalculateMassMatrix(
     MatrixType &rMassMatrix,
     const ProcessInfo &rCurrentProcessInfo)
 {
-    constexpr IndexType n_nodes = 3;
-    constexpr IndexType block_size = 4;
+    constexpr IndexType NumNodes = 2;
+    constexpr IndexType BlockSize = 3;
 
     // Initialize and fill the mass matrix values
-    const double one_six = 1.0 / 6.0;
-    const double one_twelve = 1.0 / 12.0;
-    const unsigned int size = n_nodes * block_size;
+    constexpr unsigned int size = NumNodes * BlockSize;
     rMassMatrix = ZeroMatrix(size, size);
-    rMassMatrix(0, 0) = one_six; rMassMatrix(0, 4) = one_twelve; rMassMatrix(0, 8) = one_twelve;
-    rMassMatrix(1, 1) = one_six; rMassMatrix(1, 5) = one_twelve; rMassMatrix(1, 9) = one_twelve;
-    rMassMatrix(2, 2) = one_six; rMassMatrix(2, 6) = one_twelve; rMassMatrix(2, 10) = one_twelve;
-    rMassMatrix(3, 3) = one_six; rMassMatrix(3, 7) = one_twelve; rMassMatrix(3, 11) = one_twelve;
-    rMassMatrix(4, 0) = one_twelve; rMassMatrix(4, 4) = one_six; rMassMatrix(4, 8) = one_twelve;
-    rMassMatrix(5, 1) = one_twelve; rMassMatrix(5, 5) = one_six; rMassMatrix(5, 9) = one_twelve;
-    rMassMatrix(6, 2) = one_twelve; rMassMatrix(6, 6) = one_six; rMassMatrix(6, 10) = one_twelve;
-    rMassMatrix(7, 3) = one_twelve; rMassMatrix(7, 7) = one_six; rMassMatrix(7, 11) = one_twelve;
-    rMassMatrix(8, 0) = one_twelve; rMassMatrix(8, 4) = one_twelve; rMassMatrix(8, 8) = one_six;
-    rMassMatrix(9, 1) = one_twelve; rMassMatrix(9, 5) = one_twelve; rMassMatrix(9, 9) = one_six;
-    rMassMatrix(10, 2) = one_twelve; rMassMatrix(10, 6) = one_twelve; rMassMatrix(10, 10) = one_six;
-    rMassMatrix(11, 3) = one_twelve; rMassMatrix(11, 7) = one_twelve; rMassMatrix(11, 11) = one_six;
+
+    // Lambda to fill the block created by two nodes with the same value
+    const auto fill_block = [&](const SizeType I, const SizeType J, const double Value)
+    {
+        for(unsigned int u=0; u<BlockSize; ++u){
+            const auto dof_i = I * BlockSize + u;
+            for (unsigned int v = 0; v < BlockSize; ++v){
+                const auto dof_j = J * BlockSize + v;
+                rMassMatrix(dof_i, dof_j) = Value;
+            }
+        }
+    };
+    
+    constexpr double dof_mass = 1.0 / size;
+    for(unsigned int i=0; i<NumNodes; ++i){
+        for(unsigned int j=0; j<NumNodes; ++j){
+            fill_block(i, j, (i==j) ? 2*dof_mass : dof_mass);
+        }
+    }
 
     // Here we assume that all the Gauss pt. have the same weight so we multiply by the volume
     rMassMatrix *= GetGeometry().Area();
 }
 
-template <>
-void CompressibleNavierStokesExplicit<3,4>::CalculateMassMatrix(
-    MatrixType &rMassMatrix,
-    const ProcessInfo &rCurrentProcessInfo)
-{
-    constexpr IndexType n_nodes = 4;
-    constexpr IndexType block_size = 5;
-
-    // Initialize and fill the mass matrix values
-    const double one_ten = 0.1;
-    const double one_twenty = 0.05;
-    const unsigned int size = n_nodes * block_size;
-    rMassMatrix = ZeroMatrix(size, size);
-    rMassMatrix(0, 0) = one_ten; rMassMatrix(0, 5) = one_twenty; rMassMatrix(0, 10) = one_twenty; rMassMatrix(0,15) = one_twenty;
-    rMassMatrix(1, 1) = one_ten; rMassMatrix(1, 6) = one_twenty; rMassMatrix(1, 11) = one_twenty; rMassMatrix(1,16) = one_twenty;
-    rMassMatrix(2, 2) = one_ten; rMassMatrix(2, 7) = one_twenty; rMassMatrix(2, 12) = one_twenty; rMassMatrix(2,17) = one_twenty;
-    rMassMatrix(3, 3) = one_ten; rMassMatrix(3, 8) = one_twenty; rMassMatrix(3, 13) = one_twenty; rMassMatrix(3,18) = one_twenty;
-    rMassMatrix(4, 4) = one_ten; rMassMatrix(4, 9) = one_twenty; rMassMatrix(4, 14) = one_twenty; rMassMatrix(4,19) = one_twenty;
-    rMassMatrix(5, 0) = one_twenty; rMassMatrix(5, 5) = one_ten; rMassMatrix(5, 10) = one_twenty; rMassMatrix(5,15) = one_twenty;
-    rMassMatrix(6, 1) = one_twenty; rMassMatrix(6, 6) = one_ten; rMassMatrix(6, 11) = one_twenty; rMassMatrix(6,16) = one_twenty;
-    rMassMatrix(7, 2) = one_twenty; rMassMatrix(7, 7) = one_ten; rMassMatrix(7, 12) = one_twenty; rMassMatrix(7,17) = one_twenty;
-    rMassMatrix(8, 3) = one_twenty; rMassMatrix(8, 8) = one_ten; rMassMatrix(8, 13) = one_twenty; rMassMatrix(8,18) = one_twenty;
-    rMassMatrix(9, 4) = one_twenty; rMassMatrix(9, 9) = one_ten; rMassMatrix(9, 14) = one_twenty; rMassMatrix(9,19) = one_twenty;
-    rMassMatrix(10, 0) = one_twenty; rMassMatrix(10, 5) = one_twenty; rMassMatrix(10, 10) = one_ten; rMassMatrix(10,15) = one_twenty;
-    rMassMatrix(11, 1) = one_twenty; rMassMatrix(11, 6) = one_twenty; rMassMatrix(11, 11) = one_ten; rMassMatrix(11,16) = one_twenty;
-    rMassMatrix(12, 2) = one_twenty; rMassMatrix(12, 7) = one_twenty; rMassMatrix(12, 12) = one_ten; rMassMatrix(12,17) = one_twenty;
-    rMassMatrix(13, 3) = one_twenty; rMassMatrix(13, 8) = one_twenty; rMassMatrix(13, 13) = one_ten; rMassMatrix(13,18) = one_twenty;
-    rMassMatrix(14, 4) = one_twenty; rMassMatrix(14, 9) = one_twenty; rMassMatrix(14, 14) = one_ten; rMassMatrix(14,19) = one_twenty;
-    rMassMatrix(15, 0) = one_twenty; rMassMatrix(15, 5) = one_twenty; rMassMatrix(15, 10) = one_twenty; rMassMatrix(15,15) = one_ten;
-    rMassMatrix(16, 1) = one_twenty; rMassMatrix(16, 6) = one_twenty; rMassMatrix(16, 11) = one_twenty; rMassMatrix(16,16) = one_ten;
-    rMassMatrix(17, 2) = one_twenty; rMassMatrix(17, 7) = one_twenty; rMassMatrix(17, 12) = one_twenty; rMassMatrix(17,17) = one_ten;
-    rMassMatrix(18, 3) = one_twenty; rMassMatrix(18, 8) = one_twenty; rMassMatrix(18, 13) = one_twenty; rMassMatrix(18,18) = one_ten;
-    rMassMatrix(19, 4) = one_twenty; rMassMatrix(19, 9) = one_twenty; rMassMatrix(19, 14) = one_twenty; rMassMatrix(19,19) = one_ten;
-
-    // Here we assume that all the Gauss pt. have the same weight so we multiply by the volume
-    rMassMatrix *= GetGeometry().Volume();
-}
 
 template <unsigned int TDim, unsigned int TNumNodes>
 void CompressibleNavierStokesExplicit<TDim, TNumNodes>::CalculateLumpedMassVector(
@@ -8345,9 +9069,29 @@ void CompressibleNavierStokesExplicit<TDim, TNumNodes>::CalculateLumpedMassVecto
     std::fill(rLumpedMassVector.begin(),rLumpedMassVector.end(),nodal_mass);
 }
 
+
+template <>
+double CompressibleNavierStokesExplicit<1, 2>::ElementSize(
+    const BoundedMatrix<double, 2, 1>&) const
+{
+    const auto& r_node1 = GetGeometry()[0];
+    const auto& r_node2 = GetGeometry()[1];
+    return norm_2(r_node2 - r_node1);
+}
+
+
+template <unsigned int TDim, unsigned int TNumNodes>
+double CompressibleNavierStokesExplicit<TDim, TNumNodes>::ElementSize(
+    const BoundedMatrix<double, TNumNodes, TDim>& rDN_Dx) const
+{
+    return ElementSizeCalculator<TDim, TNumNodes>::GradientsElementSize(rDN_Dx);
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Class template instantiation
 
+template class CompressibleNavierStokesExplicit<1,2>;
 template class CompressibleNavierStokesExplicit<2,3>;
 template class CompressibleNavierStokesExplicit<3,4>;
 

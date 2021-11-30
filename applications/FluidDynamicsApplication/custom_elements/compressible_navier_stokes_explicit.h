@@ -11,6 +11,7 @@
 //  Main authors:    Ruben Zorrilla
 //
 
+#include "includes/ublas_interface.h"
 #if !defined(KRATOS_COMPRESSIBLE_NAVIER_STOKES_EXPLICIT_H_INCLUDED)
 #define  KRATOS_COMPRESSIBLE_NAVIER_STOKES_EXPLICIT_H_INCLUDED
 
@@ -71,8 +72,11 @@ public:
     ///@name Type Definitions
     ///@{
 
-    /// Block size
-    constexpr static unsigned int BlockSize = TDim + 2;
+    /// Helper variables
+    constexpr static SizeType Dim = TDim;
+    constexpr static SizeType NumNodes = TNumNodes;
+    constexpr static SizeType BlockSize = 2 + TDim;
+    constexpr static SizeType DofSize = BlockSize * NumNodes;
 
     /// Counted pointer of
     KRATOS_CLASS_INTRUSIVE_POINTER_DEFINITION(CompressibleNavierStokesExplicit);
@@ -479,6 +483,10 @@ private:
      */
     BoundedMatrix<double, 3, 3> CalculateMidPointVelocityGradient() const;
 
+
+
+    double ElementSize(const BoundedMatrix<double, TNumNodes, TDim>& rData) const;
+
     ///@}
     ///@name Private  Access
     ///@{
@@ -487,7 +495,6 @@ private:
     ///@}
     ///@name Private Inquiry
     ///@{
-
 
     ///@}
     ///@name Un accessible methods
