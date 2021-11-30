@@ -175,7 +175,7 @@ class FluidSolver(PythonSolver):
 
         ## Complete the condition name
         if (self.condition_name is not None):
-            new_cond_name = self.condition_name + str(int(domain_size)) + "D" + str(int(cond_num_nodes)) + "N"
+            new_cond_name = self.condition_name + str(int(max(domain_size, 2))) + "D" + str(int(cond_num_nodes)) + "N"
         else:
             raise Exception("There is no condition name. Define the self.condition_name string variable in your derived solver.")
 

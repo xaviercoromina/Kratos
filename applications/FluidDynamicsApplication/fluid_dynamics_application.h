@@ -410,6 +410,7 @@ private:
     /// Compressible Navier-Stokes symbolic element
     const CompressibleNavierStokes<2> mCompressibleNavierStokes2D;
     const CompressibleNavierStokes<3> mCompressibleNavierStokes3D;
+    const CompressibleNavierStokesExplicit<1, 2> mCompressibleNavierStokesExplicit1D;
     const CompressibleNavierStokesExplicit<2, 3> mCompressibleNavierStokesExplicit2D;
     const CompressibleNavierStokesExplicit<3, 4> mCompressibleNavierStokesExplicit3D;
 
