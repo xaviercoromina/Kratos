@@ -51,8 +51,8 @@ int ShockCapturingEntropyViscosityProcess::Check()
     KRATOS_ERROR_IF_NOT(mrModelPart.GetProcessInfo().Has(DOMAIN_SIZE))
         << "Missing variable DOMAIN_SIZE in model part process info." << std::endl;
     const auto domain_size = mrModelPart.GetProcessInfo().GetValue(DOMAIN_SIZE);
-    KRATOS_ERROR_IF(domain_size !=2 && domain_size !=3)
-        << "ShockCapturingEntropyViscosityProcess is only implemented for 2D and 3D domains." << std::endl;
+    KRATOS_ERROR_IF(domain_size <1 || domain_size > 3)
+        << "ShockCapturingEntropyViscosityProcess is only implemented for 1D, 2D and 3D domains." << std::endl;
 
 
     block_for_each(mrModelPart.Nodes(), [](const NodeType& r_node)
@@ -178,7 +178,7 @@ void ShockCapturingEntropyViscosityProcess::UpdateNodalAreaProcess()
 
 void ShockCapturingEntropyViscosityProcess::ComputeNodalEntropies(const unsigned int WriteBufferIndex)
 {
-    if(mrModelPart.GetCommunicator().LocalMesh().NumberOfElements() == 0) return; // empty mpdelpart
+    if(mrModelPart.GetCommunicator().LocalMesh().NumberOfElements() == 0) return; // empty modelpart
 
     const double heat_capacity_ratio = mrModelPart.ElementsBegin()->GetProperties().GetValue(HEAT_CAPACITY_RATIO);
 
@@ -197,6 +197,23 @@ void ShockCapturingEntropyViscosityProcess::ComputeNodalEntropies(const unsigned
         r_node.SetValue(ARTIFICIAL_BULK_VISCOSITY, 0.0);
     });
 }
+
+
+
+/**
+ * @brief 1D specialization.
+ */
+template<>
+double ShockCapturingEntropyViscosityProcess::MinimumEdgeLengthSquared<1>(
+    const Element& rElement)
+{
+    const auto& r_geometry = rElement.GetGeometry();
+
+    const array_1d<double, 3> edge = r_geometry.front() - r_geometry.back();
+
+    return inner_prod(edge, edge);
+}
+
 
 
 /**
@@ -237,7 +254,7 @@ double ShockCapturingEntropyViscosityProcess::MinimumEdgeLengthSquared<3>(
     const auto& r_geometry = rElement.GetGeometry();
 
     KRATOS_WARNING_IF("ShockCapturingEntropyViscosityProcess", r_geometry.size() != 4)
-        << "This process is only properly implemented in 2D (any geometry) and 3D tetrahedra" << std::endl;
+        << "This process is only properly implemented in 2D (any geometry) and 3D tetrahedra\n";
     // Should also work for reasonably non-deformed hexahedra (since diagonals are counted as well)
 
     double h_squared = std::numeric_limits<double>::max();
@@ -267,18 +284,26 @@ void ShockCapturingEntropyViscosityProcess::ComputeArtificialMagnitudes()
 
     const unsigned int ndim = mrModelPart.ElementsBegin()->GetGeometry().LocalSpaceDimension();
     
-    const auto geometry_size = [&ndim]() -> std::function<double(Geometry<Node<3>>*)>
+    const auto size_calculator = [&ndim]() -> std::function<double(const Geometry<Node<3>> * const)>
     {
-        if(ndim == 2) return [](const Geometry<Node<3>> * const p_geom) { return p_geom->Area(); };
-        if(ndim == 3) return [](const Geometry<Node<3>> * const p_geom) { return p_geom->Volume(); };
-        KRATOS_ERROR << "Invalid number of dimensions (" << ndim <<"). Only 2D and 3D are supported" << std::endl;
-    }(); // The simpler "const auto var = condition ? lambda1 : lambda2;" does not compile with MSVC
+        switch(ndim) {
+            case 1: return [](const Geometry<Node<3>> * const p_geom) { return p_geom->Length(); };
+            case 2: return [](const Geometry<Node<3>> * const p_geom) { return p_geom->Area(); };
+            case 3: return [](const Geometry<Node<3>> * const p_geom) { return p_geom->Volume(); };
+            default: KRATOS_ERROR 
+                << "Invalid number of dimensions (" << ndim <<"). Only 2D and 3D are supported" << std::endl;
+        }
+    }();
 
     const auto minimum_edge_squared = [&]() -> std::function<double(const Element&)>
     {
-        if(ndim == 2) return [](const Element& r_element) { return MinimumEdgeLengthSquared<2>(r_element); };
-        if(ndim == 3) return [](const Element& r_element) { return MinimumEdgeLengthSquared<3>(r_element); };
-        KRATOS_ERROR << "Invalid number of dimensions (" << ndim <<"). Only 2D and 3D are supported" << std::endl;
+        switch(ndim) {
+            case 1: return [](const Element& r_element) { return MinimumEdgeLengthSquared<1>(r_element); };
+            case 2: return [](const Element& r_element) { return MinimumEdgeLengthSquared<2>(r_element); };
+            case 3: return [](const Element& r_element) { return MinimumEdgeLengthSquared<3>(r_element); };
+            default: KRATOS_ERROR 
+                << "Invalid number of dimensions (" << ndim <<"). Only 2D and 3D are supported" << std::endl;
+        }
     }();
 
     block_for_each(mrModelPart.Elements(), [&](Element& r_element)
@@ -295,7 +320,7 @@ void ShockCapturingEntropyViscosityProcess::ComputeArtificialMagnitudes()
         const double mu_rho = mArtificialMassDiffusivityPrandtl * mu_h / inf_norm.Density;
         const double kappa  = mArtificialConductivityPrandtl * mu_h / (heat_capacity_ratio - 1.0);
 
-        DistributeVariablesToNodes(r_element, mu_h, mu_rho, kappa, geometry_size);
+        DistributeVariablesToNodes(r_element, mu_h, mu_rho, kappa, size_calculator);
     });
 
     KRATOS_CATCH("")
@@ -307,7 +332,7 @@ void ShockCapturingEntropyViscosityProcess::DistributeVariablesToNodes(
     const double ArtificialBulkViscosity,
     const double ArtificialMassDiffusivity,
     const double ArtificialConductivity,
-    const std::function<double(Geometry<Node<3>>*)>& rGeometrySize) const
+    const std::function<double(const Geometry<Node<3>>* const)>& rGeometrySize) const
 {
     auto& r_geometry = rElement.GetGeometry();
     const double element_volume = rGeometrySize(&r_geometry);
@@ -375,6 +400,28 @@ ShockCapturingEntropyViscosityProcess::BuildTotalDerivativeUtils(
 }
 
 
+void Compute1DShapeFunctionGradients(
+    const Geometry<Node<3>>& rGeometry,
+    GeometryData::ShapeFunctionsGradientsType& r_shape_functions_gradients)
+{
+    constexpr std::size_t n_nodes = 2;
+    const std::size_t n_gauss_points = r_shape_functions_gradients.size();
+    constexpr double root3 = 1.7320508075688772;
+    const double jacobian = norm_2(rGeometry.back() - rGeometry.front());
+    const double N_ii = 0.5 * (1 + root3 / 3) / jacobian;
+    const double N_ij = 0.5 * (1 - root3 / 3) / jacobian;
+    for(unsigned int g = 0; g<n_gauss_points; ++g)
+    {
+        r_shape_functions_gradients[g] = Matrix(n_nodes, 1);
+        for(unsigned int i=0; i<n_nodes; ++i)
+        {
+            r_shape_functions_gradients[g](i,0) = i==g ? N_ii : N_ij;
+        }
+    }
+}
+
+
+
 ShockCapturingEntropyViscosityProcess::InfNormData ShockCapturingEntropyViscosityProcess::ComputeInfNorms(
     const Geometry<NodeType>& rGeometry,
     const TotalDerivativeUtil& rEntropyTotalDerivative,
@@ -387,8 +434,17 @@ ShockCapturingEntropyViscosityProcess::InfNormData ShockCapturingEntropyViscosit
     const auto n_gauss_points = rGeometry.IntegrationPointsNumber(integration_method);
 
     const auto& r_shape_functions = rGeometry.ShapeFunctionsValues(integration_method);
-    GeometryData::ShapeFunctionsGradientsType r_shape_functions_gradients;
-    rGeometry.ShapeFunctionsIntegrationPointsGradients(r_shape_functions_gradients, integration_method);
+    GeometryData::ShapeFunctionsGradientsType shape_functions_gradients(n_gauss_points);
+    
+
+    if(rGeometry.LocalSpaceDimension() == 1)
+    {
+        Compute1DShapeFunctionGradients(rGeometry, shape_functions_gradients);
+    }
+    else
+    {
+        rGeometry.ShapeFunctionsIntegrationPointsGradients(shape_functions_gradients, integration_method);
+    }
 
     double max_residual = 0.0;  // max(Dh1, Dh2) in the paper
     double max_density = 0.0;
@@ -397,7 +453,7 @@ ShockCapturingEntropyViscosityProcess::InfNormData ShockCapturingEntropyViscosit
     for(unsigned int g = 0; g<n_gauss_points; ++g)
     {
         const auto N = row(r_shape_functions, g);
-        const auto& G = r_shape_functions_gradients[g];
+        const auto& G = shape_functions_gradients[g];
 
         const double entropy_residual = rEntropyTotalDerivative.ComputeAtGaussPoint(N, G);
         const double density_residual = rDensityTotalDerivative.ComputeAtGaussPoint(N, G);

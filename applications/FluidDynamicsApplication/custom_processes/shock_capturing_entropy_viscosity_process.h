@@ -105,10 +105,12 @@ public:
             TimeDerivative[NodeIndex] = (Value[NodeIndex] - old_value) / DeltaTime;
 
             Flux(NodeIndex, 0) = Value[NodeIndex] * Velocity[0];
+            
+            if(Flux.size2() == 1) return;
             Flux(NodeIndex, 1) = Value[NodeIndex] * Velocity[1];
-            if(Flux.size2()==3){ // (if 3D)
-                Flux(NodeIndex, 2) = Value[NodeIndex] * Velocity[2];
-            }
+            
+            if(Flux.size2() == 2) return;
+            Flux(NodeIndex, 2) = Value[NodeIndex] * Velocity[2];
 
             KRATOS_CATCH("")
         }
@@ -252,7 +254,7 @@ private:
         const double ArtificialDynamicViscosity,
         const double ArtificialBulkViscosity,
         const double ArtificialConductivity,
-        const std::function<double(Geometry<Node<3>>*)>& rGeometrySize) const;
+        const std::function<double(const Geometry<Node<3>>* const)>& rGeometrySize) const;
 
     static double ComputeEntropy(
         const double Density, 
