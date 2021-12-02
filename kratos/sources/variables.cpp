@@ -117,6 +117,7 @@ KRATOS_CREATE_VARIABLE(double, DETERMINANT_F)
 KRATOS_CREATE_VARIABLE(double, GRADIENT_PENALTY_COEFFICIENT)
 
 KRATOS_CREATE_VARIABLE(double, TIME_INTEGRATION_THETA)
+KRATOS_CREATE_VARIABLE(double, CHARACTERISTIC_LENGTH)
 
 // for geometrical application
 KRATOS_CREATE_3D_VARIABLE_WITH_COMPONENTS(CHARACTERISTIC_GEOMETRY_LENGTH)
@@ -464,6 +465,10 @@ KRATOS_CREATE_VARIABLE(TableStreamUtility::Pointer, TABLE_UTILITY )
 //for Geometry Variables
 KRATOS_CREATE_3D_VARIABLE_WITH_COMPONENTS(PARAMETER_2D_COORDINATES)
 
+//Flux-Based Redistance
+KRATOS_CREATE_3D_VARIABLE_WITH_COMPONENTS(POTENTIAL_GRADIENT)
+
+
 //------------------------------------------------------------------------------//
 //------------------------------------------------------------------------------//
 //------------------------------------------------------------------------------//
@@ -491,6 +496,7 @@ void KratosApplication::RegisterVariables() {
 
     KRATOS_REGISTER_VARIABLE(DOMAIN_SIZE)
     KRATOS_REGISTER_VARIABLE(SPACE_DIMENSION)
+    KRATOS_REGISTER_VARIABLE(CHARACTERISTIC_LENGTH)
 
     //STRATEGIES
     KRATOS_REGISTER_VARIABLE(LOAD_RESTART)
@@ -928,5 +934,8 @@ void KratosApplication::RegisterVariables() {
 
     //--------------- Geometry Variables -------------------//
     KRATOS_REGISTER_3D_VARIABLE_WITH_COMPONENTS(PARAMETER_2D_COORDINATES)
+
+    //Flux-Based Redistance
+    KRATOS_REGISTER_3D_VARIABLE_WITH_COMPONENTS(POTENTIAL_GRADIENT)
 }
 }  // namespace Kratos.

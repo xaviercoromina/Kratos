@@ -9,6 +9,7 @@
 //
 //  Main authors:    Daniel Diez, Pablo Becker
 //
+#include "includes/kratos_flags.h"
 #include "distance_calculation_flux_based_element_simplex.h"
 #include "includes/checks.h"
 
@@ -46,7 +47,7 @@ void DistanceCalculationFluxBasedElement<TDim>::CalculateLocalSystem(
                                      rRightHandSideVector,
                                      rCurrentProcessInfo);
     }
-    else if (step == 2){ // solve convection + source
+    else if (step == 2 || step == 3){ // solve convection + source
         CalculateDistanceSystem(rLeftHandSideMatrix, 
                                      rRightHandSideVector,
                                      rCurrentProcessInfo);
@@ -57,33 +58,6 @@ void DistanceCalculationFluxBasedElement<TDim>::CalculateLocalSystem(
 
     KRATOS_CATCH("");
 }
-
-
-// template <unsigned int TDim >
-// void DistanceCalculationFluxBasedElement<TDim>::CalculateLaplacianSystem(
-//         MatrixType &rLeftHandSideMatrix,
-//         VectorType &rRightHandSideVector,
-//         const ProcessInfo &rCurrentProcessInfo)
-// {
-//     //getting data for the given geometry
-//     double Area;
-//     BoundedMatrix<double, NumNodes, TDim > DN_DX;
-//     GeometryUtils::CalculateGeometryData(GetGeometry(), DN_DX, N, Area);
-
-
-//     //get the previous solution
-//     for(unsigned int i=0; i<NumNodes; i++){
-//         nodal_values[i] = GetGeometry()[i].FastGetSolutionStepValue(DISTANCE);
-//     }
-
-//     //compute LHS
-//     //add conductivity
-//     noalias(rLeftHandSideMatrix) = Area*prod(DN_DX,trans(DN_DX));
-
-
-//     //substracting previous solution
-//     noalias(rRightHandSideVector) -= prod(rLeftHandSideMatrix,nodal_values);
-// }
 
 
 template <unsigned int TDim >
@@ -103,8 +77,8 @@ void DistanceCalculationFluxBasedElement<TDim>::CalculatePotentialFlowSystem(
         nodal_values[i] = GetGeometry()[i].FastGetSolutionStepValue(DISTANCE);
     }
 
-    KRATOS_ERROR_IF_NOT(rCurrentProcessInfo.Has(DENSITY)) << "DENSITY not defined" << std::endl;
-    const double density  = rCurrentProcessInfo[DENSITY];
+    const double domain_length = rCurrentProcessInfo[CHARACTERISTIC_LENGTH];
+    const double density  = 1.0/ (domain_length*domain_length);
 
     //compute LHS
     //add conductivity: Like poiseuille flow, the velocity will depend on the square of thickness
@@ -136,7 +110,7 @@ void DistanceCalculationFluxBasedElement<TDim>::CalculateDistanceSystem(
     GeometryUtils::CalculateGeometryData(GetGeometry(), DN_DX, N, Volume);
 
     //get the thickness, previous solution and velocity
-    bool has_fixed_node = false; //near the "inlet" we increase conductivity
+    // bool has_fixed_node = false; //near the "inlet" we increase conductivity
 
     array_1d<double, NumNodes > nodal_values;
     array_1d< array_1d<double, 3 >, NumNodes> v; //convection velocity
@@ -145,13 +119,13 @@ void DistanceCalculationFluxBasedElement<TDim>::CalculateDistanceSystem(
 
     for(unsigned int i=0; i<NumNodes; i++){
         nodal_values[i] = GetGeometry()[i].FastGetSolutionStepValue(DISTANCE);
-        v[i] = GetGeometry()[i].FastGetSolutionStepValue(VELOCITY); 
+        v[i] = GetGeometry()[i].GetValue(POTENTIAL_GRADIENT); 
         v_unit[i] =  v[i]/MathUtils<double>::Norm3(v[i]); // |v_unit| = 1
         avg_v_unit += v_unit[i];
 
-        if(GetGeometry()[i].IsFixed(DISTANCE)){
-            has_fixed_node=true;
-        }
+        // if(GetGeometry()[i].IsFixed(DISTANCE)){
+        //     has_fixed_node=true;
+        // }
     }
     avg_v_unit/=static_cast<double>(NumNodes);
 
@@ -196,23 +170,30 @@ void DistanceCalculationFluxBasedElement<TDim>::CalculateDistanceSystem(
                 vel_gauss[k] += N[i] * v[i][k];
         }
 
-        const double norm_vel = MathUtils<double>::Norm3(vel_gauss);
-
-        array_1d<double, NumNodes > a_dot_grad = prod(DN_DX, vel_gauss);
-
         const double d_gauss = inner_prod(N,nodal_values);
 
         if (d_gauss <= 0.0) {
             vel_gauss = -vel_gauss;
         }
 
+        double factor = 1.0;
+        if(rCurrentProcessInfo[FRACTIONAL_STEP]==3) {
+            array_1d<double, TDim > grad =prod(trans(DN_DX), nodal_values);
+            this->SetValue(YIELD_STRESS, MathUtils<double>::Norm3(grad));
+            double factor = std::min(1.0/MathUtils<double>::Norm3(grad), 2.0);
+            factor=std::max(0.5, factor);
+        }
+
+        const double norm_vel = MathUtils<double>::Norm3(vel_gauss);
+
+        array_1d<double, NumNodes > a_dot_grad = prod(DN_DX, vel_gauss);
+
         const double tau_denom = std::max(2.0 * norm_vel / h ,  1e-3); 
         const double tau = 1.0 / (tau_denom);
 
         double source_term = d_gauss > 0 ? norm_vel : -norm_vel;
+        source_term *= factor;
         // double source_term = norm_vel;  //to compute flowlength, the source term is exactly norm_vel to get dFlowLength/dx = 1 
-        // if(rCurrentProcessInfo[FRACTIONAL_STEP]==3) //to compute pseudofilltime
-        //     source_term=1.0; 
 
         if(add_convection){
             //convection + convection stabilization
@@ -262,7 +243,7 @@ int DistanceCalculationFluxBasedElement<TDim>::Check(const ProcessInfo &rCurrent
     for(unsigned int i=0; i<NumNodes; ++i){
         const Node<3>& rNode = r_geometry[i];
         KRATOS_CHECK_VARIABLE_IN_NODAL_DATA(DISTANCE,rNode);
-        KRATOS_CHECK_VARIABLE_IN_NODAL_DATA(VELOCITY,rNode);
+        // KRATOS_CHECK_VARIABLE_IN_NODAL_DATA(ADJOINT_VECTOR_1,rNode);
 
         // Check that required dofs exist
         KRATOS_CHECK_DOF_IN_NODE(DISTANCE,rNode);
@@ -372,7 +353,7 @@ void DistanceCalculationFluxBasedElement< TDim >::AddExplicitContribution(const 
 	for (unsigned int j = 0; j < NumNodes; j++){ //looping 4 nodes of the elem:
 		rGeometry[j].SetLock();
 		rGeometry[j].FastGetSolutionStepValue(NODAL_VOLUME)+=vol_factor;
-		rGeometry[j].FastGetSolutionStepValue(VELOCITY)+=vel*vol_factor;
+		rGeometry[j].GetValue(POTENTIAL_GRADIENT)+=vel*vol_factor;
 		rGeometry[j].UnSetLock();
 	}
 }

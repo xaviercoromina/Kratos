@@ -34,10 +34,6 @@
 #include "modeler/connectivity_preserve_modeler.h"
 #include "utilities/merge_variable_lists_utility.h"
 
-// #include "filling_application_variables.h"
-// #include "altair_extension_application_variables.h"
-// #include "custom_utilities/compute_filled_volume_utility.h"
-
 namespace Kratos
 {
 
@@ -121,36 +117,13 @@ public:
 		ReGenerateModelPart(rBaseModelPart);
 
 		//compute density to get a Fo=1
-		const double domain_length = CalculateDomainLength();
-		// ModelPart &rSkinPart = rBaseModelPart.GetSubModelPart(Settings["skin_part"].GetString());
-		// const double avg_domain_thickness = 1.0 / static_cast<double>(rSkinPart.NumberOfNodes()) * block_for_each<SumReduction<double>>(mpModelPart->Nodes(), [&](Node<3> &rNode) { return rNode.FastGetSolutionStepValue(THICKNESS); });
-		// const double density = (avg_domain_thickness * avg_domain_thickness) / (domain_length * domain_length);
-		const double density = 1.0 / (domain_length * domain_length);
-		mpModelPart->pGetProcessInfo()->SetValue(DENSITY, density);
-
-		//compute edge size (necessary to fix nodes in a radius)
-		mMaxEdgeSize = FindMaxEdgeSize();
-
-		//find neighbours
-		// auto &r_comm = mpModelPart->GetCommunicator().GetDataCommunicator();
-		// FindGlobalNodalNeighboursProcess global_nodal_neigh(r_comm, *mpModelPart);
-		// global_nodal_neigh.Execute();
-
-		// //generate search structure
-        // for (ModelPart::NodesContainerType::iterator inode = mpModelPart->NodesBegin(); inode != mpModelPart->NodesEnd(); inode++)
-        // {
-        //         mpTotalNodes.push_back(*(inode.base()));
-        // }
-        // mpSearchStructure = new StaticBins(mpTotalNodes.begin(), mpTotalNodes.end());
+		mDomainLength = CalculateDomainLength();
+		// const double density = 1.0 / (mDomainLength * mDomainLength);
+		mpModelPart->pGetProcessInfo()->SetValue(CHARACTERISTIC_LENGTH, mDomainLength);
 
 
-		// Generate solver
 		CreateSolvingStrategy(pLinearSolver, Settings);
 
-		//define solution mode:
-		// mSolvePseudoFilltime = false;
-		// if (Settings["problem_to_solve"].GetString() == "pseudo_filltime")
-		// 	mSolvePseudoFilltime = true;
 
 		KRATOS_CATCH("")
 	}
@@ -189,31 +162,6 @@ public:
 	void Execute() override
 	{
 		KRATOS_TRY;
-
-		const double max_edge_size = mMaxEdgeSize;
-
-		//reading settings.
-		// std::vector<array_1d<double, 3>> InjectionCoordinates;
-		// SetVectorsOfInjectionPoints(rInjectionSettings, InjectionCoordinates);
-
-		// //list of nodes that were fixed. At least 1 per inlet
-		// GlobalPointersVector<Node<3>> InjectionNodes;
-
-		//Step 0:  Fix distance in injection conditions.
-		// VariableUtils().ApplyFixity(DISTANCE, false, mpModelPart->Nodes());			 //unfixing  all nodes
-		// VariableUtils().SetHistoricalVariableToZero(DISTANCE, mpModelPart->Nodes()); //unfixing  all nodes
-		// for (unsigned int i_injection = 0; i_injection < InjectionCoordinates.size(); i_injection++){
-		// 	//find closest node(s)
-
-		// 	double squaredDistance = 0.0;
-		//     Node<3> injection_point(1, InjectionCoordinates[i_injection][0],InjectionCoordinates[i_injection][1],InjectionCoordinates[i_injection][2]);
-		//     NodePointerType closest_node = mpSearchStructure->SearchNearestPoint(injection_point, squaredDistance);
-		// 	KRATOS_ERROR_IF(sqrt(squaredDistance) > max_edge_size) << "Injection point: " << InjectionCoordinates[i_injection] << "lies outside the domain" << std::endl;
-
-		// 	//fix injection node
-		// 	closest_node->Fix(DISTANCE);
-		// 	InjectionNodes.push_back(closest_node);
-		// }
 
         const int nnodes = static_cast<int>(mpModelPart->NumberOfNodes());
 
@@ -255,17 +203,6 @@ public:
             if(this->IsSplit(distances)){
                 // Compute the unsigned distance using GeometryUtils
                 GeometryUtils::CalculateExactDistancesToPlane(geom, distances);
-                // if (mOptions.Is(CALCULATE_EXACT_DISTANCES_TO_PLANE)) {
-                //     GeometryUtils::CalculateExactDistancesToPlane(geom, distances);
-                // }
-                // else {
-                //     if(TDim==3){
-                //         GeometryUtils::CalculateTetrahedraDistances(geom, distances);
-                //     }
-                //     else {
-                //         GeometryUtils::CalculateTriangleDistances(geom, distances);
-                //     }
-                // }
 
                 // Assign the sign using the original distance values
                 for(unsigned int i = 0; i < TDim+1; ++i){
@@ -288,40 +225,18 @@ public:
             }
         });
 
-        // SHALL WE SYNCHRONIZE SOMETHING IN HERE?¿?¿??¿ WE'VE CHANGED THE NODAL DISTANCE VALUES FROM THE ELEMENTS...
         this->SynchronizeFixity();
         this->SynchronizeDistance();
 
-        // Compute the maximum and minimum distance for the fixed nodes
-        double max_dist = 0.0;
-        double min_dist = 0.0;
-        for(int i_node = 0; i_node < nnodes; ++i_node){
-            auto it_node = mpModelPart->NodesBegin() + i_node;
-            if(it_node->IsFixed(DISTANCE)){
-                const double& d = it_node->FastGetSolutionStepValue(DISTANCE);
-                if(d > max_dist){
-                    max_dist = d;
-                }
-                if(d < min_dist){
-                    min_dist = d;
-                }
-            }
-        }
-
-        // Synchronize the maximum and minimum distance values
-        const auto &r_communicator = mpModelPart->GetCommunicator().GetDataCommunicator();
-        max_dist = r_communicator.MaxAll(max_dist);
-        min_dist = r_communicator.MinAll(min_dist);
-
         // Assign the max dist to all of the non-fixed positive nodes
         // and the minimum one to the non-fixed negatives
-        block_for_each(mpModelPart->Nodes(), [&min_dist, &max_dist](Node<3>& rNode){
+        block_for_each(mpModelPart->Nodes(), [this](Node<3>& rNode){
             if(!rNode.IsFixed(DISTANCE)){
                 double& d = rNode.FastGetSolutionStepValue(DISTANCE);
                 if(d>0){
-                    d = max_dist;
+                    d = mDomainLength;
                 } else {
-                    d = min_dist;
+                    d = -mDomainLength;
                 }
             }
         });
@@ -329,34 +244,31 @@ public:
 		// Step1 - solve a transient diffusion problem to get the potential field.
 		//This step is the same, whether filltime or flowlength is required
 		mpModelPart->pGetProcessInfo()->SetValue(FRACTIONAL_STEP, 1);
+
+        KRATOS_INFO("FluxBasedRedistanceProcess") << "Solving first redistance step\n";
 		mpSolvingStrategy->Solve();
 
 		//FOR DEBUGGING results of step 1)
-		// block_for_each(mpModelPart->Nodes(), [&](Node<3> &rNode) {
-		// 	rNode.SetValue(DISTANCE, rNode.FastGetSolutionStepValue(DISTANCE));
-		// });
+		block_for_each(mpModelPart->Nodes(), [&](Node<3> &rNode) {
+			rNode.SetValue(ADJOINT_SCALAR_1, rNode.FastGetSolutionStepValue(DISTANCE));
+		});
 
 		//step 2: compute velocity using the gradient of the potential field:
-		//This step is the same, whether filltime or flowlength is required
 		ComputeVelocities();
 
-		//assinging and fixing the values in nodes that are close to the injection point(s)
-		// for (unsigned int i_injection = 0; i_injection < InjectionCoordinates.size(); i_injection++){
-		// 	VariableUtils().SetFlag(VISITED, false, mpModelPart->Nodes());
-		// 	ExpandNodeFixity(InjectionNodes[i_injection], InjectionCoordinates[i_injection], 2.05 * mMaxEdgeSize);
-		// }
-
-		//seting the FS # according to the problem to be solved
-		// if (mSolvePseudoFilltime){
-		// 	mpModelPart->pGetProcessInfo()->SetValue(FRACTIONAL_STEP, 3);
-		// }
-		// else{ //flowlenght
-		// 	mpModelPart->pGetProcessInfo()->SetValue(FRACTIONAL_STEP, 2);
-		// }
 		mpModelPart->pGetProcessInfo()->SetValue(FRACTIONAL_STEP, 2);
 
-		//solving filltime/flowlength system
+        KRATOS_INFO("FluxBasedRedistanceProcess") << "Solving second redistance step\n";
+
 		mpSolvingStrategy->Solve();
+
+        mpModelPart->pGetProcessInfo()->SetValue(FRACTIONAL_STEP, 3);
+
+        KRATOS_INFO("FluxBasedRedistanceProcess") << "Solving third redistance step\n";
+
+		mpSolvingStrategy->Solve();
+
+        VariableUtils().ApplyFixity(DISTANCE, false, mpModelPart->Nodes());
 
 		KRATOS_CATCH("")
 	}
@@ -368,7 +280,6 @@ public:
 		mpModelPart->Nodes().clear();
 		mpModelPart->Conditions().clear();
 		mpModelPart->Elements().clear();
-		// mpModelPart->GetProcessInfo().clear();
 		mPartIsInitialized = false;
 
 		mpSolvingStrategy->Clear();
@@ -395,13 +306,9 @@ protected:
 
 	ModelPart &mrBaseModelPart;
 	ModelPart *mpModelPart;
-    //KdtreeType *mpSearchStructure;
-	// StaticBins *mpSearchStructure;
-	NodePointerTypeVector mpTotalNodes;
 
-	double mMaxEdgeSize;
+    double mDomainLength;
 	bool mPartIsInitialized;
-	// bool mSolvePseudoFilltime;
 	typename SolvingStrategyType::UniquePointer mpSolvingStrategy;
 
 	///@}
@@ -461,7 +368,7 @@ protected:
 		//not using variable utils to do the two tasks in the same loop
 		block_for_each(mpModelPart->Nodes(), [&](Node<3> &rNode) {
 			rNode.FastGetSolutionStepValue(NODAL_VOLUME) = 0.0;
-			rNode.FastGetSolutionStepValue(VELOCITY) = ZeroVector(3);
+			rNode.SetValue(POTENTIAL_GRADIENT, ZeroVector(3));
 		});
 
 		block_for_each(mpModelPart->Elements(), [&](ModelPart::ElementType &rElement) {
@@ -470,18 +377,9 @@ protected:
 
 		//not using variable utils to do the two tasks in the same loop
 		block_for_each(mpModelPart->Nodes(), [&](Node<3> &rNode) {
-			array_1d<double, 3> &vel = rNode.FastGetSolutionStepValue(VELOCITY);
+			array_1d<double, 3> &vel = rNode.GetValue(POTENTIAL_GRADIENT);
 
-			//dividing by nodal volume in case we want to the get gradient with original modulus
-			vel /= rNode.FastGetSolutionStepValue(NODAL_VOLUME);
-
-			//in case we want to scale with thickness using nodal values instead of elemental values.
-			//getting |vel|=1
-			//vel /= MathUtils<double>::Norm3(vel);
-			//scaling using the thickness
-			//const double thickness = rNode.FastGetSolutionStepValue(THICKNESS);
-			//const double new_vel_modulus = thickness*thickness;
-			//vel *= new_vel_modulus;
+			vel /= MathUtils<double>::Norm3(vel);
 		});
 
 		KRATOS_CATCH("")
@@ -501,7 +399,7 @@ protected:
 		VariableUtils().CheckVariableExists<Variable<double>>(DISTANCE, rBaseModelPart.Nodes());
 		VariableUtils().CheckVariableExists<Variable<double>>(NODAL_VOLUME, rBaseModelPart.Nodes());
 		// VariableUtils().CheckVariableExists<Variable<double>>(THICKNESS, rBaseModelPart.Nodes());
-		VariableUtils().CheckVariableExists<Variable<array_1d<double, 3>>>(VELOCITY, rBaseModelPart.Nodes());
+		// VariableUtils().CheckVariableExists<Variable<array_1d<double, 3>>>(POTENTIAL_GRADIENT, rBaseModelPart.Nodes());
 
 		if (TDim == 2){
 			KRATOS_ERROR_IF(rBaseModelPart.ElementsBegin()->GetGeometry().GetGeometryFamily() != GeometryData::KratosGeometryFamily::Kratos_Triangle) << "In 2D the element type is expected to be a triangle" << std::endl;
@@ -509,9 +407,6 @@ protected:
 			KRATOS_ERROR_IF(rBaseModelPart.ElementsBegin()->GetGeometry().GetGeometryFamily() != GeometryData::KratosGeometryFamily::Kratos_Tetrahedra) << "In 3D the element type is expected to be a tetrahedra" << std::endl;
 		}
 
-		//checking the problem to be solved is correct
-		// auto problem_to_solve = Settings["problem_to_solve"].GetString();
-		// KRATOS_ERROR_IF_NOT(problem_to_solve == "pseudo_filltime" || problem_to_solve == "flowlength") << "'problem_to_solve' not recognized. Accepted options: [pseudo_filltime,flowlength]" << std::endl;
 	}
 
 	void CreateSolvingStrategy(typename TLinearSolver::Pointer pLinearSolver, Parameters &Settings)
