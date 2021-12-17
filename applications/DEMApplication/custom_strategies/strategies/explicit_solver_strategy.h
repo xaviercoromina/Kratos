@@ -294,6 +294,9 @@ namespace Kratos {
 
         //TODO. Ignasi:
         virtual void CalculateInitialNodalMassArray();
+        array_1d<double,3> mKMax;
+        array_1d<double,3> mKrMax;
+        double mMMin, mMMax, mKMin;
 
         Parameters mParameters;
         bool mRemoveBallsInitiallyTouchingWallsOption;

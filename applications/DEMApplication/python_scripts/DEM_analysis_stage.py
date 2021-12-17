@@ -177,8 +177,7 @@ class DEMAnalysisStage(AnalysisStage):
     def SelectTranslationalScheme(self):
         # Set ProcessInfo variables
         self.spheres_model_part.ProcessInfo.SetValue(USE_MASS_ARRAY, self.DEM_parameters["use_mass_array"].GetBool())
-        self.spheres_model_part.ProcessInfo.SetValue(MASS_ARRAY_SCALE_FACTOR, self.DEM_parameters["mass_array_scale_factor"].GetDouble())
-        self.spheres_model_part.ProcessInfo.SetValue(INERTIA_ARRAY_SCALE_FACTOR, self.DEM_parameters["mass_array_scale_factor"].GetDouble())
+        self.spheres_model_part.ProcessInfo.SetValue(MASS_ARRAY_START_TIME, self.DEM_parameters["mass_array_start_time"].GetDouble())
         mass_array_averaging_time_interval = self.DEM_parameters["mass_array_averaging_time_interval"].GetDouble()
         if (self.DEM_parameters["MaxTimeStep"].GetDouble() > mass_array_averaging_time_interval):
             raise ValueError('Dt > mass_array_averaging_time_interval')
@@ -203,12 +202,12 @@ class DEMAnalysisStage(AnalysisStage):
             omega_n = rayleigh_cd_param["omega_n"].GetDouble()
             rayleigh_alpha = rayleigh_cd_param["rayleigh_alpha"].GetDouble()
             rayleigh_beta = rayleigh_cd_param["rayleigh_beta"].GetDouble()
+            xi_1 = rayleigh_cd_param["xi_1"].GetDouble()
+            xi_n = rayleigh_cd_param["xi_n"].GetDouble()
             if g_factor >= 1.0:
                 theta_factor = 0.5
                 g_coefficient = Dt*omega_n*omega_n*0.25*g_factor
             if rayleigh_cd_param["calculate_alpha_beta"].GetBool():
-                xi_1 = rayleigh_cd_param["xi_1"].GetDouble()
-                xi_n = rayleigh_cd_param["xi_n"].GetDouble()
                 if rayleigh_cd_param["calculate_xi"].GetBool():
                     xi_1_factor = rayleigh_cd_param["xi_1_factor"].GetDouble()                
                     import numpy as np
@@ -227,6 +226,11 @@ class DEMAnalysisStage(AnalysisStage):
 
             self.spheres_model_part.ProcessInfo.SetValue(RAYLEIGH_ALPHA, rayleigh_alpha)
             self.spheres_model_part.ProcessInfo.SetValue(RAYLEIGH_BETA, rayleigh_beta)
+            # self.spheres_model_part.ProcessInfo.SetValue(OMEGA_1, rayleigh_cd_param["omega_1_mod"].GetDouble())
+            self.spheres_model_part.ProcessInfo.SetValue(OMEGA_1, omega_1)
+            self.spheres_model_part.ProcessInfo.SetValue(OMEGA_N, omega_n)
+            self.spheres_model_part.ProcessInfo.SetValue(XI_1, xi_1)
+            self.spheres_model_part.ProcessInfo.SetValue(XI_N, xi_n)
             self.spheres_model_part.ProcessInfo.SetValue(G_COEFFICIENT, g_coefficient)
             self.spheres_model_part.ProcessInfo.SetValue(THETA_FACTOR, theta_factor)
             return CentralDifferencesScheme()
@@ -433,7 +437,6 @@ class DEMAnalysisStage(AnalysisStage):
         # self.initial_displ_y_target = -1.5e-4
         # # self.vel_y = -1.5e-1
         # # self.vel_y = -1.765e-6
-        # # self.spheres_model_part.ProcessInfo.SetValue(IS_CONVERGED, False)
         # out_error = open("time_dispy_deltadisp_reactionty140_deltaforcey_iteratingsteps.txt","a")
         # out_error.write(str(self.time))
         # out_error.write(" ")

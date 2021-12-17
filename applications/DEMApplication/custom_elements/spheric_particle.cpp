@@ -285,8 +285,8 @@ void SphericParticle::CalculateInitialNodalMassArray(const ProcessInfo& r_proces
     data_buffer.mDt = dt;
     data_buffer.mMultiStageRHS = false;
 
-    array_1d<double, 3>& initial_nodal_mass_array = this_node.FastGetSolutionStepValue(NODAL_MASS_ARRAY);
-    array_1d<double, 3>& initial_particle_moment_intertia_array = this_node.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY);
+    array_1d<double, 3>& initial_nodal_mass_array = this_node.FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY);
+    array_1d<double, 3>& initial_particle_moment_intertia_array = this_node.FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY);
 
     initial_nodal_mass_array.clear();
     initial_particle_moment_intertia_array.clear();
@@ -580,8 +580,8 @@ void SphericParticle::CalculateRightHandSide(const ProcessInfo& r_process_info, 
     array_1d<double, 3>& external_moment = this_node.FastGetSolutionStepValue(PARTICLE_EXTERNAL_MOMENT);
     array_1d<double, 3>& external_moment_old = this_node.FastGetSolutionStepValue(PARTICLE_EXTERNAL_MOMENT_OLD);
 
-    array_1d<double, 3>& nodal_mass_array = this_node.FastGetSolutionStepValue(NODAL_MASS_ARRAY);
-    array_1d<double, 3>& particle_moment_intertia_array = this_node.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY);
+    array_1d<double, 3>& nodal_mass_array = this_node.FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY);
+    array_1d<double, 3>& particle_moment_intertia_array = this_node.FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY);
 
     mContactMoment.clear();
     elastic_force.clear();
@@ -648,6 +648,14 @@ void SphericParticle::CalculateRightHandSide(const ProcessInfo& r_process_info, 
     #endif
 
     FinalizeForceComputation(data_buffer);
+
+    // TODO.Ignasi: we define alpha and beta constant for all particles 
+    //              (ideally we should read these variables in the scheme directly from the process info)
+    double& alpha = this_node.FastGetSolutionStepValue(RAYLEIGH_ALPHA);
+    double& beta = this_node.FastGetSolutionStepValue(RAYLEIGH_BETA);
+    alpha = r_process_info[RAYLEIGH_ALPHA];
+    beta = r_process_info[RAYLEIGH_BETA];
+
     KRATOS_CATCH("")
 }
 

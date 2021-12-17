@@ -499,7 +499,8 @@ class Procedures():
         model_part.AddNodalSolutionStepVariable(NEIGHBOUR_RATIO)
         # TODO. Ignasi
         model_part.AddNodalSolutionStepVariable(NODAL_MASS_ARRAY)
-        model_part.AddNodalSolutionStepVariable(NODAL_MASS_ARRAY_OLD)
+        model_part.AddNodalSolutionStepVariable(ESTIMATED_NODAL_MASS_ARRAY)
+        model_part.AddNodalSolutionStepVariable(ESTIMATED_NODAL_MASS_ARRAY_OLD)
         
 
         # ROTATION RELATED PROPERTIES
@@ -508,7 +509,8 @@ class Procedures():
             model_part.AddNodalSolutionStepVariable(PARTICLE_MOMENT_OF_INERTIA)
             # TODO. Ignasi
             model_part.AddNodalSolutionStepVariable(PARTICLE_MOMENT_OF_INERTIA_ARRAY)
-            model_part.AddNodalSolutionStepVariable(PARTICLE_MOMENT_OF_INERTIA_ARRAY_OLD)
+            model_part.AddNodalSolutionStepVariable(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY)
+            model_part.AddNodalSolutionStepVariable(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_OLD)
             model_part.AddNodalSolutionStepVariable(PRINCIPAL_MOMENTS_OF_INERTIA)
             # TODO: only if self.DEM_parameters-RotationOption! Check that no one accesses them in c++ without checking the rotation option
             model_part.AddNodalSolutionStepVariable(PARTICLE_ROTATION_DAMP_RATIO)
@@ -582,9 +584,12 @@ class Procedures():
         model_part.AddNodalSolutionStepVariable(PARTICLE_DENSITY)
         # TODO. Ignasi
         model_part.AddNodalSolutionStepVariable(NODAL_MASS_ARRAY)
-        model_part.AddNodalSolutionStepVariable(NODAL_MASS_ARRAY_OLD)
+        model_part.AddNodalSolutionStepVariable(ESTIMATED_NODAL_MASS_ARRAY)
+        model_part.AddNodalSolutionStepVariable(ESTIMATED_NODAL_MASS_ARRAY_OLD)
+        model_part.AddNodalSolutionStepVariable(PARTICLE_MOMENT_OF_INERTIA)
         model_part.AddNodalSolutionStepVariable(PARTICLE_MOMENT_OF_INERTIA_ARRAY)
-        model_part.AddNodalSolutionStepVariable(PARTICLE_MOMENT_OF_INERTIA_ARRAY_OLD)
+        model_part.AddNodalSolutionStepVariable(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY)
+        model_part.AddNodalSolutionStepVariable(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_OLD)
 
     def AddElasticFaceVariables(self, model_part, DEM_parameters): #Only used in CSM coupling
         self.AddRigidFaceVariables(model_part, self.DEM_parameters)
@@ -619,9 +624,12 @@ class Procedures():
         model_part.AddNodalSolutionStepVariable(PARTICLE_DENSITY)
         # TODO. Ignasi
         model_part.AddNodalSolutionStepVariable(NODAL_MASS_ARRAY)
-        model_part.AddNodalSolutionStepVariable(NODAL_MASS_ARRAY_OLD)
+        model_part.AddNodalSolutionStepVariable(ESTIMATED_NODAL_MASS_ARRAY)
+        model_part.AddNodalSolutionStepVariable(ESTIMATED_NODAL_MASS_ARRAY_OLD)
+        model_part.AddNodalSolutionStepVariable(PARTICLE_MOMENT_OF_INERTIA)
         model_part.AddNodalSolutionStepVariable(PARTICLE_MOMENT_OF_INERTIA_ARRAY)
-        model_part.AddNodalSolutionStepVariable(PARTICLE_MOMENT_OF_INERTIA_ARRAY_OLD)
+        model_part.AddNodalSolutionStepVariable(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY)
+        model_part.AddNodalSolutionStepVariable(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_OLD)
 
         # OTHER PROPERTIES
         model_part.AddNodalSolutionStepVariable(PARTICLE_MATERIAL)   # Colour defined in GiD
@@ -1465,8 +1473,6 @@ class DEMIo():
         if self.DEM_parameters["PostParticleMoment"].GetBool():
             self.PushPrintVar(self.PostParticleMoment, PARTICLE_MOMENT, self.global_variables)
         self.PushPrintVar(self.PostDeltaDisplacement, DELTA_DISPLACEMENT, self.global_variables)
-        self.PushPrintVar(self.PostNodalMassArray, NODAL_MASS_ARRAY, self.global_variables)
-        self.PushPrintVar(self.PostMomentIntertiaArray, PARTICLE_MOMENT_OF_INERTIA_ARRAY, self.global_variables)
 
     def AddGlobalNonHistoricalNodalVariables(self):
         self.PushPrintVar(self.PostControlModule, TARGET_STRESS, self.global_nonhistorical_nodal_variables)
@@ -1495,6 +1501,12 @@ class DEMIo():
         self.PushPrintVar(self.PostTangentialImpactVelocity, TANGENTIAL_IMPACT_VELOCITY, self.spheres_variables)
         self.PushPrintVar(self.PostFaceNormalImpactVelocity, FACE_NORMAL_IMPACT_VELOCITY, self.spheres_variables)
         self.PushPrintVar(self.PostFaceTangentialImpactVelocity, FACE_TANGENTIAL_IMPACT_VELOCITY, self.spheres_variables)
+        self.PushPrintVar(self.PostNodalMassArray, NODAL_MASS, self.spheres_variables)
+        self.PushPrintVar(self.PostNodalMassArray, NODAL_MASS_ARRAY, self.spheres_variables)
+        self.PushPrintVar(self.PostNodalMassArray, ESTIMATED_NODAL_MASS_ARRAY, self.spheres_variables)
+        self.PushPrintVar(self.PostMomentIntertiaArray, PARTICLE_MOMENT_OF_INERTIA_ARRAY, self.spheres_variables)
+        self.PushPrintVar(self.PostMomentIntertiaArray, ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY, self.spheres_variables)
+        self.PushPrintVar(self.PostMomentIntertiaArray, PARTICLE_MOMENT_OF_INERTIA, self.spheres_variables)
 
         if "PostRollingResistanceMoment" in self.DEM_parameters.keys():
             if self.DEM_parameters["RotationOption"].GetBool():

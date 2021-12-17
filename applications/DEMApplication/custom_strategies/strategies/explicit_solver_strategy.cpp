@@ -235,16 +235,11 @@ namespace Kratos {
             mListOfSphericParticles[i]->CalculateInitialNodalMassArray(r_process_info);
         }
 
-        // We need to make sure that the initial mass array is different from zero
-
-        // 1. Compute maximum stiffness for each DOF to have a conservative estimation of stiffness
+        // Compute maximum stiffness and minimum mass
         ModelPart& dem_model_part = GetModelPart();
         NodesArrayType& rNodes = dem_model_part.Nodes();
         const int NNodes = static_cast<int>(rNodes.size());
         ModelPart::NodesContainerType::iterator node_begin = dem_model_part.NodesBegin();
-
-        array_1d<double,3> k_max;
-        array_1d<double,3> m_max;
         
         unsigned int NumThreads = ParallelUtilities::GetNumThreads();
         std::vector<double> kx_max_partition(NumThreads);
@@ -253,30 +248,35 @@ namespace Kratos {
         std::vector<double> mx_max_partition(NumThreads);
         std::vector<double> my_max_partition(NumThreads);
         std::vector<double> mz_max_partition(NumThreads);
+        std::vector<double> m_max_partition(NumThreads);
+        std::vector<double> m_min_partition(NumThreads);
 
         #pragma omp parallel
         {
             int k = OpenMPUtils::ThisThread();
 
-            kx_max_partition[k] = node_begin->FastGetSolutionStepValue(NODAL_MASS_ARRAY_X);
-            ky_max_partition[k] = node_begin->FastGetSolutionStepValue(NODAL_MASS_ARRAY_Y);
-            kz_max_partition[k] = node_begin->FastGetSolutionStepValue(NODAL_MASS_ARRAY_Z);
-            mx_max_partition[k] = node_begin->FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY_X);
-            my_max_partition[k] = node_begin->FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY_Y);
-            mz_max_partition[k] = node_begin->FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY_Z);
+            kx_max_partition[k] = node_begin->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_X);
+            ky_max_partition[k] = node_begin->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_Y);
+            kz_max_partition[k] = node_begin->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_Z);
+            mx_max_partition[k] = node_begin->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_X);
+            my_max_partition[k] = node_begin->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_Y);
+            mz_max_partition[k] = node_begin->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_Z);
+            m_max_partition[k] = node_begin->FastGetSolutionStepValue(NODAL_MASS);
+            m_min_partition[k] = node_begin->FastGetSolutionStepValue(NODAL_MASS);
 
-            double kx_me, ky_me, kz_me, mx_me, my_me, mz_me;
+            double kx_me, ky_me, kz_me, mx_me, my_me, mz_me, m_me;
 
             #pragma omp for
             for(int i = 0; i < NNodes; i++) {
                 ModelPart::NodesContainerType::iterator itNode = node_begin + i;
 
-                kx_me = itNode->FastGetSolutionStepValue(NODAL_MASS_ARRAY_X);
-                ky_me = itNode->FastGetSolutionStepValue(NODAL_MASS_ARRAY_Y);
-                kz_me = itNode->FastGetSolutionStepValue(NODAL_MASS_ARRAY_Z);
-                mx_me = itNode->FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY_X);
-                my_me = itNode->FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY_Y);
-                mz_me = itNode->FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY_Z);
+                kx_me = itNode->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_X);
+                ky_me = itNode->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_Y);
+                kz_me = itNode->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_Z);
+                mx_me = itNode->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_X);
+                my_me = itNode->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_Y);
+                mz_me = itNode->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_Z);
+                m_me = itNode->FastGetSolutionStepValue(NODAL_MASS);
 
                 if( kx_me > kx_max_partition[k] ) {
                     kx_max_partition[k] = kx_me;
@@ -296,56 +296,70 @@ namespace Kratos {
                 if( mz_me > mz_max_partition[k] ) {
                     mz_max_partition[k] = mz_me;
                 }
+                if( m_me > m_max_partition[k] ) {
+                    m_max_partition[k] = m_me;
+                }
+                if( m_me < m_min_partition[k] ) {
+                    m_min_partition[k] = m_me;
+                }
             }
         }
 
-        k_max[0] = kx_max_partition[0];
-        k_max[1] = ky_max_partition[0];
-        k_max[2] = kz_max_partition[0];
-        m_max[0] = mx_max_partition[0];
-        m_max[1] = my_max_partition[0];
-        m_max[2] = mz_max_partition[0];
+        mKMax[0] = kx_max_partition[0];
+        mKMax[1] = ky_max_partition[0];
+        mKMax[2] = kz_max_partition[0];
+        mKrMax[0] = mx_max_partition[0];
+        mKrMax[1] = my_max_partition[0];
+        mKrMax[2] = mz_max_partition[0];
+        mMMax = m_max_partition[0];
+        mMMin = m_min_partition[0];
 
         for(unsigned int i=1; i < NumThreads; i++) {
-            if(kx_max_partition[i] > k_max[0]){
-                k_max[0] = kx_max_partition[i];
+            if(kx_max_partition[i] > mKMax[0]){
+                mKMax[0] = kx_max_partition[i];
             }
-            if(ky_max_partition[i] > k_max[1]) {
-                k_max[1] = ky_max_partition[i];
+            if(ky_max_partition[i] > mKMax[1]) {
+                mKMax[1] = ky_max_partition[i];
             }
-            if(kz_max_partition[i] > k_max[2]) {
-                k_max[2] = kz_max_partition[i];
+            if(kz_max_partition[i] > mKMax[2]) {
+                mKMax[2] = kz_max_partition[i];
             }
-            if(mx_max_partition[i] > m_max[0]){
-                m_max[0] = mx_max_partition[i];
+            if(mx_max_partition[i] > mKrMax[0]){
+                mKrMax[0] = mx_max_partition[i];
             }
-            if(my_max_partition[i] > m_max[1]) {
-                m_max[1] = my_max_partition[i];
+            if(my_max_partition[i] > mKrMax[1]) {
+                mKrMax[1] = my_max_partition[i];
             }
-            if(mz_max_partition[i] > m_max[2]) {
-                m_max[2] = mz_max_partition[i];
+            if(mz_max_partition[i] > mKrMax[2]) {
+                mKrMax[2] = mz_max_partition[i];
+            }
+            if(m_max_partition[i] > mMMax) {
+                mMMax = m_max_partition[i];
+            }
+            if(m_min_partition[i] < mMMin) {
+                mMMin = m_min_partition[i];
             }
         }
 
-        // 2. Check that the maximum stiffness is not zero
+        // Check that the maximum stiffness is not zero
         double k_max_total = 0.0;
         double m_max_total = 0.0;
         for(unsigned int i = 0; i<3; i++){
-            k_max_total += k_max[i];
-            m_max_total += m_max[i];
+            k_max_total += mKMax[i];
+            m_max_total += mKrMax[i];
         }
         for(unsigned int i = 0; i<3; i++){
-            if(k_max[i] < std::numeric_limits<double>::epsilon()) {
-                k_max[i] = k_max_total;
+            if(mKMax[i] < std::numeric_limits<double>::epsilon()) {
+                mKMax[i] = k_max_total;
             }
-            if(k_max[i] < std::numeric_limits<double>::epsilon()) {
-                k_max[i] = 1.0e12; // Just in case stiffness is zero everywhere !
+            if(mKMax[i] < std::numeric_limits<double>::epsilon()) {
+                mKMax[i] = 1.0e20; // Just in case stiffness is zero everywhere !
             }
-            if(m_max[i] < std::numeric_limits<double>::epsilon()) {
-                m_max[i] = m_max_total;
+            if(mKrMax[i] < std::numeric_limits<double>::epsilon()) {
+                mKrMax[i] = m_max_total;
             }
-            if(m_max[i] < std::numeric_limits<double>::epsilon()) {
-                m_max[i] = 1.0e12; // Just in case moment_of_inertia is zero everywhere !
+            if(mKrMax[i] < std::numeric_limits<double>::epsilon()) {
+                mKrMax[i] = 1.0e20; // Just in case moment_of_inertia is zero everywhere !
             }
         }
 
@@ -354,46 +368,41 @@ namespace Kratos {
         // double k_max_norm = 0.0;
         // double m_max_norm = 0.0;
         // for(unsigned int i = 0; i<3; i++){
-        //     k_max_norm += k_max[i]*k_max[i];
-        //     m_max_norm += m_max[i]*m_max[i];
+        //     k_max_norm += mKMax[i]*mKMax[i];
+        //     m_max_norm += mKrMax[i]*mKrMax[i];
         // }
         // k_max_norm = std::sqrt(k_max_norm);
         // m_max_norm = std::sqrt(m_max_norm);
         // const double inertia_scale_factor = r_process_info[INERTIA_ARRAY_SCALE_FACTOR];
         // GetModelPart().GetProcessInfo()[INERTIA_ARRAY_SCALE_FACTOR] = inertia_scale_factor*k_max_norm/m_max_norm;
 
-        // 3. Check that mass array is different from zero and replace it by the maximum stiffness estimation if necessary
-        const bool use_mass_array = r_process_info[USE_MASS_ARRAY];
         block_for_each(rNodes, [&](ModelPart::NodeType& rNode) {
+            const double& nodal_mass = rNode.FastGetSolutionStepValue(NODAL_MASS);
+            const double& particle_moment_intertia = rNode.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA);
             array_1d<double, 3>& nodal_mass_array = rNode.FastGetSolutionStepValue(NODAL_MASS_ARRAY);
             array_1d<double, 3>& particle_moment_intertia_array = rNode.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY);
-            array_1d<double, 3>& nodal_mass_array_old = rNode.FastGetSolutionStepValue(NODAL_MASS_ARRAY_OLD);
-            array_1d<double, 3>& particle_moment_intertia_array_old = rNode.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY_OLD);
+            array_1d<double, 3>& estimated_nodal_mass_array = rNode.FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY);
+            array_1d<double, 3>& estimated_particle_moment_intertia_array = rNode.FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY);
+            array_1d<double, 3>& estimated_nodal_mass_array_old = rNode.FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_OLD);
+            array_1d<double, 3>& estimated_particle_moment_intertia_array_old = rNode.FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_OLD);
 
-            // Use standard mass if necessary
-            if(use_mass_array == false){
-                const double& nodal_mass = rNode.FastGetSolutionStepValue(NODAL_MASS);
-                const double& particle_moment_intertia = rNode.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA);
+            for(unsigned int i = 0; i<3; i++){
 
-                for(unsigned int i = 0; i<3; i++){
-                    nodal_mass_array[i] = nodal_mass;
-                    particle_moment_intertia_array[i] = particle_moment_intertia;
-                    // Save nodal mass array
-                    nodal_mass_array_old[i] = nodal_mass_array[i];
-                    particle_moment_intertia_array_old[i] = particle_moment_intertia_array[i];
+                // Check no stiffness is zero
+                if(estimated_nodal_mass_array[i] < std::numeric_limits<double>::epsilon()) {
+                    estimated_nodal_mass_array[i] = mKMax[i];
                 }
-            } else {
-                for(unsigned int i = 0; i<3; i++){
-                    if(nodal_mass_array[i] < std::numeric_limits<double>::epsilon()) {
-                        nodal_mass_array[i] = k_max[i];
-                    }
-                    if(particle_moment_intertia_array[i] < std::numeric_limits<double>::epsilon()) {
-                        particle_moment_intertia_array[i] = m_max[i];
-                    }
-                    // Save nodal mass array
-                    nodal_mass_array_old[i] = nodal_mass_array[i];
-                    particle_moment_intertia_array_old[i] = particle_moment_intertia_array[i];
+                if(estimated_particle_moment_intertia_array[i] < std::numeric_limits<double>::epsilon()) {
+                    estimated_particle_moment_intertia_array[i] = mKrMax[i];
                 }
+
+                //Save estimated_nodal_mass_array_old
+                estimated_nodal_mass_array_old[i] = estimated_nodal_mass_array[i];
+                estimated_particle_moment_intertia_array_old[i] = estimated_particle_moment_intertia_array[i];
+
+                // Use standard mass to begin with
+                nodal_mass_array[i] = nodal_mass;
+                particle_moment_intertia_array[i] = particle_moment_intertia;
             }
         });
 
@@ -747,7 +756,8 @@ namespace Kratos {
 
         KRATOS_TRY
 
-        ProcessInfo& r_process_info = GetModelPart().GetProcessInfo();
+        ModelPart& dem_model_part = GetModelPart();
+        ProcessInfo& r_process_info = dem_model_part.GetProcessInfo();
         double dt = r_process_info[DELTA_TIME];
         const array_1d<double, 3>& gravity = r_process_info[GRAVITY];
 
@@ -758,58 +768,362 @@ namespace Kratos {
             mListOfSphericParticles[i]->CalculateRightHandSide(r_process_info, dt, gravity);
         }
 
-        // TODO. Ignasi:
-        // We need to make sure that the mass array is different from zero. Otherwise, use the previous calculated value
-        NodesArrayType& rNodes = GetModelPart().Nodes();
         const bool use_mass_array = r_process_info[USE_MASS_ARRAY];
-        const double mass_array_scale_factor = r_process_info[MASS_ARRAY_SCALE_FACTOR];
-        const double inertia_scale_factor = r_process_info[INERTIA_ARRAY_SCALE_FACTOR];
-        const double mass_array_averaging_time_interval = r_process_info[MASS_ARRAY_AVERAGING_TIME_INTERVAL];
-        double mass_array_alpha = 1.0-dt/mass_array_averaging_time_interval;
-        // Update fast the nodal mass to avoid an initial bad estimation in the first steps
-        int current_step = int(r_process_info[TIME]/dt);
-        if(current_step <= 1000){
-            mass_array_alpha = 0.0;
-        }
-        block_for_each(rNodes, [&](ModelPart::NodeType& rNode) {
-            array_1d<double, 3>& nodal_mass_array = rNode.FastGetSolutionStepValue(NODAL_MASS_ARRAY);
-            array_1d<double, 3>& particle_moment_intertia_array = rNode.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY);
-            array_1d<double, 3>& nodal_mass_array_old = rNode.FastGetSolutionStepValue(NODAL_MASS_ARRAY_OLD);
-            array_1d<double, 3>& particle_moment_intertia_array_old = rNode.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY_OLD);
+        if(use_mass_array == true){
 
-            // Use standard mass if necessary
-            if(use_mass_array == false){
-                const double& nodal_mass = rNode.FastGetSolutionStepValue(NODAL_MASS);
-                const double& particle_moment_intertia = rNode.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA);
+            NodesArrayType& rNodes = dem_model_part.Nodes();
+            const double mass_array_averaging_time_interval = r_process_info[MASS_ARRAY_AVERAGING_TIME_INTERVAL];
+            const double mass_array_alpha = 1.0-dt/mass_array_averaging_time_interval;
+            const double mass_array_start_time = r_process_info[MASS_ARRAY_START_TIME];
+            const double time = r_process_info[TIME];
 
-                for(unsigned int i = 0; i<3; i++){
-                    nodal_mass_array[i] = nodal_mass;
-                    particle_moment_intertia_array[i] = particle_moment_intertia;
-                    // Save nodal mass array
-                    nodal_mass_array_old[i] = nodal_mass_array[i];
-                    particle_moment_intertia_array_old[i] = particle_moment_intertia_array[i];
+            const int NNodes = static_cast<int>(rNodes.size());
+            ModelPart::NodesContainerType::iterator node_begin = dem_model_part.NodesBegin();
+            unsigned int NumThreads = ParallelUtilities::GetNumThreads();
+
+            if (time > mass_array_start_time) {
+
+                // Estimate nodal stiffness and replace nodal_mass by it
+
+                block_for_each(rNodes, [&](ModelPart::NodeType& rNode) {
+                    array_1d<double, 3>& nodal_mass_array = rNode.FastGetSolutionStepValue(NODAL_MASS_ARRAY);
+                    array_1d<double, 3>& particle_moment_intertia_array = rNode.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY);
+                    array_1d<double, 3>& estimated_nodal_mass_array = rNode.FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY);
+                    array_1d<double, 3>& estimated_particle_moment_intertia_array = rNode.FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY);
+                    array_1d<double, 3>& estimated_nodal_mass_array_old = rNode.FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_OLD);
+                    array_1d<double, 3>& estimated_particle_moment_intertia_array_old = rNode.FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_OLD);
+
+                    for(unsigned int i = 0; i<3; i++){
+
+                        // Check no stiffness is zero
+                        if(estimated_nodal_mass_array[i] < std::numeric_limits<double>::epsilon()) {
+                            estimated_nodal_mass_array[i] = mKMax[i];
+                        }
+                        if(estimated_particle_moment_intertia_array[i] < std::numeric_limits<double>::epsilon()) {
+                            estimated_particle_moment_intertia_array[i] = mKrMax[i];
+                        }
+
+                        // Update nodal mass array averaging it in time
+                        estimated_nodal_mass_array[i] = (1.0-mass_array_alpha)*estimated_nodal_mass_array[i] + mass_array_alpha*estimated_nodal_mass_array_old[i];
+                        estimated_particle_moment_intertia_array[i] = (1.0-mass_array_alpha)*estimated_particle_moment_intertia_array[i] + mass_array_alpha*estimated_particle_moment_intertia_array_old[i];
+
+                        //Save estimated_nodal_mass_array_old
+                        estimated_nodal_mass_array_old[i] = estimated_nodal_mass_array[i];
+                        estimated_particle_moment_intertia_array_old[i] = estimated_particle_moment_intertia_array[i];
+
+                        // Use estimated nodal mass array scaled so that the Dt is similar to the original one
+                        nodal_mass_array[i] = (1.0-mass_array_alpha)*estimated_nodal_mass_array[i]*mMMin/mKMin + mass_array_alpha*nodal_mass_array[i];
+                        particle_moment_intertia_array[i] = (1.0-mass_array_alpha)*estimated_particle_moment_intertia_array[i]*mMMin/mKMin + mass_array_alpha*particle_moment_intertia_array[i];
+                        // nodal_mass_array[i] = estimated_nodal_mass_array[i] * mMMin/mKMin;
+                        // particle_moment_intertia_array[i] = estimated_particle_moment_intertia_array[i] * mMMin/mKMin;
+                    }
+                });
+
+                // Calculate mKmax and mKrMax
+
+                std::vector<double> kx_max_partition(NumThreads);
+                std::vector<double> ky_max_partition(NumThreads);
+                std::vector<double> kz_max_partition(NumThreads);
+                std::vector<double> mx_max_partition(NumThreads);
+                std::vector<double> my_max_partition(NumThreads);
+                std::vector<double> mz_max_partition(NumThreads);
+
+                #pragma omp parallel
+                {
+                    int k = OpenMPUtils::ThisThread();
+
+                    kx_max_partition[k] = node_begin->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_X);
+                    ky_max_partition[k] = node_begin->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_Y);
+                    kz_max_partition[k] = node_begin->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_Z);
+                    mx_max_partition[k] = node_begin->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_X);
+                    my_max_partition[k] = node_begin->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_Y);
+                    mz_max_partition[k] = node_begin->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_Z);
+
+                    double kx_me, ky_me, kz_me, mx_me, my_me, mz_me;
+
+                    #pragma omp for
+                    for(int i = 0; i < NNodes; i++) {
+                        ModelPart::NodesContainerType::iterator itNode = node_begin + i;
+
+                        kx_me = itNode->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_X);
+                        ky_me = itNode->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_Y);
+                        kz_me = itNode->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_Z);
+                        mx_me = itNode->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_X);
+                        my_me = itNode->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_Y);
+                        mz_me = itNode->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_Z);
+
+                        if( kx_me > kx_max_partition[k] ) {
+                            kx_max_partition[k] = kx_me;
+                        }
+                        if( ky_me > ky_max_partition[k] ) {
+                            ky_max_partition[k] = ky_me;
+                        }
+                        if( kz_me > kz_max_partition[k] ) {
+                            kz_max_partition[k] = kz_me;
+                        }
+                        if( mx_me > mx_max_partition[k] ) {
+                            mx_max_partition[k] = mx_me;
+                        }
+                        if( my_me > my_max_partition[k] ) {
+                            my_max_partition[k] = my_me;
+                        }
+                        if( mz_me > mz_max_partition[k] ) {
+                            mz_max_partition[k] = mz_me;
+                        }
+                    }
                 }
-            } else {
+
+                mKMax[0] = kx_max_partition[0];
+                mKMax[1] = ky_max_partition[0];
+                mKMax[2] = kz_max_partition[0];
+                mKrMax[0] = mx_max_partition[0];
+                mKrMax[1] = my_max_partition[0];
+                mKrMax[2] = mz_max_partition[0];
+
+                for(unsigned int i=1; i < NumThreads; i++) {
+                    if(kx_max_partition[i] > mKMax[0]){
+                        mKMax[0] = kx_max_partition[i];
+                    }
+                    if(ky_max_partition[i] > mKMax[1]) {
+                        mKMax[1] = ky_max_partition[i];
+                    }
+                    if(kz_max_partition[i] > mKMax[2]) {
+                        mKMax[2] = kz_max_partition[i];
+                    }
+                    if(mx_max_partition[i] > mKrMax[0]){
+                        mKrMax[0] = mx_max_partition[i];
+                    }
+                    if(my_max_partition[i] > mKrMax[1]) {
+                        mKrMax[1] = my_max_partition[i];
+                    }
+                    if(mz_max_partition[i] > mKrMax[2]) {
+                        mKrMax[2] = mz_max_partition[i];
+                    }
+                }
+
+                // Check that the maximum stiffness is not zero
+                double k_max_total = 0.0;
+                double m_max_total = 0.0;
                 for(unsigned int i = 0; i<3; i++){
-                    if(nodal_mass_array[i] < std::numeric_limits<double>::epsilon()) {
-                        nodal_mass_array[i] = nodal_mass_array_old[i];
+                    k_max_total += mKMax[i];
+                    m_max_total += mKrMax[i];
+                }
+                for(unsigned int i = 0; i<3; i++){
+                    if(mKMax[i] < std::numeric_limits<double>::epsilon()) {
+                        mKMax[i] = k_max_total;
                     }
-                    if(particle_moment_intertia_array[i] < std::numeric_limits<double>::epsilon()) {
-                        particle_moment_intertia_array[i] = particle_moment_intertia_array_old[i];
+                    if(mKMax[i] < std::numeric_limits<double>::epsilon()) {
+                        mKMax[i] = 1.0e20; // Just in case stiffness is zero everywhere !
                     }
-                    // Update nodal mass array averaging it in time
-                    nodal_mass_array[i] = (1.0-mass_array_alpha)*nodal_mass_array[i] + mass_array_alpha*nodal_mass_array_old[i];
-                    particle_moment_intertia_array[i] = (1.0-mass_array_alpha)*particle_moment_intertia_array[i] + mass_array_alpha*particle_moment_intertia_array_old[i];
-                    // Save nodal mass array
-                    nodal_mass_array_old[i] = nodal_mass_array[i];
-                    particle_moment_intertia_array_old[i] = particle_moment_intertia_array[i];
-                    // Scale mass array and moment array to have similar Dt as in the original case
-                    nodal_mass_array[i] = nodal_mass_array[i]*mass_array_scale_factor;
-                    particle_moment_intertia_array[i] = particle_moment_intertia_array[i]*inertia_scale_factor;
+                    if(mKrMax[i] < std::numeric_limits<double>::epsilon()) {
+                        mKrMax[i] = m_max_total;
+                    }
+                    if(mKrMax[i] < std::numeric_limits<double>::epsilon()) {
+                        mKrMax[i] = 1.0e20; // Just in case moment_of_inertia is zero everywhere !
+                    }
+                }
+
+                // Update Rayleigh alpha and beta just on the first step after changing nodal mass
+                if((time - dt) < mass_array_start_time){
+                    
+                    const double xi_1 = r_process_info[XI_1];
+                    const double xi_n = r_process_info[XI_N];
+                    const double omega_1 = r_process_info[OMEGA_1];
+                    const double omega_n = r_process_info[OMEGA_N];
+                    const double K_max_scaled = std::sqrt(mKMax[0]*mKMax[0]+mKMax[1]*mKMax[1]+mKMax[2]*mKMax[2]) * mMMin/mKMin;
+                    double omega_1_mod = omega_1*std::sqrt(mMMax/K_max_scaled);
+                    if(K_max_scaled > mMMax) {
+                        std::cout << "K_max is larger than M_max ! K_max: " << K_max_scaled << " M_max: " << mMMax << std::endl;
+                        omega_1_mod = omega_1*2.0; // TODO. Ignasi
+                    }
+                    r_process_info[RAYLEIGH_BETA] = 2.0*(xi_n*omega_n-xi_1*omega_1_mod)/(omega_n*omega_n-omega_1_mod*omega_1_mod);
+                    double rayleigh_beta = r_process_info[RAYLEIGH_BETA];
+                    r_process_info[RAYLEIGH_ALPHA] = 2.0*xi_1*omega_1_mod-rayleigh_beta*omega_1_mod*omega_1_mod;
+                }
+
+            } else {
+
+                // Estimate nodal stiffness
+
+                block_for_each(rNodes, [&](ModelPart::NodeType& rNode) {
+                    const double& nodal_mass = rNode.FastGetSolutionStepValue(NODAL_MASS);
+                    const double& particle_moment_intertia = rNode.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA);
+                    array_1d<double, 3>& nodal_mass_array = rNode.FastGetSolutionStepValue(NODAL_MASS_ARRAY);
+                    array_1d<double, 3>& particle_moment_intertia_array = rNode.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY);
+                    array_1d<double, 3>& estimated_nodal_mass_array = rNode.FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY);
+                    array_1d<double, 3>& estimated_particle_moment_intertia_array = rNode.FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY);
+                    array_1d<double, 3>& estimated_nodal_mass_array_old = rNode.FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_OLD);
+                    array_1d<double, 3>& estimated_particle_moment_intertia_array_old = rNode.FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_OLD);
+
+                    for(unsigned int i = 0; i<3; i++){
+
+                        // Check no stiffness is zero
+                        if(estimated_nodal_mass_array[i] < std::numeric_limits<double>::epsilon()) {
+                            estimated_nodal_mass_array[i] = mKMax[i];
+                        }
+                        if(estimated_particle_moment_intertia_array[i] < std::numeric_limits<double>::epsilon()) {
+                            estimated_particle_moment_intertia_array[i] = mKrMax[i];
+                        }
+
+                        // Update nodal mass array averaging it in time
+                        estimated_nodal_mass_array[i] = (1.0-mass_array_alpha)*estimated_nodal_mass_array[i] + mass_array_alpha*estimated_nodal_mass_array_old[i];
+                        estimated_particle_moment_intertia_array[i] = (1.0-mass_array_alpha)*estimated_particle_moment_intertia_array[i] + mass_array_alpha*estimated_particle_moment_intertia_array_old[i];
+
+                        //Save estimated_nodal_mass_array_old
+                        estimated_nodal_mass_array_old[i] = estimated_nodal_mass_array[i];
+                        estimated_particle_moment_intertia_array_old[i] = estimated_particle_moment_intertia_array[i];
+
+                        // Use standard mass during the estimation of nodal stiffness
+                        nodal_mass_array[i] = nodal_mass;
+                        particle_moment_intertia_array[i] = particle_moment_intertia;
+                    }
+                });
+
+                // TODO. Ignasi: seguir
+                // TODO. Ignasi: review mKMin computation and also check mMMax and mMMin
+                
+                // Calculate mKmax, mKrMax and mKMin
+                
+                std::vector<double> kx_max_partition(NumThreads);
+                std::vector<double> ky_max_partition(NumThreads);
+                std::vector<double> kz_max_partition(NumThreads);
+                std::vector<double> mx_max_partition(NumThreads);
+                std::vector<double> my_max_partition(NumThreads);
+                std::vector<double> mz_max_partition(NumThreads);
+                std::vector<double> kx_min_partition(NumThreads);
+                std::vector<double> ky_min_partition(NumThreads);
+                std::vector<double> kz_min_partition(NumThreads);
+
+                #pragma omp parallel
+                {
+                    int k = OpenMPUtils::ThisThread();
+
+                    kx_max_partition[k] = node_begin->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_X);
+                    ky_max_partition[k] = node_begin->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_Y);
+                    kz_max_partition[k] = node_begin->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_Z);
+                    mx_max_partition[k] = node_begin->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_X);
+                    my_max_partition[k] = node_begin->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_Y);
+                    mz_max_partition[k] = node_begin->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_Z);
+                    kx_min_partition[k] = 1.0e20;
+                    ky_min_partition[k] = 1.0e20;
+                    kz_min_partition[k] = node_begin->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_Z);
+
+                    double kx_me, ky_me, kz_me, mx_me, my_me, mz_me;
+
+                    #pragma omp for
+                    for(int i = 0; i < NNodes; i++) {
+                        ModelPart::NodesContainerType::iterator itNode = node_begin + i;
+
+                        kx_me = itNode->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_X);
+                        ky_me = itNode->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_Y);
+                        kz_me = itNode->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_Z);
+                        mx_me = itNode->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_X);
+                        my_me = itNode->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_Y);
+                        mz_me = itNode->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_Z);
+
+                        if( kx_me > kx_max_partition[k] ) {
+                            kx_max_partition[k] = kx_me;
+                        }
+                        if( ky_me > ky_max_partition[k] ) {
+                            ky_max_partition[k] = ky_me;
+                        }
+                        if( kz_me > kz_max_partition[k] ) {
+                            kz_max_partition[k] = kz_me;
+                        }
+                        if( mx_me > mx_max_partition[k] ) {
+                            mx_max_partition[k] = mx_me;
+                        }
+                        if( my_me > my_max_partition[k] ) {
+                            my_max_partition[k] = my_me;
+                        }
+                        if( mz_me > mz_max_partition[k] ) {
+                            mz_max_partition[k] = mz_me;
+                        }
+                        if( (kx_me > std::numeric_limits<double>::epsilon()) && (kx_me < kx_min_partition[k]) ) {
+                            kx_min_partition[k] = kx_me;
+                        }
+                        if( (ky_me > std::numeric_limits<double>::epsilon()) && (ky_me < ky_min_partition[k]) ) {
+                            ky_min_partition[k] = ky_me;
+                        }
+                        if( (kz_me > std::numeric_limits<double>::epsilon()) && (kz_me < kz_min_partition[k]) ) {
+                            kz_min_partition[k] = kz_me;
+                        }
+                    }
+                }
+
+                mKMax[0] = kx_max_partition[0];
+                mKMax[1] = ky_max_partition[0];
+                mKMax[2] = kz_max_partition[0];
+                mKrMax[0] = mx_max_partition[0];
+                mKrMax[1] = my_max_partition[0];
+                mKrMax[2] = mz_max_partition[0];
+                array_1d<double,3> KMin;
+                KMin[0] = kx_min_partition[0];
+                KMin[1] = ky_min_partition[0];
+                KMin[2] = kz_min_partition[0];
+
+                for(unsigned int i=1; i < NumThreads; i++) {
+                    if(kx_max_partition[i] > mKMax[0]){
+                        mKMax[0] = kx_max_partition[i];
+                    }
+                    if(ky_max_partition[i] > mKMax[1]) {
+                        mKMax[1] = ky_max_partition[i];
+                    }
+                    if(kz_max_partition[i] > mKMax[2]) {
+                        mKMax[2] = kz_max_partition[i];
+                    }
+                    if(mx_max_partition[i] > mKrMax[0]){
+                        mKrMax[0] = mx_max_partition[i];
+                    }
+                    if(my_max_partition[i] > mKrMax[1]) {
+                        mKrMax[1] = my_max_partition[i];
+                    }
+                    if(mz_max_partition[i] > mKrMax[2]) {
+                        mKrMax[2] = mz_max_partition[i];
+                    }
+                    if(kx_min_partition[i] < KMin[0]){
+                        KMin[0] = kx_min_partition[i];
+                    }
+                    if(ky_min_partition[i] < KMin[1]) {
+                        KMin[1] = ky_min_partition[i];
+                    }
+                    if(kz_min_partition[i] < KMin[2]) {
+                        KMin[2] = kz_min_partition[i];
+                    }
+                }
+
+                // Check that the maximum stiffness is not zero
+                double k_max_total = 0.0;
+                double m_max_total = 0.0;
+                for(unsigned int i = 0; i<3; i++){
+                    k_max_total += mKMax[i];
+                    m_max_total += mKrMax[i];
+                }
+                for(unsigned int i = 0; i<3; i++){
+                    if(mKMax[i] < std::numeric_limits<double>::epsilon()) {
+                        mKMax[i] = k_max_total;
+                    }
+                    if(mKMax[i] < std::numeric_limits<double>::epsilon()) {
+                        mKMax[i] = 1.0e20; // Just in case stiffness is zero everywhere !
+                    }
+                    if(mKrMax[i] < std::numeric_limits<double>::epsilon()) {
+                        mKrMax[i] = m_max_total;
+                    }
+                    if(mKrMax[i] < std::numeric_limits<double>::epsilon()) {
+                        mKrMax[i] = 1.0e20; // Just in case moment_of_inertia is zero everywhere !
+                    }
+                }
+
+                mKMin = std::sqrt(KMin[0]*KMin[0]+KMin[1]*KMin[1]+KMin[2]*KMin[2]);
+
+                // Check that the minimum stiffness is not zero
+                if(mKMin < std::numeric_limits<double>::epsilon()) {
+                    mKMin = 1.0; // Note: this shouldn't happen
+                    std::cout << "The minimum nodal stiffness is smaller than epsilon !!!" << std::endl;
                 }
             }
-        });
-
+        }
+    
         KRATOS_CATCH("")
     }
 
