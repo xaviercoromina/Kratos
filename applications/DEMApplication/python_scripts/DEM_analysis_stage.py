@@ -434,7 +434,7 @@ class DEMAnalysisStage(AnalysisStage):
         # self.iterating_steps = 0
         # self.disp_increasing = True
         # self.displ_y_factor = 1.0
-        # self.initial_displ_y_target = -1.5e-4
+        # self.initial_displ_y_target = -1.5e-3
         # # self.vel_y = -1.5e-1
         # # self.vel_y = -1.765e-6
         # out_error = open("time_dispy_deltadisp_reactionty140_deltaforcey_iteratingsteps.txt","a")

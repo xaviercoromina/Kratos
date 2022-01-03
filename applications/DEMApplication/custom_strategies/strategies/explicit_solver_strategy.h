@@ -296,7 +296,7 @@ namespace Kratos {
         virtual void CalculateInitialNodalMassArray();
         array_1d<double,3> mKMax;
         array_1d<double,3> mKrMax;
-        double mMMin, mMMax, mKMin;
+        double mMMin, mMMax, mKNormMin, mKNormMax, mKMinAvg, mKMaxAvg, mNumStepsAvg;
 
         Parameters mParameters;
         bool mRemoveBallsInitiallyTouchingWallsOption;
