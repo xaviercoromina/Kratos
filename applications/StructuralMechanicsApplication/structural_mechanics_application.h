@@ -26,57 +26,57 @@
 /* ELEMENTS */
 
 /* 0D elements */
-#include "custom_elements/nodal_concentrated_element.hpp"
+// #include "custom_elements/nodal_concentrated_element.hpp"
 
 /* Mass elements */
-#include "custom_elements/mass_element.h"
+// #include "custom_elements/mass_element.h"
 
 /* Adding truss element */
-#include "custom_elements/truss_element_3D2N.hpp"
-#include "custom_elements/truss_element_linear_3D2N.hpp"
-#include "custom_elements/cable_element_3D2N.hpp"
+// #include "custom_elements/truss_element_3D2N.hpp"
+// #include "custom_elements/truss_element_linear_3D2N.hpp"
+// #include "custom_elements/cable_element_3D2N.hpp"
 
 /* Adding beam element */
-#include "custom_elements/cr_beam_element_3D2N.hpp"
-#include "custom_elements/cr_beam_element_linear_3D2N.hpp"
-#include "custom_elements/cr_beam_element_2D2N.hpp"
-#include "custom_elements/cr_beam_element_linear_2D2N.hpp"
+// #include "custom_elements/cr_beam_element_3D2N.hpp"
+// #include "custom_elements/cr_beam_element_linear_3D2N.hpp"
+// #include "custom_elements/cr_beam_element_2D2N.hpp"
+// #include "custom_elements/cr_beam_element_linear_2D2N.hpp"
 
 /* Adding the adjoint elements */
-#include "custom_response_functions/adjoint_elements/adjoint_finite_difference_shell_element.h"
-#include "custom_response_functions/adjoint_elements/adjoint_finite_difference_cr_beam_element_3D2N.h"
-#include "custom_response_functions/adjoint_elements/adjoint_finite_difference_truss_element_3D2N.h"
-#include "custom_response_functions/adjoint_elements/adjoint_finite_difference_truss_element_linear_3D2N.h"
-#include "custom_response_functions/adjoint_elements/adjoint_solid_element.h"
-#include "custom_response_functions/adjoint_elements/adjoint_finite_difference_small_displacement_element.h"
-#include "custom_response_functions/adjoint_elements/adjoint_finite_difference_spring_damper_element_3D2N.h"
+// #include "custom_response_functions/adjoint_elements/adjoint_finite_difference_shell_element.h"
+// #include "custom_response_functions/adjoint_elements/adjoint_finite_difference_cr_beam_element_3D2N.h"
+// #include "custom_response_functions/adjoint_elements/adjoint_finite_difference_truss_element_3D2N.h"
+// #include "custom_response_functions/adjoint_elements/adjoint_finite_difference_truss_element_linear_3D2N.h"
+// #include "custom_response_functions/adjoint_elements/adjoint_solid_element.h"
+// #include "custom_response_functions/adjoint_elements/adjoint_finite_difference_small_displacement_element.h"
+// #include "custom_response_functions/adjoint_elements/adjoint_finite_difference_spring_damper_element_3D2N.h"
 
 /* Adding shells and membranes elements */
-#include "custom_elements/isotropic_shell_element.hpp"
-#include "custom_elements/membrane_element.hpp"
-#include "custom_elements/shell_thick_element_3D4N.hpp"
-#include "custom_elements/shell_thin_element_3D4N.hpp"
-#include "custom_elements/shell_thin_element_3D3N.hpp"
-#include "custom_elements/shell_thick_element_3D3N.hpp"
+// #include "custom_elements/isotropic_shell_element.hpp"
+// #include "custom_elements/membrane_element.hpp"
+// #include "custom_elements/shell_thick_element_3D4N.hpp"
+// #include "custom_elements/shell_thin_element_3D4N.hpp"
+// #include "custom_elements/shell_thin_element_3D3N.hpp"
+// #include "custom_elements/shell_thick_element_3D3N.hpp"
 
 /* Adding the spring damper element */
-#include "custom_elements/spring_damper_element_3D2N.hpp"
+// #include "custom_elements/spring_damper_element_3D2N.hpp"
 
 /* Adding the SPRISM element */
-#include "custom_elements/solid_shell_element_sprism_3D6N.h"
+// #include "custom_elements/solid_shell_element_sprism_3D6N.h"
 
 /* Adding solid elements */
 #include "custom_elements/small_displacement.h"
-#include "custom_elements/axisym_small_displacement.h"
-#include "custom_elements/z_strain_driven_2p5_small_displacement.h"
-#include "custom_elements/total_lagrangian.h"
-#include "custom_elements/axisym_total_lagrangian.h"
-#include "custom_elements/updated_lagrangian.h"
-#include "custom_elements/axisym_updated_lagrangian.h"
-#include "custom_elements/small_displacement_bbar.h"
+// #include "custom_elements/axisym_small_displacement.h"
+// #include "custom_elements/z_strain_driven_2p5_small_displacement.h"
+// #include "custom_elements/total_lagrangian.h"
+// #include "custom_elements/axisym_total_lagrangian.h"
+// #include "custom_elements/updated_lagrangian.h"
+// #include "custom_elements/axisym_updated_lagrangian.h"
+// #include "custom_elements/small_displacement_bbar.h"
 
 /* Adding the mixed solid elements */
-#include "custom_elements/small_displacement_mixed_volumetric_strain_element.h"
+// #include "custom_elements/small_displacement_mixed_volumetric_strain_element.h"
 
 /* CONDITIONS */
 #include "custom_conditions/base_load_condition.h"
@@ -264,43 +264,43 @@ private:
     /* ELEMENTS */
 
     // Adding the truss element
-    const TrussElement3D2N mTrussElement3D2N;
-    const TrussElementLinear3D2N mTrussLinearElement3D2N;
-    const CableElement3D2N mCableElement3D2N;
+    // const TrussElement3D2N mTrussElement3D2N;
+    // const TrussElementLinear3D2N mTrussLinearElement3D2N;
+    // const CableElement3D2N mCableElement3D2N;
 
     // Adding the beam element
-    const CrBeamElement3D2N mCrBeamElement3D2N;
-    const CrBeamElementLinear3D2N mCrLinearBeamElement3D2N;
-    const CrBeamElement2D2N mCrBeamElement2D2N;
-    const CrBeamElementLinear2D2N mCrLinearBeamElement2D2N;
+    // const CrBeamElement3D2N mCrBeamElement3D2N;
+    // const CrBeamElementLinear3D2N mCrLinearBeamElement3D2N;
+    // const CrBeamElement2D2N mCrBeamElement2D2N;
+    // const CrBeamElementLinear2D2N mCrLinearBeamElement2D2N;
 
 
     // Adding the shells elements
-    const IsotropicShellElement mIsotropicShellElement3D3N;
-    const ShellThickElement3D4N<ShellKinematics::LINEAR>                 mShellThickElement3D4N;
-    const ShellThickElement3D4N<ShellKinematics::NONLINEAR_COROTATIONAL> mShellThickCorotationalElement3D4N;
-    const ShellThinElement3D4N<ShellKinematics::NONLINEAR_COROTATIONAL>  mShellThinCorotationalElement3D4N;
-    const ShellThinElement3D3N<ShellKinematics::LINEAR>                  mShellThinElement3D3N;
-    const ShellThinElement3D3N<ShellKinematics::NONLINEAR_COROTATIONAL>  mShellThinCorotationalElement3D3N;
-    const ShellThickElement3D3N<ShellKinematics::NONLINEAR_COROTATIONAL> mShellThickCorotationalElement3D3N;
+    // const IsotropicShellElement mIsotropicShellElement3D3N;
+    // const ShellThickElement3D4N<ShellKinematics::LINEAR>                 mShellThickElement3D4N;
+    // const ShellThickElement3D4N<ShellKinematics::NONLINEAR_COROTATIONAL> mShellThickCorotationalElement3D4N;
+    // const ShellThinElement3D4N<ShellKinematics::NONLINEAR_COROTATIONAL>  mShellThinCorotationalElement3D4N;
+    // const ShellThinElement3D3N<ShellKinematics::LINEAR>                  mShellThinElement3D3N;
+    // const ShellThinElement3D3N<ShellKinematics::NONLINEAR_COROTATIONAL>  mShellThinCorotationalElement3D3N;
+    // const ShellThickElement3D3N<ShellKinematics::NONLINEAR_COROTATIONAL> mShellThickCorotationalElement3D3N;
 
     // Adding the membrane element
-    const MembraneElement mMembraneElement3D4N;
-    const MembraneElement mMembraneElement3D3N;
+    // const MembraneElement mMembraneElement3D4N;
+    // const MembraneElement mMembraneElement3D3N;
 
     // Adding the SPRISM element
-    const SolidShellElementSprism3D6N mSolidShellElementSprism3D6N;
+    // const SolidShellElementSprism3D6N mSolidShellElementSprism3D6N;
 
     // Adding the nodal concentrated element
-    const NodalConcentratedElement mNodalConcentratedElement2D1N;
-    const NodalConcentratedElement mNodalConcentratedDampedElement2D1N;
-    const NodalConcentratedElement mNodalConcentratedElement3D1N;
-    const NodalConcentratedElement mNodalConcentratedDampedElement3D1N;
+    // const NodalConcentratedElement mNodalConcentratedElement2D1N;
+    // const NodalConcentratedElement mNodalConcentratedDampedElement2D1N;
+    // const NodalConcentratedElement mNodalConcentratedElement3D1N;
+    // const NodalConcentratedElement mNodalConcentratedDampedElement3D1N;
 
     // Adding the mass elements
-    const MassElement mLineMassElement3D2N;
-    const MassElement mSurfaceMassElement3D3N;
-    const MassElement mSurfaceMassElement3D4N;
+    // const MassElement mLineMassElement3D2N;
+    // const MassElement mSurfaceMassElement3D3N;
+    // const MassElement mSurfaceMassElement3D4N;
 
     // Linear kinematic elements
     const SmallDisplacement mSmallDisplacement2D3N;
@@ -316,83 +316,83 @@ private:
     const SmallDisplacement mSmallDisplacement3D20N;
     const SmallDisplacement mSmallDisplacement3D27N;
 
-    const SmallDisplacementBbar mSmallDisplacementBbar2D4N;
-    const SmallDisplacementBbar mSmallDisplacementBbar3D8N;
+    // const SmallDisplacementBbar mSmallDisplacementBbar2D4N;
+    // const SmallDisplacementBbar mSmallDisplacementBbar3D8N;
 
-    const SmallDisplacementMixedVolumetricStrainElement mSmallDisplacementMixedVolumetricStrainElement2D3N;
-    const SmallDisplacementMixedVolumetricStrainElement mSmallDisplacementMixedVolumetricStrainElement2D4N;
-    const SmallDisplacementMixedVolumetricStrainElement mSmallDisplacementMixedVolumetricStrainElement3D4N;
-    const SmallDisplacementMixedVolumetricStrainElement mSmallDisplacementMixedVolumetricStrainElement3D8N;
+    // const SmallDisplacementMixedVolumetricStrainElement mSmallDisplacementMixedVolumetricStrainElement2D3N;
+    // const SmallDisplacementMixedVolumetricStrainElement mSmallDisplacementMixedVolumetricStrainElement2D4N;
+    // const SmallDisplacementMixedVolumetricStrainElement mSmallDisplacementMixedVolumetricStrainElement3D4N;
+    // const SmallDisplacementMixedVolumetricStrainElement mSmallDisplacementMixedVolumetricStrainElement3D8N;
 
-    const AxisymSmallDisplacement mAxisymSmallDisplacement2D3N;
-    const AxisymSmallDisplacement mAxisymSmallDisplacement2D4N;
-    const AxisymSmallDisplacement mAxisymSmallDisplacement2D6N;
-    const AxisymSmallDisplacement mAxisymSmallDisplacement2D8N;
-    const AxisymSmallDisplacement mAxisymSmallDisplacement2D9N;
+    // const AxisymSmallDisplacement mAxisymSmallDisplacement2D3N;
+    // const AxisymSmallDisplacement mAxisymSmallDisplacement2D4N;
+    // const AxisymSmallDisplacement mAxisymSmallDisplacement2D6N;
+    // const AxisymSmallDisplacement mAxisymSmallDisplacement2D8N;
+    // const AxisymSmallDisplacement mAxisymSmallDisplacement2D9N;
 
-    const ZStrainDriven2p5DSmallDisplacement mZStrainDriven2p5DSmallDisplacement2D3N;
-    const ZStrainDriven2p5DSmallDisplacement mZStrainDriven2p5DSmallDisplacement2D4N;
-    const ZStrainDriven2p5DSmallDisplacement mZStrainDriven2p5DSmallDisplacement2D6N;
-    const ZStrainDriven2p5DSmallDisplacement mZStrainDriven2p5DSmallDisplacement2D8N;
-    const ZStrainDriven2p5DSmallDisplacement mZStrainDriven2p5DSmallDisplacement2D9N;
+    // const ZStrainDriven2p5DSmallDisplacement mZStrainDriven2p5DSmallDisplacement2D3N;
+    // const ZStrainDriven2p5DSmallDisplacement mZStrainDriven2p5DSmallDisplacement2D4N;
+    // const ZStrainDriven2p5DSmallDisplacement mZStrainDriven2p5DSmallDisplacement2D6N;
+    // const ZStrainDriven2p5DSmallDisplacement mZStrainDriven2p5DSmallDisplacement2D8N;
+    // const ZStrainDriven2p5DSmallDisplacement mZStrainDriven2p5DSmallDisplacement2D9N;
 
     // Total lagrangian
-    const TotalLagrangian mTotalLagrangian2D3N;
-    const TotalLagrangian mTotalLagrangian2D4N;
-    const TotalLagrangian mTotalLagrangian2D6N;
-    const TotalLagrangian mTotalLagrangian2D8N;
-    const TotalLagrangian mTotalLagrangian2D9N;
-    const TotalLagrangian mTotalLagrangian3D4N;
-    const TotalLagrangian mTotalLagrangian3D6N;
-    const TotalLagrangian mTotalLagrangian3D8N;
-    const TotalLagrangian mTotalLagrangian3D10N;
-    const TotalLagrangian mTotalLagrangian3D15N;
-    const TotalLagrangian mTotalLagrangian3D20N;
-    const TotalLagrangian mTotalLagrangian3D27N;
+    // const TotalLagrangian mTotalLagrangian2D3N;
+    // const TotalLagrangian mTotalLagrangian2D4N;
+    // const TotalLagrangian mTotalLagrangian2D6N;
+    // const TotalLagrangian mTotalLagrangian2D8N;
+    // const TotalLagrangian mTotalLagrangian2D9N;
+    // const TotalLagrangian mTotalLagrangian3D4N;
+    // const TotalLagrangian mTotalLagrangian3D6N;
+    // const TotalLagrangian mTotalLagrangian3D8N;
+    // const TotalLagrangian mTotalLagrangian3D10N;
+    // const TotalLagrangian mTotalLagrangian3D15N;
+    // const TotalLagrangian mTotalLagrangian3D20N;
+    // const TotalLagrangian mTotalLagrangian3D27N;
 
-    const AxisymTotalLagrangian mAxisymTotalLagrangian2D3N;
-    const AxisymTotalLagrangian mAxisymTotalLagrangian2D4N;
-    const AxisymTotalLagrangian mAxisymTotalLagrangian2D6N;
-    const AxisymTotalLagrangian mAxisymTotalLagrangian2D8N;
-    const AxisymTotalLagrangian mAxisymTotalLagrangian2D9N;
+    // const AxisymTotalLagrangian mAxisymTotalLagrangian2D3N;
+    // const AxisymTotalLagrangian mAxisymTotalLagrangian2D4N;
+    // const AxisymTotalLagrangian mAxisymTotalLagrangian2D6N;
+    // const AxisymTotalLagrangian mAxisymTotalLagrangian2D8N;
+    // const AxisymTotalLagrangian mAxisymTotalLagrangian2D9N;
 
     // Updated lagrangian
-    const UpdatedLagrangian mUpdatedLagrangian2D3N;
-    const UpdatedLagrangian mUpdatedLagrangian2D4N;
-    const UpdatedLagrangian mUpdatedLagrangian2D6N;
-    const UpdatedLagrangian mUpdatedLagrangian2D8N;
-    const UpdatedLagrangian mUpdatedLagrangian2D9N;
-    const UpdatedLagrangian mUpdatedLagrangian3D4N;
-    const UpdatedLagrangian mUpdatedLagrangian3D6N;
-    const UpdatedLagrangian mUpdatedLagrangian3D8N;
-    const UpdatedLagrangian mUpdatedLagrangian3D10N;
-    const UpdatedLagrangian mUpdatedLagrangian3D15N;
-    const UpdatedLagrangian mUpdatedLagrangian3D20N;
-    const UpdatedLagrangian mUpdatedLagrangian3D27N;
+    // const UpdatedLagrangian mUpdatedLagrangian2D3N;
+    // const UpdatedLagrangian mUpdatedLagrangian2D4N;
+    // const UpdatedLagrangian mUpdatedLagrangian2D6N;
+    // const UpdatedLagrangian mUpdatedLagrangian2D8N;
+    // const UpdatedLagrangian mUpdatedLagrangian2D9N;
+    // const UpdatedLagrangian mUpdatedLagrangian3D4N;
+    // const UpdatedLagrangian mUpdatedLagrangian3D6N;
+    // const UpdatedLagrangian mUpdatedLagrangian3D8N;
+    // const UpdatedLagrangian mUpdatedLagrangian3D10N;
+    // const UpdatedLagrangian mUpdatedLagrangian3D15N;
+    // const UpdatedLagrangian mUpdatedLagrangian3D20N;
+    // const UpdatedLagrangian mUpdatedLagrangian3D27N;
 
-    const AxisymUpdatedLagrangian mAxisymUpdatedLagrangian2D3N;
-    const AxisymUpdatedLagrangian mAxisymUpdatedLagrangian2D4N;
-    const AxisymUpdatedLagrangian mAxisymUpdatedLagrangian2D6N;
-    const AxisymUpdatedLagrangian mAxisymUpdatedLagrangian2D8N;
-    const AxisymUpdatedLagrangian mAxisymUpdatedLagrangian2D9N;
+    // const AxisymUpdatedLagrangian mAxisymUpdatedLagrangian2D3N;
+    // const AxisymUpdatedLagrangian mAxisymUpdatedLagrangian2D4N;
+    // const AxisymUpdatedLagrangian mAxisymUpdatedLagrangian2D6N;
+    // const AxisymUpdatedLagrangian mAxisymUpdatedLagrangian2D8N;
+    // const AxisymUpdatedLagrangian mAxisymUpdatedLagrangian2D9N;
 
     // Adding the spring damper element
-    const SpringDamperElement3D2N mSpringDamperElement3D2N;
+    // const SpringDamperElement3D2N mSpringDamperElement3D2N;
 
     // Adding adjoint elements
-    const AdjointFiniteDifferencingShellElement<ShellThinElement3D3N<ShellKinematics::LINEAR>> mAdjointFiniteDifferencingShellThinElement3D3N;
-    const AdjointFiniteDifferenceCrBeamElement<CrBeamElementLinear3D2N> mAdjointFiniteDifferenceCrBeamElementLinear3D2N;
-    const AdjointFiniteDifferenceTrussElement<TrussElement3D2N> mAdjointFiniteDifferenceTrussElement3D2N;
-    const AdjointFiniteDifferenceTrussElementLinear<TrussElementLinear3D2N> mAdjointFiniteDifferenceTrussLinearElement3D2N;
-    const AdjointSolidElement<TotalLagrangian> mTotalLagrangianAdjoint2D3N;
-    const AdjointSolidElement<TotalLagrangian> mTotalLagrangianAdjoint2D4N;
-    const AdjointSolidElement<TotalLagrangian> mTotalLagrangianAdjoint2D6N;
-    const AdjointSolidElement<TotalLagrangian> mTotalLagrangianAdjoint3D4N;
-    const AdjointSolidElement<TotalLagrangian> mTotalLagrangianAdjoint3D8N;
-    const AdjointFiniteDifferencingSmallDisplacementElement<SmallDisplacement> mAdjointFiniteDifferencingSmallDisplacementElement3D4N;
-    const AdjointFiniteDifferencingSmallDisplacementElement<SmallDisplacement> mAdjointFiniteDifferencingSmallDisplacementElement3D6N;
-    const AdjointFiniteDifferencingSmallDisplacementElement<SmallDisplacement> mAdjointFiniteDifferencingSmallDisplacementElement3D8N;
-    const AdjointFiniteDifferenceSpringDamperElement<SpringDamperElement3D2N>  mAdjointFiniteDifferenceSpringDamperElement3D2N;
+    // const AdjointFiniteDifferencingShellElement<ShellThinElement3D3N<ShellKinematics::LINEAR>> mAdjointFiniteDifferencingShellThinElement3D3N;
+    // const AdjointFiniteDifferenceCrBeamElement<CrBeamElementLinear3D2N> mAdjointFiniteDifferenceCrBeamElementLinear3D2N;
+    // const AdjointFiniteDifferenceTrussElement<TrussElement3D2N> mAdjointFiniteDifferenceTrussElement3D2N;
+    // const AdjointFiniteDifferenceTrussElementLinear<TrussElementLinear3D2N> mAdjointFiniteDifferenceTrussLinearElement3D2N;
+    // const AdjointSolidElement<TotalLagrangian> mTotalLagrangianAdjoint2D3N;
+    // const AdjointSolidElement<TotalLagrangian> mTotalLagrangianAdjoint2D4N;
+    // const AdjointSolidElement<TotalLagrangian> mTotalLagrangianAdjoint2D6N;
+    // const AdjointSolidElement<TotalLagrangian> mTotalLagrangianAdjoint3D4N;
+    // const AdjointSolidElement<TotalLagrangian> mTotalLagrangianAdjoint3D8N;
+    // const AdjointFiniteDifferencingSmallDisplacementElement<SmallDisplacement> mAdjointFiniteDifferencingSmallDisplacementElement3D4N;
+    // const AdjointFiniteDifferencingSmallDisplacementElement<SmallDisplacement> mAdjointFiniteDifferencingSmallDisplacementElement3D6N;
+    // const AdjointFiniteDifferencingSmallDisplacementElement<SmallDisplacement> mAdjointFiniteDifferencingSmallDisplacementElement3D8N;
+    // const AdjointFiniteDifferenceSpringDamperElement<SpringDamperElement3D2N>  mAdjointFiniteDifferenceSpringDamperElement3D2N;
 
     /* CONDITIONS*/
     // Point load
