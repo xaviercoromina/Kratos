@@ -273,8 +273,8 @@ Vector& ElasticIsotropic3D::CalculateValue(
 
 Matrix& ElasticIsotropic3D::CalculateValue(
     ConstitutiveLaw::Parameters& rParameterValues,
-    const Variable<Matrix>& rThisVariable,
-    Matrix& rValue
+    const Variable<ConstitutiveLaw::VoigtSizeMatrixType>& rThisVariable,
+    ConstitutiveLaw::VoigtSizeMatrixType& rValue
     )
 {
     if (rThisVariable == CONSTITUTIVE_MATRIX ||
@@ -378,7 +378,7 @@ void ElasticIsotropic3D::CalculateElasticMatrix(
 /***********************************************************************************/
 
 void ElasticIsotropic3D::CalculatePK2Stress(
-    const Vector& rStrainVector,
+    const ConstitutiveLaw::StressVectorType& rStrainVector,
     ConstitutiveLaw::StressVectorType& rStressVector,
     ConstitutiveLaw::Parameters& rValues
     )
