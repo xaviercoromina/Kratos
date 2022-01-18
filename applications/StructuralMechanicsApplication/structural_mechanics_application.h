@@ -92,8 +92,8 @@
 #include "custom_conditions/displacement_control_condition.h"
 
 /* Adding the adjoint conditions */
-#include "custom_response_functions/adjoint_conditions/adjoint_semi_analytic_point_load_condition.h"
-#include "custom_response_functions/adjoint_conditions/adjoint_semi_analytic_base_condition.h"
+// #include "custom_response_functions/adjoint_conditions/adjoint_semi_analytic_point_load_condition.h"
+// #include "custom_response_functions/adjoint_conditions/adjoint_semi_analytic_base_condition.h"
 
 /* CONSTITUTIVE LAWS */
 // #include "custom_constitutive/truss_constitutive_law.h"
