@@ -96,13 +96,13 @@
 #include "custom_response_functions/adjoint_conditions/adjoint_semi_analytic_base_condition.h"
 
 /* CONSTITUTIVE LAWS */
-#include "custom_constitutive/truss_constitutive_law.h"
-#include "custom_constitutive/beam_constitutive_law.h"
+// #include "custom_constitutive/truss_constitutive_law.h"
+// #include "custom_constitutive/beam_constitutive_law.h"
 #include "custom_constitutive/elastic_isotropic_3d.h"
-#include "custom_constitutive/axisym_elastic_isotropic.h"
-#include "custom_constitutive/linear_plane_strain.h"
-#include "custom_constitutive/linear_plane_stress.h"
-#include "custom_constitutive/user_provided_linear_elastic_law.h"
+// #include "custom_constitutive/axisym_elastic_isotropic.h"
+// #include "custom_constitutive/linear_plane_strain.h"
+// #include "custom_constitutive/linear_plane_stress.h"
+// #include "custom_constitutive/user_provided_linear_elastic_law.h"
 
 
 namespace Kratos
@@ -448,14 +448,14 @@ private:
 
     /* CONSTITUTIVE LAWS */
     // Linear elastics laws
-    const TrussConstitutiveLaw mTrussConstitutiveLaw;
-    const BeamConstitutiveLaw mBeamConstitutiveLaw;
+    // const TrussConstitutiveLaw mTrussConstitutiveLaw;
+    // const BeamConstitutiveLaw mBeamConstitutiveLaw;
     const ElasticIsotropic3D mElasticIsotropic3D;
-    const AxisymElasticIsotropic mAxisymElasticIsotropic;
-    const LinearPlaneStrain  mLinearPlaneStrain;
-    const LinearPlaneStress  mLinearPlaneStress;
-    const UserProvidedLinearElasticLaw<2> mUserProvidedLinearElastic2DLaw;
-    const UserProvidedLinearElasticLaw<3> mUserProvidedLinearElastic3DLaw;
+    // const AxisymElasticIsotropic mAxisymElasticIsotropic;
+    // const LinearPlaneStrain  mLinearPlaneStrain;
+    // const LinearPlaneStress  mLinearPlaneStress;
+    // const UserProvidedLinearElasticLaw<2> mUserProvidedLinearElastic2DLaw;
+    // const UserProvidedLinearElasticLaw<3> mUserProvidedLinearElastic3DLaw;
 
     ///@}
     ///@name Private Operators
