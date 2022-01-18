@@ -1593,7 +1593,7 @@ void BaseSolidElement::RotateToGlobalAxes(
                 rValues.GetStressVector() = prod(trans(voigt_rotation_matrix), rValues.GetStressVector());
             if (constitutive_matrix_option) {
                 const auto& r_C = rValues.GetConstitutiveMatrix();
-                Matrix C_global = r_C;
+                ConstitutiveLaw::VoigtSizeMatrixType C_global = r_C;
                 noalias(C_global) = prod(trans(voigt_rotation_matrix), r_C);
                 C_global = prod(C_global, voigt_rotation_matrix);
                 rValues.SetConstitutiveMatrix(C_global);
@@ -1606,7 +1606,7 @@ void BaseSolidElement::RotateToGlobalAxes(
                 rValues.GetStressVector() = prod(trans(voigt_rotation_matrix), rValues.GetStressVector());
             if (constitutive_matrix_option) {
                 const auto& r_C = rValues.GetConstitutiveMatrix();
-                Matrix C_global = r_C;
+                ConstitutiveLaw::DeformationGradientMatrixType C_global = r_C;
                 noalias(C_global) = prod(trans(voigt_rotation_matrix), r_C);
                 C_global = prod(C_global, voigt_rotation_matrix);
                 rValues.SetConstitutiveMatrix(C_global);
