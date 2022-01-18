@@ -271,7 +271,7 @@ Vector& ElasticIsotropic3D::CalculateValue(
 /***********************************************************************************/
 /***********************************************************************************/
 
-Matrix& ElasticIsotropic3D::CalculateValue(
+ConstitutiveLaw::VoigtSizeMatrixType& ElasticIsotropic3D::CalculateValue(
     ConstitutiveLaw::Parameters& rParameterValues,
     const Variable<ConstitutiveLaw::VoigtSizeMatrixType>& rThisVariable,
     ConstitutiveLaw::VoigtSizeMatrixType& rValue

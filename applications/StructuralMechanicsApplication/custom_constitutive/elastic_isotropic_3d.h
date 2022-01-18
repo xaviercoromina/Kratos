@@ -279,7 +279,7 @@ public:
         ConstitutiveLaw::Parameters& rParameterValues,
         const Variable<Vector>& rThisVariable,
         Vector& rValue
-        ) override;
+        );
 
     // /**
     //  * @brief It calculates the value of a specified variable (StrainVectorType case)
@@ -314,11 +314,11 @@ public:
      * @param rValue a reference to the returned value
      * @return rValue output: the value of the specified variable
      */
-    Matrix& CalculateValue(
+    ConstitutiveLaw::VoigtSizeMatrixType& CalculateValue(
         ConstitutiveLaw::Parameters& rParameterValues,
-        const Variable<Matrix>& rThisVariable,
-        Matrix& rValue
-        ) override;
+        const Variable<ConstitutiveLaw::VoigtSizeMatrixType>& rThisVariable,
+        ConstitutiveLaw::VoigtSizeMatrixType& rValue
+        );
 
     // /**
     //  * @brief It calculates the value of a specified variable (VoigtSizeMatrixType case)
