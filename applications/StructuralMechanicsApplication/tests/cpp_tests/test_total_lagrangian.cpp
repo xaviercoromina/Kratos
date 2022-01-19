@@ -68,15 +68,17 @@ namespace Testing
             r_elem.Initialize(r_model_part.GetProcessInfo());
         }
 
-        Matrix lhs;
-        Vector rhs;
+        struct my_tls {
+            Vector mVec;
+            Matrix mMat;
+        };
         const auto& const_procinfo_ref = r_model_part.GetProcessInfo();
 
         BuiltinTimer setup_system_time;
-        block_for_each(r_model_part.Elements(), [&](Element& r_elem) {
-            r_elem.CalculateLocalSystem(lhs,rhs,const_procinfo_ref);
+        block_for_each(r_model_part.Elements(), my_tls(),  [&const_procinfo_ref](Element& r_elem, my_tls & MyTls) {
+            r_elem.CalculateLocalSystem(MyTls.mMat, MyTls.mVec, const_procinfo_ref);
         });
-        std::cout << "Tiempo de build: " << setup_system_time.ElapsedSeconds() << std::endl;
+        std::cout << "Build Time: " << setup_system_time.ElapsedSeconds() << std::endl;
     }
 }
 }
