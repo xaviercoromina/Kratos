@@ -14,6 +14,8 @@
 #include "testing/testing.h"
 #include "structural_mechanics_application_variables.h"
 #include "custom_elements/small_displacement.h"
+#include "utilities/parallel_utilities.h"
+#include "utilities/builtin_timer.h"
 
 namespace Kratos
 {
@@ -41,8 +43,6 @@ namespace Testing
         const double E = p_elem_prop->GetValue(YOUNG_MODULUS);
         const double NU = p_elem_prop->GetValue(POISSON_RATIO);
 
-
-
         // Create the test element
         auto p_node_1 = r_model_part.CreateNewNode(1, 0.0000000000, 0.0100000000, 0.0100000000);
         auto p_node_2 = r_model_part.CreateNewNode(2, 0.0000000000, 0.0000000000, 0.0100000000);
@@ -60,41 +60,23 @@ namespace Testing
         }
 
         std::vector<ModelPart::IndexType> element_nodes {4,1,3,6,5,2,7,8};
-        auto p_element = r_model_part.CreateNewElement("SmallDisplacementElement3D8N", 1, element_nodes, p_elem_prop);
+        // KRATOS_WATCH("AAAAA")
+        for (int i = 1; i < 1e6; i++) // we create 1M elements
+            auto p_element = r_model_part.CreateNewElement("SmallDisplacementElement3D8N", i, element_nodes, p_elem_prop);
 
-        p_element->Initialize(r_model_part.GetProcessInfo());
-
-        // Define a matrix A and impose that the displacement on each node is u = A*x0
-        Matrix A0 = ZeroMatrix(3,3);
-        A0(0,0) = 2e-2;
-        A0(0,1) = 5e-2;
-        A0(1,0) = 5e-2;
-        A0(1,1) = -1e-2;
-        A0(2,2) = 1.0;
+        for (auto& r_elem : r_model_part.Elements()){
+            r_elem.Initialize(r_model_part.GetProcessInfo());
+        }
 
         Matrix lhs;
         Vector rhs;
         const auto& const_procinfo_ref = r_model_part.GetProcessInfo();
-        double factor = 1.0;
-        for(unsigned int step=0; step<5; step++)
-        {
-            factor+=1.0;
-            Matrix A = factor*A0;
-            for (auto& r_node : r_model_part.Nodes()){
-                noalias(r_node.GetSolutionStepValue(DISPLACEMENT)) = prod(A, r_node.GetInitialPosition());
-                r_node.Coordinates() = r_node.GetInitialPosition() + r_node.GetSolutionStepValue(DISPLACEMENT); //here i update the node coordinates
-            }
 
-            p_element->InitializeSolutionStep(const_procinfo_ref);
-            p_element->InitializeNonLinearIteration(const_procinfo_ref);
-            p_element->CalculateLocalSystem(lhs,rhs,const_procinfo_ref);
-            p_element->FinalizeNonLinearIteration(const_procinfo_ref);
-            p_element->FinalizeSolutionStep(const_procinfo_ref);
-
-
-
-
-        }
+        BuiltinTimer setup_system_time;
+        block_for_each(r_model_part.Elements(), [&](Element& r_elem) {
+            r_elem.CalculateLocalSystem(lhs,rhs,const_procinfo_ref);
+        });
+        std::cout << "Tiempo de build: " << setup_system_time.ElapsedSeconds() << std::endl;
     }
 }
 }
