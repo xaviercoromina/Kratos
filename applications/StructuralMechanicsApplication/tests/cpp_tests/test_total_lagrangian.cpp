@@ -60,8 +60,7 @@ namespace Testing
         }
 
         std::vector<ModelPart::IndexType> element_nodes {4,1,3,6,5,2,7,8};
-        // KRATOS_WATCH("AAAAA")
-        for (int i = 1; i < 1e6; i++) // we create 1M elements
+        for (int i = 1; i < 1e7; i++) // we create 1M elements
             auto p_element = r_model_part.CreateNewElement("SmallDisplacementElement3D8N", i, element_nodes, p_elem_prop);
 
         for (auto& r_elem : r_model_part.Elements()){
