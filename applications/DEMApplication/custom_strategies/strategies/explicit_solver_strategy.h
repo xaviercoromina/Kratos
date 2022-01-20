@@ -293,10 +293,12 @@ namespace Kratos {
     protected:
 
         //TODO. Ignasi:
-        virtual void CalculateInitialNodalMassArray();
+        virtual void InitialMassArrayOperations();
+        virtual void MassArrayOperations();
         array_1d<double,3> mKMax;
         array_1d<double,3> mKrMax;
-        double mMMin, mMMax, mKNormMin, mKNormMax, mKMinAvg, mKMaxAvg, mNumStepsAvg;
+        double mMMin, mMMax, mKNormMin, mKNormMax;
+        bool mUpdatedRayleighParameters;
 
         Parameters mParameters;
         bool mRemoveBallsInitiallyTouchingWallsOption;

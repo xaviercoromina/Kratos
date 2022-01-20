@@ -123,7 +123,6 @@ def GetDefaultInputParameters():
             },
             "use_mass_array"               : false,
             "mass_array_averaging_time_interval": 1.0e12,
-            "mass_array_start_time"      : 1.0e12,
             "virtual_sea_surface_settings"     : {
                 "print_sea_surface"            : false,
                 "PostVirtualSeaSurfaceX1"      : 0.0,

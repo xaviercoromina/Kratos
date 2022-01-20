@@ -177,7 +177,6 @@ class DEMAnalysisStage(AnalysisStage):
     def SelectTranslationalScheme(self):
         # Set ProcessInfo variables
         self.spheres_model_part.ProcessInfo.SetValue(USE_MASS_ARRAY, self.DEM_parameters["use_mass_array"].GetBool())
-        self.spheres_model_part.ProcessInfo.SetValue(MASS_ARRAY_START_TIME, self.DEM_parameters["mass_array_start_time"].GetDouble())
         mass_array_averaging_time_interval = self.DEM_parameters["mass_array_averaging_time_interval"].GetDouble()
         if (self.DEM_parameters["MaxTimeStep"].GetDouble() > mass_array_averaging_time_interval):
             raise ValueError('Dt > mass_array_averaging_time_interval')
@@ -204,15 +203,15 @@ class DEMAnalysisStage(AnalysisStage):
             rayleigh_beta = rayleigh_cd_param["rayleigh_beta"].GetDouble()
             xi_1 = rayleigh_cd_param["xi_1"].GetDouble()
             xi_n = rayleigh_cd_param["xi_n"].GetDouble()
+            xi_1_factor = rayleigh_cd_param["xi_1_factor"].GetDouble()
             if g_factor >= 1.0:
                 theta_factor = 0.5
                 g_coefficient = Dt*omega_n*omega_n*0.25*g_factor
             if rayleigh_cd_param["calculate_alpha_beta"].GetBool():
                 if rayleigh_cd_param["calculate_xi"].GetBool():
-                    xi_1_factor = rayleigh_cd_param["xi_1_factor"].GetDouble()                
                     import numpy as np
-                    xi_1 = (np.sqrt(1+g_coefficient*Dt)-theta_factor*omega_1*Dt*0.5)*xi_1_factor
-                    xi_n = (np.sqrt(1+g_coefficient*Dt)-theta_factor*omega_n*Dt*0.5)
+                    xi_1 = (np.sqrt(1.0+g_coefficient*Dt)-theta_factor*omega_1*Dt*0.5)*xi_1_factor
+                    xi_n = (np.sqrt(1.0+g_coefficient*Dt)-theta_factor*omega_n*Dt*0.5)
                 rayleigh_beta = 2.0*(xi_n*omega_n-xi_1*omega_1)/(omega_n*omega_n-omega_1*omega_1)
                 rayleigh_alpha = 2.0*xi_1*omega_1-rayleigh_beta*omega_1*omega_1
                 Logger.PrintInfo('DEM', 'Rayleigh Alpha and Beta.')
@@ -231,6 +230,7 @@ class DEMAnalysisStage(AnalysisStage):
             self.spheres_model_part.ProcessInfo.SetValue(OMEGA_N, omega_n)
             self.spheres_model_part.ProcessInfo.SetValue(XI_1, xi_1)
             self.spheres_model_part.ProcessInfo.SetValue(XI_N, xi_n)
+            self.spheres_model_part.ProcessInfo.SetValue(XI_1_FACTOR, xi_1_factor)
             self.spheres_model_part.ProcessInfo.SetValue(G_COEFFICIENT, g_coefficient)
             self.spheres_model_part.ProcessInfo.SetValue(THETA_FACTOR, theta_factor)
             return CentralDifferencesScheme()
@@ -429,28 +429,27 @@ class DEMAnalysisStage(AnalysisStage):
         if self.DEM_parameters["output_configuration"]["print_number_of_neighbours_histogram"].GetBool():
             self.PreUtilities.PrintNumberOfNeighboursHistogram(self.spheres_model_part, os.path.join(self.graphs_path, "number_of_neighbours_histogram.txt"))
 
-        # # TODO. Ignasi: beam step load
-        # # Initialize variables
-        # self.iterating_steps = 0
-        # self.disp_increasing = True
-        # self.displ_y_factor = 1.0
-        # self.initial_displ_y_target = -1.5e-3
-        # # self.vel_y = -1.5e-1
-        # # self.vel_y = -1.765e-6
-        # out_error = open("time_dispy_deltadisp_reactionty140_deltaforcey_iteratingsteps.txt","a")
-        # out_error.write(str(self.time))
-        # out_error.write(" ")
-        # out_error.write(str(0.0))
-        # out_error.write(" ")
-        # out_error.write(str(0.0))
-        # out_error.write(" ")
-        # out_error.write(str(0.0))
-        # out_error.write(" ")
-        # out_error.write(str(0.0))
-        # out_error.write(" ")
-        # out_error.write(str(0))
-        # out_error.write("\n")
-        # out_error.close()
+        # TODO. Ignasi: beam step load
+        # Initialize variables
+        self.spheres_model_part.ProcessInfo.SetValue(IS_CONVERGED_ONCE, False)
+        self.iterating_steps = 0
+        self.disp_increasing = True
+        self.displ_y_factor = 1.0
+        self.initial_displ_y_target = -1.5e-3
+        out_error = open("time_dispy_deltadisp_reactionty140_deltaforcey_iteratingsteps.txt","a")
+        out_error.write(str(self.time))
+        out_error.write(" ")
+        out_error.write(str(0.0))
+        out_error.write(" ")
+        out_error.write(str(0.0))
+        out_error.write(" ")
+        out_error.write(str(0.0))
+        out_error.write(" ")
+        out_error.write(str(0.0))
+        out_error.write(" ")
+        out_error.write(str(0))
+        out_error.write("\n")
+        out_error.close()
 
         # #TODO. Ignasi: beam linear load
         # out_error = open("time_dispy_reactionty140.txt","a")
@@ -708,17 +707,17 @@ class DEMAnalysisStage(AnalysisStage):
     def InitializeSolutionStep(self):
         super().InitializeSolutionStep()
 
-        # # TODO. Ignasi: beam step load
-        # # Modify Imposed velocity
-        # tolerance = abs(self.initial_displ_y_target)*1.0e-6
-        # disp_y_target = self.displ_y_factor*abs(self.initial_displ_y_target)
-        # disp_y_140 = abs(self.spheres_model_part.Nodes[140].GetSolutionStepValue(DISPLACEMENT_Y))
-        # # vel_y = self.vel_y
-        # vel_y = self.spheres_model_part.Nodes[140].GetSolutionStepValue(VELOCITY_Y)
-        # if((disp_y_140+tolerance) >= disp_y_target):
-        #     vel_y = 0.0
-        #     self.disp_increasing = False
-        # self.spheres_model_part.Nodes[140].SetSolutionStepValue(VELOCITY_Y,vel_y)
+        # TODO. Ignasi: beam step load
+        # Modify Imposed velocity
+        tolerance = abs(self.initial_displ_y_target)*1.0e-6
+        disp_y_target = self.displ_y_factor*abs(self.initial_displ_y_target)
+        disp_y_140 = abs(self.spheres_model_part.Nodes[140].GetSolutionStepValue(DISPLACEMENT_Y))
+        # vel_y = self.vel_y
+        vel_y = self.spheres_model_part.Nodes[140].GetSolutionStepValue(VELOCITY_Y)
+        if((disp_y_140+tolerance) >= disp_y_target):
+            vel_y = 0.0
+            self.disp_increasing = False
+        self.spheres_model_part.Nodes[140].SetSolutionStepValue(VELOCITY_Y,vel_y)
 
         if self.post_normal_impact_velocity_option:
             if self.IsCountStep():
@@ -761,54 +760,55 @@ class DEMAnalysisStage(AnalysisStage):
         if self.DEM_parameters["dem_inlet_option"].GetBool():
             self.DEM_inlet.CreateElementsFromInletMesh(self.spheres_model_part, self.cluster_model_part, self.creator_destructor)  # After solving, to make sure that neighbours are already set.
 
-        # #TODO. Ignasi: beam step load
-        # # Check convergence and print results
-        # if(self.disp_increasing==False):
-        #     self.iterating_steps += 1
-        #     # Check convergence
-        #     clamp_reaction_y = 0.0
-        #     clamp_smp = self.spheres_model_part.GetSubModelPart('DEM-VelocityBC2D_Clamp')
-        #     for node in clamp_smp.Nodes:
-        #         clamp_reaction_y += node.GetSolutionStepValue(INTERNAL_FORCE_Y)
-        #     total_delta_displacement_2 = 0.0
-        #     for node in self.spheres_model_part.Nodes:
-        #         total_delta_displacement_2 += node.GetSolutionStepValue(DELTA_DISPLACEMENT_X)**2+node.GetSolutionStepValue(DELTA_DISPLACEMENT_Y)**2
-        #     import numpy as np
-        #     total_delta_displacement = np.sqrt(total_delta_displacement_2)
-        #     disp_y_140 = self.spheres_model_part.Nodes[140].GetSolutionStepValue(DISPLACEMENT_Y)
-        #     reaction_y_140 = self.spheres_model_part.Nodes[140].GetSolutionStepValue(INTERNAL_FORCE_Y)
-        #     equilibrium_forces_y = abs(abs(reaction_y_140) - abs(clamp_reaction_y))
-        #     disp_convergence_tolerance = 1.0e-9
-        #     force_convergence_tolerance = 1.0e-1
-        #     is_converged = False
-        #     if(total_delta_displacement <= disp_convergence_tolerance and equilibrium_forces_y <= force_convergence_tolerance):
-        #         is_converged = True
-        #     # Print solution
-        #     print(self.time)
-        #     print(disp_y_140)
-        #     print(total_delta_displacement)
-        #     print(reaction_y_140)
-        #     print(equilibrium_forces_y)
-        #     print(self.iterating_steps)
-        #     if(is_converged==True):
-        #         out_error = open("time_dispy_deltadisp_reactionty140_deltaforcey_iteratingsteps.txt","a")
-        #         out_error.write(str(self.time))
-        #         out_error.write(" ")
-        #         out_error.write(str(disp_y_140))
-        #         out_error.write(" ")
-        #         out_error.write(str(total_delta_displacement))
-        #         out_error.write(" ")
-        #         out_error.write(str(reaction_y_140))
-        #         out_error.write(" ")
-        #         out_error.write(str(equilibrium_forces_y))
-        #         out_error.write(" ")
-        #         out_error.write(str(self.iterating_steps))
-        #         out_error.write("\n")
-        #         out_error.close()
-        #         # We Increase displacement again
-        #         self.disp_increasing = True
-        #         self.displ_y_factor += 1.0
-        #         self.iterating_steps = 0
+        #TODO. Ignasi: beam step load
+        # Check convergence and print results
+        if(self.disp_increasing==False):
+            self.iterating_steps += 1
+            # Check convergence
+            clamp_reaction_y = 0.0
+            clamp_smp = self.spheres_model_part.GetSubModelPart('DEM-VelocityBC2D_Clamp')
+            for node in clamp_smp.Nodes:
+                clamp_reaction_y += node.GetSolutionStepValue(INTERNAL_FORCE_Y)
+            total_delta_displacement_2 = 0.0
+            for node in self.spheres_model_part.Nodes:
+                total_delta_displacement_2 += node.GetSolutionStepValue(DELTA_DISPLACEMENT_X)**2+node.GetSolutionStepValue(DELTA_DISPLACEMENT_Y)**2
+            import numpy as np
+            total_delta_displacement = np.sqrt(total_delta_displacement_2)
+            disp_y_140 = self.spheres_model_part.Nodes[140].GetSolutionStepValue(DISPLACEMENT_Y)
+            reaction_y_140 = self.spheres_model_part.Nodes[140].GetSolutionStepValue(INTERNAL_FORCE_Y)
+            equilibrium_forces_y = abs(abs(reaction_y_140) - abs(clamp_reaction_y))
+            disp_convergence_tolerance = 1.0e-9
+            force_convergence_tolerance = 1.0e-1
+            is_converged = False
+            if(total_delta_displacement <= disp_convergence_tolerance and equilibrium_forces_y <= force_convergence_tolerance):
+                is_converged = True
+            # Print solution
+            print(self.time)
+            print(disp_y_140)
+            print(total_delta_displacement)
+            print(reaction_y_140)
+            print(equilibrium_forces_y)
+            print(self.iterating_steps)
+            if(is_converged==True):
+                out_error = open("time_dispy_deltadisp_reactionty140_deltaforcey_iteratingsteps.txt","a")
+                out_error.write(str(self.time))
+                out_error.write(" ")
+                out_error.write(str(disp_y_140))
+                out_error.write(" ")
+                out_error.write(str(total_delta_displacement))
+                out_error.write(" ")
+                out_error.write(str(reaction_y_140))
+                out_error.write(" ")
+                out_error.write(str(equilibrium_forces_y))
+                out_error.write(" ")
+                out_error.write(str(self.iterating_steps))
+                out_error.write("\n")
+                out_error.close()
+                # We Increase displacement again
+                self.disp_increasing = True
+                self.displ_y_factor += 1.0
+                self.iterating_steps = 0
+                self.spheres_model_part.ProcessInfo.SetValue(IS_CONVERGED_ONCE, True)
 
 
     def OutputSolutionStep(self):
