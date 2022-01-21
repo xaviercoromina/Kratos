@@ -130,10 +130,6 @@ protected:
 
             if (D.size1() != StrainSize || D.size2() != StrainSize)
                 D.resize(StrainSize, StrainSize);
-
-            noalias(StrainVector) = ZeroVector(StrainSize);
-            noalias(StressVector) = ZeroVector(StrainSize);
-            noalias(D)            = ZeroMatrix(StrainSize, StrainSize);
         }
     };
 public:
