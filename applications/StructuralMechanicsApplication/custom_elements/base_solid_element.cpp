@@ -1594,7 +1594,7 @@ void BaseSolidElement::RotateToGlobalAxes(
             if (constitutive_matrix_option) {
                 const auto& r_C = rValues.GetConstitutiveMatrix();
                 ConstitutiveLaw::VoigtSizeMatrixType C_global;
-                MathUtils<double>::BtDBProductOperation(C_global, voigt_rotation_matrix)
+                MathUtils<double>::BtDBProductOperation(C_global, r_C, voigt_rotation_matrix)
                 rValues.SetConstitutiveMatrix(C_global);
             }
         } else if (strain_size == 3) {
@@ -1607,7 +1607,7 @@ void BaseSolidElement::RotateToGlobalAxes(
                 const auto& r_C = rValues.GetConstitutiveMatrix();
                 ConstitutiveLaw::VoigtSizeMatrixType C_global;
                 C_global.resize(strain_size, strain_size);
-                MathUtils<double>::BtDBProductOperation(C_global, voigt_rotation_matrix)
+                MathUtils<double>::BtDBProductOperation(C_global, r_C, voigt_rotation_matrix)
                 rValues.SetConstitutiveMatrix(C_global);
             }
         }
