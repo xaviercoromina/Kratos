@@ -210,11 +210,11 @@ void SmallDisplacement::CalculateKinematicVariables(
     CalculateB( rThisKinematicVariables.B, rThisKinematicVariables.DN_DX, r_integration_points, PointNumber );
 
     // Compute equivalent F
-    GetValuesVector(rThisKinematicVariables.Displacements);
-    ConstitutiveLaw::StrainVectorType strain_vector;
-    noalias(strain_vector) = prod(rThisKinematicVariables.B, rThisKinematicVariables.Displacements);
-    ComputeEquivalentF(rThisKinematicVariables.F, strain_vector);
-    rThisKinematicVariables.detF = MathUtils<double>::Det(rThisKinematicVariables.F);
+    // GetValuesVector(rThisKinematicVariables.Displacements);
+    // ConstitutiveLaw::StrainVectorType strain_vector;
+    // noalias(strain_vector) = prod(rThisKinematicVariables.B, rThisKinematicVariables.Displacements);
+    // ComputeEquivalentF(rThisKinematicVariables.F, strain_vector);
+    // rThisKinematicVariables.detF = MathUtils<double>::Det(rThisKinematicVariables.F);
 }
 
 /***********************************************************************************/
