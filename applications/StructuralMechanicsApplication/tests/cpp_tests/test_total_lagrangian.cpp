@@ -60,7 +60,8 @@ namespace Testing
         }
 
         std::vector<ModelPart::IndexType> element_nodes {4,1,3,6,5,2,7,8};
-        for (int i = 1; i < 1e7; i++) // we create 1M elements
+        const int number_elem = 1e6;
+        for (int i = 1; i < number_elem; i++) // we create 1M elements
             auto p_element = r_model_part.CreateNewElement("SmallDisplacementElement3D8N", i, element_nodes, p_elem_prop);
 
         for (auto& r_elem : r_model_part.Elements()){
@@ -77,7 +78,7 @@ namespace Testing
         block_for_each(r_model_part.Elements(), my_tls(),  [&const_procinfo_ref](Element& r_elem, my_tls & MyTls) {
             r_elem.CalculateLocalSystem(MyTls.mMat, MyTls.mVec, const_procinfo_ref);
         });
-        std::cout << "Build Time: " << setup_system_time.ElapsedSeconds() << std::endl;
+        std::cout << "************ Build Time: " << setup_system_time.ElapsedSeconds() << std::endl;
     }
 }
 }
