@@ -1736,14 +1736,38 @@ void BaseSolidElement::CalculateAndAddKm(
 {
     KRATOS_TRY
     // option 1
-    BoundedMatrix<double, 6, 24> aux;
-    BoundedMatrix<double, 24, 6> aux2;
-    noalias(aux2) = trans(rB);
-    noalias(aux) = prod(rD, rB);
-    noalias( rLeftHandSideMatrix ) += IntegrationWeight * prod(aux2, aux);
+    // BoundedMatrix<double, 6, 24> aux;
+    // BoundedMatrix<double, 24, 6> aux2;
+    // noalias(aux2) = trans(rB);
+    // noalias(aux) = prod(rD, rB);
+    // noalias( rLeftHandSideMatrix ) += IntegrationWeight * prod(aux2, aux);
+
+    // option 3
+    // BoundedMatrix<double, 24, 24> aux;
+    // aux.clear();
+    // noalias( rLeftHandSideMatrix ) += aux;
 
     // option 2
     // noalias( rLeftHandSideMatrix ) += IntegrationWeight * prod( trans( rB ), Matrix(prod(rD, rB)));
+
+
+    // another
+    IndexType d_size = rD.size1();
+    IndexType b_size = rB.size1();
+    double DklBjl;
+    double Dkl;
+    for(IndexType k = 0; k< d_size; ++k) {
+        for(IndexType l = 0; l < d_size; ++l) {
+            Dkl = rD(k,l);
+            for(IndexType j = 0; j < b_size; ++j) {
+                DklBjl = Dkl * rB(j,l);
+                for(IndexType i = 0; i< b_size; ++i) {
+                    rLeftHandSideMatrix(i, j) += IntegrationWeight*rB(i, k) * DklBjl;
+                }
+            }
+        }
+    }
+    
 
     KRATOS_CATCH( "" )
 }
