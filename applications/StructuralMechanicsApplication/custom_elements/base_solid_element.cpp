@@ -1787,7 +1787,9 @@ void BaseSolidElement::CalculateAndAddResidualVector(
     this->CalculateAndAddExtForceContribution( rThisKinematicVariables.N, rCurrentProcessInfo, rBodyForce, rRightHandSideVector, IntegrationWeight );
 
     // Operation performed: rRightHandSideVector -= IntForce * IntegrationWeight
-    noalias( rRightHandSideVector ) -= IntegrationWeight * prod( trans( rThisKinematicVariables.B ), rStressVector );
+    BoundedMatrix<double, 24, 6> aux2;
+    noalias(aux2) = trans(rThisKinematicVariables.B);
+    noalias( rRightHandSideVector ) -= IntegrationWeight * prod( aux2, rStressVector );
 
     KRATOS_CATCH( "" )
 }
