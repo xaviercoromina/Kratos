@@ -1729,14 +1729,17 @@ array_1d<double, 3> BaseSolidElement::GetBodyForce(
 
 void BaseSolidElement::CalculateAndAddKm(
     MatrixType& rLeftHandSideMatrix,
-    const Matrix& B,
-    const ConstitutiveLaw::VoigtSizeMatrixType& D,
+    const Matrix& rB,
+    const ConstitutiveLaw::VoigtSizeMatrixType& rD,
     const double IntegrationWeight
     ) const
 {
     KRATOS_TRY
+    // BoundedMatrix<double, 6, 24> aux;
+    // noalias(aux) = prod(rD, rB);
+    // noalias( rLeftHandSideMatrix ) += IntegrationWeight * prod(trans( rB ), aux);
 
-    noalias( rLeftHandSideMatrix ) += IntegrationWeight * prod( trans( B ), Matrix(prod(D, B)));
+    noalias( rLeftHandSideMatrix ) += IntegrationWeight * prod( trans( rB ), Matrix(prod(rD, rB)));
 
     KRATOS_CATCH( "" )
 }
