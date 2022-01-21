@@ -93,15 +93,17 @@ protected:
             const SizeType NumberOfNodes
             )
         {
-            detF = 1.0;
+            detF  = 1.0;
             detJ0 = 1.0;
-            N = ZeroVector(NumberOfNodes);
-            B = ZeroMatrix(StrainSize, Dimension * NumberOfNodes);
-            F = IdentityMatrix(Dimension);
-            DN_DX = ZeroMatrix(NumberOfNodes, Dimension);
-            J0 = ZeroMatrix(Dimension, Dimension);
-            InvJ0 = ZeroMatrix(Dimension, Dimension);
-            Displacements = ZeroVector(Dimension * NumberOfNodes);
+
+            N.resize(NumberOfNodes, false);
+            B.resize(StrainSize, Dimension * NumberOfNodes, false);
+            F.resize(Dimension, Dimension, false);
+            DN_DX.resize(Dimension, Dimension, false);
+            J0.resize(Dimension, Dimension, false);
+            InvJ0.resize(Dimension, Dimension, false);
+            Displacements.resize(Dimension * NumberOfNodes, false);
+
         }
     };
 
