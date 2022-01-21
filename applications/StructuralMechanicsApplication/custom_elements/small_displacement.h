@@ -257,8 +257,8 @@ protected:
      * @param StrainVector The strain tensor (Voigt notation)
      */
     virtual void ComputeEquivalentF(
-        Matrix& rF,
-        const Vector& StrainVector
+        ConstitutiveLaw::DeformationGradientMatrixType& rF,
+        const ConstitutiveLaw::StrainVectorType& rStrainTensor
         ) const;
 
     ///@}

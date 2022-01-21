@@ -270,8 +270,8 @@ void SmallDisplacement::CalculateB(
 /***********************************************************************************/
 
 void SmallDisplacement::ComputeEquivalentF(
-    Matrix& rF,
-    const Vector& rStrainTensor
+    ConstitutiveLaw::DeformationGradientMatrixType& rF,
+    const ConstitutiveLaw::StrainVectorType& rStrainTensor
     ) const
 {
     StructuralMechanicsElementUtilities::ComputeEquivalentF(*this, rStrainTensor, rF);

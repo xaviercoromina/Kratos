@@ -1594,7 +1594,7 @@ void BaseSolidElement::RotateToGlobalAxes(
             if (constitutive_matrix_option) {
                 const auto& r_C = rValues.GetConstitutiveMatrix();
                 ConstitutiveLaw::VoigtSizeMatrixType C_global;
-                MathUtils<double>::BtDBProductOperation(C_global, r_C, voigt_rotation_matrix)
+                MathUtils<double>::BtDBProductOperation(C_global, r_C, voigt_rotation_matrix);
                 rValues.SetConstitutiveMatrix(C_global);
             }
         } else if (strain_size == 3) {
@@ -1607,7 +1607,7 @@ void BaseSolidElement::RotateToGlobalAxes(
                 const auto& r_C = rValues.GetConstitutiveMatrix();
                 ConstitutiveLaw::VoigtSizeMatrixType C_global;
                 C_global.resize(strain_size, strain_size);
-                MathUtils<double>::BtDBProductOperation(C_global, r_C, voigt_rotation_matrix)
+                MathUtils<double>::BtDBProductOperation(C_global, r_C, voigt_rotation_matrix);
                 rValues.SetConstitutiveMatrix(C_global);
             }
         }
@@ -1730,7 +1730,7 @@ array_1d<double, 3> BaseSolidElement::GetBodyForce(
 void BaseSolidElement::CalculateAndAddKm(
     MatrixType& rLeftHandSideMatrix,
     const Matrix& B,
-    const Matrix& D,
+    const ConstitutiveLaw::VoigtSizeMatrixType& D,
     const double IntegrationWeight
     ) const
 {
@@ -1747,7 +1747,7 @@ void BaseSolidElement::CalculateAndAddKm(
 void BaseSolidElement::CalculateAndAddKg(
     MatrixType& rLeftHandSideMatrix,
     const Matrix& DN_DX,
-    const Vector& StressVector,
+    const ConstitutiveLaw::StressVectorType& StressVector,
     const double IntegrationWeight
     ) const
 {
@@ -1770,7 +1770,7 @@ void BaseSolidElement::CalculateAndAddResidualVector(
     const KinematicVariables& rThisKinematicVariables,
     const ProcessInfo& rCurrentProcessInfo,
     const array_1d<double, 3>& rBodyForce,
-    const Vector& rStressVector,
+    const ConstitutiveLaw::StressVectorType& rStressVector,
     const double IntegrationWeight
     ) const
 {

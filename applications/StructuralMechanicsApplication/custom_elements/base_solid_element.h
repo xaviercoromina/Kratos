@@ -74,7 +74,7 @@ protected:
         Vector  N;
         Matrix  B;
         double  detF;
-        Matrix  F;
+        ConstitutiveLaw::DeformationGradientMatrixType  F;
         double  detJ0;
         Matrix  J0;
         Matrix  InvJ0;
@@ -810,7 +810,7 @@ protected:
     virtual void CalculateAndAddKm(
         MatrixType& rLeftHandSideMatrix,
         const Matrix& B,
-        const Matrix& D,
+        const ConstitutiveLaw::VoigtSizeMatrixType& D,
         const double IntegrationWeight
         ) const;
 
@@ -824,7 +824,7 @@ protected:
     void CalculateAndAddKg(
         MatrixType& rLeftHandSideMatrix,
         const Matrix& DN_DX,
-        const Vector& rStressVector,
+        const ConstitutiveLaw::StressVectorType& rStressVector,
         const double IntegrationWeight
         ) const;
 
@@ -842,7 +842,7 @@ protected:
         const KinematicVariables& rThisKinematicVariables,
         const ProcessInfo& rCurrentProcessInfo,
         const array_1d<double, 3>& rBodyForce,
-        const Vector& rStressVector,
+        const ConstitutiveLaw::StressVectorType& rStressVector,
         const double IntegrationWeight
         ) const;
 
