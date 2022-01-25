@@ -1752,23 +1752,24 @@ void BaseSolidElement::CalculateAndAddKm(
 
 
     // another
-    const ConstitutiveLaw::VoigtSizeMatrixType modD = IntegrationWeight*rD;
+    // const ConstitutiveLaw::VoigtSizeMatrixType modD = IntegrationWeight*rD;
     IndexType d_size = rD.size1();
     IndexType b_size = rB.size1();
+    IndexType k, l, j, i;
     double DklBjl;
     double Dkl;
-    for(IndexType k = 0; k< d_size; ++k) {
-        for(IndexType l = 0; l < d_size; ++l) {
-            Dkl = modD(k,l);
-            for(IndexType j = 0; j < b_size; ++j) {
+    for(k = 0; k< d_size; ++k) {
+        for(l = 0; l < d_size; ++l) {
+            Dkl = rD(k,l);
+            for(j = 0; j < b_size; ++j) {
                 DklBjl = Dkl * rB(j,l);
-                for(IndexType i = 0; i< b_size; ++i) {
+                for(i = 0; i< b_size; ++i) {
                     rLeftHandSideMatrix(i, j) += rB(i, k) * DklBjl;
                 }
             }
         }
     }
-    
+
 
     KRATOS_CATCH( "" )
 }
