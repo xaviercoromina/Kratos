@@ -1758,7 +1758,7 @@ void BaseSolidElement::CalculateAndAddKm(
     
     noalias(modD) = IntegrationWeight*rD;
     IndexType d_size = rD.size1();
-    IndexType b_size = rB.size1();
+    IndexType b_size = rB.size2();
     IndexType k, l, j, i;
     double DklBjl;
     double Dkl;
