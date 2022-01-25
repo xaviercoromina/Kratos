@@ -958,8 +958,9 @@ namespace Kratos {
             if(mUpdatedRayleighParameters==false){
 
                 const double omega_1_old = r_process_info[OMEGA_1];
+                const double omega_1_factor = r_process_info[OMEGA_1_FACTOR];
                 const double K_max_scaled = mKNormMax * mMMin/mKNormMin;
-                const double omega_ratio = std::sqrt(mMMax/K_max_scaled);
+                const double omega_ratio = std::sqrt(mMMax/K_max_scaled)*omega_1_factor;
                 double omega_1_new = omega_1_old*omega_ratio;
 
                 if (omega_ratio <= 1.0) {
