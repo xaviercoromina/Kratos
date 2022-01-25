@@ -1752,7 +1752,11 @@ void BaseSolidElement::CalculateAndAddKm(
 
 
     // another
-    // const ConstitutiveLaw::VoigtSizeMatrixType modD = IntegrationWeight*rD;
+    ConstitutiveLaw::VoigtSizeMatrixType modD;
+    if (modD.size1() != rD.size1())
+        modD.resize(rD.size1(), rD.size1(), false);
+    
+    noalias(modD) = IntegrationWeight*rD;
     IndexType d_size = rD.size1();
     IndexType b_size = rB.size1();
     IndexType k, l, j, i;
@@ -1760,7 +1764,7 @@ void BaseSolidElement::CalculateAndAddKm(
     double Dkl;
     for(k = 0; k< d_size; ++k) {
         for(l = 0; l < d_size; ++l) {
-            Dkl = rD(k,l);
+            Dkl = modD(k,l);
             for(j = 0; j < b_size; ++j) {
                 DklBjl = Dkl * rB(j,l);
                 for(i = 0; i< b_size; ++i) {
