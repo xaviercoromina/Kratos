@@ -226,6 +226,7 @@ class DEMAnalysisStage(AnalysisStage):
             self.spheres_model_part.ProcessInfo.SetValue(RAYLEIGH_ALPHA, rayleigh_alpha)
             self.spheres_model_part.ProcessInfo.SetValue(RAYLEIGH_BETA, rayleigh_beta)
             self.spheres_model_part.ProcessInfo.SetValue(OMEGA_1_FACTOR, rayleigh_cd_param["omega_1_factor"].GetDouble())
+            self.spheres_model_part.ProcessInfo.SetValue(K_MIN_FACTOR, self.DEM_parameters["k_min_factor"].GetDouble())
             self.spheres_model_part.ProcessInfo.SetValue(OMEGA_1, omega_1)
             self.spheres_model_part.ProcessInfo.SetValue(OMEGA_N, omega_n)
             self.spheres_model_part.ProcessInfo.SetValue(XI_1, xi_1)
@@ -435,7 +436,7 @@ class DEMAnalysisStage(AnalysisStage):
         # self.iterating_steps = 0
         # self.disp_increasing = True
         # self.displ_y_factor = 1.0
-        # self.initial_displ_y_target = -1.5e-3
+        # self.initial_displ_y_target = -1.5e-5
         # out_error = open("time_dispy_deltadisp_reactionty140_deltaforcey_iteratingsteps.txt","a")
         # out_error.write(str(self.time))
         # out_error.write(" ")
@@ -777,8 +778,8 @@ class DEMAnalysisStage(AnalysisStage):
         #     disp_y_140 = self.spheres_model_part.Nodes[140].GetSolutionStepValue(DISPLACEMENT_Y)
         #     reaction_y_140 = self.spheres_model_part.Nodes[140].GetSolutionStepValue(INTERNAL_FORCE_Y)
         #     equilibrium_forces_y = abs(abs(reaction_y_140) - abs(clamp_reaction_y))
-        #     disp_convergence_tolerance = 1.0e-9
-        #     force_convergence_tolerance = 1.0e-1
+        #     disp_convergence_tolerance = 1.0e-10
+        #     force_convergence_tolerance = 1.0e-2
         #     is_converged = False
         #     if(total_delta_displacement <= disp_convergence_tolerance and equilibrium_forces_y <= force_convergence_tolerance):
         #         is_converged = True

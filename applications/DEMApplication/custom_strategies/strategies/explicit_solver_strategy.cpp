@@ -384,6 +384,10 @@ namespace Kratos {
             }
         }
 
+        // Scale KMin to avoid problems in cases with spurious minimum values
+        const double Kmin_factor = r_process_info[K_MIN_FACTOR];
+        mKNormMin = mKNormMin * Kmin_factor;
+
         // TODO. Ignasi: should we do this ?
         // Calculate inertia scale factor (to make it similar to the mass)
         // double k_max_norm = 0.0;
@@ -1169,6 +1173,10 @@ namespace Kratos {
                     mKrMax[i] = 1.0e20; // Just in case moment_of_inertia is zero everywhere !
                 }
             }
+
+            // Scale KMin to avoid problems in cases with spurious minimum values
+            const double Kmin_factor = r_process_info[K_MIN_FACTOR];
+            mKNormMin = mKNormMin * Kmin_factor;
 
             // TODO. Ignasi: print kMax i KMin
             // std::fstream kmax_kmin_file;
