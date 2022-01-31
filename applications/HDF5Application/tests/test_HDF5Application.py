@@ -18,6 +18,7 @@ from test_hdf5_xdmf import TestXdmfResults
 from test_hdf5_xdmf import TestTimeLabel
 from test_hdf5_xdmf import TestFindMatchingFiles
 from test_hdf5_xdmf import TestCreateXdmfTemporalGridFromMultifile
+from test_utils import TestModelPartPattern
 
 
 def AssembleTestSuites():
@@ -37,6 +38,7 @@ def AssembleTestSuites():
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([TestTimeLabel]))
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([TestFindMatchingFiles]))
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([TestCreateXdmfTemporalGridFromMultifile]))
+    smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([TestModelPartPattern]))
     nightSuite = suites['nightly']
     nightSuite.addTests(smallSuite)
     allSuite = suites['all']
