@@ -54,7 +54,7 @@ namespace Kratos
 
 /// Provides a SystemVector which implements FEM assemble capabilities, as well as some vector operations
 template<class TDataType=double, class TIndexType=std::size_t>
-class SystemVector
+class SystemVector final
 {
 public:
     ///@name Type Definitions
@@ -96,7 +96,7 @@ public:
     }
 
     /// Destructor.
-    virtual ~SystemVector(){}
+    ~SystemVector(){}
 
     const DataCommunicator& GetComm() const
     {
@@ -144,7 +144,19 @@ public:
         return mData[I];
     }
 
-    void Add(const double factor,
+    ///provides low level access to internal data
+    DenseVector<TDataType>& data()
+    {
+        return mData;
+    }
+
+    ///provides low level access to internal data
+    const DenseVector<TDataType>& data() const
+    {
+        return mData;
+    }
+
+    void Add(const TDataType factor,
              const SystemVector& rOtherVector
             )
     {
@@ -212,9 +224,6 @@ public:
         }
     }
 
-
-
-
     ///@}
     ///@name Access
     ///@{
@@ -230,18 +239,18 @@ public:
     ///@{
 
     /// Turn back information as a string.
-    virtual std::string Info() const
+        std::string Info() const
     {
-std::stringstream buffer;
-    buffer << "SystemVector" ;
-    return buffer.str();
+        std::stringstream buffer;
+        buffer << "SystemVector" ;
+        return buffer.str();
     }
 
     /// Print information about this object.
-    virtual void PrintInfo(std::ostream& rOStream) const {rOStream << "SystemVector";}
+    void PrintInfo(std::ostream& rOStream) const {rOStream << "SystemVector";}
 
     /// Print object's data.
-    virtual void PrintData(std::ostream& rOStream) const {
+    void PrintData(std::ostream& rOStream) const {
         std::cout << mData << std::endl;
     }
 
