@@ -31,6 +31,11 @@ namespace Kratos
 {
 
 
+///@addtogroup HDF5Application
+///@{
+///@name Kratos Classes
+///@{
+
 /** A class for interfacing placeholders and regular expressions.
  *
  *  @note placeholders should be separated by literals, otherwise
@@ -39,8 +44,8 @@ namespace Kratos
  *      pattern:    "<placeholder_1><placeholder_2>"
  *      string:     "abcdefg"
  *      result:
- *          "<placeholder_1>" : "a"
- *          "<placeholder_2>" : "bcdefg"
+ *          "<placeholder_1>" : "abcdef"
+ *          "<placeholder_2>" : "g"
  *  CORRECT example:
  *      pattern:    "<placeholder_1>d<placeholder_2>"
  *      string:     "abcdefg"
@@ -54,13 +59,22 @@ namespace Kratos
 class KRATOS_API(HDF5Application) PlaceholderPattern
 {
 public:
+    ///@name Type Definitions
+    ///@{
+
     using PlaceholderMap = std::map<std::string,std::string>;
+
+    using PlaceholderGroupMap = std::map<std::string,std::vector<std::size_t>>;
 
     using MatchType = std::map<std::string,std::vector<std::string>>;
 
     using PathType = ghc::filesystem::path;
 
     KRATOS_CLASS_POINTER_DEFINITION(PlaceholderPattern);
+
+    ///@}
+    ///@name Life Cycle
+    ///@{
 
     /// Default constructor
     PlaceholderPattern() = default;
@@ -82,13 +96,21 @@ public:
     /// Copy constructor
     PlaceholderPattern(const PlaceholderPattern& rOther) = default;
 
+    virtual ~PlaceholderPattern() = default;
+
+    ///@}
+    ///@name Operators
+    ///@{
+
     /// Move assignment operator
     PlaceholderPattern& operator=(PlaceholderPattern&& rOther) = default;
 
     /// Copy assignment operator
     PlaceholderPattern& operator=(const PlaceholderPattern& rOther) = default;
 
-    virtual ~PlaceholderPattern() = default;
+    ///@}
+    ///@name Operations
+    ///@{
 
     /// Check whether a string satisfies the pattern
     bool IsAMatch(const std::string& rString) const;
@@ -119,17 +141,21 @@ public:
      */
     std::vector<PathType> Glob() const;
 
+    ///@}
+    ///@name Inquiry
+    ///@{
+
     /// Get the regex for the input pattern
     const std::regex& GetRegex() const;
 
     /// Get the string representation of the regex
     const std::string& GetRegexString() const;
 
-private:
-    using PlaceholderGroupMap = std::map<std::string,std::vector<std::size_t>>;
+    ///@}
 
-    /// Escape characters in the input that interfere with regex syntax
-    static std::string FormatRegexLiteral(const std::string& rLiteral);
+private:
+    ///@name Member Variables
+    ///@{
 
     std::string mPattern;
 
@@ -139,13 +165,45 @@ private:
     std::string mRegexString;
 
     std::regex mRegex;
+
+    ///@}
+    ///@name Private Operations
+    ///@{
+
+    /// Escape characters in the input that interfere with regex syntax
+    static std::string FormatRegexLiteral(const std::string& rLiteral);
+
+    ///@}
 }; // class PlaceholderPattern
 
+///@} // Kratos Classes
+///@} addtogroup
+///@addtogroup HDF5Application
+///@{
+///@name Kratos Classes
+///@{
 
+/** A class for working with formatted strings related to @ref{ModelPart}s.
+ *
+ *  Operations on strings with the following placeholders are supported:
+ *      <model_part_name>
+ *      <step>
+ *      <time>
+ *  See @ref{PlaceholderPattern} for supported functionalities. Other
+ *  placeholders can be added at compile time by tweaking the construction
+ *  of the static member @ref{ModelPartPattern::mModelpartPlaceholderMap}.
+ */
 class KRATOS_API(HDF5Application) ModelPartPattern : public PlaceholderPattern
 {
 public:
+    ///@name Type Definitions
+    ///@{
+
     KRATOS_CLASS_POINTER_DEFINITION(ModelPartPattern);
+
+    ///@}
+    ///@name Life Cycle
+    ///@{
 
     ModelPartPattern() = default;
 
@@ -155,11 +213,25 @@ public:
 
     ModelPartPattern(const ModelPartPattern& rOther) = default;
 
+    ///@}
+    ///@name Operators
+    ///@{
+
     using PlaceholderPattern::operator=;
 
+    ///@}
+
 private:
+    ///@name Static Member Variables
+    ///@{
+
     static const PlaceholderPattern::PlaceholderMap mModelPartPlaceholderMap;
+
+    ///@}
 }; // class ModelPartPattern
+
+///@} // Kratos Classes
+///@} addtogroup
 
 
 } // namespace Kratos
