@@ -7,27 +7,26 @@
 //  License:         BSD License
 //                   license: HDF5Application/license.txt
 //
-//  Main author:     Máté Kelemen, https://github.com/matekelemen
+//  Main author:     Máté Kelemen
 //
 
-#ifndef KRATOS_HDF5_ADD_CUSTOM_UTILITIES_TO_PYTHON_H_INCLUDED
-#define KRATOS_HDF5_ADD_CUSTOM_UTILITIES_TO_PYTHON_H_INCLUDED
-
+#ifndef KRATOS_HDF5APPLICATION_ADD_CUSTOM_UTILITIES_TO_PYTHON_H
+#define KRATOS_HDF5APPLICATION_ADD_CUSTOM_UTILITIES_TO_PYTHON_H
 
 // External includes
 #include "pybind11/pybind11.h"
 
-// Core includes
+// Project includes
 #include "includes/define.h"
 
 
 namespace Kratos {
 namespace Python {
 
-void AddCustomUtilitiesToPython(pybind11::module& rModule);
+void  AddCustomUtilitiesToPython(pybind11::module& rModule);
 
 } // namespace Python
 } // namespace Kratos
 
 
-#endif
+#endif // KRATOS_HDF5APPLICATION_ADD_CUSTOM_UTILITIES_TO_PYTHON_H
