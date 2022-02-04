@@ -182,16 +182,24 @@ std::vector<PlaceholderPattern::PathType> PlaceholderPattern::Glob() const
 {
     KRATOS_TRY
 
-    PathType pattern(mRegexString);
+    PathType pattern(mRegexString.substr(1, mRegexString.size()-2));
+    auto it_pattern_part = pattern.begin();
     std::vector<PathType> paths;
 
     // Decide where to begin globbing
-    if (pattern.is_absolute()) paths.emplace_back(pattern.root_name());
-    else paths.emplace_back(ghc::filesystem::current_path());
+    if (pattern.is_absolute()) {
+        paths.emplace_back(pattern.root_path());
+        ++it_pattern_part;
+    }
+    else {
+        paths.emplace_back(ghc::filesystem::current_path());
+    }
 
     // Compare the pattern parts to the globbed files'/directories' parts
-    for (auto pattern_part : pattern) {
-        std::regex pattern_part_regex(pattern_part.string());
+    for ( ; it_pattern_part!=pattern.end(); ++it_pattern_part) {
+        if (paths.empty()) break;
+
+        std::regex pattern_part_regex(it_pattern_part->string());
         std::vector<PathType> tmp_paths;
 
         for (const auto& r_path : paths) {
