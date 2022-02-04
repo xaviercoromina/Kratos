@@ -105,6 +105,17 @@ PlaceholderPattern::PlaceholderPattern(const std::string& rPattern,
         }
     }
 
+    // Remove placeholders that aren't in the pattern
+    auto it_erase = mPlaceholderGroupMap.begin();
+    while (it_erase!=mPlaceholderGroupMap.end()) {
+        if (it_erase->second.empty()) {
+            it_erase = mPlaceholderGroupMap.erase(it_erase);
+        }
+        else {
+            ++it_erase;
+        }
+    }
+
     // Construct the regex
     mRegexString = "^" + mRegexString + "$";
     mRegex = std::regex(mRegexString);
