@@ -42,7 +42,7 @@ void TransientConvectionDiffusionPFEM2FICElement<TDim,TNumNodes>::CalculateAll( 
     //Previous definitions
     const PropertiesType& Prop = this->GetProperties();
     const GeometryType& Geom = this->GetGeometry();
-    GeometryData::IntegrationMethod ThisIntegrationMethod = GetIntegrationMethod();
+    GeometryData::IntegrationMethod ThisIntegrationMethod = this->GetIntegrationMethod();
     const GeometryType::IntegrationPointsArrayType& integration_points = Geom.IntegrationPoints( ThisIntegrationMethod );
     const unsigned int NumGPoints = integration_points.size();
 
@@ -111,7 +111,7 @@ void TransientConvectionDiffusionPFEM2FICElement<TDim,TNumNodes>::CalculateRHS( 
     //Previous definitions
     const PropertiesType& Prop = this->GetProperties();
     const GeometryType& Geom = this->GetGeometry();
-    GeometryData::IntegrationMethod ThisIntegrationMethod = GetIntegrationMethod();
+    GeometryData::IntegrationMethod ThisIntegrationMethod = this->GetIntegrationMethod();
     const GeometryType::IntegrationPointsArrayType& integration_points = Geom.IntegrationPoints( ThisIntegrationMethod );
     const unsigned int NumGPoints = integration_points.size();
 
