@@ -50,7 +50,7 @@ public:
         mTheta = theta;
 
         //Allocate auxiliary memory
-        int NumThreads = OpenMPUtils::GetNumThreads();
+        int NumThreads = ParallelUtilities::GetNumThreads();
         mMMatrix.resize(NumThreads);
         mMVector.resize(NumThreads);
     }
@@ -204,28 +204,28 @@ public:
             }
         }
 
-        const double& Time = r_model_part.GetProcessInfo()[TIME];
+        // const double& Time = r_model_part.GetProcessInfo()[TIME];
 
-        const double M = 1000.0;
-        const double D = 0.1;
-        const double L = 4.0;
+        // const double M = 1000.0;
+        // const double D = 0.1;
+        // const double L = 4.0;
 
-        #pragma omp parallel for
-        for(int i = 0; i < NNodes; i++)
-        {
-            ModelPart::NodesContainerType::iterator itNode = node_begin + i;
+        // #pragma omp parallel for
+        // for(int i = 0; i < NNodes; i++)
+        // {
+        //     ModelPart::NodesContainerType::iterator itNode = node_begin + i;
 
-            double& rNodalAnalyticSolution = itNode->FastGetSolutionStepValue(NODAL_ANALYTIC_SOLUTION);
-            const double& velocity_x = itNode->FastGetSolutionStepValue(VELOCITY_X);
-            const double& velocity_y = itNode->FastGetSolutionStepValue(VELOCITY_Y);
-            const double& velocity_z = itNode->FastGetSolutionStepValue(VELOCITY_Z);
+        //     double& rNodalAnalyticSolution = itNode->FastGetSolutionStepValue(NODAL_ANALYTIC_SOLUTION);
+        //     const double& velocity_x = itNode->FastGetSolutionStepValue(VELOCITY_X);
+        //     const double& velocity_y = itNode->FastGetSolutionStepValue(VELOCITY_Y);
+        //     const double& velocity_z = itNode->FastGetSolutionStepValue(VELOCITY_Z);
 
-            // rNodalAnalyticSolution = M /(4.0 * Globals::Pi * Time * D * L)
-                                    // * std::exp(-(itNode->X()-(2.0 + velocity_x * Time))*(itNode->X()-(2.0 + velocity_x * Time)) / (4 * D * Time)
-                                    //            -(itNode->Y()-(5.0 + velocity_y * Time))*(itNode->Y()-(5.0 + velocity_y * Time)) / (4 * D * Time)
-                                    //            -(itNode->Z()-(0.0 + velocity_z * Time))*(itNode->Z()-(0.0 + velocity_z * Time)) / (4 * D * Time));
+        //     rNodalAnalyticSolution = M /(4.0 * Globals::Pi * Time * D * L)
+        //                             * std::exp(-(itNode->X()-(2.0 + velocity_x * Time))*(itNode->X()-(2.0 + velocity_x * Time)) / (4 * D * Time)
+        //                                        -(itNode->Y()-(5.0 + velocity_y * Time))*(itNode->Y()-(5.0 + velocity_y * Time)) / (4 * D * Time)
+        //                                        -(itNode->Z()-(0.0 + velocity_z * Time))*(itNode->Z()-(0.0 + velocity_z * Time)) / (4 * D * Time));
 
-        }
+        // }
 
         KRATOS_CATCH("")
     }
@@ -517,7 +517,7 @@ public:
     {
         KRATOS_TRY
 
-        int NumThreads = OpenMPUtils::GetNumThreads();
+        int NumThreads = ParallelUtilities::GetNumThreads();
         OpenMPUtils::PartitionVector DofSetPartition;
         OpenMPUtils::DivideInPartitions(rDofSet.size(), NumThreads, DofSetPartition);
 
