@@ -74,6 +74,7 @@ InterfaceCommunicator::InterfaceCommunicator(
         "max_search_radius"             : 0.0,
         "search_radius_increase_factor" : 0.0,
         "max_num_search_iterations"     : 0,
+        "num_local_search_iterations"   : 0,
         "print_bounding_boxes_to_file"  : false,
         "bounding_boxes_file_path"      : "",
         "echo_level"                    : 0
@@ -154,17 +155,30 @@ void InterfaceCommunicator::ExchangeInterfaceData(const Communicator& rComm,
             max_search_iterations);
     }
 
+    if (mrModelPartOrigin.IsDistributed() || rComm.GetDataCommunicator().IsDistributed()) { // TODO this should check the global mapper datacomm
+        if (mSearchSettings.Has("num_local_search_iterations")) {
+            mNumLocalSearchIterations = mSearchSettings["num_local_search_iterations"].GetInt();
+            KRATOS_ERROR_IF(max_search_iterations < 1) << "Number of local search iterations must be larger than 0!" << std::endl;
+        } else {
+            mNumLocalSearchIterations = std::min(max_search_iterations, 3);
+        }
+    } else {
+        // in the serial case no global search iterations are necessary
+        mNumLocalSearchIterations = 3;
+        KRATOS_INFO_IF("Mapper search", mSearchSettings.Has("num_local_search_iterations")) << "num_local_search_iterations is ignored in the serial case" << std::endl;
+    }
+
     KRATOS_INFO_IF("Mapper search", mEchoLevel>1)
         << "\n    Initial search radius: " << init_search_radius
         << "\n    Maximum search radius: " << max_search_radius
         << "\n    Maximum number of search iterations: " << max_search_iterations
+        << "\n    Number of local search iterations per global search iteration: " << mNumLocalSearchIterations
         << "\n    Search radius increase factor: " << increase_factor << std::endl;
 
     mSearchRadius = init_search_radius;
     mIncreaseFactor = increase_factor;
-    mNumLocalSearches = 3;
 
-    int num_iteration = mNumLocalSearches;
+    int current_global_search_iteration = mNumLocalSearchIterations;
 
     // First Iteration is done outside the search loop bcs it has
     // to be done in any case
@@ -173,11 +187,21 @@ void InterfaceCommunicator::ExchangeInterfaceData(const Communicator& rComm,
     // only if some points did not find a neighbor or dont have a valid
     // projection, more search iterations are necessary
     mMeshesAreConforming = 1;
+
+    BuiltinTimer timer;
+
     ConductSearchIteration(rpInterfaceInfo);
 
-    while (num_iteration <= max_search_iterations && !AllNeighborsFound(rComm)) {
-        mSearchRadius *= increase_factor*mNumLocalSearches;
-        num_iteration += mNumLocalSearches;
+    if (mEchoLevel > 1) {
+        PrintInfoAboutCurrentSearchSuccess(rComm, timer);
+    }
+
+    while (current_global_search_iteration < max_search_iterations && !AllNeighborsFound(rComm)) {
+        mSearchRadius *= std::pow(increase_factor, mNumLocalSearchIterations);
+
+        if (current_global_search_iteration + mNumLocalSearchIterations > max_search_iterations) {
+            mNumLocalSearchIterations = max_search_iterations - current_global_search_iteration;
+        }
 
         // If all neighbours were not found in the first iteration, the meshes are not conforming
         // for the initial given search radius.
@@ -186,8 +210,9 @@ void InterfaceCommunicator::ExchangeInterfaceData(const Communicator& rComm,
         KRATOS_INFO_IF("", mEchoLevel > 0) << "\n";
         KRATOS_INFO_IF("Mapper search", mEchoLevel > 0)
             << "search radius was increased, another global search iteration is conducted\n    "
-            << "search iteration: " << num_iteration << " / "<< max_search_iterations << " | "
-            << "search radius: " << mSearchRadius << std::endl;
+            << "global search iteration: " << current_global_search_iteration << " / " << max_search_iterations
+            << "\n    this global search iteration contains " << mNumLocalSearchIterations << " local search iterations"
+            << "\n    initial search radius: " << mSearchRadius << std::endl;
 
         BuiltinTimer timer;
 
@@ -196,6 +221,8 @@ void InterfaceCommunicator::ExchangeInterfaceData(const Communicator& rComm,
         if (mEchoLevel > 1) {
             PrintInfoAboutCurrentSearchSuccess(rComm, timer);
         }
+
+        current_global_search_iteration += mNumLocalSearchIterations;
     }
 
     FinalizeSearch();
@@ -439,16 +466,15 @@ void InterfaceCommunicator::ConductLocalSearch()
 
                 int num_iteration = 0;
 
-                int max_search_iterations = 3;
                 double current_search_radius = mSearchRadius;
-
-                while (++num_iteration <= max_search_iterations) {
-
+                // std::cout << "starting seach for another obj ..." << std::endl;
+                while (++num_iteration <= mNumLocalSearchIterations) {
+                    // std::cout << "    num local search iter: " << num_iteration << " with search radius: " << current_search_radius << std::endl;
                     // reset the containers
                     auto results_itr = rTLS.mNeighborResults.begin();
 
                     number_of_results = mpLocalBinStructure->SearchObjectsInRadius(
-                        rTLS.mInterfaceObject, mSearchRadius, results_itr,
+                        rTLS.mInterfaceObject, current_search_radius, results_itr,
                         num_interface_obj_bin);
 
                     for (IndexType j=0; j<number_of_results; ++j) {
@@ -462,6 +488,7 @@ void InterfaceCommunicator::ConductLocalSearch()
                     // we try to compute an approximation
                     if (!p_interface_info->GetLocalSearchWasSuccessful()) {
                         for (IndexType j=0; j<number_of_results; ++j) {
+                            // std::cout << "    processing for approx ..." << std::endl;
                             const InterfaceObject& r_int_obj = *(rTLS.mNeighborResults[j]);
                             if (r_int_obj.IsEnabledInThisThread()) {
                                 p_interface_info->ProcessSearchResultForApproximation(r_int_obj);
@@ -475,10 +502,9 @@ void InterfaceCommunicator::ConductLocalSearch()
 
                     for (IndexType j=0; j<number_of_results; ++j) {
                         InterfaceObject& r_int_obj = *(rTLS.mNeighborResults[j]);
+                        // std::cout << "    disabled a search result" << std::endl;
                         r_int_obj.DisableInThisThread(); // exclude from next search iteration
                     }
-
-                    std::cout << "Going another search iteration" << std::endl;
 
                     current_search_radius *= mIncreaseFactor;
                 }
@@ -561,7 +587,7 @@ void InterfaceCommunicator::PrintInfoAboutCurrentSearchSuccess(
     });
     approximations = rComm.GetDataCommunicator().SumAll(approximations);
     no_neighbor = rComm.GetDataCommunicator().SumAll(no_neighbor);
-    const int global_num_nodes = rComm.GlobalNumberOfNodes();
+    const int global_num_nodes = rComm.GlobalNumberOfNodes(); // TODO this should be the global number of mrMapperLocalSystems
 
     KRATOS_INFO("Mapper search") << "current status:\n    "
         << approximations << " / " << global_num_nodes << " ("
@@ -571,7 +597,7 @@ void InterfaceCommunicator::PrintInfoAboutCurrentSearchSuccess(
         << std::round((no_neighbor/static_cast<double>(global_num_nodes))*100)
         << " %) local systems did not find a neighbor" << std::endl;
 
-    KRATOS_INFO("Mapper search") << "Search iteration took " << rTimer.ElapsedSeconds() << " [s]" << std::endl;
+    KRATOS_INFO("Mapper search") << "Global search iteration took " << rTimer.ElapsedSeconds() << " [s]" << std::endl;
 }
 
 }  // namespace Kratos.

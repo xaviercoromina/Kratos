@@ -128,7 +128,7 @@ protected:
     Parameters mSearchSettings;
     double mSearchRadius = -1.0;
     double mIncreaseFactor = 2.0;
-    int mNumLocalSearches = 3;
+    int mNumLocalSearchIterations = 3;
 
     int mEchoLevel = 0;
     int mMeshesAreConforming = 0;
