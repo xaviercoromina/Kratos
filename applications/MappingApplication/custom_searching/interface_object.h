@@ -16,12 +16,10 @@
 #if !defined(KRATOS_INTERFACE_SEARCH_OBJECT_INCLUDED_H_INCLUDED )
 #define  KRATOS_INTERFACE_SEARCH_OBJECT_INCLUDED_H_INCLUDED
 
-
 // System includes
-
+#include <vector>
 
 // External includes
-
 
 // Project includes
 #include "includes/define.h"
@@ -29,8 +27,8 @@
 #include "geometries/geometry.h"
 
 
-namespace Kratos
-{
+namespace Kratos {
+
 ///@addtogroup MappingApplication
 ///@{
 
@@ -76,8 +74,7 @@ public:
     ///@name Life Cycle
     ///@{
 
-    explicit InterfaceObject(const CoordinatesArrayType& rCoordinates)
-        : Point(rCoordinates) { }
+    explicit InterfaceObject(const CoordinatesArrayType& rCoordinates);
 
     /// Destructor.
     virtual ~InterfaceObject() = default;
@@ -86,6 +83,14 @@ public:
     ///@}
     ///@name Operations
     ///@{
+
+    void InitializeThreadLocalStorage();
+
+    bool IsEnabledInThisThread() const;
+
+    void EnableInThisThread();
+
+    void DisableInThisThread();
 
     ///@}
     ///@name Access
@@ -135,6 +140,9 @@ protected:
     ///@}
 
 private:
+
+    std::vector<bool> mThreadFlags;
+
     ///@name Serialization
     ///@{
 
