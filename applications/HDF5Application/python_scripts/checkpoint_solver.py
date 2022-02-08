@@ -5,8 +5,7 @@ import KratosMultiphysics
 from KratosMultiphysics.python_solver import PythonSolver
 
 # HDF5 imports
-from KratosMultiphysics.HDF5Application.single_mesh_primal_output_process import Factory as WriteCheckpointProcessFactory
-from KratosMultiphysics.HDF5Application.single_mesh_temporal_input_process import Factory as LoadCheckpointProcessFactory
+from KratosMultiphysics.HDF5Application.user_defined_io_process import Factory as UserDefinedIOProcessFactory
 from KratosMultiphysics.HDF5Application import ModelPartPattern
 
 # STL imports
@@ -54,13 +53,12 @@ class CheckpointIOProcessBase(KratosMultiphysics.Process):
         self.process = None
 
     def ExecuteInitialize(self) -> None:
-        self.process = self._ProcessFactory()
+        self.process = self.__ProcessFactory()
         self.process.ExecuteInitialize()
         self.process.ExecuteBeforeSolutionLoop()
 
-    @RequiresInitialized("process")
     def Execute(self) -> None:
-        raise RuntimeError("Attempt to call pure virtual member")
+        raise RuntimeError("Attempt to call a pure virtual member")
 
     @staticmethod
     def GetDefaultParameters() -> KratosMultiphysics.Parameters:
@@ -78,38 +76,59 @@ class CheckpointIOProcessBase(KratosMultiphysics.Process):
             }
         }""")
 
-    def _ProcessFactory(self) -> KratosMultiphysics.Process:
-        raise RuntimeError("Attempt to call pure virtual member")
-
     def _GetIOParameters(self) -> KratosMultiphysics.Parameters:
         parameters = KratosMultiphysics.Parameters()
-        parameters.AddValue("Parameters", self.__GetVariablesForIOParameters())
-        parameters["Parameters"].AddString("model_part_name", self.model_part.Name)
+        parameters.AddEmptyArray("Parameters")
+
+        parameters["Parameters"].Append(KratosMultiphysics.Parameters())
+        parameters["Parameters"][0].AddEmptyArray("list_of_operations")
+
+        # Register operations
+        variable_parameters = self.__GetVariablesForIOParameters()
+        for operation_type, variable_type in self._GetProcessMap().items():
+            operation_parameters = KratosMultiphysics.Parameters()
+            operation_parameters.AddString("operation_type", operation_type)
+            operation_parameters.AddValue("prefix", self.parameters["prefix"])
+            if variable_parameters.Has(variable_type):
+                operation_parameters.AddValue("list_of_variables", variable_parameters[variable_type]["list_of_variables"])
+            parameters["Parameters"][0]["list_of_operations"].Append(operation_parameters)
+
+        for process_parameters in parameters["Parameters"]:
+            process_parameters.AddValue("io_settings", self.parameters["file_settings"])
+            process_parameters.AddString("model_part_name", self.model_part.Name)
+            process_parameters.AddString("process_step", "")
+
         return parameters
+
+    @staticmethod
+    def _GetProcessMap() -> dict:
+        raise RuntimeError("Attempt to call a pure virtual member")
+
+    def __ProcessFactory(self) -> KratosMultiphysics.Process:
+        return UserDefinedIOProcessFactory(self._GetIOParameters(), self.model)
 
     def __GetVariablesForIOParameters(self) -> KratosMultiphysics.Parameters:
         """Collect all variables present in the nodes of the model part."""
         parameters = KratosMultiphysics.Parameters("""{
-            "nodal_solution_step_data_settings" : {},
-            "nodal_data_value_settings" : {},
-            "element_data_value_settings" : {},
-            "condition_data_value_settings" : {}
+            "nodal_solution_step_data" : {},
+            "nodal_data" : {},
+            "element_data" : {},
+            "condition_data" : {}
         }""")
 
         for item in parameters:
-            item.AddValue("prefix", self.parameters["prefix"])
             item.AddEmptyArray("list_of_variables")
 
         check_mesh_consistency = self.parameters["check_mesh_consistency"].GetBool()
 
-        parameters["nodal_solution_step_data_settings"]["list_of_variables"].SetStringArray(
+        parameters["nodal_solution_step_data"]["list_of_variables"].SetStringArray(
             list(self.model_part.GetHistoricalVariablesNames()))
-        parameters["nodal_data_value_settings"]["list_of_variables"].SetStringArray(
+        parameters["nodal_data"]["list_of_variables"].SetStringArray(
             list(self.model_part.GetNonHistoricalVariablesNames(self.model_part.Nodes, check_mesh_consistency)))
-        parameters["element_data_value_settings"]["list_of_variables"].SetStringArray(
+        parameters["element_data"]["list_of_variables"].SetStringArray(
             list(self.model_part.GetNonHistoricalVariablesNames(self.model_part.Elements, check_mesh_consistency)))
-        parameters["condition_data_value_settings"]["list_of_variables"].SetStringArray(
-            list(self.model_part.GetNonHistoricalVariablesNames(self.model_part.Conditions, check_mesh_consistency)))
+        #parameters["condition_data"]["list_of_variables"].SetStringArray(
+        #    list(self.model_part.GetNonHistoricalVariablesNames(self.model_part.Conditions, check_mesh_consistency)))
 
         return parameters
 
@@ -118,15 +137,6 @@ class CheckpointInputProcess(CheckpointIOProcessBase):
     @RequiresInitialized("process")
     def Execute(self) -> None:
         self.process.ExecuteInitializeSolutionStep()
-
-    def _ProcessFactory(self) -> KratosMultiphysics.Process:
-        return LoadCheckpointProcessFactory(self._GetIOParameters(), self.model)
-
-    def _GetIOParameters(self) -> KratosMultiphysics.Parameters:
-        parameters = super()._GetIOParameters()
-        file_parameters = self.parameters["file_settings"].Clone()
-        parameters["Parameters"].AddValue("file_settings", file_parameters)
-        return parameters
 
     @staticmethod
     def GetDefaultParameters() -> KratosMultiphysics.Parameters:
@@ -144,29 +154,27 @@ class CheckpointInputProcess(CheckpointIOProcessBase):
             }
         }""")
 
+    @staticmethod
+    def _GetProcessMap() -> dict:
+        return {
+            "nodal_solution_step_data_input" : "nodal_solution_step_data",
+            "nodal_data_value_input" : "nodal_data",
+            "element_data_value_input" : "element_data",
+            "condition_data_value_input" : "condition_data",
+            "process_info_input" : ""
+        }
+
+    def _GetIOParameters(self) -> KratosMultiphysics.Parameters:
+        parameters = super()._GetIOParameters()
+        parameters["Parameters"][0]["process_step"].SetString("initialize_solution_step")
+        parameters["Parameters"][0].AddValue("io_settings", self.parameters["file_settings"])
+        return parameters
+
 
 class CheckpointOutputProcess(CheckpointIOProcessBase):
     @RequiresInitialized("process")
     def Execute(self) -> None:
         self.process.ExecuteFinalizeSolutionStep()
-
-    def _ProcessFactory(self) -> KratosMultiphysics.Process:
-        return WriteCheckpointProcessFactory(self._GetIOParameters(), self.model)
-
-    def _GetIOParameters(self) -> KratosMultiphysics.Parameters:
-        parameters = super()._GetIOParameters()
-
-        # Adjust file limit to accomodate buffer checkpoints
-        file_parameters = self.parameters["file_settings"].Clone()
-        if file_parameters["max_files_to_keep"].GetString() != "unlimited":
-            file_parameters["max_files_to_keep"].SetString(str(int(file_parameters["max_files_to_keep"].GetInt()) * self.model_part.GetBufferSize()))
-        parameters["Parameters"].AddValue("file_settings", file_parameters)
-
-        # Set output time frequency (write on each request)
-        parameters["Parameters"].AddEmptyValue("output_time_settings")
-        parameters["Parameters"]["output_time_settings"].AddInt("step_frequency", 1)
-
-        return parameters
 
     @staticmethod
     def GetDefaultParameters() -> KratosMultiphysics.Parameters:
@@ -181,12 +189,31 @@ class CheckpointOutputProcess(CheckpointIOProcessBase):
                     "max_files_to_keep" : "unlimited",
                     "time_format" : "0.4f",
                     "echo_level" : 0
-                },
-                "output_time_settings" : {
-                    "step_frequency" : 1
                 }
             }
         }""")
+
+    @staticmethod
+    def _GetProcessMap() -> dict:
+        return {
+            "nodal_solution_step_data_output" : "nodal_solution_step_data",
+            "nodal_data_value_output" : "nodal_data",
+            "element_data_value_output" : "element_data",
+            "condition_data_value_output" : "condition_data",
+            "process_info_output" : ""
+        }
+
+    def _GetIOParameters(self) -> KratosMultiphysics.Parameters:
+        parameters = super()._GetIOParameters()
+        parameters["Parameters"][0]["process_step"].SetString("finalize_solution_step")
+
+        # Adjust file limit to accomodate buffer checkpoints
+        file_parameters = self.parameters["file_settings"].Clone()
+        if file_parameters["max_files_to_keep"].GetString() != "unlimited":
+            file_parameters["max_files_to_keep"].SetString(str(int(file_parameters["max_files_to_keep"].GetString()) * self.model_part.GetBufferSize()))
+        parameters["Parameters"][0].AddValue("io_settings", file_parameters)
+
+        return parameters
 
 
 class Factory:
@@ -224,6 +251,7 @@ class Factory:
                 self.model = model
                 self.model_part = model.GetModelPart(parameters["model_part_name"].GetString())
                 self.checkpoint_frequency = self.checkpoint_parameters["checkpoint_settings"]["output_time_settings"]["step_frequency"].GetInt()
+                self.checkpoint_parameters["checkpoint_settings"].RemoveValue("output_time_settings")
 
                 # Check arguments
                 file_pattern = self.checkpoint_parameters["checkpoint_settings"]["file_settings"]["file_name"].GetString()
@@ -258,39 +286,37 @@ class Factory:
             #    super().Finalize()
             #    self.checkpoint_output_process.ExecuteFinalize()
 
-#            @RequiresInitialized("checkpoint_input_process")
-#            def LoadCheckpoint(self, target_step: int) -> None:
-#                """
-#                Restore the model part's state at the specified step from checkpoint files.
-#
-#                Note: the model part is rolled back to the input step, and its buffer
-#                is overwritten accordingly. The time is updated but the step is not
-#                (that's the responsibility of the caller).
-#                """
-#                original_step = self.model_part.ProcessInfo[KratosMultiphysics.STEP]
-#                target_time = self.model_part.ProcessInfo.FindSolutionStepInfo(target_step)[KratosMultiphysics.TIME]
-#                checkpoints = self.GetCheckpoints()
-#
-#                # Fill buffers with data from the checkpoints
-#                step_begin = target_step - self.model_part.GetBufferSize() + 1
-#                step_end = target_step + 1
-#                for current_step in range(step_begin, step_end):
-#                    # Get the relevant checkpoint
-#                    checkpoint_path = next((checkpoint["path"] for checkpoint in checkpoints if checkpoint["<step>"]==current_step), False)
-#                    if not checkpoint_path:
-#                        raise FileNotFoundError("No checkpoint found for step {}. Detected checkpoint files:\n{}".format(
-#                            current_step,
-#                            '\n'.join(path for path in (checkpoint["path"] for checkpoint in checkpoints))))
-#
-#                    # Cycle the buffer and load data from the checkpoint
-#                    if current_step != step_begin: # the buffer need not be cycled on the first step
-#                        self.model_part.CloneSolutionStep() # TODO: ModelPart::CreateSolutionStep would suffice but throws an exception for now
-#                    self.model_part.ProcessInfo.SetSolutionStepIndex(current_step) # required by
-#                    self.checkpoint_input_process.Execute()
-#
-#                # Set process info
-#                self.model_part.ProcessInfo.SetSolutionStepIndex(original_step)
-#                self.model_part.ProcessInfo.SetCurrentTime(target_time)
+            @RequiresInitialized("checkpoint_input_process")
+            def LoadCheckpoint(self, target_step: int) -> None:
+                """
+                Restore the model part's state at the specified step from checkpoint files.
+
+                Note: the model part is rolled back to the input step, and its buffer
+                is overwritten accordingly. Every variable in the process info is
+                overwritten except STEP, that's the responsibility of the caller.
+                """
+                original_step = self.model_part.ProcessInfo[KratosMultiphysics.STEP]
+                checkpoints = self.GetCheckpoints()
+
+                # Fill buffers with data from the checkpoints
+                step_begin = target_step - self.model_part.GetBufferSize() + 1
+                step_end = target_step + 1
+                for current_step in range(step_begin, step_end):
+                    # Get the relevant checkpoint
+                    checkpoint_path = next((checkpoint["path"] for checkpoint in checkpoints if checkpoint["<step>"]==current_step), False)
+                    if not checkpoint_path:
+                        raise FileNotFoundError("No checkpoint found for step {}. Detected checkpoint files:\n{}".format(
+                            current_step,
+                            '\n'.join(path for path in (checkpoint["path"] for checkpoint in checkpoints))))
+
+                    # Cycle the buffer and load data from the checkpoint
+                    if current_step != step_begin: # the buffer need not be cycled on the first step
+                        self.model_part.CloneSolutionStep() # TODO: ModelPart::CreateSolutionStep would suffice but throws an exception for now
+                    self.model_part.ProcessInfo[KratosMultiphysics.STEP] = current_step
+                    self.checkpoint_input_process.Execute()
+
+                # Set process info
+                self.model_part.ProcessInfo[KratosMultiphysics.STEP] = original_step
 
             def GetCheckpoints(self) -> list[dict]:
                 file_pattern_absolute = pathlib.Path(self.checkpoint_parameters["checkpoint_settings"]["file_settings"]["file_name"].GetString()).absolute()
@@ -318,7 +344,6 @@ class Factory:
             def __InitializeIOProcesses(self) -> None:
                 output_parameters = self.checkpoint_parameters.Clone()
                 RecursivelyRemoveExtraParameters(output_parameters, CheckpointOutputProcess.GetDefaultParameters())
-                print(output_parameters)
                 output_parameters["checkpoint_settings"]["file_settings"]["file_access_mode"].SetString("truncate")
                 self.checkpoint_output_process = CheckpointOutputProcess(self.model, output_parameters)
                 self.checkpoint_output_process.ExecuteInitialize()
@@ -333,6 +358,8 @@ class Factory:
                 parameters = super().GetDefaultParameters()
                 parameters.RecursivelyAddMissingParameters(CheckpointInputProcess.GetDefaultParameters())
                 parameters.RecursivelyAddMissingParameters(CheckpointOutputProcess.GetDefaultParameters())
+                parameters["checkpoint_settings"].AddEmptyValue("output_time_settings")
+                parameters["checkpoint_settings"]["output_time_settings"].AddInt("step_frequency", 0)
                 return parameters
 
         self.solver = WrappedSolver
