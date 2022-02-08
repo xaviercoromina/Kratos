@@ -4,6 +4,7 @@ import KratosMultiphysics
 # HDF5 imports
 import KratosMultiphysics.HDF5Application as HDF5Application
 from KratosMultiphysics.HDF5Application.core.operations.model_part import Prefix
+from KratosMultiphysics.HDF5Application.utils import OpenHDF5File
 
 
 def Factory(parameters: KratosMultiphysics.Parameters,
@@ -127,25 +128,3 @@ class PointSetOutputProcess(KratosMultiphysics.OutputProcess):
 
         parameters["file_name"].SetString(file_name)
         return parameters
-
-
-class OpenHDF5File(object):
-
-    def __init__(self,
-                    file_parameters: KratosMultiphysics.Parameters,
-                    is_distributed: bool):
-        parameters = file_parameters.Clone()
-        if is_distributed:
-            parameters["file_driver"].SetString("mpio")
-            self.file =  HDF5Application.HDF5FileParallel(parameters)
-        else:
-            self.file =  HDF5Application.HDF5FileSerial(parameters)
-
-
-    def __enter__(self):
-        return self.file
-
-
-    def __exit__(self, exit_type, exit_value, exit_traceback):
-        # HDF5::File has RAII, so this is the best we can do to close it
-        self.file = None
