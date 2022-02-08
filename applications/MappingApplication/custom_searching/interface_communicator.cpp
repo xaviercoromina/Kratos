@@ -16,6 +16,7 @@
 // System includes
 #include <cmath>
 #include <limits>
+#include <algorithm>
 
 // External includes
 
@@ -160,8 +161,10 @@ void InterfaceCommunicator::ExchangeInterfaceData(const Communicator& rComm,
         << "\n    Search radius increase factor: " << increase_factor << std::endl;
 
     mSearchRadius = init_search_radius;
+    mIncreaseFactor = increase_factor;
+    mNumLocalSearches = 3;
 
-    int num_iteration = 1;
+    int num_iteration = mNumLocalSearches;
 
     // First Iteration is done outside the search loop bcs it has
     // to be done in any case
@@ -172,8 +175,9 @@ void InterfaceCommunicator::ExchangeInterfaceData(const Communicator& rComm,
     mMeshesAreConforming = 1;
     ConductSearchIteration(rpInterfaceInfo);
 
-    while (++num_iteration <= max_search_iterations && !AllNeighborsFound(rComm)) {
-        mSearchRadius *= increase_factor;
+    while (num_iteration <= max_search_iterations && !AllNeighborsFound(rComm)) {
+        mSearchRadius *= increase_factor*mNumLocalSearches;
+        num_iteration += mNumLocalSearches;
 
         // If all neighbours were not found in the first iteration, the meshes are not conforming
         // for the initial given search radius.
@@ -181,7 +185,7 @@ void InterfaceCommunicator::ExchangeInterfaceData(const Communicator& rComm,
 
         KRATOS_INFO_IF("", mEchoLevel > 0) << "\n";
         KRATOS_INFO_IF("Mapper search", mEchoLevel > 0)
-            << "search radius was increased, another search iteration is conducted\n    "
+            << "search radius was increased, another global search iteration is conducted\n    "
             << "search iteration: " << num_iteration << " / "<< max_search_iterations << " | "
             << "search radius: " << mSearchRadius << std::endl;
 
@@ -385,6 +389,10 @@ void InterfaceCommunicator::ConductLocalSearch()
 
     const SizeType num_interface_obj_bin = mpInterfaceObjectsOrigin->size();
 
+    std::for_each(mpInterfaceObjectsOrigin->begin(), mpInterfaceObjectsOrigin->end(), [](InterfaceObject::Pointer& rpIntObj){
+        rpIntObj->InitializeThreadLocalStorage();
+    });
+
     KRATOS_ERROR_IF(mSearchRadius < 0.0) << "Search-Radius has to be larger than 0.0!" << std::endl;
 
     int sum_num_results = 0;
@@ -418,27 +426,61 @@ void InterfaceCommunicator::ConductLocalSearch()
                 &r_interface_infos_rank,
                 num_interface_obj_bin,
                 this](const std::size_t Index, SearchTLS& rTLS) {
-                auto& r_interface_info = r_interface_infos_rank[Index];
 
-                rTLS.mInterfaceObject->Coordinates() = r_interface_info->Coordinates();
-
-                // reset the containers
-                auto results_itr = rTLS.mNeighborResults.begin();
-
-                const SizeType number_of_results = mpLocalBinStructure->SearchObjectsInRadius(
-                    rTLS.mInterfaceObject, mSearchRadius, results_itr,
-                    num_interface_obj_bin);
-
-                for (IndexType j=0; j<number_of_results; ++j) {
-                    r_interface_info->ProcessSearchResult(*(rTLS.mNeighborResults[j]));
+                for (auto& p_int_obj : *mpInterfaceObjectsOrigin) {
+                    p_int_obj->EnableInThisThread();
                 }
 
-                // If the search did not result in a "valid" result (e.g. the projection fails)
-                // we try to compute an approximation
-                if (!r_interface_info->GetLocalSearchWasSuccessful()) {
+                auto& p_interface_info = r_interface_infos_rank[Index];
+
+                rTLS.mInterfaceObject->Coordinates() = p_interface_info->Coordinates();
+
+                SizeType number_of_results;
+
+                int num_iteration = 0;
+
+                int max_search_iterations = 3;
+                double current_search_radius = mSearchRadius;
+
+                while (++num_iteration <= max_search_iterations) {
+
+                    // reset the containers
+                    auto results_itr = rTLS.mNeighborResults.begin();
+
+                    number_of_results = mpLocalBinStructure->SearchObjectsInRadius(
+                        rTLS.mInterfaceObject, mSearchRadius, results_itr,
+                        num_interface_obj_bin);
+
                     for (IndexType j=0; j<number_of_results; ++j) {
-                        r_interface_info->ProcessSearchResultForApproximation(*(rTLS.mNeighborResults[j]));
+                        const InterfaceObject& r_int_obj = *(rTLS.mNeighborResults[j]);
+                        if (r_int_obj.IsEnabledInThisThread()) {
+                            p_interface_info->ProcessSearchResult(r_int_obj);
+                        }
                     }
+
+                    // If the search did not result in a "valid" result (e.g. the projection fails)
+                    // we try to compute an approximation
+                    if (!p_interface_info->GetLocalSearchWasSuccessful()) {
+                        for (IndexType j=0; j<number_of_results; ++j) {
+                            const InterfaceObject& r_int_obj = *(rTLS.mNeighborResults[j]);
+                            if (r_int_obj.IsEnabledInThisThread()) {
+                                p_interface_info->ProcessSearchResultForApproximation(r_int_obj);
+                            }
+                        }
+                    }
+
+                    if (p_interface_info->GetLocalSearchWasSuccessful() && !p_interface_info->GetIsApproximation()) {
+                        break;
+                    }
+
+                    for (IndexType j=0; j<number_of_results; ++j) {
+                        InterfaceObject& r_int_obj = *(rTLS.mNeighborResults[j]);
+                        r_int_obj.DisableInThisThread(); // exclude from next search iteration
+                    }
+
+                    std::cout << "Going another search iteration" << std::endl;
+
+                    current_search_radius *= mIncreaseFactor;
                 }
 
                 return number_of_results;
