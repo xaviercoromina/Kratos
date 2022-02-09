@@ -317,8 +317,7 @@ class Factory:
 
                  - The number of kept files depends on the model part's buffer size. Checkpoints
                    need to restore the state of the buffer as well, so the true number of files is:
-                   max_files_to_keep * buffer_size + 1
-                   (the +1 comes from potential static data that only needs to be written once).
+                   max_files_to_keep * buffer_size
 
                  - By default, checkpoints are written during the first few steps while the buffer gets
                    filled up, and then, beginning at that step, periodically at every 'checkpoint_frequency'
