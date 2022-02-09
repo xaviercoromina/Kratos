@@ -81,7 +81,6 @@ class CheckpointIOProcessBase(abc.ABC, KratosMultiphysics.Process, metaclass=Abs
                 "check_mesh_consistency" : false,
                 "file_settings" : {
                     "file_name" : "checkpoints/<model_part_name>_checkpoint_<step>.h5",
-                    "file_access_mode" : "truncate",
                     "time_format" : "0.4f",
                     "echo_level" : 0
                 }
@@ -104,7 +103,7 @@ class CheckpointIOProcessBase(abc.ABC, KratosMultiphysics.Process, metaclass=Abs
 
         for process_parameters in parameters["Parameters"]:
             process_parameters.AddValue("io_settings", self.parameters["file_settings"])
-            process_parameters.AddString("model_part_name", self.model_part.Name)
+            process_parameters.AddString("model_part_name", self.model_part.FullName())
             process_parameters.AddString("process_step", "")
 
         return parameters
@@ -166,7 +165,6 @@ class CheckpointInputProcess(CheckpointIOProcessBase):
                 "check_mesh_consistency" : false,
                 "file_settings" : {
                     "file_name" : "checkpoints/<model_part_name>_checkpoint_<step>.h5",
-                    "file_access_mode" : "read_only",
                     "time_format" : "0.4f",
                     "echo_level" : 0
                 }
@@ -185,7 +183,12 @@ class CheckpointInputProcess(CheckpointIOProcessBase):
     def _GetIOParameters(self) -> KratosMultiphysics.Parameters:
         parameters = super()._GetIOParameters()
         parameters["Parameters"][0]["process_step"].SetString("initialize_solution_step")
-        parameters["Parameters"][0].AddValue("io_settings", self.parameters["file_settings"])
+
+        # Set file access mode
+        file_parameters = self.parameters["file_settings"].Clone()
+        file_parameters.AddString("file_access_mode", "read_only")
+
+        parameters["Parameters"][0].AddValue("io_settings", file_parameters)
         return parameters
 
 
@@ -203,7 +206,6 @@ class CheckpointOutputProcess(CheckpointIOProcessBase):
                 "check_mesh_consistency" : false,
                 "file_settings" : {
                     "file_name" : "checkpoints/<model_part_name>_checkpoint_<step>.h5",
-                    "file_access_mode" : "truncate",
                     "max_files_to_keep" : "unlimited",
                     "time_format" : "0.4f",
                     "echo_level" : 0
@@ -228,8 +230,11 @@ class CheckpointOutputProcess(CheckpointIOProcessBase):
         file_parameters = self.parameters["file_settings"].Clone()
         if file_parameters["max_files_to_keep"].GetString() != "unlimited":
             file_parameters["max_files_to_keep"].SetString(str(int(file_parameters["max_files_to_keep"].GetString()) * self.model_part.GetBufferSize()))
-        parameters["Parameters"][0].AddValue("io_settings", file_parameters)
 
+        # Set file access mode
+        file_parameters.AddString("file_access_mode", "truncate")
+
+        parameters["Parameters"][0].AddValue("io_settings", file_parameters)
         return parameters
 
 
@@ -278,8 +283,6 @@ class Factory:
                 super().__init__(model, parameters, *arguments, **keyword_arguments)
 
                 # Parse input parameters
-                self.model = model
-                self.model_part = model.GetModelPart(parameters["model_part_name"].GetString())
                 self.checkpoint_frequency = self.checkpoint_parameters["checkpoint_settings"]["output_time_settings"]["step_frequency"].GetInt()
                 self.checkpoint_parameters["checkpoint_settings"].RemoveValue("output_time_settings")
 
@@ -310,9 +313,9 @@ class Factory:
                 """
                 super().AdvanceInTime(time)
                 step_to_load = self._ShouldLoadCheckpoint()
-                if step_to_load != self.model_part.ProcessInfo[KratosMultiphysics.STEP]:
+                if step_to_load != self.GetMainModelPart().ProcessInfo[KratosMultiphysics.STEP]:
                     self.LoadCheckpoint(step_to_load)
-                return self.model_part.ProcessInfo[KratosMultiphysics.TIME]
+                return self.GetMainModelPart().ProcessInfo[KratosMultiphysics.TIME]
 
             @RequiresInitialized("checkpoint_output_process")
             def FinalizeSolutionStep(self) -> None:
@@ -329,11 +332,11 @@ class Factory:
                 is overwritten accordingly. Every variable in the process info is
                 overwritten except STEP, that's the responsibility of the caller.
                 """
-                original_step = self.model_part.ProcessInfo[KratosMultiphysics.STEP]
+                original_step = self.GetMainModelPart().ProcessInfo[KratosMultiphysics.STEP]
                 checkpoints = self.GetCheckpoints()
 
                 # Fill buffers with data from the checkpoints
-                step_begin = target_step - self.model_part.GetBufferSize() + 1
+                step_begin = target_step - self.GetMainModelPart().GetBufferSize() + 1
                 step_end = target_step + 1
                 for current_step in range(step_begin, step_end):
                     # Get the relevant checkpoint
@@ -345,12 +348,12 @@ class Factory:
 
                     # Cycle the buffer and load data from the checkpoint
                     if current_step != step_begin: # the buffer need not be cycled on the first step
-                        self.model_part.CloneSolutionStep() # TODO: ModelPart::CreateSolutionStep would suffice but throws an exception for now
-                    self.model_part.ProcessInfo[KratosMultiphysics.STEP] = current_step
+                        self.GetMainModelPart().CloneSolutionStep() # TODO: ModelPart::CreateSolutionStep would suffice but throws an exception for now
+                    self.GetMainModelPart().ProcessInfo[KratosMultiphysics.STEP] = current_step
                     self.checkpoint_input_process.Execute()
 
                 # Set process info
-                self.model_part.ProcessInfo[KratosMultiphysics.STEP] = original_step
+                self.GetMainModelPart().ProcessInfo[KratosMultiphysics.STEP] = original_step
 
             def GetCheckpoints(self) -> list[dict]:
                 """
@@ -368,8 +371,10 @@ class Factory:
                                 {'path' : pathlib.Path('/FluidModelPart/10.h5'), '<step>' : 10}
                             ]
                 """
+                # TODO: The HDF5Application incorrectly uses ModelPart::Name instead of the standard ModelPart::FullName
                 file_pattern_absolute = str(pathlib.Path(self.checkpoint_parameters["checkpoint_settings"]["file_settings"]["file_name"].GetString()).absolute())
-                file_pattern_absolute = file_pattern_absolute.replace("<model_part_name>", self.model_part.Name)
+                file_pattern_absolute = file_pattern_absolute.replace("<model_part_name>", self.GetMainModelPart().Name)
+
                 pattern = ModelPartPattern(file_pattern_absolute)
                 checkpoints = []
 
@@ -386,20 +391,34 @@ class Factory:
 
                 return sorted(checkpoints, key=lambda item: item["<step>"])
 
+            def GetMainModelPart(self) -> KratosMultiphysics.ModelPart:
+                if hasattr(super(), "GetMainModelPart"):
+                    return super().GetMainModelPart()
+                else:
+                    return self.GetComputingModelPart().GetRootModelPart()
+
             @classmethod
             def GetDefaultParameters(cls) -> KratosMultiphysics.Parameters:
                 """Static virtual function for getting a complete set of input parameters with default values."""
+                # Get solver parameters
                 parameters = super().GetDefaultParameters()
-                parameters.RecursivelyAddMissingParameters(CheckpointInputProcess.GetDefaultParameters())
-                parameters.RecursivelyAddMissingParameters(CheckpointOutputProcess.GetDefaultParameters())
+
+                # Get io parameters
+                io_parameters = CheckpointInputProcess.GetDefaultParameters()
+                io_parameters.RecursivelyAddMissingParameters(CheckpointOutputProcess.GetDefaultParameters())
+                io_parameters.RemoveValue("model_part_name") # Don't force 'model_part_name' because PythonSolver::GetComputingModelPart is used
+                parameters.RecursivelyAddMissingParameters(io_parameters)
+
+                # Add temporal control parameters
                 parameters["checkpoint_settings"].AddEmptyValue("output_time_settings")
                 parameters["checkpoint_settings"]["output_time_settings"].AddInt("step_frequency", 0)
+
                 return parameters
 
             def _IsCheckpointOutputStep(self) -> bool:
                 """Virtual function determining whether a checkpoint should be written at the end of the current step."""
-                buffer_size = self.model_part.GetBufferSize()
-                step = self.model_part.ProcessInfo[KratosMultiphysics.STEP]
+                buffer_size = self.GetMainModelPart().GetBufferSize()
+                step = self.GetMainModelPart().ProcessInfo[KratosMultiphysics.STEP]
                 return self.checkpoint_frequency - buffer_size <= (step-1) % self.checkpoint_frequency
 
             @abc.abstractmethod
@@ -408,31 +427,28 @@ class Factory:
                 Pure virtual function for determining which step to revert to, if necessary.
                 Return the current step if no checkpoint needs to be loaded.
                 """
-                return self.model_part.ProcessInfo[KratosMultiphysics.STEP]
+                return self.GetMainModelPart().ProcessInfo[KratosMultiphysics.STEP]
 
-            @staticmethod
-            def _GetCheckpointInputProcessType() -> type:
-                """Virtual function for getting a checkpoint loader class."""
-                return CheckpointInputProcess
+            def _CheckpointInputProcessFactory(self) -> CheckpointIOProcessBase:
+                """Virtual function instantiating a checkpoint loader process."""
+                parameters = self.checkpoint_parameters.Clone()
+                parameters.AddString("model_part_name", self.GetMainModelPart().FullName())
+                RecursivelyRemoveExtraParameters(parameters, CheckpointInputProcess.GetDefaultParameters())
+                return CheckpointInputProcess(self.model, parameters)
 
-            @staticmethod
-            def _GetCheckpointOutputProcessType() -> type:
-                """Virtual function for getting a checkpoint writer class."""
-                return CheckpointOutputProcess
+            def _CheckpointOutputProcessFactory(self) -> CheckpointIOProcessBase:
+                """Virtual function instantiating a checkpoint writer process."""
+                parameters = self.checkpoint_parameters.Clone()
+                parameters.AddString("model_part_name", self.GetMainModelPart().FullName())
+                RecursivelyRemoveExtraParameters(parameters, CheckpointOutputProcess.GetDefaultParameters())
+                return CheckpointOutputProcess(self.model, parameters)
 
             def __InitializeIOProcesses(self) -> None:
                 """Instantiate and initialize checkpoint io processes."""
-                input_parameters = self.checkpoint_parameters.Clone()
-                input_type = self._GetCheckpointInputProcessType()
-                RecursivelyRemoveExtraParameters(input_parameters, input_type.GetDefaultParameters())
-                self.checkpoint_input_process = input_type(self.model, input_parameters)
+                self.checkpoint_input_process = self._CheckpointInputProcessFactory()
                 self.checkpoint_input_process.ExecuteInitialize()
 
-                output_parameters = self.checkpoint_parameters.Clone()
-                output_type = self._GetCheckpointOutputProcessType()
-                RecursivelyRemoveExtraParameters(output_parameters, output_type.GetDefaultParameters())
-                output_parameters["checkpoint_settings"]["file_settings"]["file_access_mode"].SetString("truncate")
-                self.checkpoint_output_process = output_type(self.model, output_parameters)
+                self.checkpoint_output_process = self._CheckpointOutputProcessFactory()
                 self.checkpoint_output_process.ExecuteInitialize()
 
         self.solver = WrappedSolver
