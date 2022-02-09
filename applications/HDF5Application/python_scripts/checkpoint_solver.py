@@ -31,6 +31,7 @@ def RequiresInitialized(*object_names: str):
 
 
 def RecursivelyRemoveExtraParameters(subject: KratosMultiphysics.Parameters, reference: KratosMultiphysics.Parameters) -> None:
+    """Recursively remove all entries from subject that aren't in reference."""
     for key in subject.keys():
         if not reference.Has(key):
             subject.RemoveValue(key)
@@ -52,6 +53,35 @@ else:
 
 
 class CheckpointIOProcessBase(abc.ABC, KratosMultiphysics.Process, metaclass=AbstractProcessMetaClass):
+    """
+    Base class for managing checkpoint input/output operations.
+
+    Public methods (new or overridden):
+        __init__(self, model, parameters)
+        Execute(self)
+
+    Pure virtual methods:
+        Execute(self)
+        _GetProcessMap(self)
+
+    Notes:
+     - Derived classes must override Execute and _GetProcessMap.
+
+     - This class provides a flexible interface for generating and managing a
+       user defined io process (via KratosMultiphysics.HDF5Application.user_defined_io_process.Factory).
+
+     - Operations can be defined by overriding _GetProcessMap, which associates parameter generator functions to
+       operation names they create parameters for. See CheckpointInputProcess and CheckpointOutputProcess
+       for examples.
+
+     - As the logic of when to load/write checkpoints tends to be more complex, the process
+       gets carried out must be delegated to Execute rather than ExecuteInitialize, ExecuteFinalize, etc.
+       Deciding on when to call Execute and thus performing the IO process is the user's task.
+
+     - _GetIOParameters can be overridden to control what parameters get passed on to the HDF5 factory,
+       but the output must be compatible with KratosMultiphysics.HDF5Application.user_defined_io_process.Factory.
+    """
+
     def __init__(self, model: KratosMultiphysics.Model, parameters: KratosMultiphysics.Parameters):
         super().__init__()
         parameters.ValidateAndAssignDefaults(self.GetDefaultParameters())
@@ -242,6 +272,8 @@ class Factory:
     """
     Create a wrapped solver that has the additional functionality of writing/loading checkpoints.
 
+    The factory exposes the class of the wrapped solver via the Type property, and can
+    instantiate it by calling Create or __call__.
     """
 
     def __init__(self, solver_type: PythonSolver):
@@ -254,23 +286,62 @@ class Factory:
                 pass
 
         class WrappedSolver(abc.ABC, solver_type, metaclass=AbstractSolverMetaClass):
+            """
+                A wrapped PythonSolver with additional checkpoint writing/loading functionality.
+
+                Public methods (new or overridden):
+                    __init__(self, model, parameters)
+                    Initialize(self)
+                    AdvanceInTime(self, time)
+                    FinalizeSolutionStep(self)
+                    LoadCheckpoint(self, target_step)
+                    GetCheckpoints(self)
+                    GetMainModelPart(self)
+                    GetDefaultParameters()
+
+                Pure virtual methods:
+                    _ShouldLoadCheckpoint(self)
+
+                Notes:
+                 - The underlying solver must manage EXACTLY ONE root model part that can be
+                   accessed via GetComputingModelPart().GetRootModelPart(). This requirement
+                   is not checked at runtime and satisfying it is the responsibility of the user.
+
+                 - The output file pattern must include a "<step>" placeholder to identify which
+                   step the checkpoint belongs to.
+
+                 - Steps are assumed to begin at 1.
+
+                 - Derived classes must implement _ShouldLoadCheckpoint, that determines which checkpoint
+                   to load if necessary. By default, no checkpoint is loaded if the returned step is equal
+                   to the current step of the model part.
+
+                 - The buffer size is assumed (and required) to be constant, though this requirement is not checked.
+
+                 - The number of kept files depends on the model part's buffer size. Checkpoints
+                   need to restore the state of the buffer as well, so the true number of files is:
+                   max_files_to_keep * buffer_size + 1
+                   (the +1 comes from potential static data that only needs to be written once).
+
+                 - By default, checkpoints are written during the first few steps while the buffer gets
+                   filled up, and then, beginning at that step, periodically at every 'checkpoint_frequency'
+                   (with additional buffer checkpoints written when necessary; if the buffer size matches
+                   or exceeds 'checkpoint_frequency', a checkpoint is written at each step).
+                   If you need a different logic, override _IsCheckpointOutputStep.
+
+                 - Historical and non-historical variables of nodes, elements, and conditions in the
+                   solver's model part are detected at solver initialization time. All of the mentioned variables
+                   are written/loaded to/from checkpoints along with the model part's process info.
+                   If you need to customize what data gets stored in checkpoints, derive new classes
+                   from CheckpointIOProcessBase and override _CheckpointInputProcessFactory and
+                   _CheckpointOutputProcessFactory accordingly. Depending on whether you need to touch
+                   the input parameter structure, you may need to override GetDefaultParameters as well.
+                """
+
             __name__ = solver_type.__name__ + "WithCheckpoints"
             __qualname__ = solver_type.__qualname__ + "WithCheckpoints"
 
             def __init__(self, model: KratosMultiphysics.Model, parameters: KratosMultiphysics.Parameters, *arguments, **keyword_arguments):
-                """
-
-                Notes:
-                 - the output file pattern must include a "<step>" placeholder to identify which
-                   step the checkpoint belongs to.
-                 - steps are assumed to begin at 0.
-                 - the buffer size is assumed (and required) to be constant.
-                 - the number of kept files depends on the model part's buffer size. Checkpoints
-                   need to restore the state of the buffer as well, so the true number of files is:
-                   max_files_to_keep * (buffer_size - 1) + 1
-                   The "+1" comes from static information written to the first checkpoint that needs
-                   to be kept.
-                """
                 # Set legacy attributes (occasionally used in kratos)
                 self.__class__.__name__ = self.__name__
 
@@ -344,7 +415,7 @@ class Factory:
                     if not checkpoint_path:
                         raise FileNotFoundError("No checkpoint found for step {}. Detected checkpoint files:\n{}".format(
                             current_step,
-                            '\n'.join(path for path in (checkpoint["path"] for checkpoint in checkpoints))))
+                            '\n'.join(str(path) for path in (checkpoint["path"] for checkpoint in checkpoints))))
 
                     # Cycle the buffer and load data from the checkpoint
                     if current_step != step_begin: # the buffer need not be cycled on the first step
@@ -419,12 +490,12 @@ class Factory:
                 """Virtual function determining whether a checkpoint should be written at the end of the current step."""
                 buffer_size = self.GetMainModelPart().GetBufferSize()
                 step = self.GetMainModelPart().ProcessInfo[KratosMultiphysics.STEP]
-                return self.checkpoint_frequency - buffer_size <= (step-1) % self.checkpoint_frequency
+                return self.checkpoint_frequency - buffer_size <= (step-1-buffer_size) % self.checkpoint_frequency
 
             @abc.abstractmethod
             def _ShouldLoadCheckpoint(self) -> int:
                 """
-                Pure virtual function for determining which step to revert to, if necessary.
+                Pure virtual function for determining which step to load a checkpoint from, if necessary.
                 Return the current step if no checkpoint needs to be loaded.
                 """
                 return self.GetMainModelPart().ProcessInfo[KratosMultiphysics.STEP]
