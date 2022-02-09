@@ -2,6 +2,7 @@ __all__ = ["Factory"]
 
 # Core imports
 import KratosMultiphysics
+from KratosMultiphysics.kratos_utilities import DeleteFileIfExisting
 from KratosMultiphysics.python_solver import PythonSolver
 
 # HDF5 imports
@@ -236,7 +237,6 @@ class CheckpointOutputProcess(CheckpointIOProcessBase):
                 "check_mesh_consistency" : false,
                 "file_settings" : {
                     "file_name" : "checkpoints/<model_part_name>_checkpoint_<step>.h5",
-                    "max_files_to_keep" : "unlimited",
                     "time_format" : "0.4f",
                     "echo_level" : 0
                 }
@@ -256,12 +256,9 @@ class CheckpointOutputProcess(CheckpointIOProcessBase):
         parameters = super()._GetIOParameters()
         parameters["Parameters"][0]["process_step"].SetString("finalize_solution_step")
 
-        # Adjust file limit to accomodate buffer checkpoints
-        file_parameters = self.parameters["file_settings"].Clone()
-        if file_parameters["max_files_to_keep"].GetString() != "unlimited":
-            file_parameters["max_files_to_keep"].SetString(str(int(file_parameters["max_files_to_keep"].GetString()) * self.model_part.GetBufferSize()))
-
         # Set file access mode
+        file_parameters = self.parameters["file_settings"]
+        file_parameters.AddString("max_files_to_keep", "unlimited")
         file_parameters.AddString("file_access_mode", "truncate")
 
         parameters["Parameters"][0].AddValue("io_settings", file_parameters)
@@ -392,7 +389,22 @@ class Factory:
             def FinalizeSolutionStep(self) -> None:
                 super().FinalizeSolutionStep()
                 if self._IsCheckpointOutputStep():
+                    # Write checkpoint
                     self.checkpoint_output_process.Execute()
+
+                    # Delete obsolete checkpoints
+                    file_limit = self.checkpoint_parameters["checkpoint_settings"]["max_files_to_keep"].GetString()
+                    if file_limit != "unlimited":
+                        try:
+                            # Adjust file limit to accomodate buffer checkpoints
+                            max_files = int(file_limit) * self.GetComputingModelPart().GetBufferSize()
+                        except Exception as exception:
+                            raise ValueError("Invalid value for 'max_files_to_keep' ('{}')! Options are 'unlimited' or positive integers (in string format)".format(file_limit))
+
+                        checkpoints = self.GetCheckpoints()
+                        if max_files < len(checkpoints):
+                            for checkpoint in checkpoints[:len(checkpoints) - max_files]:
+                                DeleteFileIfExisting(str(checkpoint["path"]))
 
             @RequiresInitialized("checkpoint_input_process")
             def LoadCheckpoint(self, target_step: int) -> None:
@@ -483,6 +495,9 @@ class Factory:
                 # Add temporal control parameters
                 parameters["checkpoint_settings"].AddEmptyValue("output_time_settings")
                 parameters["checkpoint_settings"]["output_time_settings"].AddInt("step_frequency", 0)
+
+                # Add file limit (hdf5 controllers doesn't handle this correctly all the time)
+                parameters["checkpoint_settings"].AddString("max_files_to_keep", "unlimited")
 
                 return parameters
 
