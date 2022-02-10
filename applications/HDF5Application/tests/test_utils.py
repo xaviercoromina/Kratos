@@ -7,11 +7,11 @@ from KratosMultiphysics.HDF5Application import ModelPartPattern
 
 # STL imports
 import pathlib
-import shutil
+import itertools
 
 
 class TestModelPartPattern(KratosUnittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """
         Create the following directory structure relative to the working directory:
         .
@@ -88,11 +88,11 @@ class TestModelPartPattern(KratosUnittest.TestCase):
         (self.test_root / "step_2").mkdir(**mkdir_arguments)
         (self.test_root / "step_2" / "mdpa name_time_0.h5").touch(exist_ok=False)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Remove ./test_path_pattern"""
         KratosMultiphysics.kratos_utilities.DeleteDirectoryIfExisting("test_path_pattern")
 
-    def test_IsAMatch(self):
+    def test_IsAMatch(self) -> None:
         pattern_string = "mdpa_name_<model_part_name>_step_<step>_time_<time>_suffix"
         pattern = ModelPartPattern(pattern_string)
 
@@ -125,7 +125,7 @@ class TestModelPartPattern(KratosUnittest.TestCase):
         for string in invalid_strings:
             self.assertFalse(pattern.IsAMatch(string))
 
-    def test_Match(self):
+    def test_Match(self) -> None:
         pattern_string = "<model_part_name>/name_<model_part_name>_step_<step>_time_<time>suffix"
         pattern = ModelPartPattern(pattern_string)
 
@@ -150,7 +150,28 @@ class TestModelPartPattern(KratosUnittest.TestCase):
 
             self.assertEqual(len(matches["<model_part_name>"]), 2)
 
-    def test_Glob(self):
+    def test_Apply(self) -> None:
+        pattern = "prefix/<step>_<model_part_name>_<time><not_a_placeholder>/<time>.suffix"
+        model_part_pattern = ModelPartPattern(pattern)
+        model_part_names = ("mdpa name", r"""\/=()@$&^""")
+        times = (-5.0, -5, 0.0, 1.0, 30, "010.010")
+
+        for model_part_name, time in itertools.product(model_part_names, times):
+            placeholder_map = {
+                "<model_part_name>" : model_part_name,
+                "<time>" : str(time)
+            }
+
+            reference = pattern
+            for placeholder, value in placeholder_map.items():
+                reference = reference.replace(placeholder, value)
+
+            self.assertEqual(
+                reference,
+                model_part_pattern.Apply(placeholder_map))
+
+
+    def test_Glob(self) -> None:
         valid_paths = {
             self.valid_root / "mdpa name_step_1_time_0.0.h5",
             self.valid_root / "mdpa name_step_1_time_1.h5",
