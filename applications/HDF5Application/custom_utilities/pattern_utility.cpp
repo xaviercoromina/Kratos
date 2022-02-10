@@ -176,9 +176,10 @@ std::string PlaceholderPattern::Apply(const PlaceholderMap& rPlaceholderValueMap
     auto output = mPattern;
 
     for (const auto& r_pair : rPlaceholderValueMap) {
+        KRATOS_ERROR_IF(mPlaceholderGroupMap.find(r_pair.first)==mPlaceholderGroupMap.end()) << r_pair.first << " is not registered a placeholder in" << mPattern;
         while (true) {
             auto position = output.find(r_pair.first);
-            if (position != output.npos) output.replace(position, r_pair.second.size(), r_pair.second);
+            if (position != output.npos) output.replace(position, r_pair.first.size(), r_pair.second);
             else break;
         } // while placeholder in output
     } // for placeholder, value in map
