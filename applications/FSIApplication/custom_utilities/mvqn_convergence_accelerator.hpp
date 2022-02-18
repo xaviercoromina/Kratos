@@ -14,6 +14,9 @@
 #define  KRATOS_MVQN_CONVERGENCE_ACCELERATOR
 
 // System includes
+#include <unistd.h>
+#include <iostream>
+#include <fstream>
 
 // External includes
 
@@ -610,6 +613,27 @@ private:
     ///@name Private Operators
     ///@{
 
+    void process_mem_usage(double& vm_usage, double& resident_set)
+    {
+        vm_usage     = 0.0;
+        resident_set = 0.0;
+
+        // the two fields we want
+        unsigned long vsize;
+        long rss;
+        {
+            std::string ignore;
+            std::ifstream ifs("/proc/self/stat", std::ios_base::in);
+            ifs >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore
+                    >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore
+                    >> ignore >> ignore >> vsize >> rss;
+        }
+
+        long page_size_kb = sysconf(_SC_PAGE_SIZE) / 1024; // in case x86-64 is configured to use 2MB pages
+        vm_usage = vsize;
+        resident_set = rss * page_size_kb;
+    }
+
     void InitializeJacobianMatrices()
     {
         if (mUsedInBlockNewtonEquations) {
@@ -625,8 +649,19 @@ private:
             std::swap(p_new_jac_k1, mpJac_k1);
         } else {
             // Initialize the previous step Jacobian approximation to minus the diagonal matrix
+            double a_1 = 0.0;
+            double b_1 = 0.0;
+            double a_2 = 0.0;
+            double b_2 = 0.0;
+            double a_3 = 0.0;
+            double b_3 = 0.0;
+            process_mem_usage(a_1,b_1);
             MatrixPointerType p_new_jac_n = Kratos::make_shared<MatrixType>(mProblemSize,mProblemSize);
+            process_mem_usage(a_2,b_2);
+            std::cout << a_2 - a_1 << std::endl;
             (*p_new_jac_n) = -1.0 * IdentityMatrix(mProblemSize,mProblemSize);
+            process_mem_usage(a_3,b_3);
+            std::cout << a_3 - a_2 << std::endl;
             std::swap(p_new_jac_n,mpJac_n);
         }
     }

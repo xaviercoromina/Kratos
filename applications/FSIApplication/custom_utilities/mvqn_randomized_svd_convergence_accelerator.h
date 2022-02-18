@@ -15,6 +15,9 @@
 
 // System includes
 #include <random>
+#include <unistd.h>
+#include <iostream>
+#include <fstream>
 
 // External includes
 
@@ -443,6 +446,27 @@ private:
     ///@name Private Operations
     ///@{
 
+    void process_mem_usage(double& vm_usage, double& resident_set)
+    {
+        vm_usage     = 0.0;
+        resident_set = 0.0;
+
+        // the two fields we want
+        unsigned long vsize;
+        long rss;
+        {
+            std::string ignore;
+            std::ifstream ifs("/proc/self/stat", std::ios_base::in);
+            ifs >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore
+                >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore
+                >> ignore >> ignore >> vsize >> rss;
+        }
+
+        long page_size_kb = sysconf(_SC_PAGE_SIZE) / 1024; // in case x86-64 is configured to use 2MB pages
+        vm_usage = vsize;
+        resident_set = rss * page_size_kb;
+    }
+
     void InitializeRandomValuesMatrix()
     {
         // Initialize the number of modes
@@ -470,8 +494,17 @@ private:
 
         // Set the random values matrix pointer
         const SizeType n_dofs = BaseType::GetProblemSize();
+        double a_1 = 0.0;
+        double b_1 = 0.0;
+        double a_2 = 0.0;
+        double b_2 = 0.0;
+        process_mem_usage(a_1,b_1);
         auto p_aux_omega = Kratos::make_shared<MatrixType>(n_dofs, mCurrentNumberOfModes);
+        process_mem_usage(a_2,b_2);
+        std::cout << "Difference: " << double(a_2 - a_1) << std::endl;
+        std::cout << "Difference: " << double(b_2 - b_1) << std::endl;
         std::swap(p_aux_omega, mpOmega);
+
 
         // Create the random values generator
         std::mt19937 generator(mSeed); //Standard mersenne_twister_engine seeded with the step number as seed
