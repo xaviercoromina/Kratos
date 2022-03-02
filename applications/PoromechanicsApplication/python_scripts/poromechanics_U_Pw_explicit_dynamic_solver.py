@@ -122,7 +122,7 @@ class ExplicitUPwSolver(UPwSolver):
 
     def SolveSolutionStep(self):
         is_converged = self.solver.SolveSolutionStep()
-        is_converged = True
+        is_converged = True # NOTE. This implies that the explicit strategy always converges without iterating...
         self.main_model_part.ProcessInfo.SetValue(KratosPoro.IS_CONVERGED, is_converged)
         return is_converged
 
