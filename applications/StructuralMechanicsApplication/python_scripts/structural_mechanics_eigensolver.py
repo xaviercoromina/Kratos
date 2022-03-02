@@ -54,7 +54,7 @@ class EigenSolver(MechanicalSolver):
 
     #### Private functions ####
 
-    def _create_solution_scheme(self):
+    def _CreateScheme(self):
         """Create the scheme for the eigenvalue problem.
 
         The scheme determines the left- and right-hand side matrices in the
@@ -70,7 +70,7 @@ class EigenSolver(MechanicalSolver):
 
         return solution_scheme
 
-    def _create_linear_solver(self):
+    def _CreateLinearSolver(self):
         """Create the eigensolver.
 
         This overrides the base class method and replaces the usual linear solver
@@ -78,9 +78,9 @@ class EigenSolver(MechanicalSolver):
         """
         return eigen_solver_factory.ConstructSolver(self.settings["eigensolver_settings"])
 
-    def _create_mechanical_solution_strategy(self):
-        eigen_scheme = self.get_solution_scheme() # The scheme defines the matrices of the eigenvalue problem.
-        builder_and_solver = self.get_builder_and_solver() # The eigensolver is created here.
+    def _CreateSolutionStrategy(self):
+        eigen_scheme = self._GetScheme() # The scheme defines the matrices of the eigenvalue problem.
+        builder_and_solver = self._GetBuilderAndSolver() # The eigensolver is created here.
         computing_model_part = self.GetComputingModelPart()
 
         solver_type = self.settings["eigensolver_settings"]["solver_type"].GetString()
