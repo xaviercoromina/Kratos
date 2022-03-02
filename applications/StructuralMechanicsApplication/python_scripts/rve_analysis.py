@@ -28,6 +28,7 @@ class RVEAnalysis(StructuralMechanicsAnalysis):
         self.geometrical_search_tolerance = 1e-4 #tolerance to be used in the search of the condition it falls into
 
         super().__init__(model, project_parameters)
+        print("Constructor finalized")
 
     # Here populate the submodelparts to be used for periodicity
     def ModifyInitialGeometry(self):
@@ -42,6 +43,7 @@ class RVEAnalysis(StructuralMechanicsAnalysis):
 
         self.averaging_volume = (self.max_corner[0]-self.min_corner[0]) * (self.max_corner[1]-self.min_corner[1]) * (self.max_corner[2]-self.min_corner[2])
         KratosMultiphysics.Logger.PrintInfo(self._GetSimulationName(), "RVE undeformed averaging volume = ", self.averaging_volume)
+        print("Initial Geometry Modified")
 
     def InitializeSolutionStep(self):
         raise Exception("Should use the _CustomInitializeSolutionStep instead of this")
@@ -51,16 +53,16 @@ class RVEAnalysis(StructuralMechanicsAnalysis):
         KratosMultiphysics.VariableUtils().UpdateCurrentToInitialConfiguration(averaging_mp.Nodes)
 
         self.ApplyBoundaryConditions()  # here the processes are called
-
+        print("appied BCs")
         # construct MPCs according to the provided strain
+        print("Custom init")
         self._ApplyPeriodicity(strain, averaging_mp, boundary_mp)
-
+        print("Periodicity applied")
         # apply BCs for RVE according to the provided strain
         self._ApplyMinimalConstraints(
             averaging_mp, strain, self.min_corner, self.max_corner)
 
         self.ChangeMaterialProperties()  # this is normally empty
-
         self._GetSolver().InitializeSolutionStep()
 
         KratosMultiphysics.Logger.PrintInfo(self._GetSimulationName(), "STEP: ", self._GetSolver().GetComputingModelPart().ProcessInfo[KratosMultiphysics.STEP])
@@ -72,25 +74,32 @@ class RVEAnalysis(StructuralMechanicsAnalysis):
 
         boundary_mp = self.model[self.boundary_mp_name]
         averaging_mp = self.model[self.averaging_mp_name]
-
+        
+        print("before strain ")
         stress_and_strain = []
-        if(self.strain_size == 3):  # 2D case - ordering s00 s11 s01
+        if(self.strain_size == 3):  # 2D case - ordering s00 s11 s01            
             stress_and_strain.append(self._ComputeEquivalentStress(0, 0, perturbation, boundary_mp, averaging_mp))
-            stress_and_strain.append(self._ComputeEquivalentStress(1, 1, perturbation, boundary_mp, averaging_mp))
-            stress_and_strain.append(self._ComputeEquivalentStress(0, 1, perturbation, boundary_mp, averaging_mp))
+            print("first application of f.12, 2D")
+            # stress_and_strain.append(self._ComputeEquivalentStress(1, 1, perturbation, boundary_mp, averaging_mp))
+            # stress_and_strain.append(self._ComputeEquivalentStress(0, 1, perturbation, boundary_mp, averaging_mp))
         elif(self.strain_size == 6):  # 3D case - ordering:  s00 s11 s22 s01 s12 s02
-            stress_and_strain.append(self._ComputeEquivalentStress(0, 0, perturbation, boundary_mp, averaging_mp))
-            stress_and_strain.append(self._ComputeEquivalentStress(1, 1, perturbation, boundary_mp, averaging_mp))
-            stress_and_strain.append(self._ComputeEquivalentStress(2, 2, perturbation, boundary_mp, averaging_mp))
-            stress_and_strain.append(self._ComputeEquivalentStress(0, 1, perturbation, boundary_mp, averaging_mp))
-            stress_and_strain.append(self._ComputeEquivalentStress(1, 2, perturbation, boundary_mp, averaging_mp))
-            stress_and_strain.append(self._ComputeEquivalentStress(0, 2, perturbation, boundary_mp, averaging_mp))
+            stress_and_strain.append(self._ComputeEquivalentStress(0, 0, perturbation, boundary_mp, averaging_mp)) 
+            '''When ComputeEquivalentStress is called the i and j arguments, in the non-commented line [0, 0],
+            are used to fill the strain matrix in the given indices'''
+            print("First application of f.12, 3D")
+            # stress_and_strain.append(self._ComputeEquivalentStress(1, 1, perturbation, boundary_mp, averaging_mp))
+            # stress_and_strain.append(self._ComputeEquivalentStress(2, 2, perturbation, boundary_mp, averaging_mp))
+            # stress_and_strain.append(self._ComputeEquivalentStress(0, 1, perturbation, boundary_mp, averaging_mp))
+            # stress_and_strain.append(self._ComputeEquivalentStress(1, 2, perturbation, boundary_mp, averaging_mp))
+            # stress_and_strain.append(self._ComputeEquivalentStress(0, 2, perturbation, boundary_mp, averaging_mp)) 
 
         C = self._ComputeEquivalentElasticTensor(stress_and_strain, perturbation)
         averaging_mp.SetValue(KratosMultiphysics.StructuralMechanicsApplication.ELASTICITY_TENSOR, C)
         self._MatrixOutput(C)
+        print("Finished RunSolutionLoop")
 
     def _DetectBoundingBox(self, mp):
+        print("start f.5")
         min_corner = KratosMultiphysics.Array3()
         min_corner[0] = 1e20
         min_corner[1] = 1e20
@@ -118,9 +127,11 @@ class RVEAnalysis(StructuralMechanicsAnalysis):
         KratosMultiphysics.Logger.PrintInfo(self._GetSimulationName(), "Min. corner = ", min_corner)
         KratosMultiphysics.Logger.PrintInfo(self._GetSimulationName(), "Max. corner = ", max_corner)
 
+        print("End f.5")
         return min_corner, max_corner
 
     def __PopulateMp(self, face_name, coordinate, component, eps, mp):
+        print("start f.6")
         if mp.NumberOfConditions() == 0:
             raise Exception("Boundary_mp is expected to have conditions and has none")
 
@@ -143,10 +154,12 @@ class RVEAnalysis(StructuralMechanicsAnalysis):
                     node.Set(KratosMultiphysics.SLAVE)
 
         face_mp.AddNodes(list(node_ids))
+        print("End f.6")
         return face_mp
 
     def _ConstructFaceModelParts(self, min_corner, max_corner, mp):
-
+        
+        print("Start f.7")
         diag_vect = max_corner - min_corner
         diag_lenght = math.sqrt(diag_vect[0]**2+diag_vect[1]**2+diag_vect[2]**2 )
         eps = self.populate_search_eps*diag_lenght
@@ -155,11 +168,13 @@ class RVEAnalysis(StructuralMechanicsAnalysis):
         KratosMultiphysics.VariableUtils().SetFlag(KratosMultiphysics.MASTER, False, mp.Nodes)
 
         # Populate the slave faces
+        print("Call to f.6")
         self.max_x_face = self.__PopulateMp("max_x_face", max_corner[0], 0, eps, mp)
         self.max_y_face = self.__PopulateMp("max_y_face", max_corner[1], 1, eps, mp)
         self.max_z_face = self.__PopulateMp("max_z_face", max_corner[2], 2, eps, mp)
 
         # First populate the master faces (min)
+        print("More calls to f.6")
         self.min_x_face = self.__PopulateMp("min_x_face", min_corner[0], 0, eps, mp)
         self.min_y_face = self.__PopulateMp("min_y_face", min_corner[1], 1, eps, mp)
         self.min_z_face = self.__PopulateMp("min_z_face", min_corner[2], 2, eps, mp)
@@ -170,8 +185,10 @@ class RVEAnalysis(StructuralMechanicsAnalysis):
             raise Exception("min_y_face has 0 conditions")
         if self.min_z_face.NumberOfConditions() == 0:
             raise Exception("min_z_face has 0 conditions")
+        print("End of f.7")
 
     def _SelectClosestNode(self, mp, coords):
+        print("Start of f.8")
         min_distance = 1e30
         selected_node = 0
         for node in mp.Nodes:
@@ -184,10 +201,12 @@ class RVEAnalysis(StructuralMechanicsAnalysis):
                 selected_node = node
                 min_distance = d
 
+        print("end of f.8")
         return selected_node
 
     # prescribed conditions to avoid rigid body motions
     def _ApplyMinimalConstraints(self, mp, strain, min_corner, max_corner):
+        print("Start of f.9")
         aux = KratosMultiphysics.Array3()
 
         # point coinciding with the min_corner
@@ -204,8 +223,10 @@ class RVEAnalysis(StructuralMechanicsAnalysis):
         disp_min_corner = strain*coords_min_corner
         node.SetSolutionStepValue(
             KratosMultiphysics.DISPLACEMENT, 0, disp_min_corner)
+        print("End of f.9")
 
     def _ComputeEquivalentElasticTensor(self, stress_and_strain, perturbation):
+        print("Start f.10")
         C = KratosMultiphysics.Matrix(self.strain_size, self.strain_size)
 
         for j in range(len(stress_and_strain)):
@@ -228,10 +249,11 @@ class RVEAnalysis(StructuralMechanicsAnalysis):
             inverse_perturbation[5, 5] = 0.5/perturbation
 
         C = C*inverse_perturbation
-
+        print("End of f.10")
         return C
 
     def _MatrixOutput(self, C, filename="rve_elasticity_tensor.txt"):
+        print("Start of f.11")
         f = open(filename, 'w')
 
         if(self.strain_size == 3):  # 2D
@@ -247,34 +269,41 @@ class RVEAnalysis(StructuralMechanicsAnalysis):
                 f.write(str(C[i, 0]) + " " + str(C[i, 1]) + " " + str(C[i, 2]) +
                         " " + str(C[i, 3]) + " " + str(C[i, 4]) + " " + str(C[i, 5]) + "\n")
 
+        print("End of f.11")
         f.close()
 
     def _ComputeEquivalentStress(self, i, j, perturbation, boundary_mp, averaging_mp):
+        print("Start of f.12, PROBLEMATIC")
         # Here use a pseudotime for output
         self.time = self.time + 1.0
         averaging_mp.GetRootModelPart().CloneTimeStep(self.time)
 
-        strain = KratosMultiphysics.Matrix(3, 3)
+        print("create Strain matrix")
+        strain = KratosMultiphysics.Matrix(3, 3)  #Strain tensor for the given step, in this test all of them are fixed with values = perturbation
         strain.fill(0.0)
+        strain[1, 1] = perturbation     # Despite fixating strain in one of the main axis the post-process does not change.(Needed to re-compile Kratos)
+        # strain[i, j] = perturbation
+        # strain[j, i] = perturbation
+        # print("foo")   #HOW TO PRINT FROM 'HERE'? GO TO FILE CALLING THIS ANALYSIS STAGE AND CHANGE WARNING TO INFO
 
-        strain[i, j] = perturbation
-        strain[j, i] = perturbation
-
-        strain_vector = KratosMultiphysics.Vector(self.strain_size)
-        if(self.strain_size == 2):
+        strain_vector = KratosMultiphysics.Vector(self.strain_size)  # Strain vector in Voigt notation
+        if(self.strain_size == 3):
+            print("2D strain selected, populate strain vector")
             strain_vector[0] = strain[0, 0]
             strain_vector[1] = strain[1, 1]
             strain_vector[2] = 2.0*strain[1, 2]
         elif(self.strain_size == 6):
+            print("3D strain selected, populate strain vector")
             strain_vector[0] = strain[0, 0]
             strain_vector[1] = strain[1, 1]
             strain_vector[2] = strain[2, 2]
             strain_vector[3] = 2.0*strain[0, 1]
             strain_vector[4] = 2.0*strain[1, 2]
             strain_vector[5] = 2.0*strain[0, 2]
-
+            # ORDER in Voigt notation???? Shouldn't 3 be 4, 4 be 5, and 5 be 3? (Kratos orders Voigt notation in this way, let's be consistent with it)
+        print("pre-CustomInitializeSolutionStep (f.3)")
         self.__CustomInitializeSolutionStep(strain, boundary_mp, averaging_mp)
-
+        print("Custom init done or solution step")
         self._GetSolver().Predict()
 
         self._GetSolver().SolveSolutionStep()
@@ -319,25 +348,28 @@ class RVEAnalysis(StructuralMechanicsAnalysis):
 
     def _ApplyPeriodicity(self, strain, volume_mp, boundary_mp):
         # clear
+        print("start of periodicity application")
         for constraint in volume_mp.GetRootModelPart().MasterSlaveConstraints:
             constraint.Set(KratosMultiphysics.TO_ERASE)
         volume_mp.GetRootModelPart().RemoveMasterSlaveConstraintsFromAllLevels(
             KratosMultiphysics.TO_ERASE)
-
+        print("start of periodicity function")
         dx = self.max_corner[0] - self.min_corner[0]
         dy = self.max_corner[1] - self.min_corner[1]
         dz = self.max_corner[2] - self.min_corner[2]
 
         periodicity_utility = KratosMultiphysics.RVEPeriodicityUtility(self._GetSolver().GetComputingModelPart())
-
+        print("before periodicity")
         # assign periodicity to faces
-        search_tolerance = self.geometrical_search_tolerance
+        search_tolerance = self.geometrical_search_tolerance # Is search tolerance the tolerance for finding closest node for applying perio?
         periodicity_utility.AssignPeriodicity(self.min_x_face, self.max_x_face, strain, KratosMultiphysics.Vector([dx, 0.0, 0.0]),search_tolerance)
+        print("after first periodicity application")
         periodicity_utility.AssignPeriodicity(self.min_y_face, self.max_y_face, strain, KratosMultiphysics.Vector([0.0, dy, 0.0]),search_tolerance)
         periodicity_utility.AssignPeriodicity(self.min_z_face, self.max_z_face, strain, KratosMultiphysics.Vector([0.0, 0.0, dz]),search_tolerance)
-
+        # hau problemo, this Finalize step does not work
+        print("before finalize step")
         periodicity_utility.Finalize(KratosMultiphysics.DISPLACEMENT)
-
+        print("after finalize step")
         # start from the exact solution in the case of a constant strain
         x = KratosMultiphysics.Array3()
         for node in volume_mp.Nodes:
@@ -346,3 +378,5 @@ class RVEAnalysis(StructuralMechanicsAnalysis):
             x[2] = node.Z0
             d = strain*x
             node.SetSolutionStepValue(KratosMultiphysics.DISPLACEMENT, 0, d)
+        print("End of periodicity application")
+        
