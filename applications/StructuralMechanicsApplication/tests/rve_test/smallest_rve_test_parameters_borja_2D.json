@@ -1,0 +1,48 @@
+{
+    "problem_data": {
+        "problem_name": "smallest_rve_test",
+        "parallel_type": "OpenMP",
+        "echo_level": 0,
+        "start_time": 0.0,
+        "end_time": 1.0
+    },
+    "rve_settings": {
+        "boundary_mp_name": "Structure.LinePressure2D_Boundary",
+        "averaging_mp_name": "Structure",
+        "print_rve_post": true,
+        "perturbation": 1e-6
+    },
+    "solver_settings": {
+        "solver_type": "static",
+        "model_part_name": "Structure",
+        "block_builder": true,
+        "multi_point_constraints_used": true,
+        "domain_size": 2,
+        "echo_level": 0,
+        "analysis_type": "linear",
+        "model_import_settings": {
+            "input_type": "mdpa",
+            "input_filename": "rve_test/RVE_sample_2D"
+        },
+        "material_import_settings": {
+            "materials_filename": "rve_test/smallest_rve_test_materials_borja_2D.json"
+        },
+        "time_stepping": {
+            "time_step": 1.1
+        }
+    },
+    "processes": {
+        "initial_processes": [{
+            "python_module": "assign_vector_variable_process",
+            "kratos_module": "KratosMultiphysics",
+            "Parameters": {
+                "model_part_name": "Structure",
+                "variable_name": "DISPLACEMENT",
+                "constrained": [false, false, false],
+                "value": ["0.001*x", "0.001*y", 0.0],
+                "interval": [0.0, "End"]
+            }
+        }]
+    },
+    "output_processes": {}
+}
