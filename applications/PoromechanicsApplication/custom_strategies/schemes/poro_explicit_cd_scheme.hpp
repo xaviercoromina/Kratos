@@ -150,6 +150,7 @@ public:
         mBeta = r_current_process_info[RAYLEIGH_BETA];
         mTheta = r_current_process_info[THETA_FACTOR];
         mGCoefficient = r_current_process_info[G_COEFFICIENT];
+        mUseNodalMassArray = r_current_process_info[USE_NODAL_MASS_ARRAY];
 
         /// Working in 2D/3D (the definition of DOMAIN_SIZE is check in the Check method)
         const SizeType dim = r_current_process_info[DOMAIN_SIZE];
@@ -454,11 +455,19 @@ public:
         // Getting dof position
         const IndexType disppos = it_node_begin->GetDofPosition(DISPLACEMENT_X);
 
-        #pragma omp parallel for schedule(guided,512)
-        for (int i = 0; i < static_cast<int>(r_nodes.size()); ++i) {
-            // Current step information "N+1" (before step update).
-            this->UpdateTranslationalDegreesOfFreedom(it_node_begin + i, disppos, dim);
-        } // for Node parallel
+        if ( mUseNodalMassArray == false ) {
+            #pragma omp parallel for schedule(guided,512)
+            for (int i = 0; i < static_cast<int>(r_nodes.size()); ++i) {
+                // Current step information "N+1" (before step update).
+                this->UpdateTranslationalDegreesOfFreedom(it_node_begin + i, disppos, dim);
+            } // for Node parallel
+        } else {
+            #pragma omp parallel for schedule(guided,512)
+            for (int i = 0; i < static_cast<int>(r_nodes.size()); ++i) {
+                // Current step information "N+1" (before step update).
+                this->UpdateTranslationalDegreesOfFreedomWithNodalMassArray(it_node_begin + i, disppos, dim);
+            } // for Node parallel
+        }
 
         KRATOS_CATCH("")
     }
@@ -480,8 +489,7 @@ public:
         noalias(displacement_aux) = r_displacement;
         array_1d<double, 3>& r_displacement_old = itCurrentNode->FastGetSolutionStepValue(DISPLACEMENT_OLD);
         // array_1d<double, 3>& r_displacement_older = itCurrentNode->FastGetSolutionStepValue(DISPLACEMENT_OLDER);
-        // const double nodal_mass = itCurrentNode->GetValue(NODAL_MASS);
-        const array_1d<double, 3>& r_nodal_mass_array = itCurrentNode->GetValue(NODAL_MASS_ARRAY);
+        const double nodal_mass = itCurrentNode->GetValue(NODAL_MASS);
 
         double& r_current_water_pressure = itCurrentNode->FastGetSolutionStepValue(WATER_PRESSURE);
         double& r_current_dt_water_pressure = itCurrentNode->FastGetSolutionStepValue(DT_WATER_PRESSURE);      
@@ -497,16 +505,65 @@ public:
         if (DomainSize == 3)
             fix_displacements[2] = (itCurrentNode->GetDof(DISPLACEMENT_Z, DisplacementPosition + 2).IsFixed());
 
-        // for (IndexType j = 0; j < DomainSize; j++) {
-        //     if (fix_displacements[j] == false) {
-        //             r_displacement[j] = ( (2.0*(1.0+mGCoefficient*mDeltaTime)-mAlpha*mDeltaTime)*nodal_mass*r_displacement[j]
-        //                                   + (mAlpha*mDeltaTime-(1.0+mGCoefficient*mDeltaTime))*nodal_mass*r_displacement_old[j]
-        //                                   - mDeltaTime*(mBeta+mTheta*mDeltaTime)*r_internal_force[j]
-        //                                   + mDeltaTime*(mBeta-mDeltaTime*(1.0-mTheta))*r_internal_force_old[j]
-        //                                   + mDeltaTime*mDeltaTime*(mTheta*r_external_force[j]+(1.0-mTheta)*r_external_force_old[j])
-        //                                 ) / ( nodal_mass*(1.0+mGCoefficient*mDeltaTime) );
-        //     }
-        // }
+        for (IndexType j = 0; j < DomainSize; j++) {
+            if (fix_displacements[j] == false) {
+                    r_displacement[j] = ( (2.0*(1.0+mGCoefficient*mDeltaTime)-mAlpha*mDeltaTime)*nodal_mass*r_displacement[j]
+                                          + (mAlpha*mDeltaTime-(1.0+mGCoefficient*mDeltaTime))*nodal_mass*r_displacement_old[j]
+                                          - mDeltaTime*(mBeta+mTheta*mDeltaTime)*r_internal_force[j]
+                                          + mDeltaTime*(mBeta-mDeltaTime*(1.0-mTheta))*r_internal_force_old[j]
+                                          + mDeltaTime*mDeltaTime*(mTheta*r_external_force[j]+(1.0-mTheta)*r_external_force_old[j])
+                                        ) / ( nodal_mass*(1.0+mGCoefficient*mDeltaTime) );
+            }
+        }
+
+        // Solution of the darcy_equation
+        if( itCurrentNode->IsFixed(WATER_PRESSURE) == false ) {
+            // TODO: this is on standby
+            r_current_water_pressure = 0.0;
+            r_current_dt_water_pressure = 0.0;
+        }
+
+        noalias(r_displacement_old) = displacement_aux;
+        const array_1d<double, 3>& r_velocity_old = itCurrentNode->FastGetSolutionStepValue(VELOCITY,1);
+        array_1d<double, 3>& r_velocity = itCurrentNode->FastGetSolutionStepValue(VELOCITY);
+        array_1d<double, 3>& r_acceleration = itCurrentNode->FastGetSolutionStepValue(ACCELERATION);
+
+        noalias(r_velocity) = (1.0/mDeltaTime) * (r_displacement - r_displacement_old);
+        noalias(r_acceleration) = (1.0/mDeltaTime) * (r_velocity - r_velocity_old);
+    }
+
+    /**
+     * @brief This method updates the translation DoF
+     * @param itCurrentNode The iterator of the current node
+     * @param DisplacementPosition The position of the displacement dof on the database
+     * @param DomainSize The current dimention of the problem
+     */
+    virtual void UpdateTranslationalDegreesOfFreedomWithNodalMassArray(
+        NodeIterator itCurrentNode,
+        const IndexType DisplacementPosition,
+        const SizeType DomainSize = 3
+        )
+    {
+        array_1d<double, 3>& r_displacement = itCurrentNode->FastGetSolutionStepValue(DISPLACEMENT);
+        array_1d<double, 3> displacement_aux;
+        noalias(displacement_aux) = r_displacement;
+        array_1d<double, 3>& r_displacement_old = itCurrentNode->FastGetSolutionStepValue(DISPLACEMENT_OLD);
+        // array_1d<double, 3>& r_displacement_older = itCurrentNode->FastGetSolutionStepValue(DISPLACEMENT_OLDER);
+        const array_1d<double, 3>& r_nodal_mass_array = itCurrentNode->GetValue(NODAL_MASS_ARRAY);
+
+        double& r_current_water_pressure = itCurrentNode->FastGetSolutionStepValue(WATER_PRESSURE);
+        double& r_current_dt_water_pressure = itCurrentNode->FastGetSolutionStepValue(DT_WATER_PRESSURE);      
+
+        const array_1d<double, 3>& r_external_force = itCurrentNode->FastGetSolutionStepValue(EXTERNAL_FORCE);
+        const array_1d<double, 3>& r_external_force_old = itCurrentNode->FastGetSolutionStepValue(EXTERNAL_FORCE,1);
+        const array_1d<double, 3>& r_internal_force = itCurrentNode->FastGetSolutionStepValue(INTERNAL_FORCE);
+        const array_1d<double, 3>& r_internal_force_old = itCurrentNode->FastGetSolutionStepValue(INTERNAL_FORCE,1);
+
+        std::array<bool, 3> fix_displacements = {false, false, false};
+        fix_displacements[0] = (itCurrentNode->GetDof(DISPLACEMENT_X, DisplacementPosition).IsFixed());
+        fix_displacements[1] = (itCurrentNode->GetDof(DISPLACEMENT_Y, DisplacementPosition + 1).IsFixed());
+        if (DomainSize == 3)
+            fix_displacements[2] = (itCurrentNode->GetDof(DISPLACEMENT_Z, DisplacementPosition + 2).IsFixed());
 
         for (IndexType j = 0; j < DomainSize; j++) {
             if (fix_displacements[j] == false) {
@@ -758,6 +815,7 @@ protected:
     double mBeta;
     double mTheta;
     double mGCoefficient;
+    bool mUseNodalMassArray;
 
     ///@}
     ///@name Protected Operators

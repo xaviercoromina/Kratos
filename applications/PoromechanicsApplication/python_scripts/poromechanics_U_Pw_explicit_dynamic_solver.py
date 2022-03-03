@@ -9,6 +9,8 @@ import KratosMultiphysics.StructuralMechanicsApplication as StructuralMechanicsA
 # Import base class file
 from KratosMultiphysics.PoromechanicsApplication.poromechanics_U_Pw_solver import UPwSolver
 
+import numpy as np
+
 def CreateSolver(model, custom_settings):
     return ExplicitUPwSolver(model, custom_settings)
 
@@ -36,15 +38,10 @@ class ExplicitUPwSolver(UPwSolver):
             "g_factor"                   : 0.0,
             "calculate_xi"               : false,
             "xi_1_factor"                : 1.0,
-            "delta"                      : 0.5,
-            "delta_b"                    : 1.0,
-            "gamma"                      : 0.5,
-            "kappa_0"                    : 0.5,
-            "kappa_1"                    : 0.5,
-            "rayleigh_alpha_1"           : 0.0,
-            "rayleigh_beta_1"            : 0.0,
-            "xi1_1"                      : 1.0,
-            "xi1_n"                      : 0.05
+            "use_nodal_mass_array"       : false,
+            "delta"                      : 1.3,
+            "alpha_1"                    : 1.0,
+            "alpha_2"                    : 0.5
         }""")
         this_defaults.AddMissingParameters(super().GetDefaultParameters())
         return this_defaults
@@ -138,61 +135,75 @@ class ExplicitUPwSolver(UPwSolver):
         Dt = self.settings["time_step"].GetDouble()
         omega_1 = self.settings["omega_1"].GetDouble()
         omega_n = self.settings["omega_n"].GetDouble()
+        xi_1 = self.settings["xi_1"].GetDouble()
+        xi_n = self.settings["xi_n"].GetDouble()
         rayleigh_alpha = self.settings["rayleigh_alpha"].GetDouble()
         rayleigh_beta = self.settings["rayleigh_beta"].GetDouble()
-        rayleigh_alpha_1 = self.settings["rayleigh_alpha_1"].GetDouble()
-        rayleigh_beta_1 = self.settings["rayleigh_beta_1"].GetDouble()
-        xi1_1 = self.settings["xi1_1"].GetDouble()
-        xi1_n = self.settings["xi1_n"].GetDouble()
+        delta = self.settings["delta"].GetDouble()
+        b_0 = 0.0
+        b_1 = 0.0
+        b_2 = 0.0
+        rayleigh_alpha_b = 0.0
+        rayleigh_beta_b = 0.0
         if (scheme_type == "Explicit_Central_Differences" and g_factor >= 1.0):
             theta_factor = 0.5
             g_coeff = Dt*omega_n*omega_n*0.25*g_factor
         if self.settings["calculate_alpha_beta"].GetBool():
-            xi_1 = self.settings["xi_1"].GetDouble()
-            xi_n = self.settings["xi_n"].GetDouble()
             if (scheme_type == "Explicit_Central_Differences" and self.settings["calculate_xi"].GetBool()==True):
                 xi_1_factor = self.settings["xi_1_factor"].GetDouble()                
-                import numpy as np
                 xi_1 = (np.sqrt(1+g_coeff*Dt)-theta_factor*omega_1*Dt*0.5)*xi_1_factor
                 xi_n = (np.sqrt(1+g_coeff*Dt)-theta_factor*omega_n*Dt*0.5)
             rayleigh_beta = 2.0*(xi_n*omega_n-xi_1*omega_1)/(omega_n*omega_n-omega_1*omega_1)
             rayleigh_alpha = 2.0*xi_1*omega_1-rayleigh_beta*omega_1*omega_1
-            if (scheme_type == "Explicit_CDF"):
-                rayleigh_beta_1 = 2.0*(xi1_n*omega_n-xi1_1*omega_1)/(omega_n*omega_n-omega_1*omega_1)
-                rayleigh_alpha_1 = 2.0*xi1_1*omega_1-rayleigh_beta_1*omega_1*omega_1
-            # TODO: tests
-            # rayleigh_beta = xi_n/omega_n
-            # rayleigh_alpha = omega_n*xi_n
-            # xi_1 = rayleigh_alpha/(2.0*omega_1)+0.5*rayleigh_beta*omega_1
-            # TODO
-            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: Scheme Information")
-            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: dt: ",Dt)
-            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: g_coeff: ",g_coeff)
-            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: omega_1: ",omega_1)
-            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: omega_n: ",omega_n)
-            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: xi_1: ",xi_1)
-            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: xi_n: ",xi_n)
-            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: Alpha and Beta output")
-            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: rayleigh_alpha: ",rayleigh_alpha)
-            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: rayleigh_beta: ",rayleigh_beta)
-            if (scheme_type == "Explicit_CDF"):
-                KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: xi1_1: ",xi1_1)
-                KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: xi1_n: ",xi1_n)
-                KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: Alpha1 and Beta1 output")
-                KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: rayleigh_alpha_1: ",rayleigh_alpha_1)
-                KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: rayleigh_beta_1: ",rayleigh_beta_1)
+        if (scheme_type == "Explicit_CDF"):
+            delta_0 = 7.0/12.0*delta
+            delta_1 = -delta/6.0
+            delta_2 = -delta
+            alpha_1 = self.settings["alpha_1"].GetDouble()
+            alpha_2 = self.settings["alpha_2"].GetDouble()
+            B = 1.0+23.0/12.0*delta
+            p_n = Dt*omega_n
+            p_1 = Dt*omega_1
+            xi_1 = B-0.5*(1.0+delta_0)*p_1
+            xi_n = 0.0
+            xib_n = -3.0/delta
+            b_0 = p_n/(2.0*delta*xib_n)*(-(1.0+delta_0)+(B+2.0+23.0/6.0*delta)/p_n**2)
+            b_1 = p_n/(2.0*delta*xib_n)*(-delta_1+B*(alpha_1-1.0)/p_n**2)
+            b_2 = p_n/(2.0*delta*xib_n)*(-delta_2+B*alpha_2/p_n**2)
+            xib_1 = -delta_2/(2.0*delta*b_2)*p_1
+            rayleigh_beta = 2.0*(xi_n*omega_n-xi_1*omega_1)/(omega_n*omega_n-omega_1*omega_1)
+            rayleigh_alpha = 2.0*xi_1*omega_1-rayleigh_beta*omega_1*omega_1
+            rayleigh_beta_b = 2.0*(xib_n*omega_n-xib_1*omega_1)/(omega_n*omega_n-omega_1*omega_1)
+            rayleigh_alpha_b = 2.0*xib_1*omega_1-rayleigh_beta_b*omega_1*omega_1
+        KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: Scheme Information")
+        KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: Dt: ",Dt)
+        KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: g_coeff: ",g_coeff)
+        KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: omega_1: ",omega_1)
+        KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: omega_n: ",omega_n)
+        KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: xi_1: ",xi_1)
+        KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: xi_n: ",xi_n)
+        KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: rayleigh_alpha: ",rayleigh_alpha)
+        KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: rayleigh_beta: ",rayleigh_beta)
+        if (scheme_type == "Explicit_CDF"):
+            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: xib_1: ",xib_1)
+            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: xib_n: ",xib_n)
+            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: rayleigh_alpha_b: ",rayleigh_alpha_b)
+            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: rayleigh_beta_b: ",rayleigh_beta_b)
+            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: delta: ",delta)
+            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: alpha_1: ",alpha_1)
+            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: alpha_2: ",alpha_2)
                 
         process_info.SetValue(StructuralMechanicsApplication.RAYLEIGH_ALPHA, rayleigh_alpha)
         process_info.SetValue(StructuralMechanicsApplication.RAYLEIGH_BETA, rayleigh_beta)
         process_info.SetValue(KratosPoro.G_COEFFICIENT, g_coeff)
         process_info.SetValue(KratosPoro.THETA_FACTOR, theta_factor)
-        process_info.SetValue(KratosPoro.DELTA, self.settings["delta"].GetDouble())
-        process_info.SetValue(KratosPoro.DELTA_B, self.settings["delta_b"].GetDouble())
-        process_info.SetValue(KratosPoro.GAMMA, self.settings["gamma"].GetDouble())
-        process_info.SetValue(KratosPoro.KAPPA_0, self.settings["kappa_0"].GetDouble())
-        process_info.SetValue(KratosPoro.KAPPA_1, self.settings["kappa_1"].GetDouble())
-        process_info.SetValue(KratosPoro.RAYLEIGH_ALPHA_1, rayleigh_alpha_1)
-        process_info.SetValue(KratosPoro.RAYLEIGH_BETA_1, rayleigh_beta_1)
+        process_info.SetValue(KratosPoro.DELTA, delta)
+        process_info.SetValue(KratosPoro.B_0, b_0)
+        process_info.SetValue(KratosPoro.B_1, b_1)
+        process_info.SetValue(KratosPoro.B_2, b_2)
+        process_info.SetValue(KratosPoro.RAYLEIGH_ALPHA_B, rayleigh_alpha_b)
+        process_info.SetValue(KratosPoro.RAYLEIGH_BETA_B, rayleigh_beta_b)
+        process_info.SetValue(KratosPoro.USE_NODAL_MASS_ARRAY, self.settings["use_nodal_mass_array"].GetBool())
 
         # Setting the time integration schemes
         if(scheme_type == "Explicit_Central_Differences"):

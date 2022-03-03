@@ -2,6 +2,7 @@ from KratosMultiphysics import PoromechanicsApplication
 import KratosMultiphysics
 import KratosMultiphysics.PoromechanicsApplication as KratosPoro
 import h5py
+import numpy as np
 
 def Factory(settings, Model):
     if(type(settings) != KratosMultiphysics.Parameters):
@@ -66,9 +67,9 @@ class PoromechanicsL2NormErrorProcess(KratosMultiphysics.Process):
 
     def ExecuteAfterOutputStep(self):
 
-        # TODO
-        # time_string = str(round(self.model_part.ProcessInfo[KratosMultiphysics.TIME],12))
-        time_string = str(round(self.model_part.ProcessInfo[KratosMultiphysics.TIME],3))
+        dt = self.model_part.ProcessInfo[KratosMultiphysics.DELTA_TIME]
+        precision = int(abs(np.log10(dt))) + 1
+        time_string = str(round(self.model_part.ProcessInfo[KratosMultiphysics.TIME],precision))
         self.group_name = time_string
 
         if self.write_reference_solution:

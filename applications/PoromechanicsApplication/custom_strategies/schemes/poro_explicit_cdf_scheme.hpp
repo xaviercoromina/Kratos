@@ -129,12 +129,15 @@ public:
         const ProcessInfo& r_current_process_info = rModelPart.GetProcessInfo();
 
         mDelta = r_current_process_info[DELTA];
-        mDeltab = r_current_process_info[DELTA_B];
-        mGamma = r_current_process_info[GAMMA];
-        mKappa0 = r_current_process_info[KAPPA_0];
-        mKappa1 = r_current_process_info[KAPPA_1];
-        mAlpha1 = r_current_process_info[RAYLEIGH_ALPHA_1];
-        mBeta1 = r_current_process_info[RAYLEIGH_BETA_1];
+        mB0 = r_current_process_info[B_0];
+        mB1 = r_current_process_info[B_1];
+        mB2 = r_current_process_info[B_2];
+        mAlphab = r_current_process_info[RAYLEIGH_ALPHA_B];
+        mBetab = r_current_process_info[RAYLEIGH_BETA_B];
+        mDelta0 = 7.0/12.0*mDelta;
+        mDelta1 = -mDelta/6.0;
+        mDelta2 = -mDelta;
+        mB = 1.0+23.0/12.0*mDelta;
 
         KRATOS_CATCH("")
     }
@@ -163,7 +166,7 @@ public:
 
         const array_1d<double, 3>& r_external_force = itCurrentNode->FastGetSolutionStepValue(EXTERNAL_FORCE);
         const array_1d<double, 3>& r_external_force_old = itCurrentNode->FastGetSolutionStepValue(EXTERNAL_FORCE,1);
-        // array_1d<double, 3>& r_external_force_older = itCurrentNode->FastGetSolutionStepValue(EXTERNAL_FORCE_OLDER);
+        array_1d<double, 3>& r_external_force_older = itCurrentNode->FastGetSolutionStepValue(EXTERNAL_FORCE_OLDER);
         const array_1d<double, 3>& r_internal_force = itCurrentNode->FastGetSolutionStepValue(INTERNAL_FORCE);
         const array_1d<double, 3>& r_internal_force_old = itCurrentNode->FastGetSolutionStepValue(INTERNAL_FORCE,1);
         array_1d<double, 3>& r_internal_force_older = itCurrentNode->FastGetSolutionStepValue(INTERNAL_FORCE_OLDER);
@@ -174,34 +177,134 @@ public:
         if (DomainSize == 3)
             fix_displacements[2] = (itCurrentNode->GetDof(DISPLACEMENT_Z, DisplacementPosition + 2).IsFixed());
 
+        // CDF_01-03-22
+        for (IndexType j = 0; j < DomainSize; j++) {
+            if (fix_displacements[j] == false) {
+                    r_displacement[j] = ( (2.0*mB-mDeltaTime*(mAlpha+mDelta*mB0*mAlphab))*nodal_mass*r_displacement[j]
+                                          - mDeltaTime*(mBeta+mDelta*mB0*mBetab+mDeltaTime*(1.0+mDelta0))*r_internal_force[j]
+                                          - (mB+mDeltaTime*(-mAlpha+mDelta*mB1*mAlphab))*nodal_mass*r_displacement_old[j]
+                                          - mDeltaTime*(-mBeta+mDelta*mB1*mBetab+mDeltaTime*mDelta1)*r_internal_force_old[j]
+                                          - mDeltaTime*mDelta*mB2*mAlphab*nodal_mass*r_displacement_older[j]
+                                          - mDeltaTime*(mDelta*mB2*mBetab+mDeltaTime*mDelta2)*r_internal_force_older[j]
+                                          + mDeltaTime*mDeltaTime*((1.0+mDelta0)*r_external_force[j]+mDelta1*r_external_force_old[j]+mDelta2*r_external_force_older[j])
+                                        ) / ( nodal_mass*mB );
+            }
+        }
+
+        // Solution of the darcy_equation
+        if( itCurrentNode->IsFixed(WATER_PRESSURE) == false ) {
+            // TODO: this is on standby
+            r_current_water_pressure = 0.0;
+            r_current_dt_water_pressure = 0.0;
+        }
+
+        noalias(r_displacement_older) = r_displacement_old;
+        noalias(r_displacement_old) = displacement_aux;
+        noalias(r_external_force_older) = r_external_force_old;
+        noalias(r_internal_force_older) = r_internal_force_old;
+        const array_1d<double, 3>& r_velocity_old = itCurrentNode->FastGetSolutionStepValue(VELOCITY,1);
+        array_1d<double, 3>& r_velocity = itCurrentNode->FastGetSolutionStepValue(VELOCITY);
+        array_1d<double, 3>& r_acceleration = itCurrentNode->FastGetSolutionStepValue(ACCELERATION);
+
+        noalias(r_velocity) = (1.0/mDeltaTime) * (r_displacement - r_displacement_old);
+        noalias(r_acceleration) = (1.0/mDeltaTime) * (r_velocity - r_velocity_old);
+    }
+
+    /**
+     * @brief This method updates the translation DoF
+     * @param itCurrentNode The iterator of the current node
+     * @param DisplacementPosition The position of the displacement dof on the database
+     * @param DomainSize The current dimention of the problem
+     */
+    void UpdateTranslationalDegreesOfFreedomWithNodalMassArray(
+        NodeIterator itCurrentNode,
+        const IndexType DisplacementPosition,
+        const SizeType DomainSize = 3
+        ) override
+    {
+        array_1d<double, 3>& r_displacement = itCurrentNode->FastGetSolutionStepValue(DISPLACEMENT);
+        array_1d<double, 3> displacement_aux;
+        noalias(displacement_aux) = r_displacement;
+        array_1d<double, 3>& r_displacement_old = itCurrentNode->FastGetSolutionStepValue(DISPLACEMENT_OLD);
+        array_1d<double, 3>& r_displacement_older = itCurrentNode->FastGetSolutionStepValue(DISPLACEMENT_OLDER);
+        const array_1d<double, 3>& r_nodal_mass_array = itCurrentNode->GetValue(NODAL_MASS_ARRAY);
+
+        double& r_current_water_pressure = itCurrentNode->FastGetSolutionStepValue(WATER_PRESSURE);
+        double& r_current_dt_water_pressure = itCurrentNode->FastGetSolutionStepValue(DT_WATER_PRESSURE);      
+
+        const array_1d<double, 3>& r_external_force = itCurrentNode->FastGetSolutionStepValue(EXTERNAL_FORCE);
+        const array_1d<double, 3>& r_external_force_old = itCurrentNode->FastGetSolutionStepValue(EXTERNAL_FORCE,1);
+        array_1d<double, 3>& r_external_force_older = itCurrentNode->FastGetSolutionStepValue(EXTERNAL_FORCE_OLDER);
+        const array_1d<double, 3>& r_internal_force = itCurrentNode->FastGetSolutionStepValue(INTERNAL_FORCE);
+        const array_1d<double, 3>& r_internal_force_old = itCurrentNode->FastGetSolutionStepValue(INTERNAL_FORCE,1);
+        array_1d<double, 3>& r_internal_force_older = itCurrentNode->FastGetSolutionStepValue(INTERNAL_FORCE_OLDER);
+
+        std::array<bool, 3> fix_displacements = {false, false, false};
+        fix_displacements[0] = (itCurrentNode->GetDof(DISPLACEMENT_X, DisplacementPosition).IsFixed());
+        fix_displacements[1] = (itCurrentNode->GetDof(DISPLACEMENT_Y, DisplacementPosition + 1).IsFixed());
+        if (DomainSize == 3)
+            fix_displacements[2] = (itCurrentNode->GetDof(DISPLACEMENT_Z, DisplacementPosition + 2).IsFixed());
+
+        // CDF_01-03-22
+        for (IndexType j = 0; j < DomainSize; j++) {
+            if (fix_displacements[j] == false) {
+                    r_displacement[j] = ( (2.0*mB-mDeltaTime*(mAlpha+mDelta*mB0*mAlphab))*r_nodal_mass_array[j]*r_displacement[j]
+                                          - mDeltaTime*(mBeta+mDelta*mB0*mBetab+mDeltaTime*(1.0+mDelta0))*r_internal_force[j]
+                                          - (mB+mDeltaTime*(-mAlpha+mDelta*mB1*mAlphab))*r_nodal_mass_array[j]*r_displacement_old[j]
+                                          - mDeltaTime*(-mBeta+mDelta*mB1*mBetab+mDeltaTime*mDelta1)*r_internal_force_old[j]
+                                          - mDeltaTime*mDelta*mB2*mAlphab*r_nodal_mass_array[j]*r_displacement_older[j]
+                                          - mDeltaTime*(mDelta*mB2*mBetab+mDeltaTime*mDelta2)*r_internal_force_older[j]
+                                          + mDeltaTime*mDeltaTime*((1.0+mDelta0)*r_external_force[j]+mDelta1*r_external_force_old[j]+mDelta2*r_external_force_older[j])
+                                        ) / ( r_nodal_mass_array[j]*mB );
+            }
+        }
+
+        // Solution of the darcy_equation
+        if( itCurrentNode->IsFixed(WATER_PRESSURE) == false ) {
+            // TODO: this is on standby
+            r_current_water_pressure = 0.0;
+            r_current_dt_water_pressure = 0.0;
+        }
+
+        noalias(r_displacement_older) = r_displacement_old;
+        noalias(r_displacement_old) = displacement_aux;
+        noalias(r_external_force_older) = r_external_force_old;
+        noalias(r_internal_force_older) = r_internal_force_old;
+        const array_1d<double, 3>& r_velocity_old = itCurrentNode->FastGetSolutionStepValue(VELOCITY,1);
+        array_1d<double, 3>& r_velocity = itCurrentNode->FastGetSolutionStepValue(VELOCITY);
+        array_1d<double, 3>& r_acceleration = itCurrentNode->FastGetSolutionStepValue(ACCELERATION);
+
+        noalias(r_velocity) = (1.0/mDeltaTime) * (r_displacement - r_displacement_old);
+        noalias(r_acceleration) = (1.0/mDeltaTime) * (r_velocity - r_velocity_old);
+    }
+
+        // TODO. Older CDF tests
         // CDF-1d
         // for (IndexType j = 0; j < DomainSize; j++) {
         //     if (fix_displacements[j] == false) {
-        //             r_displacement[j] = ( (2.0*(1.0+mDelta)-mDeltaTime*(mAlpha+mDelta*mAlpha1))*nodal_mass*r_displacement[j]
-        //                                   + (mDeltaTime*(mAlpha+2.0*mDelta*mAlpha1)-(1.0+mDelta))*nodal_mass*r_displacement_old[j]
-        //                                   - mDeltaTime*mDelta*mAlpha1*nodal_mass*r_displacement_older[j]
-        //                                   - mDeltaTime*(mBeta+mDelta*mBeta1+mDeltaTime*(mGamma+mDelta*mKappa0))*r_internal_force[j]
-        //                                   + mDeltaTime*(mBeta+2.0*mDelta*mBeta1-mDeltaTime*(1.0-mGamma+mDelta*mKappa1))*r_internal_force_old[j]
-        //                                   - mDeltaTime*mDelta*mBeta1*r_internal_force_older[j]
+        //             r_displacement[j] = ( (2.0*(1.0+mDelta)-mDeltaTime*(mAlpha+mDelta*mAlphab))*nodal_mass*r_displacement[j]
+        //                                   + (mDeltaTime*(mAlpha+2.0*mDelta*mAlphab)-(1.0+mDelta))*nodal_mass*r_displacement_old[j]
+        //                                   - mDeltaTime*mDelta*mAlphab*nodal_mass*r_displacement_older[j]
+        //                                   - mDeltaTime*(mBeta+mDelta*mBetab+mDeltaTime*(mGamma+mDelta*mKappa0))*r_internal_force[j]
+        //                                   + mDeltaTime*(mBeta+2.0*mDelta*mBetab-mDeltaTime*(1.0-mGamma+mDelta*mKappa1))*r_internal_force_old[j]
+        //                                   - mDeltaTime*mDelta*mBetab*r_internal_force_older[j]
         //                                   + mDeltaTime*mDeltaTime*((mGamma+mDelta*mKappa0)*r_external_force[j]+(1.0-mGamma+mDelta*mKappa1)*r_external_force_old[j])
         //                                 ) / ( nodal_mass*(1.0+mDelta) );
         //     }
         // }
-
         // CDF-1d*
-        for (IndexType j = 0; j < DomainSize; j++) {
-            if (fix_displacements[j] == false) {
-                    r_displacement[j] = ( (2.0+mDelta-mDeltaTime*(mAlpha+mDelta*mAlpha1))*nodal_mass*r_displacement[j]
-                                          + (mDeltaTime*(mAlpha+2.0*mDelta*mAlpha1)-(1.0+2.0*mDelta))*nodal_mass*r_displacement_old[j]
-                                          + (mDelta-mDeltaTime*mDelta*mAlpha1)*nodal_mass*r_displacement_older[j]
-                                          - mDeltaTime*(mBeta+mDelta*mBeta1+mDeltaTime*(mGamma-mDelta*mKappa0))*r_internal_force[j]
-                                          + mDeltaTime*(mBeta+2.0*mDelta*mBeta1-mDeltaTime*(1.0-mGamma-mDelta*mKappa1))*r_internal_force_old[j]
-                                          - mDeltaTime*mDelta*mBeta1*r_internal_force_older[j]
-                                          + mDeltaTime*mDeltaTime*((mGamma-mDelta*mKappa0)*r_external_force[j]+(1.0-mGamma-mDelta*mKappa1)*r_external_force_old[j])
-                                        ) / ( nodal_mass );
-            }
-        }
-
+        // for (IndexType j = 0; j < DomainSize; j++) {
+        //     if (fix_displacements[j] == false) {
+        //             r_displacement[j] = ( (2.0+mDelta-mDeltaTime*(mAlpha+mDelta*mAlphab))*nodal_mass*r_displacement[j]
+        //                                   + (mDeltaTime*(mAlpha+2.0*mDelta*mAlphab)-(1.0+2.0*mDelta))*nodal_mass*r_displacement_old[j]
+        //                                   + (mDelta-mDeltaTime*mDelta*mAlphab)*nodal_mass*r_displacement_older[j]
+        //                                   - mDeltaTime*(mBeta+mDelta*mBetab+mDeltaTime*(mGamma-mDelta*mKappa0))*r_internal_force[j]
+        //                                   + mDeltaTime*(mBeta+2.0*mDelta*mBetab-mDeltaTime*(1.0-mGamma-mDelta*mKappa1))*r_internal_force_old[j]
+        //                                   - mDeltaTime*mDelta*mBetab*r_internal_force_older[j]
+        //                                   + mDeltaTime*mDeltaTime*((mGamma-mDelta*mKappa0)*r_external_force[j]+(1.0-mGamma-mDelta*mKappa1)*r_external_force_old[j])
+        //                                 ) / ( nodal_mass );
+        //     }
+        // }
         // CDF-1
         // for (IndexType j = 0; j < DomainSize; j++) {
         //     if (fix_displacements[j] == false) {
@@ -213,7 +316,6 @@ public:
         //                                 ) / ( nodal_mass*(1.0-mDelta) );
         //     }
         // }
-
         // CDF-12bd
         // for (IndexType j = 0; j < DomainSize; j++) {
         //     if (fix_displacements[j] == false) {
@@ -227,25 +329,6 @@ public:
         //                                 ) / ( nodal_mass*(1.0+mDelta+mDeltab) );
         //     }
         // }
-
-        // Solution of the darcy_equation
-        if( itCurrentNode->IsFixed(WATER_PRESSURE) == false ) {
-            // TODO: this is on standby
-            r_current_water_pressure = 0.0;
-            r_current_dt_water_pressure = 0.0;
-        }
-
-        noalias(r_displacement_older) = r_displacement_old;
-        noalias(r_displacement_old) = displacement_aux;
-        // noalias(r_external_force_older) = r_external_force_old;
-        noalias(r_internal_force_older) = r_internal_force_old;
-        const array_1d<double, 3>& r_velocity_old = itCurrentNode->FastGetSolutionStepValue(VELOCITY,1);
-        array_1d<double, 3>& r_velocity = itCurrentNode->FastGetSolutionStepValue(VELOCITY);
-        array_1d<double, 3>& r_acceleration = itCurrentNode->FastGetSolutionStepValue(ACCELERATION);
-
-        noalias(r_velocity) = (1.0/mDeltaTime) * (r_displacement - r_displacement_old);
-        noalias(r_acceleration) = (1.0/mDeltaTime) * (r_velocity - r_velocity_old);
-    }
 
 
     ///@}
@@ -269,12 +352,15 @@ public:
 protected:
 
     double mDelta;
-    double mDeltab;
-    double mGamma;
-    double mKappa0;
-    double mKappa1;
-    double mAlpha1;
-    double mBeta1;
+    double mB0;
+    double mB1;
+    double mB2;
+    double mAlphab;
+    double mBetab;
+    double mDelta0;
+    double mDelta1;
+    double mDelta2;
+    double mB;
 
     ///@}
     ///@name Protected Structs
