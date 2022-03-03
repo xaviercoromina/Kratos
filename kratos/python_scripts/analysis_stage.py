@@ -184,7 +184,7 @@ class AnalysisStage(object):
             # out_total_force.write(str(total_force))
             # out_total_force.write("\n")
             # out_total_force.close()
-            print('FPBT total force (kN): ', total_force)
+            # print('FPBT total force (kN): ', total_force)
 
         # TODO: FPBT total force (kN), displacement (mm)
         # import KratosMultiphysics.PoromechanicsApplication as KratosPoro
