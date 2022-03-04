@@ -32,16 +32,21 @@ class ExplicitUPwSolver(UPwSolver):
     @classmethod
     def GetDefaultParameters(cls):
         this_defaults = KratosMultiphysics.Parameters("""{
-            "scheme_type"                : "Explicit_Central_Differences",
-            "rebuild_level"              : 0,
-            "theta_factor"               : 1.0,
-            "g_factor"                   : 0.0,
-            "calculate_xi"               : false,
-            "xi_1_factor"                : 1.0,
-            "use_nodal_mass_array"       : false,
-            "delta"                      : 1.3,
-            "alpha_1"                    : 1.0,
-            "alpha_2"                    : 0.5
+            "scheme_type"         : "Explicit_Central_Differences",
+            "rebuild_level"       : 0,
+            "theta_factor"        : 1.0,
+            "g_factor"            : 0.0,
+            "calculate_xi"        : false,
+            "xi_1_factor"         : 1.0,
+            "use_nodal_mass_array": false,
+            "delta"               : 1.3,
+            "alpha_0"             : 1.0,
+            "alpha_1"             : 1.0,
+            "alpha_2"             : 0.5,
+            "xi_1_f"              : 1.0,
+            "xi_n_f"              : 1.0,
+            "xib_1_f"             : 1.0,
+            "xib_n_f"             : 1.0
         }""")
         this_defaults.AddMissingParameters(super().GetDefaultParameters())
         return this_defaults
@@ -159,18 +164,19 @@ class ExplicitUPwSolver(UPwSolver):
             delta_0 = 7.0/12.0*delta
             delta_1 = -delta/6.0
             delta_2 = -delta
+            alpha_0 = self.settings["alpha_0"].GetDouble()
             alpha_1 = self.settings["alpha_1"].GetDouble()
             alpha_2 = self.settings["alpha_2"].GetDouble()
             B = 1.0+23.0/12.0*delta
             p_n = Dt*omega_n
             p_1 = Dt*omega_1
-            xi_1 = B-0.5*(1.0+delta_0)*p_1
-            xi_n = 0.0
-            xib_n = -3.0/delta
-            b_0 = p_n/(2.0*delta*xib_n)*(-(1.0+delta_0)+(B+2.0+23.0/6.0*delta)/p_n**2)
+            xi_1 = (B-0.5*(1.0+delta_0)*p_1)*self.settings["xi_1_f"].GetDouble()
+            xi_n = 0.0*self.settings["xi_n_f"].GetDouble()
+            xib_n = (-3.0/delta)*self.settings["xib_n_f"].GetDouble()
+            b_0 = p_n/(2.0*delta*xib_n)*(-(1.0+delta_0)+(B*alpha_0+2.0+23.0/6.0*delta)/p_n**2)
             b_1 = p_n/(2.0*delta*xib_n)*(-delta_1+B*(alpha_1-1.0)/p_n**2)
             b_2 = p_n/(2.0*delta*xib_n)*(-delta_2+B*alpha_2/p_n**2)
-            xib_1 = -delta_2/(2.0*delta*b_2)*p_1
+            xib_1 = (-delta_2/(2.0*delta*b_2)*p_1)*self.settings["xib_1_f"].GetDouble()
             rayleigh_beta = 2.0*(xi_n*omega_n-xi_1*omega_1)/(omega_n*omega_n-omega_1*omega_1)
             rayleigh_alpha = 2.0*xi_1*omega_1-rayleigh_beta*omega_1*omega_1
             rayleigh_beta_b = 2.0*(xib_n*omega_n-xib_1*omega_1)/(omega_n*omega_n-omega_1*omega_1)
