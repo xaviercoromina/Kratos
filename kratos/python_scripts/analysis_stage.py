@@ -90,6 +90,19 @@ class AnalysisStage(object):
         for process in self._GetListOfProcesses():
             process.ExecuteInitialize()
 
+        #TODO
+        # import numpy as np
+        # w1 = 4.363e3
+        # A = -2.5e-4
+        # wf = w1*2.0
+        # # wf = w1/2.0
+        # model_part_name = self.project_parameters["solver_settings"]["model_part_name"].GetString()
+        # main_model_part = self.model.GetModelPart(model_part_name)
+        # time = main_model_part.ProcessInfo[KratosMultiphysics.TIME]
+        # disp = A*np.sin(wf*time)
+        # for node in self.model.GetModelPart('PorousModelPart.Solid_Displacement-auto-3').Nodes:
+        #     node.SetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_Y,disp)
+
         self._GetSolver().Initialize()
         self.Check()
 
@@ -242,6 +255,19 @@ class AnalysisStage(object):
 
         for process in self._GetListOfProcesses():
             process.ExecuteInitializeSolutionStep()
+
+        #TODO
+        # import numpy as np
+        # w1 = 4.363e3
+        # A = -2.5e-4
+        # wf = w1*2.0
+        # # wf = w1/2.0
+        # model_part_name = self.project_parameters["solver_settings"]["model_part_name"].GetString()
+        # main_model_part = self.model.GetModelPart(model_part_name)
+        # time = main_model_part.ProcessInfo[KratosMultiphysics.TIME]
+        # disp = A*np.sin(wf*time)
+        # for node in self.model.GetModelPart('PorousModelPart.Solid_Displacement-auto-3').Nodes:
+        #     node.SetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_Y,disp)
 
         #other operations as needed
 
