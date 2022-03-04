@@ -196,6 +196,7 @@ class ExplicitUPwSolver(UPwSolver):
             KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: rayleigh_alpha_b: ",rayleigh_alpha_b)
             KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: rayleigh_beta_b: ",rayleigh_beta_b)
             KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: delta: ",delta)
+            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: alpha_0: ",alpha_0)
             KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: alpha_1: ",alpha_1)
             KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: alpha_2: ",alpha_2)
                 
