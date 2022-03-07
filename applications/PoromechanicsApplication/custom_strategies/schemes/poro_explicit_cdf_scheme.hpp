@@ -177,16 +177,20 @@ public:
         if (DomainSize == 3)
             fix_displacements[2] = (itCurrentNode->GetDof(DISPLACEMENT_Z, DisplacementPosition + 2).IsFixed());
 
+        const double eps_hat = (mB0+mB1+mB2)*mDelta*mDeltaTime*mAlphab;
+        const double eps_i = (mB0+mB1+mB2)/3.0*mDelta*mDeltaTime*mBetab;
+
         // CDF_01-03-22
         for (IndexType j = 0; j < DomainSize; j++) {
             if (fix_displacements[j] == false) {
                     r_displacement[j] = ( (2.0*mB-mDeltaTime*(mAlpha+mDelta*mB0*mAlphab))*nodal_mass*r_displacement[j]
                                           - mDeltaTime*(mBeta+mDelta*mB0*mBetab+mDeltaTime*(1.0+mDelta0))*r_internal_force[j]
-                                          - (mB+mDeltaTime*(-mAlpha+mDelta*mB1*mAlphab))*nodal_mass*r_displacement_old[j]
+                                          - (mB-eps_hat+mDeltaTime*(-mAlpha+mDelta*mB1*mAlphab))*nodal_mass*r_displacement_old[j]
                                           - mDeltaTime*(-mBeta+mDelta*mB1*mBetab+mDeltaTime*mDelta1)*r_internal_force_old[j]
                                           - mDeltaTime*mDelta*mB2*mAlphab*nodal_mass*r_displacement_older[j]
                                           - mDeltaTime*(mDelta*mB2*mBetab+mDeltaTime*mDelta2)*r_internal_force_older[j]
                                           + mDeltaTime*mDeltaTime*((1.0+mDelta0)*r_external_force[j]+mDelta1*r_external_force_old[j]+mDelta2*r_external_force_older[j])
+                                          + eps_i*(r_external_force[j]+r_external_force_old[j]+r_external_force_older[j])
                                         ) / ( nodal_mass*mB );
             }
         }
