@@ -44,7 +44,7 @@ class ExplicitUPwSolver(UPwSolver):
             "alpha_1"             : 1.0,
             "alpha_2"             : 0.5,
             "xi_1_f"              : 1.0,
-            "xi_n_f"              : 1.0,
+            "xi_n_f"              : 0.0,
             "xib_1_f"             : 1.0,
             "xib_n_f"             : 1.0
         }""")
@@ -161,26 +161,35 @@ class ExplicitUPwSolver(UPwSolver):
             rayleigh_beta = 2.0*(xi_n*omega_n-xi_1*omega_1)/(omega_n*omega_n-omega_1*omega_1)
             rayleigh_alpha = 2.0*xi_1*omega_1-rayleigh_beta*omega_1*omega_1
         if (scheme_type == "Explicit_CDF"):
-            delta_0 = 7.0/12.0*delta
-            delta_1 = -delta/6.0
-            delta_2 = -delta
             alpha_0 = self.settings["alpha_0"].GetDouble()
             alpha_1 = self.settings["alpha_1"].GetDouble()
             alpha_2 = self.settings["alpha_2"].GetDouble()
+
+            delta_0 = 7.0/12.0*delta
+            delta_1 = -delta/6.0
+            delta_2 = -delta
             B = 1.0+23.0/12.0*delta
+
             p_n = Dt*omega_n
             p_1 = Dt*omega_1
-            xi_1 = (B-0.5*(1.0+delta_0)*p_1)*self.settings["xi_1_f"].GetDouble()
-            xi_n = 0.0*self.settings["xi_n_f"].GetDouble()
+
             xib_n = (-3.0/delta)*self.settings["xib_n_f"].GetDouble()
             b_0 = p_n/(2.0*delta*xib_n)*(-(1.0+delta_0)+(B*alpha_0+2.0+23.0/6.0*delta)/p_n**2)
             b_1 = p_n/(2.0*delta*xib_n)*(-delta_1+B*(alpha_1-1.0)/p_n**2)
             b_2 = p_n/(2.0*delta*xib_n)*(-delta_2+B*alpha_2/p_n**2)
+            b_s = b_0+b_1+b_2
             xib_1 = (-delta_2/(2.0*delta*b_2)*p_1)*self.settings["xib_1_f"].GetDouble()
+            D = 1.0+delta_0+delta_1+delta_2
+            A = 1.0+delta_0-b_0*delta_2/b_2
+            xi_1 = (np.sqrt(B*(D-delta_1*b_s))-0.5*p_1*A)*self.settings["xi_1_f"].GetDouble()
+            # xi_1 = (B-0.5*(1.0+delta_0)*p_1)*self.settings["xi_1_f"].GetDouble()
+            xi_n = 1.0*self.settings["xi_n_f"].GetDouble()
+            
             rayleigh_beta = 2.0*(xi_n*omega_n-xi_1*omega_1)/(omega_n*omega_n-omega_1*omega_1)
             rayleigh_alpha = 2.0*xi_1*omega_1-rayleigh_beta*omega_1*omega_1
             rayleigh_beta_b = 2.0*(xib_n*omega_n-xib_1*omega_1)/(omega_n*omega_n-omega_1*omega_1)
             rayleigh_alpha_b = 2.0*xib_1*omega_1-rayleigh_beta_b*omega_1*omega_1
+
         KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: Scheme Information")
         KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: Dt: ",Dt)
         KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: g_coeff: ",g_coeff)
@@ -199,6 +208,10 @@ class ExplicitUPwSolver(UPwSolver):
             KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: alpha_0: ",alpha_0)
             KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: alpha_1: ",alpha_1)
             KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: alpha_2: ",alpha_2)
+            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: b_0: ",b_0)
+            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: b_1: ",b_1)
+            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: b_2: ",b_2)
+            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: b_s: ",b_0+b_1+b_2)
                 
         process_info.SetValue(StructuralMechanicsApplication.RAYLEIGH_ALPHA, rayleigh_alpha)
         process_info.SetValue(StructuralMechanicsApplication.RAYLEIGH_BETA, rayleigh_beta)
