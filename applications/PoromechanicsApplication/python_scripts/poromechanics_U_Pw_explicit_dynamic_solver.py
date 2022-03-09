@@ -182,9 +182,9 @@ class ExplicitUPwSolver(UPwSolver):
             xib_1 = (-delta_2/(2.0*delta*b_2)*p_1)*self.settings["xib_1_f"].GetDouble()
             rayleigh_beta_b = 2.0*(xib_n*omega_n-xib_1*omega_1)/(omega_n*omega_n-omega_1*omega_1)
             rayleigh_alpha_b = 2.0*xib_1*omega_1-rayleigh_beta_b*omega_1*omega_1
-            b_1 = 1.0/(delta*Dt*rayleigh_alpha_b+2.0*delta*xib_n*p_n)*((alpha_1-1.0)*B-delta_1*p_n**2-(b_0+b_2)*delta*Dt*rayleigh_alpha_b)
+            b_1 = 1.0/(-delta*Dt*rayleigh_alpha_b+2.0*delta*xib_n*p_n)*((alpha_1-1.0)*B-delta_1*p_n**2+(b_0+b_2)*delta*Dt*rayleigh_alpha_b)
             b_s = b_0+b_1+b_2
-            
+
             D = 1.0+delta_0+delta_1+delta_2
             A = 1.0+delta_0-b_0*delta_2/b_2
             xi_1 = (np.sqrt(B*(D-delta_1*b_s))-0.5*p_1*A)*self.settings["xi_1_f"].GetDouble()
