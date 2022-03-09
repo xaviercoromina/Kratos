@@ -85,11 +85,10 @@ class CompressibleNavierStokesSymbolicGeneratorValidationTest(KratosUnitTest.Tes
             raise RuntimeError("Failed to import generated file:", generated_file_name) from err
         return test_module.SubTestSuite()
 
-
     def _RunSubTestSuite(self, geometry, sub_testsuite, print_results):
         """Runs the generated code and compares it to the reference."""
         tests = [subtest_name for subtest_name in dir(sub_testsuite)
-            if callable(getattr(sub_testsuite, subtest_name)) and subtest_name.startswith("test_")]
+                 if callable(getattr(sub_testsuite, subtest_name)) and subtest_name.startswith("test_")]
 
         for subtest_name in tests:
             with self.subTest(subtest_name):
