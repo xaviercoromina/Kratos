@@ -68,7 +68,7 @@ class PoromechanicsL2NormErrorProcess(KratosMultiphysics.Process):
     def ExecuteAfterOutputStep(self):
 
         dt = self.model_part.ProcessInfo[KratosMultiphysics.DELTA_TIME]
-        precision = int(abs(np.log10(dt))) + 1
+        precision = int(abs(np.log10(dt))) + 6
         time_string = str(round(self.model_part.ProcessInfo[KratosMultiphysics.TIME],precision))
         self.group_name = time_string
 
