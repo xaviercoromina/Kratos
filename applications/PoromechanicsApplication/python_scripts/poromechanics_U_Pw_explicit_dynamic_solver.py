@@ -43,6 +43,7 @@ class ExplicitUPwSolver(UPwSolver):
             "alpha_0"             : 1.0,
             "alpha_1"             : 1.0,
             "alpha_2"             : 0.5,
+            "rayleigh_alpha_b"    : 0.0,
             "xi_1_f"              : 1.0,
             "xi_n_f"              : 0.0,
             "xib_1_f"             : 1.0,
@@ -148,7 +149,7 @@ class ExplicitUPwSolver(UPwSolver):
         b_0 = 0.0
         b_1 = 0.0
         b_2 = 0.0
-        rayleigh_alpha_b = 0.0
+        rayleigh_alpha_b = self.settings["rayleigh_alpha_b"].GetDouble()
         rayleigh_beta_b = 0.0
         if (scheme_type == "Explicit_Central_Differences" and g_factor >= 1.0):
             theta_factor = 0.5
@@ -165,29 +166,27 @@ class ExplicitUPwSolver(UPwSolver):
             alpha_1 = self.settings["alpha_1"].GetDouble()
             alpha_2 = self.settings["alpha_2"].GetDouble()
 
-            delta_0 = 7.0/12.0*delta
-            delta_1 = -delta/6.0
-            delta_2 = -delta
+            #TODO. Be careful!!. These are redefined again in the C++ scheme...
+            delta_0 = 25.0/12.0*delta
+            delta_1 = -19.0/6.0*delta
+            delta_2 = 0.5*delta
             B = 1.0+23.0/12.0*delta
 
-            p_n = Dt*omega_n
             p_1 = Dt*omega_1
-
-            xib_n = (-3.0/delta)*self.settings["xib_n_f"].GetDouble()
-            # b_0 = p_n/(2.0*delta*xib_n)*(-(1.0+delta_0)+(B*alpha_0+2.0+23.0/6.0*delta)/p_n**2)
-            # b_1 = p_n/(2.0*delta*xib_n)*(-delta_1+B*(alpha_1-1.0)/p_n**2)
-            # b_2 = p_n/(2.0*delta*xib_n)*(-delta_2+B*alpha_2/p_n**2)
-            b_0 = 1.0/(2.0*delta*xib_n*p_n)*((2.0+alpha_0)*B-(1.0+delta_0)*p_n**2)
-            b_2 = 1.0/(2.0*delta*xib_n*p_n)*(alpha_2*B-delta_2*p_n**2)
-            xib_1 = (-delta_2/(2.0*delta*b_2)*p_1)*self.settings["xib_1_f"].GetDouble()
-            rayleigh_beta_b = 2.0*(xib_n*omega_n-xib_1*omega_1)/(omega_n*omega_n-omega_1*omega_1)
-            rayleigh_alpha_b = 2.0*xib_1*omega_1-rayleigh_beta_b*omega_1*omega_1
-            b_1 = 1.0/(-delta*Dt*rayleigh_alpha_b+2.0*delta*xib_n*p_n)*((alpha_1-1.0)*B-delta_1*p_n**2+(b_0+b_2)*delta*Dt*rayleigh_alpha_b)
-            b_s = b_0+b_1+b_2
+            p_n = Dt*omega_n
 
             D = 1.0+delta_0+delta_1+delta_2
-            A = 1.0+delta_0-b_0*delta_2/b_2
-            xi_1 = (np.sqrt(B*(D-delta_1*b_s))-0.5*p_1*A)*self.settings["xi_1_f"].GetDouble()
+            xib_n = (-3.0/delta)*self.settings["xib_n_f"].GetDouble()
+            b_0 = 1.0/(2.0*delta*xib_n*p_n)*((2.0+alpha_0)*B-(1.0+delta_0)*p_n**2)
+            b_2 = 1.0/(2.0*delta*xib_n*p_n)*(alpha_2*B-delta_2*p_n**2)
+            b_1 = 1.0/(2.0*delta*xib_n*p_n-delta*Dt*rayleigh_alpha_b)*((alpha_1-1.0)*B-delta_1*p_n**2+(b_0+b_2)*delta*Dt*rayleigh_alpha_b)
+            b_s = b_0+b_1+b_2
+            H = 1.0/(b_0+b_2)*np.sqrt(B**2*b_s**2+(b_0+b_2)**2*B*D*p_1**2-(1.0+delta_0+delta_2)*(b_0+b_2)*B*b_s*p_1**2)
+            xib_1 = ((b_s*B)/(p_1*(b_0+b_2)**2)-(1.0+delta_0+delta_2)/(2.0*(b_0+b_2))*p_1+H/((b_0+b_2)*p_1))/delta*self.settings["xib_1_f"].GetDouble()
+            rayleigh_beta_b = 2.0*(xib_n*omega_n-xib_1*omega_1)/(omega_n*omega_n-omega_1*omega_1)
+            rayleigh_alpha_b = 2.0*xib_1*omega_1-rayleigh_beta_b*omega_1*omega_1
+            
+            xi_1 = (delta_2*p_1+2.0*b_2*delta*xib_1)*self.settings["xi_1_f"].GetDouble()
             xi_n = 1.0*self.settings["xi_n_f"].GetDouble()
             rayleigh_beta = 2.0*(xi_n*omega_n-xi_1*omega_1)/(omega_n*omega_n-omega_1*omega_1)
             rayleigh_alpha = 2.0*xi_1*omega_1-rayleigh_beta*omega_1*omega_1
