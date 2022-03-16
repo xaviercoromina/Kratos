@@ -270,19 +270,39 @@ public:
         if (DomainSize == 3)
             fix_displacements[2] = (itCurrentNode->GetDof(DISPLACEMENT_Z, DisplacementPosition + 2).IsFixed());
 
-        // CDF_01-03-22
+        // CDF_14-03-22
+        const double eps_m = (mB0+mB1+mB2)*mDelta*mAlphab;
+        const double eps_f = (mB0+mB1+mB2)*mDelta*mBetab;
         for (IndexType j = 0; j < DomainSize; j++) {
             if (fix_displacements[j] == false) {
-                    r_displacement[j] = ( (2.0*mB-mDeltaTime*(mAlpha+mDelta*mB0*mAlphab))*r_nodal_mass_array[j]*r_displacement[j]
-                                          - mDeltaTime*(mBeta+mDelta*mB0*mBetab+mDeltaTime*(1.0+mDelta0))*r_internal_force[j]
-                                          - (mB+mDeltaTime*(-mAlpha+mDelta*mB1*mAlphab))*r_nodal_mass_array[j]*r_displacement_old[j]
-                                          - mDeltaTime*(-mBeta+mDelta*mB1*mBetab+mDeltaTime*mDelta1)*r_internal_force_old[j]
-                                          - mDeltaTime*mDelta*mB2*mAlphab*r_nodal_mass_array[j]*r_displacement_older[j]
-                                          - mDeltaTime*(mDelta*mB2*mBetab+mDeltaTime*mDelta2)*r_internal_force_older[j]
+                    r_displacement[j] = ( (2.0*mB-mDeltaTime*(0.5*mAlpha+mDelta*mB0*mAlphab))*r_nodal_mass_array[j]*r_displacement[j]
+                                          - mDeltaTime*(0.5*mBeta+mDelta*mB0*mBetab+mDeltaTime*(1.0+mDelta0))*r_internal_force[j]
+                                          - (mB-eps_m*mDeltaTime+mDeltaTime*mDelta*mB1*mAlphab)*r_nodal_mass_array[j]*r_displacement_old[j]
+                                          - mDeltaTime*(mDelta*mB1*mBetab+mDeltaTime*mDelta1)*r_internal_force_old[j]
+                                          - mDeltaTime*(-0.5*mAlpha+mDelta*mB2*mAlphab)*r_nodal_mass_array[j]*r_displacement_older[j]
+                                          - mDeltaTime*(-0.5*mBeta+mDelta*mB2*mBetab+mDeltaTime*mDelta2)*r_internal_force_older[j]
                                           + mDeltaTime*mDeltaTime*((1.0+mDelta0)*r_external_force[j]+mDelta1*r_external_force_old[j]+mDelta2*r_external_force_older[j])
+                                          + eps_f*mDeltaTime*r_external_force_old[j]
                                         ) / ( r_nodal_mass_array[j]*mB );
             }
         }
+
+        // CDF_01-03-22
+        // const double eps_hat = (mB0+mB1+mB2)*mDelta*mDeltaTime*mAlphab;
+        // const double eps_i = (mB0+mB1+mB2)/3.0*mDelta*mDeltaTime*mBetab;
+        // for (IndexType j = 0; j < DomainSize; j++) {
+        //     if (fix_displacements[j] == false) {
+        //             r_displacement[j] = ( (2.0*mB-mDeltaTime*(mAlpha+mDelta*mB0*mAlphab))*r_nodal_mass_array[j]*r_displacement[j]
+        //                                   - mDeltaTime*(mBeta+mDelta*mB0*mBetab+mDeltaTime*(1.0+mDelta0))*r_internal_force[j]
+        //                                   - (mB-eps_hat+mDeltaTime*(-mAlpha+mDelta*mB1*mAlphab))*r_nodal_mass_array[j]*r_displacement_old[j]
+        //                                   - mDeltaTime*(-mBeta+mDelta*mB1*mBetab+mDeltaTime*mDelta1)*r_internal_force_old[j]
+        //                                   - mDeltaTime*mDelta*mB2*mAlphab*r_nodal_mass_array[j]*r_displacement_older[j]
+        //                                   - mDeltaTime*(mDelta*mB2*mBetab+mDeltaTime*mDelta2)*r_internal_force_older[j]
+        //                                   + mDeltaTime*mDeltaTime*((1.0+mDelta0)*r_external_force[j]+mDelta1*r_external_force_old[j]+mDelta2*r_external_force_older[j])
+        //                                   + eps_i*(r_external_force[j]+r_external_force_old[j]+r_external_force_older[j])
+        //                                 ) / ( r_nodal_mass_array[j]*mB );
+        //     }
+        // }
 
         // Solution of the darcy_equation
         if( itCurrentNode->IsFixed(WATER_PRESSURE) == false ) {
