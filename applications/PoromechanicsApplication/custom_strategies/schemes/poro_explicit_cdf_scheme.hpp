@@ -185,6 +185,7 @@ public:
         // CDF_14-03-22
         const double eps_m = (mB0+mB1+mB2)*mDelta*mAlphab;
         const double eps_f = (mB0+mB1+mB2)*mDelta*mBetab;
+        // const double eps_f = 0.0;
         for (IndexType j = 0; j < DomainSize; j++) {
             if (fix_displacements[j] == false) {
                     r_displacement[j] = ( (2.0*mB-mDeltaTime*(0.5*mAlpha+mDelta*mB0*mAlphab))*nodal_mass*r_displacement[j]
