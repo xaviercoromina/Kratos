@@ -184,8 +184,8 @@ public:
 
         // CDF_14-03-22
         const double eps_m = (mB0+mB1+mB2)*mDelta*mAlphab;
-        const double eps_f = (mB0+mB1+mB2)*mDelta*mBetab;
         // const double eps_f = 0.0;
+        const double eps_f = (mB0+mB1+mB2)*mDelta*mBetab;
         for (IndexType j = 0; j < DomainSize; j++) {
             if (fix_displacements[j] == false) {
                     r_displacement[j] = ( (2.0*mB-mDeltaTime*(0.5*mAlpha+mDelta*mB0*mAlphab))*nodal_mass*r_displacement[j]
@@ -199,6 +199,19 @@ public:
                                         ) / ( nodal_mass*mB );
             }
         }
+        // for (IndexType j = 0; j < DomainSize; j++) {
+        //     if (fix_displacements[j] == false) {
+        //             r_displacement[j] = ( (2.0*mB-mDeltaTime*(0.5*mAlpha+mDelta*mB0*mAlphab))*nodal_mass*r_displacement[j]
+        //                                   - mDeltaTime*(0.5*mBeta+mDelta*mB0*mBetab+mDeltaTime*(1.0+mDelta0))*r_internal_force[j]
+        //                                   - (mB-eps_m*mDeltaTime+mDeltaTime*mDelta*mB1*mAlphab)*nodal_mass*r_displacement_old[j]
+        //                                   - mDeltaTime*(mDelta*mB1*mBetab+mDeltaTime*mDelta1)*r_internal_force_old[j]
+        //                                   - mDeltaTime*(-0.5*mAlpha+mDelta*mB2*mAlphab)*nodal_mass*r_displacement_older[j]
+        //                                   - mDeltaTime*(-0.5*mBeta+mDelta*mB2*mBetab+mDeltaTime*mDelta2)*r_internal_force_older[j]
+        //                                   + mDeltaTime*mDeltaTime*((1.0+mDelta0)*r_external_force[j]+mDelta1*r_external_force_old[j]+mDelta2*r_external_force_older[j])
+        //                                   + eps_f/3.0*mDeltaTime*(r_external_force[j]+r_external_force_old[j]+r_external_force_older[j])
+        //                                 ) / ( nodal_mass*mB );
+        //     }
+        // }
 
         // CDF_01-03-22
         // const double eps_hat = (mB0+mB1+mB2)*mDelta*mDeltaTime*mAlphab;
@@ -273,6 +286,7 @@ public:
 
         // CDF_14-03-22
         const double eps_m = (mB0+mB1+mB2)*mDelta*mAlphab;
+        // const double eps_f = 0.0;
         const double eps_f = (mB0+mB1+mB2)*mDelta*mBetab;
         for (IndexType j = 0; j < DomainSize; j++) {
             if (fix_displacements[j] == false) {
@@ -287,7 +301,6 @@ public:
                                         ) / ( r_nodal_mass_array[j]*mB );
             }
         }
-
         // CDF_01-03-22
         // const double eps_hat = (mB0+mB1+mB2)*mDelta*mDeltaTime*mAlphab;
         // const double eps_i = (mB0+mB1+mB2)/3.0*mDelta*mDeltaTime*mBetab;

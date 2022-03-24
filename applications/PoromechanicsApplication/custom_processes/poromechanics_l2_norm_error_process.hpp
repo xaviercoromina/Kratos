@@ -77,7 +77,7 @@ public:
 
         std::fstream l2_error_file;
         l2_error_file.open ("time_l2-rel-error_l2-abs-error.txt", std::fstream::out | std::fstream::app);
-        l2_error_file.precision(12);
+        l2_error_file.precision(15);
         l2_error_file << 0.0 << " " << 1.0 << " " << 1.0 << std::endl;
         l2_error_file.close();
 
@@ -123,7 +123,7 @@ public:
 
         std::fstream l2_error_file;
         l2_error_file.open ("time_l2-rel-error_l2-abs-error.txt", std::fstream::out | std::fstream::app);
-        l2_error_file.precision(12);
+        l2_error_file.precision(15);
         l2_error_file << r_current_process_info[TIME] << " " << l2_rel_error << " " << l2_abs_error << std::endl;
         l2_error_file.close();
 
