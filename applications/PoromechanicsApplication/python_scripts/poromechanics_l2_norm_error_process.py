@@ -95,7 +95,7 @@ class PoromechanicsL2NormErrorProcess(KratosMultiphysics.Process):
             self.WriteDataToFile(file_or_group = self.file,
                                 names = ['NODE', 'REF_DISPL_X', 'REF_DISPL_Y', 'REF_DISPL_Z','REF_FLUID_PRESSURE'],
                                 data = [self.node_id_list, self.displ_x_list, self.displ_y_list, self.displ_z_list,self.fluid_pressure_list],
-                                dtype = 'float32')
+                                dtype = 'float64')
         else:
             e = False
             node = self.group_name + '/REF_DISPL_X'
