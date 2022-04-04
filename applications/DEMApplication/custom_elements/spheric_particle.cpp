@@ -122,6 +122,7 @@ SphericParticle& SphericParticle::operator=(const SphericParticle& rOther) {
     mContactingNeighbourIds = rOther.mContactingNeighbourIds;
     mContactingFaceNeighbourIds = rOther.mContactingFaceNeighbourIds;
     mNeighbourRigidFaces = rOther.mNeighbourRigidFaces;
+    mNeighbourNonContactRigidFaces = rOther.mNeighbourNonContactRigidFaces;
     mNeighbourPotentialRigidFaces = rOther.mNeighbourPotentialRigidFaces;
     mContactConditionWeights = rOther.mContactConditionWeights;
     mContactConditionContactTypes = rOther.mContactConditionContactTypes;
@@ -1311,6 +1312,9 @@ void SphericParticle::ComputeBallToBallContactForce(SphericParticle::ParticleDat
             }
             DEM_ADD_SECOND_TO_FIRST(r_nodal_stiffness_array, GlobalStiffness)
             DEM_ADD_SECOND_TO_FIRST(r_nodal_rotational_stiffness_array, GlobalRotationalStiffness)
+            
+            // Store contact information needed for later processes
+            StoreBallToBallContactInfo(r_process_info, data_buffer, data_buffer.mpOtherParticle, GlobalContactForce, sliding);
 
             DEM_SET_COMPONENTS_TO_ZERO_3(DeltDisp)
             DEM_SET_COMPONENTS_TO_ZERO_3(LocalDeltDisp)
@@ -1556,6 +1560,10 @@ void SphericParticle::ComputeBallToRigidFaceContactForce(SphericParticle::Partic
             if (this->Is(DEMFlags::HAS_STRESS_TENSOR)) {
                 AddWallContributionToStressTensor(GlobalElasticContactForce, data_buffer.mLocalCoordSystem[2], DistPToB, 0.0);
             }
+
+            // Store contact information needed for later processes
+            StoreBallToRigidFaceContactInfo(r_process_info, data_buffer, wall, GlobalContactForce, sliding);
+
         } //ContactType if
     } //rNeighbours.size loop
 
@@ -1793,7 +1801,8 @@ void SphericParticle::ComputeConditionRelativeData(int rigid_neighbour_index,   
     if (points == 3 || points == 4)
     {
         unsigned int dummy_current_edge_index;
-        contact_exists = GeometryFunctions::FacetCheck(wall->GetGeometry(), node_coordinates, radius, LocalCoordSystem, DistPToB, TempWeight, dummy_current_edge_index);
+        bool is_inside;
+        contact_exists = GeometryFunctions::FacetCheck(wall->GetGeometry(), node_coordinates, radius, LocalCoordSystem, DistPToB, TempWeight, dummy_current_edge_index, is_inside);
         ContactType = 1;
         Weight[0]=TempWeight[0];
         Weight[1]=TempWeight[1];
@@ -2415,6 +2424,9 @@ std::unique_ptr<DEMDiscontinuumConstitutiveLaw> SphericParticle::pCloneDiscontin
 
 void SphericParticle::ComputeOtherBallToBallForces(array_1d<double, 3>& other_ball_to_ball_forces) {}
 
+void SphericParticle::StoreBallToBallContactInfo(const ProcessInfo& r_process_info, SphericParticle::ParticleDataBuffer& data_buffer, SphericParticle* other_element, double GlobalContactForce[3], bool sliding) {}
+
+void SphericParticle::StoreBallToRigidFaceContactInfo(const ProcessInfo& r_process_info, SphericParticle::ParticleDataBuffer& data_buffer, DEMWall* other_element, double GlobalContactForce[3], bool sliding) {}
 
 double SphericParticle::GetInitialDeltaWithFEM(int index) {//only available in continuum_particle
     return 0.0;
