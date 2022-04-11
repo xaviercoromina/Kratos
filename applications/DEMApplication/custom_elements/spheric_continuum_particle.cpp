@@ -204,7 +204,6 @@ namespace Kratos {
         return effectiveVolumeRadius;
     }
 
-    // TODO. Ignasi
     void SphericContinuumParticle::ComputeBallToBallInitialStiffness(SphericParticle::ParticleDataBuffer & data_buffer,
                                                             const ProcessInfo& r_process_info,
                                                             array_1d<double, 3>& r_nodal_stiffness_array,

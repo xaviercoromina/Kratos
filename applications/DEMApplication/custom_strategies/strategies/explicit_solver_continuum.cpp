@@ -148,7 +148,6 @@ namespace Kratos {
         }
         ComputeNodalArea();
 
-        //TODO. Ignasi:
         InitialMassArrayOperations();
         
         KRATOS_CATCH("")

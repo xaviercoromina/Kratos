@@ -294,7 +294,6 @@ namespace Kratos {
 
     protected:
 
-        //TODO. Ignasi:
         void InitialMassArrayOperations();
         void MassArrayOperations();
         void ComputeGloballyEstimatedStiffness();

@@ -457,26 +457,6 @@ class DEMAnalysisStage(AnalysisStage):
         out_error.write("\n")
         out_error.close()
 
-        # #TODO. Ignasi: beam linear load
-        # out_error = open("time_dispy_reactionty.txt","a")
-        # out_error.write(str(self.time))
-        # out_error.write(" ")
-        # out_error.write(str(0.0))
-        # out_error.write(" ")
-        # out_error.write(str(0.0))
-        # out_error.write("\n")
-        # out_error.close()
-
-        #TODO. Ignasi: 3 bars
-        # out_error = open("time_l2-rel-error_l2-abs-error.txt","a")
-        # out_error.write(str(self.time))
-        # out_error.write(" ")
-        # out_error.write(str(1.0))
-        # out_error.write(" ")
-        # out_error.write(str(1.0))
-        # out_error.write("\n")
-        # out_error.close()
-
     def SetMaterials(self):
 
         self.ReadMaterialsFile()
@@ -671,50 +651,6 @@ class DEMAnalysisStage(AnalysisStage):
         if self.IsTimeToPrintPostProcess():
             self.PrintResultsForGid(self.time)
             self.time_old_print = self.time
-
-            # #TODO. Ignasi: beam linear load
-            # # Print solution
-            # disp_y_force_node = self.spheres_model_part.Nodes[self.force_node_id].GetSolutionStepValue(DISPLACEMENT_Y)
-            # reaction_y_force_node = self.spheres_model_part.Nodes[self.force_node_id].GetSolutionStepValue(INTERNAL_FORCE_Y)
-            # out_error = open("time_dispy_reactionty.txt","a")
-            # out_error.write(str(self.time))
-            # out_error.write(" ")
-            # out_error.write(str(disp_y_force_node))
-            # out_error.write(" ")
-            # out_error.write(str(reaction_y_force_node))
-            # out_error.write("\n")
-            # out_error.close()
-
-            # TODO. Ignasi: 3 bars
-            # ref_dispY_list=[3.667e-4,
-            #                 1.667e-4,
-            #                 6.667e-5,
-            #                 0.0
-            #                 ]                
-            # i = -1
-            # numerator = 0.0
-            # denominator = 0.0
-            # for node in self.spheres_model_part.Nodes:
-            #     i+=1
-            #     dispY = node.GetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_Y)
-            #     # print(dispY)
-            #     ref_dispY = ref_dispY_list[i]
-            #     # print(ref_dispY)
-            #     norm_2_delta_disp = (dispY-ref_dispY)**2
-            #     norm_2_ref_disp = ref_dispY**2
-            #     numerator += norm_2_delta_disp
-            #     denominator += norm_2_ref_disp
-            # import numpy as np
-            # l2_abs_error = np.sqrt(numerator)
-            # l2_rel_error = l2_abs_error/np.sqrt(denominator)
-            # out_error = open("time_l2-rel-error_l2-abs-error.txt","a")
-            # out_error.write(str(self.time))
-            # out_error.write(" ")
-            # out_error.write(str(l2_rel_error))
-            # out_error.write(" ")
-            # out_error.write(str(l2_abs_error))
-            # out_error.write("\n")
-            # out_error.close()
 
     def SolverSolve(self):
         self._GetSolver().SolveSolutionStep()

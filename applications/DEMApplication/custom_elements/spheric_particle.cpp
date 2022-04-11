@@ -268,7 +268,6 @@ void SphericParticle::SetIntegrationScheme(DEMIntegrationScheme::Pointer& transl
     mpRotationalIntegrationScheme = rotational_integration_scheme->CloneRaw();
 }
 
-// TODO. Ignasi
 void SphericParticle::CalculateInitialNodalMassArray(const ProcessInfo& r_process_info)
 {
     KRATOS_TRY
@@ -299,7 +298,6 @@ void SphericParticle::CalculateInitialNodalMassArray(const ProcessInfo& r_proces
     KRATOS_CATCH( "" )
 }
 
-// TODO. Ignasi
 void SphericParticle::ComputeBallToBallInitialStiffness(SphericParticle::ParticleDataBuffer & data_buffer,
                                                     const ProcessInfo& r_process_info,
                                                     array_1d<double, 3>& r_nodal_stiffness_array,
@@ -372,7 +370,6 @@ void SphericParticle::ComputeBallToBallInitialStiffness(SphericParticle::Particl
     KRATOS_CATCH("")
 }// ComputeBallToBallInitialStiffness
 
-// TODO. Ignasi
 void SphericParticle::ComputeBallToRigidFaceInitialStiffness(SphericParticle::ParticleDataBuffer & data_buffer,
                                                     const ProcessInfo& r_process_info,
                                                     array_1d<double, 3>& r_nodal_stiffness_array,

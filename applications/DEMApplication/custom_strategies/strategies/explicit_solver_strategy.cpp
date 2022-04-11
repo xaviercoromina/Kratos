@@ -215,13 +215,11 @@ namespace Kratos {
 
         ComputeNodalArea();
 
-        //TODO. Ignasi:
         InitialMassArrayOperations();
 
         KRATOS_CATCH("")
     } // Initialize()
 
-    //TODO. Ignasi:
     void ExplicitSolverStrategy::InitialMassArrayOperations() {
 
         KRATOS_TRY
@@ -358,11 +356,15 @@ namespace Kratos {
                 if (displacement[i] < std::numeric_limits<double>::epsilon()) {
                     globally_estimated_nodal_mass_array[i] = estimated_nodal_mass_array[i];
                 } else {
+                    // TODO. check...
                     globally_estimated_nodal_mass_array[i] = ( external_force_old[i]
                                                             + reaction_old[i]
-                                                            - nodal_mass_array[i]*acceleration[i] // TODO. check...
-                                                            - rayleigh_alpha*nodal_mass_array[i]*velocity[i] // TODO. check...
-                                                            ) / ( rayleigh_beta*velocity[i]+displacement[i] ); // TODO. check velocity...
+                                                            - nodal_mass_array[i]*acceleration[i]
+                                                            - rayleigh_alpha*nodal_mass_array[i]*velocity[i]
+                                                            ) / ( rayleigh_beta*velocity[i]+displacement[i] );
+                    // globally_estimated_nodal_mass_array[i] = ( external_force_old[i]
+                    //                                         + reaction_old[i]
+                    //                                         ) / ( displacement[i] );
                     // Stiffness must be positive
                     if (globally_estimated_nodal_mass_array[i] < 0.0) {
                         globally_estimated_nodal_mass_array[i] = -globally_estimated_nodal_mass_array[i];
@@ -371,11 +373,15 @@ namespace Kratos {
                 if (rotated_angle[i] < std::numeric_limits<double>::epsilon()) {
                     globally_estimated_particle_moment_intertia_array[i] = estimated_particle_moment_intertia_array[i];
                 } else {
+                    // TODO. check...
                     globally_estimated_particle_moment_intertia_array[i] = ( external_moment_old[i]
                                                                             + reaction_moment_old[i]
-                                                                            - particle_moment_intertia_array[i]*angular_acceleration[i] // TODO. check...
-                                                                            - rayleigh_alpha*particle_moment_intertia_array[i]*angular_velocity[i] // TODO. check...
-                                                                            ) / ( rayleigh_beta*angular_velocity[i]+rotated_angle[i] ); // TODO. check angular_velocity...
+                                                                            - particle_moment_intertia_array[i]*angular_acceleration[i]
+                                                                            - rayleigh_alpha*particle_moment_intertia_array[i]*angular_velocity[i]
+                                                                            ) / ( rayleigh_beta*angular_velocity[i]+rotated_angle[i] );
+                    // globally_estimated_particle_moment_intertia_array[i] = ( external_moment_old[i]
+                    //                                                         + reaction_moment_old[i]
+                    //                                                         ) / ( rotated_angle[i] );
                     // Stiffness must be positive
                     if (globally_estimated_particle_moment_intertia_array[i] < 0.0) {
                         globally_estimated_particle_moment_intertia_array[i] = -globally_estimated_particle_moment_intertia_array[i];
