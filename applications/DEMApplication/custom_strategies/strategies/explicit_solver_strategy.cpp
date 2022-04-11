@@ -1601,17 +1601,17 @@ namespace Kratos {
             this->ComputeExtremeStiffnessAndMass();
 
             // TODO. Ignasi: print kMax i KMin
-            std::fstream kmax_kmin_file;
-            kmax_kmin_file.open ("time_kmax_kmin.txt", std::fstream::out | std::fstream::app);
-            kmax_kmin_file.precision(12);
-            kmax_kmin_file << time << " " << mKNormMax << " " << mKNormMin << std::endl;
-            kmax_kmin_file.close();
+            // std::fstream kmax_kmin_file;
+            // kmax_kmin_file.open ("time_kmax_kmin.txt", std::fstream::out | std::fstream::app);
+            // kmax_kmin_file.precision(12);
+            // kmax_kmin_file << time << " " << mKNormMax << " " << mKNormMin << std::endl;
+            // kmax_kmin_file.close();
 
-            std::fstream gkmax_gkmin_file;
-            gkmax_gkmin_file.open ("time_gkmax_gkmin.txt", std::fstream::out | std::fstream::app);
-            gkmax_gkmin_file.precision(12);
-            gkmax_gkmin_file << time << " " << mgKNormMax << " " << mgKNormMin << std::endl;
-            gkmax_gkmin_file.close();
+            // std::fstream gkmax_gkmin_file;
+            // gkmax_gkmin_file.open ("time_gkmax_gkmin.txt", std::fstream::out | std::fstream::app);
+            // gkmax_gkmin_file.precision(12);
+            // gkmax_gkmin_file << time << " " << mgKNormMax << " " << mgKNormMin << std::endl;
+            // gkmax_gkmin_file.close();
 
             // Estimate nodal stiffness
             block_for_each(rNodes, [&](ModelPart::NodeType& rNode) {
