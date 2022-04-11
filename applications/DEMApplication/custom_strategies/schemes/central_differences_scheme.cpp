@@ -48,6 +48,8 @@ namespace Kratos {
         const array_1d<double,3>& internal_force_old = i.FastGetSolutionStepValue(INTERNAL_FORCE_OLD);
         const array_1d<double,3>& external_force = i.FastGetSolutionStepValue(EXTERNAL_FORCE);
         const array_1d<double,3>& external_force_old = i.FastGetSolutionStepValue(EXTERNAL_FORCE_OLD);
+        array_1d<double,3>& vel_old = i.FastGetSolutionStepValue(VELOCITY_OLD);
+        array_1d<double,3>& accel = i.FastGetSolutionStepValue(ACCELERATION);
 
         // TODO. Ignasi
         const array_1d<double,3>& nodal_mass_array = i.FastGetSolutionStepValue(NODAL_MASS_ARRAY);
@@ -62,7 +64,9 @@ namespace Kratos {
                 displ_old[k] = displ[k];
                 displ[k] = displ_old[k] + delta_displ[k];
                 coor[k] = initial_coor[k] + displ[k];
+                vel_old[k] = vel[k];
                 vel[k] = delta_displ[k]/delta_t;
+                accel[k] = (vel[k] - vel_old[k])/delta_t;
             } else {
                 delta_displ[k] = delta_t * vel[k];
                 displ[k] += delta_displ[k];
@@ -114,6 +118,8 @@ namespace Kratos {
         const array_1d<double,3>& internal_torque_old = i.FastGetSolutionStepValue(PARTICLE_INTERNAL_MOMENT_OLD);
         const array_1d<double,3>& external_torque = i.FastGetSolutionStepValue(PARTICLE_EXTERNAL_MOMENT);
         const array_1d<double,3>& external_torque_old = i.FastGetSolutionStepValue(PARTICLE_EXTERNAL_MOMENT_OLD);
+        array_1d<double,3>& ang_vel_old = i.FastGetSolutionStepValue(ANGULAR_VELOCITY_OLD);
+        array_1d<double,3>& ang_accel = i.FastGetSolutionStepValue(ANGULAR_ACCELERATION);
 
         // TODO. Ignasi
         const array_1d<double,3>& particle_moment_intertia_array = i.FastGetSolutionStepValue(PARTICLE_MOMENT_OF_INERTIA_ARRAY);
@@ -127,7 +133,9 @@ namespace Kratos {
                                     + delta_t*delta_t*(theta*external_torque[k]+(1.0-theta)*external_torque_old[k]) ) * (1.0 / (particle_moment_intertia_array[k]*(1.0+g_coefficient*delta_t))) - rotated_angle[k];
                 rotated_angle_old[k] = rotated_angle[k];
                 rotated_angle[k] = rotated_angle_old[k] + delta_rotation[k];
+                ang_vel_old[k] = angular_velocity[k];
                 angular_velocity[k] = delta_rotation[k]/delta_t;
+                ang_accel[k] = (angular_velocity[k] - ang_vel_old[k])/delta_t;
             } else {
                 delta_rotation[k] = delta_t * angular_velocity[k];
                 rotated_angle[k] += delta_rotation[k];

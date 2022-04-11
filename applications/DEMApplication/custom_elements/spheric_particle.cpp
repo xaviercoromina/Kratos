@@ -580,6 +580,8 @@ void SphericParticle::CalculateRightHandSide(const ProcessInfo& r_process_info, 
     array_1d<double, 3>& internal_moment_old = this_node.FastGetSolutionStepValue(PARTICLE_INTERNAL_MOMENT_OLD);
     array_1d<double, 3>& external_moment = this_node.FastGetSolutionStepValue(PARTICLE_EXTERNAL_MOMENT);
     array_1d<double, 3>& external_moment_old = this_node.FastGetSolutionStepValue(PARTICLE_EXTERNAL_MOMENT_OLD);
+    array_1d<double, 3>& reaction_old = this_node.FastGetSolutionStepValue(REACTION_OLD);
+    array_1d<double, 3>& reaction_moment_old = this_node.FastGetSolutionStepValue(REACTION_MOMENT_OLD);
 
     array_1d<double, 3>& nodal_mass_array = this_node.FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY);
     array_1d<double, 3>& particle_moment_intertia_array = this_node.FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY);
@@ -636,6 +638,8 @@ void SphericParticle::CalculateRightHandSide(const ProcessInfo& r_process_info, 
     external_moment_old = external_moment;
     internal_moment = -1.0*mContactMoment; // NOTE: we assume ViscoLocalRotationalMoment is zero
     external_moment = additionally_applied_moment;
+    reaction_old = internal_force - external_force_old;
+    reaction_moment_old = internal_moment - external_moment_old;
     
     ApplyGlobalDampingToContactForcesAndMoments(total_forces, total_moment);
 

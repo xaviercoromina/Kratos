@@ -295,11 +295,20 @@ namespace Kratos {
     protected:
 
         //TODO. Ignasi:
-        virtual void InitialMassArrayOperations();
-        virtual void MassArrayOperations();
+        void InitialMassArrayOperations();
+        void MassArrayOperations();
+        void ComputeGloballyEstimatedStiffness();
+        void ComputeExtremeStiffnessAndMass();
+        void CheckMaximumStiffness();
         array_1d<double,3> mKMax;
         array_1d<double,3> mKrMax;
-        double mMMin, mMMax, mKNormMin, mKNormMax;
+        array_1d<double,3> mKMin;
+        array_1d<double,3> mKrMin;
+        array_1d<double,3> mgKMax;
+        array_1d<double,3> mgKrMax;
+        array_1d<double,3> mgKMin;
+        array_1d<double,3> mgKrMin;
+        double mMMin, mMMax, mKNormMin, mKNormMax, mgKNormMin, mgKNormMax;
         bool mUpdatedRayleighParameters;
 
         Parameters mParameters;
