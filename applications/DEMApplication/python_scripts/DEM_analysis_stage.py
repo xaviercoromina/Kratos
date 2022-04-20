@@ -740,7 +740,7 @@ class DEMAnalysisStage(AnalysisStage):
             # disp_convergence_tolerance = 1.0e-10
             # force_convergence_tolerance = 1.0e-2
             disp_convergence_tolerance = 1.0e-13
-            force_convergence_tolerance = 1.0e-5
+            force_convergence_tolerance = 1.0e-2
             is_converged = False
             if(total_delta_displacement <= disp_convergence_tolerance and equilibrium_forces_y <= force_convergence_tolerance):
                 is_converged = True
