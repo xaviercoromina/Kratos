@@ -356,7 +356,7 @@ namespace Kratos {
                 if (displacement[i] < std::numeric_limits<double>::epsilon()) {
                     globally_estimated_nodal_mass_array[i] = estimated_nodal_mass_array[i];
                 } else {
-                    // TODO. check...
+                    // TODO. Ignasi: check...
                     globally_estimated_nodal_mass_array[i] = ( external_force_old[i]
                                                             + reaction_old[i]
                                                             - nodal_mass_array[i]*acceleration[i]
@@ -373,7 +373,7 @@ namespace Kratos {
                 if (rotated_angle[i] < std::numeric_limits<double>::epsilon()) {
                     globally_estimated_particle_moment_intertia_array[i] = estimated_particle_moment_intertia_array[i];
                 } else {
-                    // TODO. check...
+                    // TODO. Ignasi: check...
                     globally_estimated_particle_moment_intertia_array[i] = ( external_moment_old[i]
                                                                             + reaction_moment_old[i]
                                                                             - particle_moment_intertia_array[i]*angular_acceleration[i]
@@ -1532,7 +1532,7 @@ namespace Kratos {
                     omega_1_new = omega_1_old;
                 }
                 if (gomega_ratio <= 1.0) {
-                    std::cout << "gomega_ratio <= 1.0 !! omega_ratio: " << gomega_ratio << std::endl;
+                    std::cout << "gomega_ratio <= 1.0 !! gomega_ratio: " << gomega_ratio << std::endl;
                     gomega_1_new = omega_1_old;
                 }
 
