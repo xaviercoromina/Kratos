@@ -121,7 +121,7 @@ def GetDefaultInputParameters():
                 "xi_1_factor"                       : 1.0,
                 "use_mass_array"                    : false,
                 "mass_array_averaging_time_interval": 1.0e12,
-                "k_min_factor"                      : 1.0,
+                "omega_n_factor"                    : 1.0,
                 "omega_1_factor"                    : 1.0
             },
             "virtual_sea_surface_settings"     : {

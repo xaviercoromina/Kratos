@@ -741,11 +741,6 @@ namespace Kratos {
 
         // Check that the maximum stiffness is not zero
         this->CheckMaximumStiffness();
-
-        // Scale mKNormMin to avoid problems in cases with spurious minimum values
-        const double Kmin_factor = r_process_info[K_MIN_FACTOR];
-        mKNormMin = mKNormMin * Kmin_factor;
-        mgKNormMin = mgKNormMin * Kmin_factor;
     }
 
     void ExplicitSolverStrategy::CheckMaximumStiffness() {
@@ -1458,6 +1453,9 @@ namespace Kratos {
             // Check that the maximum stiffness is not zero
             this->CheckMaximumStiffness();
 
+            // Scale mKNormMin to calibrate new omega_n
+            const double omega_n_factor = r_process_info[OMEGA_N_FACTOR];
+            
             // Estimate nodal stiffness and replace nodal_mass by it
             block_for_each(rNodes, [&](ModelPart::NodeType& rNode) {
                 array_1d<double, 3>& nodal_mass_array = rNode.FastGetSolutionStepValue(NODAL_MASS_ARRAY);
@@ -1505,8 +1503,8 @@ namespace Kratos {
                     globally_estimated_particle_moment_intertia_array_old[i] = globally_estimated_particle_moment_intertia_array[i];
 
                     // Use estimated nodal mass array scaled so that the Dt is similar to the original one
-                    nodal_mass_array[i] = (1.0-mass_array_alpha)*estimated_nodal_mass_array[i]*mMMin/mKNormMin + mass_array_alpha*nodal_mass_array[i];
-                    particle_moment_intertia_array[i] = (1.0-mass_array_alpha)*estimated_particle_moment_intertia_array[i]*mMMin/mKNormMin + mass_array_alpha*particle_moment_intertia_array[i];
+                    nodal_mass_array[i] = (1.0-mass_array_alpha)*estimated_nodal_mass_array[i]*mMMin/(mKNormMin*omega_n_factor) + mass_array_alpha*nodal_mass_array[i];
+                    particle_moment_intertia_array[i] = (1.0-mass_array_alpha)*estimated_particle_moment_intertia_array[i]*mMMin/(mKNormMin*omega_n_factor) + mass_array_alpha*particle_moment_intertia_array[i];
                     // TODO. Ignasi: check which stiffness is better (the locally estimated or the globally estimated)
                     // nodal_mass_array[i] = (1.0-mass_array_alpha)*globally_estimated_nodal_mass_array[i]*mMMin/mgKNormMin + mass_array_alpha*nodal_mass_array[i];
                     // particle_moment_intertia_array[i] = (1.0-mass_array_alpha)*globally_estimated_particle_moment_intertia_array[i]*mMMin/mgKNormMin + mass_array_alpha*particle_moment_intertia_array[i];
@@ -1519,7 +1517,7 @@ namespace Kratos {
                 const double omega_1_old = r_process_info[OMEGA_1];
                 const double omega_1_factor = r_process_info[OMEGA_1_FACTOR];
 
-                const double K_max_scaled = mKNormMax * mMMin/mKNormMin;
+                const double K_max_scaled = mKNormMax * mMMin/(mKNormMin*omega_n_factor);
                 const double omega_ratio = std::sqrt(mMMax/K_max_scaled)*omega_1_factor;
                 double omega_1_new = omega_1_old*omega_ratio;
 
