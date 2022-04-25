@@ -1523,59 +1523,60 @@ namespace Kratos {
                 const double omega_ratio = std::sqrt(mMMax/K_max_scaled)*omega_1_factor;
                 double omega_1_new = omega_1_old*omega_ratio;
 
-                const double gK_max_scaled = mgKNormMax * mMMin/mgKNormMin;
-                const double gomega_ratio = std::sqrt(mMMax/gK_max_scaled)*omega_1_factor;
-                double gomega_1_new = omega_1_old*gomega_ratio;
-
                 if (omega_ratio <= 1.0) {
                     std::cout << "omega_ratio <= 1.0 !! omega_ratio: " << omega_ratio << std::endl;
                     omega_1_new = omega_1_old;
                 }
-                if (gomega_ratio <= 1.0) {
-                    std::cout << "gomega_ratio <= 1.0 !! gomega_ratio: " << gomega_ratio << std::endl;
-                    gomega_1_new = omega_1_old;
-                }
 
                 // TODO. Ignasi: seguir
 
-                KRATOS_WATCH(mMMin)
-                KRATOS_WATCH(mMMax)
+                // const double gK_max_scaled = mgKNormMax * mMMin/mgKNormMin;
+                // const double gomega_ratio = std::sqrt(mMMax/gK_max_scaled)*omega_1_factor;
+                // double gomega_1_new = omega_1_old*gomega_ratio;
 
-                KRATOS_WATCH(mKNormMin)
-                KRATOS_WATCH(mKNormMax)
-                const double mass_ratio = mMMin/mKNormMin;
-                KRATOS_WATCH(mass_ratio)
-                KRATOS_WATCH(omega_ratio)
-                KRATOS_WATCH(K_max_scaled)
-                std::fstream id_k_file;
-                id_k_file.open ("id_kx_ky_kz.txt", std::fstream::out | std::fstream::app);
-                id_k_file.precision(12);
-                for(int i = 0; i < NNodes; i++) {
-                    ModelPart::NodesContainerType::iterator itNode = node_begin + i;
-                    const array_1d<double, 3>& estimated_nodal_mass_array = itNode->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY);
-                    const int node_id = itNode->Id();
-                    id_k_file << node_id << " " << estimated_nodal_mass_array[0] << " " << estimated_nodal_mass_array[1] << " " << estimated_nodal_mass_array[2] << std::endl;
-                }
-                id_k_file.close();
+                // if (gomega_ratio <= 1.0) {
+                //     std::cout << "gomega_ratio <= 1.0 !! gomega_ratio: " << gomega_ratio << std::endl;
+                //     gomega_1_new = omega_1_old;
+                // }
 
-                KRATOS_WATCH(mgKNormMin)
-                KRATOS_WATCH(mgKNormMax)
-                const double gmass_ratio = mMMin/mgKNormMin;
-                KRATOS_WATCH(gmass_ratio)
-                KRATOS_WATCH(gomega_ratio)
-                KRATOS_WATCH(gK_max_scaled)
-                std::fstream g_id_k_file;
-                g_id_k_file.open ("g_id_kx_ky_kz.txt", std::fstream::out | std::fstream::app);
-                g_id_k_file.precision(12);
-                for(int i = 0; i < NNodes; i++) {
-                    ModelPart::NodesContainerType::iterator itNode = node_begin + i;
-                    const array_1d<double, 3>& globally_estimated_nodal_mass_array = itNode->FastGetSolutionStepValue(GLOBALLY_ESTIMATED_NODAL_MASS_ARRAY);
-                    const int node_id = itNode->Id();
-                    g_id_k_file << node_id << " " << globally_estimated_nodal_mass_array[0] << " " << globally_estimated_nodal_mass_array[1] << " " << globally_estimated_nodal_mass_array[2] << std::endl;
-                }
-                g_id_k_file.close();
+                // KRATOS_WATCH(mMMin)
+                // KRATOS_WATCH(mMMax)
 
-                KRATOS_ERROR << "paraaaaaaaaaaaaaaa" << std::endl;  // TODO. Ignasi
+                // KRATOS_WATCH(mKNormMin)
+                // KRATOS_WATCH(mKNormMax)
+                // const double mass_ratio = mMMin/mKNormMin;
+                // KRATOS_WATCH(mass_ratio)
+                // KRATOS_WATCH(omega_ratio)
+                // KRATOS_WATCH(K_max_scaled)
+                // std::fstream id_k_file;
+                // id_k_file.open ("id_kx_ky_kz.txt", std::fstream::out | std::fstream::app);
+                // id_k_file.precision(12);
+                // for(int i = 0; i < NNodes; i++) {
+                //     ModelPart::NodesContainerType::iterator itNode = node_begin + i;
+                //     const array_1d<double, 3>& estimated_nodal_mass_array = itNode->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY);
+                //     const int node_id = itNode->Id();
+                //     id_k_file << node_id << " " << estimated_nodal_mass_array[0] << " " << estimated_nodal_mass_array[1] << " " << estimated_nodal_mass_array[2] << std::endl;
+                // }
+                // id_k_file.close();
+
+                // KRATOS_WATCH(mgKNormMin)
+                // KRATOS_WATCH(mgKNormMax)
+                // const double gmass_ratio = mMMin/mgKNormMin;
+                // KRATOS_WATCH(gmass_ratio)
+                // KRATOS_WATCH(gomega_ratio)
+                // KRATOS_WATCH(gK_max_scaled)
+                // std::fstream g_id_k_file;
+                // g_id_k_file.open ("g_id_kx_ky_kz.txt", std::fstream::out | std::fstream::app);
+                // g_id_k_file.precision(12);
+                // for(int i = 0; i < NNodes; i++) {
+                //     ModelPart::NodesContainerType::iterator itNode = node_begin + i;
+                //     const array_1d<double, 3>& globally_estimated_nodal_mass_array = itNode->FastGetSolutionStepValue(GLOBALLY_ESTIMATED_NODAL_MASS_ARRAY);
+                //     const int node_id = itNode->Id();
+                //     g_id_k_file << node_id << " " << globally_estimated_nodal_mass_array[0] << " " << globally_estimated_nodal_mass_array[1] << " " << globally_estimated_nodal_mass_array[2] << std::endl;
+                // }
+                // g_id_k_file.close();
+
+                // KRATOS_ERROR << "paraaaaaaaaaaaaaaa" << std::endl;  // TODO. Ignasi
                 
                 r_process_info[OMEGA_1] = omega_1_new;
 

@@ -175,13 +175,6 @@ class DEMAnalysisStage(AnalysisStage):
         return ParticleCreatorDestructor(self.watcher, creator_destructor_settings)
 
     def SelectTranslationalScheme(self):
-        # Set ProcessInfo variables
-        self.spheres_model_part.ProcessInfo.SetValue(USE_MASS_ARRAY, self.DEM_parameters["use_mass_array"].GetBool())
-        mass_array_averaging_time_interval = self.DEM_parameters["mass_array_averaging_time_interval"].GetDouble()
-        if (self.DEM_parameters["MaxTimeStep"].GetDouble() > mass_array_averaging_time_interval):
-            raise ValueError('Dt > mass_array_averaging_time_interval')
-        self.spheres_model_part.ProcessInfo.SetValue(MASS_ARRAY_AVERAGING_TIME_INTERVAL, mass_array_averaging_time_interval)
-
         if self.DEM_parameters["TranslationalIntegrationScheme"].GetString() == 'Forward_Euler':
             return ForwardEulerScheme()
         elif self.DEM_parameters["TranslationalIntegrationScheme"].GetString() == 'Symplectic_Euler':
@@ -191,8 +184,13 @@ class DEMAnalysisStage(AnalysisStage):
         elif self.DEM_parameters["TranslationalIntegrationScheme"].GetString() == 'Velocity_Verlet':
             return VelocityVerletScheme()
         elif self.DEM_parameters["TranslationalIntegrationScheme"].GetString() == 'Central_Differences':
-
+            # Set ProcessInfo variables
             rayleigh_cd_param = self.DEM_parameters["rayleigh_central_differences_parameters"]
+            self.spheres_model_part.ProcessInfo.SetValue(USE_MASS_ARRAY, rayleigh_cd_param["use_mass_array"].GetBool())
+            mass_array_averaging_time_interval = rayleigh_cd_param["mass_array_averaging_time_interval"].GetDouble()
+            if (self.DEM_parameters["MaxTimeStep"].GetDouble() > mass_array_averaging_time_interval):
+                raise ValueError('Dt > mass_array_averaging_time_interval')
+            self.spheres_model_part.ProcessInfo.SetValue(MASS_ARRAY_AVERAGING_TIME_INTERVAL, mass_array_averaging_time_interval)
             g_factor = rayleigh_cd_param["g_factor"].GetDouble()
             theta_factor = rayleigh_cd_param["theta_factor"].GetDouble()
             g_coefficient = 0.0
@@ -226,7 +224,7 @@ class DEMAnalysisStage(AnalysisStage):
             self.spheres_model_part.ProcessInfo.SetValue(RAYLEIGH_ALPHA, rayleigh_alpha)
             self.spheres_model_part.ProcessInfo.SetValue(RAYLEIGH_BETA, rayleigh_beta)
             self.spheres_model_part.ProcessInfo.SetValue(OMEGA_1_FACTOR, rayleigh_cd_param["omega_1_factor"].GetDouble())
-            self.spheres_model_part.ProcessInfo.SetValue(K_MIN_FACTOR, self.DEM_parameters["k_min_factor"].GetDouble())
+            self.spheres_model_part.ProcessInfo.SetValue(K_MIN_FACTOR, rayleigh_cd_param["k_min_factor"].GetDouble())
             self.spheres_model_part.ProcessInfo.SetValue(OMEGA_1, omega_1)
             self.spheres_model_part.ProcessInfo.SetValue(OMEGA_N, omega_n)
             self.spheres_model_part.ProcessInfo.SetValue(XI_1, xi_1)
