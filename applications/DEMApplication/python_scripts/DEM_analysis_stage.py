@@ -223,8 +223,8 @@ class DEMAnalysisStage(AnalysisStage):
 
             self.spheres_model_part.ProcessInfo.SetValue(RAYLEIGH_ALPHA, rayleigh_alpha)
             self.spheres_model_part.ProcessInfo.SetValue(RAYLEIGH_BETA, rayleigh_beta)
-            self.spheres_model_part.ProcessInfo.SetValue(OMEGA_1_FACTOR, rayleigh_cd_param["omega_1_factor"].GetDouble())
-            self.spheres_model_part.ProcessInfo.SetValue(OMEGA_N_FACTOR, rayleigh_cd_param["omega_n_factor"].GetDouble())
+            self.spheres_model_part.ProcessInfo.SetValue(OMEGA_1_FACTOR, rayleigh_cd_param["mass_array_omega_1_factor"].GetDouble())
+            self.spheres_model_part.ProcessInfo.SetValue(OMEGA_N_FACTOR, rayleigh_cd_param["mass_array_omega_n_factor"].GetDouble())
             self.spheres_model_part.ProcessInfo.SetValue(OMEGA_1, omega_1)
             self.spheres_model_part.ProcessInfo.SetValue(OMEGA_N, omega_n)
             self.spheres_model_part.ProcessInfo.SetValue(XI_1, xi_1)
