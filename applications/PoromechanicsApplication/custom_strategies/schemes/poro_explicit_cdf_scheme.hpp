@@ -129,7 +129,8 @@ public:
         const ProcessInfo& r_current_process_info = rModelPart.GetProcessInfo();
 
         mDelta = r_current_process_info[DELTA];
-        mDeltab = r_current_process_info[DELTA_B];
+        mDeltab1 = r_current_process_info[DELTA_B_1];
+        mDeltab2 = r_current_process_info[DELTA_B_2];
         mB0 = r_current_process_info[B_0];
         mB1 = r_current_process_info[B_1];
         mB2 = r_current_process_info[B_2];
@@ -174,19 +175,19 @@ public:
         if (DomainSize == 3)
             fix_displacements[2] = (itCurrentNode->GetDof(DISPLACEMENT_Z, DisplacementPosition + 2).IsFixed());
 
-        // CDF_26-04-22
+        // CDF_06-05-22
         // const double eps_m = (mB0+mB1+mB2)*mDelta*mAlphab;
         // const double eps_f = (mB0+mB1+mB2)*mDelta*mBetab;
         for (IndexType j = 0; j < DomainSize; j++) {
             if (fix_displacements[j] == false) {
-                    r_displacement[j] = ( ((2.0-3.0*mDelta+4.0*mDeltab)-mDeltaTime*(mAlpha-mDelta*mB0*mAlphab))*nodal_mass*r_displacement[j]
-                                          - mDeltaTime*(mBeta-mDelta*mB0*mBetab+mDeltaTime*(1.0-mDelta+mDeltab))*r_internal_force[j]
-                                          - ((1.0-3.0*mDelta+5.0*mDeltab)+mDeltaTime*(-mAlpha-mDelta*mB1*mAlphab))*nodal_mass*r_displacement_old[j]
-                                          - mDeltaTime*(-mBeta-mDelta*mB1*mBetab+mDeltaTime*(mDelta-2.0*mDeltab))*r_internal_force_old[j]
-                                          - ((mDelta-2.0*mDeltab)-mDeltaTime*mDelta*mB2*mAlphab)*nodal_mass*r_displacement_older[j]
+                    r_displacement[j] = ( ((2.0-3.0*mDelta+4.0*mDeltab1)-mDeltaTime*(mAlpha-mDelta*mB0*mAlphab))*nodal_mass*r_displacement[j]
+                                          - mDeltaTime*(mBeta-mDelta*mB0*mBetab+mDeltaTime*(1.0-mDelta+mDeltab2))*r_internal_force[j]
+                                          - ((1.0-3.0*mDelta+5.0*mDeltab1)+mDeltaTime*(-mAlpha-mDelta*mB1*mAlphab))*nodal_mass*r_displacement_old[j]
+                                          - mDeltaTime*(-mBeta-mDelta*mB1*mBetab+mDeltaTime*(mDelta-2.0*mDeltab2))*r_internal_force_old[j]
+                                          - ((mDelta-2.0*mDeltab1)-mDeltaTime*mDelta*mB2*mAlphab)*nodal_mass*r_displacement_older[j]
                                           + mDeltaTime*mDelta*mB2*mBetab*r_internal_force_older[j]
-                                          + mDeltaTime*mDeltaTime*((1.0-mDelta+mDeltab)*r_external_force[j]+(mDelta-2.0*mDeltab)*r_external_force_old[j])
-                                        ) / ( nodal_mass*(1.0-mDelta+mDeltab) );
+                                          + mDeltaTime*mDeltaTime*((1.0-mDelta+mDeltab2)*r_external_force[j]+(mDelta-2.0*mDeltab2)*r_external_force_old[j])
+                                        ) / ( nodal_mass*(1.0-mDelta+mDeltab1) );
             }
         }
 
@@ -244,19 +245,19 @@ public:
         if (DomainSize == 3)
             fix_displacements[2] = (itCurrentNode->GetDof(DISPLACEMENT_Z, DisplacementPosition + 2).IsFixed());
 
-        // CDF_26-04-22
+        // CDF_06-05-22
         // const double eps_m = (mB0+mB1+mB2)*mDelta*mAlphab;
         // const double eps_f = (mB0+mB1+mB2)*mDelta*mBetab;
         for (IndexType j = 0; j < DomainSize; j++) {
             if (fix_displacements[j] == false) {
-                    r_displacement[j] = ( ((2.0-3.0*mDelta+4.0*mDeltab)-mDeltaTime*(mAlpha-mDelta*mB0*mAlphab))*r_nodal_mass_array[j]*r_displacement[j]
-                                          - mDeltaTime*(mBeta-mDelta*mB0*mBetab+mDeltaTime*(1.0-mDelta+mDeltab))*r_internal_force[j]
-                                          - ((1.0-3.0*mDelta+5.0*mDeltab)+mDeltaTime*(-mAlpha-mDelta*mB1*mAlphab))*r_nodal_mass_array[j]*r_displacement_old[j]
-                                          - mDeltaTime*(-mBeta-mDelta*mB1*mBetab+mDeltaTime*(mDelta-2.0*mDeltab))*r_internal_force_old[j]
-                                          - ((mDelta-2.0*mDeltab)-mDeltaTime*mDelta*mB2*mAlphab)*r_nodal_mass_array[j]*r_displacement_older[j]
+                    r_displacement[j] = ( ((2.0-3.0*mDelta+4.0*mDeltab1)-mDeltaTime*(mAlpha-mDelta*mB0*mAlphab))*r_nodal_mass_array[j]*r_displacement[j]
+                                          - mDeltaTime*(mBeta-mDelta*mB0*mBetab+mDeltaTime*(1.0-mDelta+mDeltab2))*r_internal_force[j]
+                                          - ((1.0-3.0*mDelta+5.0*mDeltab1)+mDeltaTime*(-mAlpha-mDelta*mB1*mAlphab))*r_nodal_mass_array[j]*r_displacement_old[j]
+                                          - mDeltaTime*(-mBeta-mDelta*mB1*mBetab+mDeltaTime*(mDelta-2.0*mDeltab2))*r_internal_force_old[j]
+                                          - ((mDelta-2.0*mDeltab1)-mDeltaTime*mDelta*mB2*mAlphab)*r_nodal_mass_array[j]*r_displacement_older[j]
                                           + mDeltaTime*mDelta*mB2*mBetab*r_internal_force_older[j]
-                                          + mDeltaTime*mDeltaTime*((1.0-mDelta+mDeltab)*r_external_force[j]+(mDelta-2.0*mDeltab)*r_external_force_old[j])
-                                        ) / ( r_nodal_mass_array[j]*(1.0-mDelta+mDeltab) );
+                                          + mDeltaTime*mDeltaTime*((1.0-mDelta+mDeltab2)*r_external_force[j]+(mDelta-2.0*mDeltab2)*r_external_force_old[j])
+                                        ) / ( r_nodal_mass_array[j]*(1.0-mDelta+mDeltab1) );
             }
         }
 
@@ -399,7 +400,8 @@ public:
 protected:
 
     double mDelta;
-    double mDeltab;
+    double mDeltab1;
+    double mDeltab2;
     double mB0;
     double mB1;
     double mB2;

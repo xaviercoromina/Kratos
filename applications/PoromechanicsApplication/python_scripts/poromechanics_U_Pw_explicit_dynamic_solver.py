@@ -39,10 +39,11 @@ class ExplicitUPwSolver(UPwSolver):
             "calculate_xi"        : false,
             "xi_1_factor"         : 1.0,
             "use_nodal_mass_array": false,
-            "delta"               : 1.5,
-            "deltab"              : 0.99,
+            "delta"               : 1.7,
+            "deltab1"             : 0.9,
+            "deltab2"             : 0.999,
             "alpha_0"             : 0.0,
-            "alpha_1"             : -0.85,
+            "alpha_1"             : 0.0,
             "alpha_2"             : 0.0,
             "xi_1_f"              : 1.0,
             "xi_n_f"              : 1.0,
@@ -146,7 +147,8 @@ class ExplicitUPwSolver(UPwSolver):
         rayleigh_alpha = self.settings["rayleigh_alpha"].GetDouble()
         rayleigh_beta = self.settings["rayleigh_beta"].GetDouble()
         delta = self.settings["delta"].GetDouble()
-        deltab = self.settings["deltab"].GetDouble()
+        deltab1 = self.settings["deltab1"].GetDouble()
+        deltab2 = self.settings["deltab2"].GetDouble()
         b_0 = 0.0
         b_1 = 0.0
         b_2 = 0.0
@@ -167,14 +169,17 @@ class ExplicitUPwSolver(UPwSolver):
             alpha_1 = self.settings["alpha_1"].GetDouble()
             alpha_2 = self.settings["alpha_2"].GetDouble()
 
-            # p_1 = Dt*omega_1
+            B = 1.0-delta+deltab1
+            # alphas = 1.0+alpha_0+alpha_1+alpha_2
+
             p_n = Dt*omega_n
+            # p_n = np.sqrt(alphas*B/(1.0-deltab2))
+            # Dt = p_n/omega_n
+            # p_1 = Dt*omega_1
 
-            B = 1.0-delta+deltab
-
-            b_0 = 1.0/(p_n**2)*(alpha_0*B+(2.0-3.0*delta+4.0*deltab)-B*p_n**2)
-            b_1 = 1.0/(p_n**2)*(alpha_1*B-(1.0-3.0*delta+5.0*deltab)-(delta-2.0*deltab)*p_n**2)
-            b_2 = 1.0/(p_n**2)*(alpha_2*B-(delta-2.0*deltab))*0.87
+            b_0 = 1.0/(p_n**2)*(alpha_0*B+(2.0-3.0*delta+4.0*deltab1)-(1.0-delta+deltab2)*p_n**2)
+            b_1 = 1.0/(p_n**2)*(alpha_1*B-(1.0-3.0*delta+5.0*deltab1)-(delta-2.0*deltab2)*p_n**2)
+            b_2 = 1.0/(p_n**2)*(alpha_2*B-(delta-2.0*deltab1))
             # b_s = b_0+b_1+b_2
 
             xib_1 = 1.0*self.settings["xib_1_f"].GetDouble()
@@ -202,7 +207,8 @@ class ExplicitUPwSolver(UPwSolver):
             KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: rayleigh_alpha_b: ",rayleigh_alpha_b)
             KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: rayleigh_beta_b: ",rayleigh_beta_b)
             KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: delta: ",delta)
-            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: deltab: ",deltab)
+            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: deltab1: ",deltab1)
+            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: deltab2: ",deltab2)
             KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: alpha_0: ",alpha_0)
             KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: alpha_1: ",alpha_1)
             KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: alpha_2: ",alpha_2)
@@ -216,7 +222,8 @@ class ExplicitUPwSolver(UPwSolver):
         process_info.SetValue(KratosPoro.G_COEFFICIENT, g_coeff)
         process_info.SetValue(KratosPoro.THETA_FACTOR, theta_factor)
         process_info.SetValue(KratosPoro.DELTA, delta)
-        process_info.SetValue(KratosPoro.DELTA_B, deltab)
+        process_info.SetValue(KratosPoro.DELTA_B_1, deltab1)
+        process_info.SetValue(KratosPoro.DELTA_B_2, deltab2)
         process_info.SetValue(KratosPoro.B_0, b_0)
         process_info.SetValue(KratosPoro.B_1, b_1)
         process_info.SetValue(KratosPoro.B_2, b_2)
