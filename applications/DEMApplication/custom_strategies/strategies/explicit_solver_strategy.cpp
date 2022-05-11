@@ -1175,286 +1175,286 @@ namespace Kratos {
         // Use mass array after the first time calculation has converged
         if(r_process_info[IS_CONVERGED_ONCE]==true){
 
-            const int NNodes = static_cast<int>(rNodes.size());
-            ModelPart::NodesContainerType::iterator node_begin = dem_model_part.NodesBegin();
-            unsigned int NumThreads = ParallelUtilities::GetNumThreads();
+            // const int NNodes = static_cast<int>(rNodes.size());
+            // ModelPart::NodesContainerType::iterator node_begin = dem_model_part.NodesBegin();
+            // unsigned int NumThreads = ParallelUtilities::GetNumThreads();
 
             // Calculate mKmax, mKrMax, mKmin and mKrMin
-            std::vector<double> kx_max_partition(NumThreads);
-            std::vector<double> ky_max_partition(NumThreads);
-            std::vector<double> kz_max_partition(NumThreads);
-            std::vector<double> mx_max_partition(NumThreads);
-            std::vector<double> my_max_partition(NumThreads);
-            std::vector<double> mz_max_partition(NumThreads);
-            std::vector<double> kx_min_partition(NumThreads);
-            std::vector<double> ky_min_partition(NumThreads);
-            std::vector<double> kz_min_partition(NumThreads);
-            std::vector<double> mx_min_partition(NumThreads);
-            std::vector<double> my_min_partition(NumThreads);
-            std::vector<double> mz_min_partition(NumThreads);
+            // std::vector<double> kx_max_partition(NumThreads);
+            // std::vector<double> ky_max_partition(NumThreads);
+            // std::vector<double> kz_max_partition(NumThreads);
+            // std::vector<double> mx_max_partition(NumThreads);
+            // std::vector<double> my_max_partition(NumThreads);
+            // std::vector<double> mz_max_partition(NumThreads);
+            // std::vector<double> kx_min_partition(NumThreads);
+            // std::vector<double> ky_min_partition(NumThreads);
+            // std::vector<double> kz_min_partition(NumThreads);
+            // std::vector<double> mx_min_partition(NumThreads);
+            // std::vector<double> my_min_partition(NumThreads);
+            // std::vector<double> mz_min_partition(NumThreads);
 
-            std::vector<double> gkx_max_partition(NumThreads);
-            std::vector<double> gky_max_partition(NumThreads);
-            std::vector<double> gkz_max_partition(NumThreads);
-            std::vector<double> gmx_max_partition(NumThreads);
-            std::vector<double> gmy_max_partition(NumThreads);
-            std::vector<double> gmz_max_partition(NumThreads);
-            std::vector<double> gkx_min_partition(NumThreads);
-            std::vector<double> gky_min_partition(NumThreads);
-            std::vector<double> gkz_min_partition(NumThreads);
-            std::vector<double> gmx_min_partition(NumThreads);
-            std::vector<double> gmy_min_partition(NumThreads);
-            std::vector<double> gmz_min_partition(NumThreads);
+            // std::vector<double> gkx_max_partition(NumThreads);
+            // std::vector<double> gky_max_partition(NumThreads);
+            // std::vector<double> gkz_max_partition(NumThreads);
+            // std::vector<double> gmx_max_partition(NumThreads);
+            // std::vector<double> gmy_max_partition(NumThreads);
+            // std::vector<double> gmz_max_partition(NumThreads);
+            // std::vector<double> gkx_min_partition(NumThreads);
+            // std::vector<double> gky_min_partition(NumThreads);
+            // std::vector<double> gkz_min_partition(NumThreads);
+            // std::vector<double> gmx_min_partition(NumThreads);
+            // std::vector<double> gmy_min_partition(NumThreads);
+            // std::vector<double> gmz_min_partition(NumThreads);
 
-            #pragma omp parallel
-            {
-                int k = OpenMPUtils::ThisThread();
+            // #pragma omp parallel
+            // {
+            //     int k = OpenMPUtils::ThisThread();
 
-                double kx_me, ky_me, kz_me, mx_me, my_me, mz_me;
-                double gkx_me, gky_me, gkz_me, gmx_me, gmy_me, gmz_me;
+            //     double kx_me, ky_me, kz_me, mx_me, my_me, mz_me;
+            //     double gkx_me, gky_me, gkz_me, gmx_me, gmy_me, gmz_me;
 
-                kx_me = node_begin->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_X);
-                ky_me = node_begin->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_Y);
-                kz_me = node_begin->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_Z);
-                mx_me = node_begin->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_X);
-                my_me = node_begin->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_Y);
-                mz_me = node_begin->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_Z);
+            //     kx_me = node_begin->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_X);
+            //     ky_me = node_begin->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_Y);
+            //     kz_me = node_begin->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_Z);
+            //     mx_me = node_begin->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_X);
+            //     my_me = node_begin->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_Y);
+            //     mz_me = node_begin->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_Z);
 
-                gkx_me = node_begin->FastGetSolutionStepValue(GLOBALLY_ESTIMATED_NODAL_MASS_ARRAY_X);
-                gky_me = node_begin->FastGetSolutionStepValue(GLOBALLY_ESTIMATED_NODAL_MASS_ARRAY_Y);
-                gkz_me = node_begin->FastGetSolutionStepValue(GLOBALLY_ESTIMATED_NODAL_MASS_ARRAY_Z);
-                gmx_me = node_begin->FastGetSolutionStepValue(GLOBALLY_ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_X);
-                gmy_me = node_begin->FastGetSolutionStepValue(GLOBALLY_ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_Y);
-                gmz_me = node_begin->FastGetSolutionStepValue(GLOBALLY_ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_Z);
+            //     gkx_me = node_begin->FastGetSolutionStepValue(GLOBALLY_ESTIMATED_NODAL_MASS_ARRAY_X);
+            //     gky_me = node_begin->FastGetSolutionStepValue(GLOBALLY_ESTIMATED_NODAL_MASS_ARRAY_Y);
+            //     gkz_me = node_begin->FastGetSolutionStepValue(GLOBALLY_ESTIMATED_NODAL_MASS_ARRAY_Z);
+            //     gmx_me = node_begin->FastGetSolutionStepValue(GLOBALLY_ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_X);
+            //     gmy_me = node_begin->FastGetSolutionStepValue(GLOBALLY_ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_Y);
+            //     gmz_me = node_begin->FastGetSolutionStepValue(GLOBALLY_ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_Z);
 
-                kx_max_partition[k] = kx_me;
-                ky_max_partition[k] = ky_me;
-                kz_max_partition[k] = kz_me;
-                mx_max_partition[k] = mx_me;
-                my_max_partition[k] = my_me;
-                mz_max_partition[k] = mz_me;
-                kx_min_partition[k] = kx_me;
-                ky_min_partition[k] = ky_me;
-                kz_min_partition[k] = kz_me;
-                mx_min_partition[k] = mx_me;
-                my_min_partition[k] = my_me;
-                mz_min_partition[k] = mz_me;                
+            //     kx_max_partition[k] = kx_me;
+            //     ky_max_partition[k] = ky_me;
+            //     kz_max_partition[k] = kz_me;
+            //     mx_max_partition[k] = mx_me;
+            //     my_max_partition[k] = my_me;
+            //     mz_max_partition[k] = mz_me;
+            //     kx_min_partition[k] = kx_me;
+            //     ky_min_partition[k] = ky_me;
+            //     kz_min_partition[k] = kz_me;
+            //     mx_min_partition[k] = mx_me;
+            //     my_min_partition[k] = my_me;
+            //     mz_min_partition[k] = mz_me;                
 
-                gkx_max_partition[k] = gkx_me;
-                gky_max_partition[k] = gky_me;
-                gkz_max_partition[k] = gkz_me;
-                gmx_max_partition[k] = gmx_me;
-                gmy_max_partition[k] = gmy_me;
-                gmz_max_partition[k] = gmz_me;
-                gkx_min_partition[k] = gkx_me;
-                gky_min_partition[k] = gky_me;
-                gkz_min_partition[k] = gkz_me;
-                gmx_min_partition[k] = gmx_me;
-                gmy_min_partition[k] = gmy_me;
-                gmz_min_partition[k] = gmz_me;
+            //     gkx_max_partition[k] = gkx_me;
+            //     gky_max_partition[k] = gky_me;
+            //     gkz_max_partition[k] = gkz_me;
+            //     gmx_max_partition[k] = gmx_me;
+            //     gmy_max_partition[k] = gmy_me;
+            //     gmz_max_partition[k] = gmz_me;
+            //     gkx_min_partition[k] = gkx_me;
+            //     gky_min_partition[k] = gky_me;
+            //     gkz_min_partition[k] = gkz_me;
+            //     gmx_min_partition[k] = gmx_me;
+            //     gmy_min_partition[k] = gmy_me;
+            //     gmz_min_partition[k] = gmz_me;
 
-                #pragma omp for
-                for(int i = 0; i < NNodes; i++) {
-                    ModelPart::NodesContainerType::iterator itNode = node_begin + i;
+            //     #pragma omp for
+            //     for(int i = 0; i < NNodes; i++) {
+            //         ModelPart::NodesContainerType::iterator itNode = node_begin + i;
 
-                    kx_me = itNode->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_X);
-                    ky_me = itNode->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_Y);
-                    kz_me = itNode->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_Z);
-                    mx_me = itNode->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_X);
-                    my_me = itNode->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_Y);
-                    mz_me = itNode->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_Z);
+            //         kx_me = itNode->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_X);
+            //         ky_me = itNode->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_Y);
+            //         kz_me = itNode->FastGetSolutionStepValue(ESTIMATED_NODAL_MASS_ARRAY_Z);
+            //         mx_me = itNode->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_X);
+            //         my_me = itNode->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_Y);
+            //         mz_me = itNode->FastGetSolutionStepValue(ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_Z);
 
-                    gkx_me = itNode->FastGetSolutionStepValue(GLOBALLY_ESTIMATED_NODAL_MASS_ARRAY_X);
-                    gky_me = itNode->FastGetSolutionStepValue(GLOBALLY_ESTIMATED_NODAL_MASS_ARRAY_Y);
-                    gkz_me = itNode->FastGetSolutionStepValue(GLOBALLY_ESTIMATED_NODAL_MASS_ARRAY_Z);
-                    gmx_me = itNode->FastGetSolutionStepValue(GLOBALLY_ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_X);
-                    gmy_me = itNode->FastGetSolutionStepValue(GLOBALLY_ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_Y);
-                    gmz_me = itNode->FastGetSolutionStepValue(GLOBALLY_ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_Z);
+            //         gkx_me = itNode->FastGetSolutionStepValue(GLOBALLY_ESTIMATED_NODAL_MASS_ARRAY_X);
+            //         gky_me = itNode->FastGetSolutionStepValue(GLOBALLY_ESTIMATED_NODAL_MASS_ARRAY_Y);
+            //         gkz_me = itNode->FastGetSolutionStepValue(GLOBALLY_ESTIMATED_NODAL_MASS_ARRAY_Z);
+            //         gmx_me = itNode->FastGetSolutionStepValue(GLOBALLY_ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_X);
+            //         gmy_me = itNode->FastGetSolutionStepValue(GLOBALLY_ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_Y);
+            //         gmz_me = itNode->FastGetSolutionStepValue(GLOBALLY_ESTIMATED_PARTICLE_MOMENT_OF_INERTIA_ARRAY_Z);
 
-                    if( kx_me > kx_max_partition[k] ) {
-                        kx_max_partition[k] = kx_me;
-                    }
-                    if( ky_me > ky_max_partition[k] ) {
-                        ky_max_partition[k] = ky_me;
-                    }
-                    if( kz_me > kz_max_partition[k] ) {
-                        kz_max_partition[k] = kz_me;
-                    }
-                    if( mx_me > mx_max_partition[k] ) {
-                        mx_max_partition[k] = mx_me;
-                    }
-                    if( my_me > my_max_partition[k] ) {
-                        my_max_partition[k] = my_me;
-                    }
-                    if( mz_me > mz_max_partition[k] ) {
-                        mz_max_partition[k] = mz_me;
-                    }
-                    if( (kx_me > std::numeric_limits<double>::epsilon()) && (kx_me < kx_min_partition[k]) ) {
-                        kx_min_partition[k] = kx_me;
-                    }
-                    if( (ky_me > std::numeric_limits<double>::epsilon()) && (ky_me < ky_min_partition[k]) ) {
-                        ky_min_partition[k] = ky_me;
-                    }
-                    if( (kz_me > std::numeric_limits<double>::epsilon()) && (kz_me < kz_min_partition[k]) ) {
-                        kz_min_partition[k] = kz_me;
-                    }
-                    if( (mx_me > std::numeric_limits<double>::epsilon()) && (mx_me < mx_min_partition[k]) ) {
-                        mx_min_partition[k] = mx_me;
-                    }
-                    if( (my_me > std::numeric_limits<double>::epsilon()) && (my_me < my_min_partition[k]) ) {
-                        my_min_partition[k] = my_me;
-                    }
-                    if( (mz_me > std::numeric_limits<double>::epsilon()) && (mz_me < mz_min_partition[k]) ) {
-                        mz_min_partition[k] = mz_me;
-                    }
+            //         if( kx_me > kx_max_partition[k] ) {
+            //             kx_max_partition[k] = kx_me;
+            //         }
+            //         if( ky_me > ky_max_partition[k] ) {
+            //             ky_max_partition[k] = ky_me;
+            //         }
+            //         if( kz_me > kz_max_partition[k] ) {
+            //             kz_max_partition[k] = kz_me;
+            //         }
+            //         if( mx_me > mx_max_partition[k] ) {
+            //             mx_max_partition[k] = mx_me;
+            //         }
+            //         if( my_me > my_max_partition[k] ) {
+            //             my_max_partition[k] = my_me;
+            //         }
+            //         if( mz_me > mz_max_partition[k] ) {
+            //             mz_max_partition[k] = mz_me;
+            //         }
+            //         if( (kx_me > std::numeric_limits<double>::epsilon()) && (kx_me < kx_min_partition[k]) ) {
+            //             kx_min_partition[k] = kx_me;
+            //         }
+            //         if( (ky_me > std::numeric_limits<double>::epsilon()) && (ky_me < ky_min_partition[k]) ) {
+            //             ky_min_partition[k] = ky_me;
+            //         }
+            //         if( (kz_me > std::numeric_limits<double>::epsilon()) && (kz_me < kz_min_partition[k]) ) {
+            //             kz_min_partition[k] = kz_me;
+            //         }
+            //         if( (mx_me > std::numeric_limits<double>::epsilon()) && (mx_me < mx_min_partition[k]) ) {
+            //             mx_min_partition[k] = mx_me;
+            //         }
+            //         if( (my_me > std::numeric_limits<double>::epsilon()) && (my_me < my_min_partition[k]) ) {
+            //             my_min_partition[k] = my_me;
+            //         }
+            //         if( (mz_me > std::numeric_limits<double>::epsilon()) && (mz_me < mz_min_partition[k]) ) {
+            //             mz_min_partition[k] = mz_me;
+            //         }
 
-                    if( gkx_me > gkx_max_partition[k] ) {
-                        gkx_max_partition[k] = gkx_me;
-                    }
-                    if( gky_me > gky_max_partition[k] ) {
-                        gky_max_partition[k] = gky_me;
-                    }
-                    if( gkz_me > gkz_max_partition[k] ) {
-                        gkz_max_partition[k] = gkz_me;
-                    }
-                    if( gmx_me > gmx_max_partition[k] ) {
-                        gmx_max_partition[k] = gmx_me;
-                    }
-                    if( gmy_me > gmy_max_partition[k] ) {
-                        gmy_max_partition[k] = gmy_me;
-                    }
-                    if( gmz_me > gmz_max_partition[k] ) {
-                        gmz_max_partition[k] = gmz_me;
-                    }
-                    if( (gkx_me > std::numeric_limits<double>::epsilon()) && (gkx_me < gkx_min_partition[k]) ) {
-                        gkx_min_partition[k] = gkx_me;
-                    }
-                    if( (gky_me > std::numeric_limits<double>::epsilon()) && (gky_me < gky_min_partition[k]) ) {
-                        gky_min_partition[k] = gky_me;
-                    }
-                    if( (gkz_me > std::numeric_limits<double>::epsilon()) && (gkz_me < gkz_min_partition[k]) ) {
-                        gkz_min_partition[k] = gkz_me;
-                    }
-                    if( (gmx_me > std::numeric_limits<double>::epsilon()) && (gmx_me < gmx_min_partition[k]) ) {
-                        gmx_min_partition[k] = gmx_me;
-                    }
-                    if( (gmy_me > std::numeric_limits<double>::epsilon()) && (gmy_me < gmy_min_partition[k]) ) {
-                        gmy_min_partition[k] = gmy_me;
-                    }
-                    if( (gmz_me > std::numeric_limits<double>::epsilon()) && (gmz_me < gmz_min_partition[k]) ) {
-                        gmz_min_partition[k] = gmz_me;
-                    }
-                }
-            }
+            //         if( gkx_me > gkx_max_partition[k] ) {
+            //             gkx_max_partition[k] = gkx_me;
+            //         }
+            //         if( gky_me > gky_max_partition[k] ) {
+            //             gky_max_partition[k] = gky_me;
+            //         }
+            //         if( gkz_me > gkz_max_partition[k] ) {
+            //             gkz_max_partition[k] = gkz_me;
+            //         }
+            //         if( gmx_me > gmx_max_partition[k] ) {
+            //             gmx_max_partition[k] = gmx_me;
+            //         }
+            //         if( gmy_me > gmy_max_partition[k] ) {
+            //             gmy_max_partition[k] = gmy_me;
+            //         }
+            //         if( gmz_me > gmz_max_partition[k] ) {
+            //             gmz_max_partition[k] = gmz_me;
+            //         }
+            //         if( (gkx_me > std::numeric_limits<double>::epsilon()) && (gkx_me < gkx_min_partition[k]) ) {
+            //             gkx_min_partition[k] = gkx_me;
+            //         }
+            //         if( (gky_me > std::numeric_limits<double>::epsilon()) && (gky_me < gky_min_partition[k]) ) {
+            //             gky_min_partition[k] = gky_me;
+            //         }
+            //         if( (gkz_me > std::numeric_limits<double>::epsilon()) && (gkz_me < gkz_min_partition[k]) ) {
+            //             gkz_min_partition[k] = gkz_me;
+            //         }
+            //         if( (gmx_me > std::numeric_limits<double>::epsilon()) && (gmx_me < gmx_min_partition[k]) ) {
+            //             gmx_min_partition[k] = gmx_me;
+            //         }
+            //         if( (gmy_me > std::numeric_limits<double>::epsilon()) && (gmy_me < gmy_min_partition[k]) ) {
+            //             gmy_min_partition[k] = gmy_me;
+            //         }
+            //         if( (gmz_me > std::numeric_limits<double>::epsilon()) && (gmz_me < gmz_min_partition[k]) ) {
+            //             gmz_min_partition[k] = gmz_me;
+            //         }
+            //     }
+            // }
 
-            mKMax[0] = kx_max_partition[0];
-            mKMax[1] = ky_max_partition[0];
-            mKMax[2] = kz_max_partition[0];
-            mKrMax[0] = mx_max_partition[0];
-            mKrMax[1] = my_max_partition[0];
-            mKrMax[2] = mz_max_partition[0];
-            mKMin[0] = kx_min_partition[0];
-            mKMin[1] = ky_min_partition[0];
-            mKMin[2] = kz_min_partition[0];
-            mKrMin[0] = mx_min_partition[0];
-            mKrMin[1] = my_min_partition[0];
-            mKrMin[2] = mz_min_partition[0];
+            // mKMax[0] = kx_max_partition[0];
+            // mKMax[1] = ky_max_partition[0];
+            // mKMax[2] = kz_max_partition[0];
+            // mKrMax[0] = mx_max_partition[0];
+            // mKrMax[1] = my_max_partition[0];
+            // mKrMax[2] = mz_max_partition[0];
+            // mKMin[0] = kx_min_partition[0];
+            // mKMin[1] = ky_min_partition[0];
+            // mKMin[2] = kz_min_partition[0];
+            // mKrMin[0] = mx_min_partition[0];
+            // mKrMin[1] = my_min_partition[0];
+            // mKrMin[2] = mz_min_partition[0];
 
-            mgKMax[0] = gkx_max_partition[0];
-            mgKMax[1] = gky_max_partition[0];
-            mgKMax[2] = gkz_max_partition[0];
-            mgKrMax[0] = gmx_max_partition[0];
-            mgKrMax[1] = gmy_max_partition[0];
-            mgKrMax[2] = gmz_max_partition[0];
-            mgKMin[0] = gkx_min_partition[0];
-            mgKMin[1] = gky_min_partition[0];
-            mgKMin[2] = gkz_min_partition[0];
-            mgKrMin[0] = gmx_min_partition[0];
-            mgKrMin[1] = gmy_min_partition[0];
-            mgKrMin[2] = gmz_min_partition[0];
+            // mgKMax[0] = gkx_max_partition[0];
+            // mgKMax[1] = gky_max_partition[0];
+            // mgKMax[2] = gkz_max_partition[0];
+            // mgKrMax[0] = gmx_max_partition[0];
+            // mgKrMax[1] = gmy_max_partition[0];
+            // mgKrMax[2] = gmz_max_partition[0];
+            // mgKMin[0] = gkx_min_partition[0];
+            // mgKMin[1] = gky_min_partition[0];
+            // mgKMin[2] = gkz_min_partition[0];
+            // mgKrMin[0] = gmx_min_partition[0];
+            // mgKrMin[1] = gmy_min_partition[0];
+            // mgKrMin[2] = gmz_min_partition[0];
 
-            for(unsigned int i=1; i < NumThreads; i++) {
+            // for(unsigned int i=1; i < NumThreads; i++) {
 
-                if(kx_max_partition[i] > mKMax[0]){
-                    mKMax[0] = kx_max_partition[i];
-                }
-                if(ky_max_partition[i] > mKMax[1]) {
-                    mKMax[1] = ky_max_partition[i];
-                }
-                if(kz_max_partition[i] > mKMax[2]) {
-                    mKMax[2] = kz_max_partition[i];
-                }
-                if(mx_max_partition[i] > mKrMax[0]){
-                    mKrMax[0] = mx_max_partition[i];
-                }
-                if(my_max_partition[i] > mKrMax[1]) {
-                    mKrMax[1] = my_max_partition[i];
-                }
-                if(mz_max_partition[i] > mKrMax[2]) {
-                    mKrMax[2] = mz_max_partition[i];
-                }
-                if(kx_min_partition[i] < mKMin[0]){
-                    mKMin[0] = kx_min_partition[i];
-                }
-                if(ky_min_partition[i] < mKMin[1]) {
-                    mKMin[1] = ky_min_partition[i];
-                }
-                if(kz_min_partition[i] < mKMin[2]) {
-                    mKMin[2] = kz_min_partition[i];
-                }
-                if(mx_min_partition[i] < mKrMin[0]){
-                    mKrMin[0] = mx_min_partition[i];
-                }
-                if(my_min_partition[i] < mKrMin[1]) {
-                    mKrMin[1] = my_min_partition[i];
-                }
-                if(mz_min_partition[i] < mKrMin[2]) {
-                    mKrMin[2] = mz_min_partition[i];
-                }
+            //     if(kx_max_partition[i] > mKMax[0]){
+            //         mKMax[0] = kx_max_partition[i];
+            //     }
+            //     if(ky_max_partition[i] > mKMax[1]) {
+            //         mKMax[1] = ky_max_partition[i];
+            //     }
+            //     if(kz_max_partition[i] > mKMax[2]) {
+            //         mKMax[2] = kz_max_partition[i];
+            //     }
+            //     if(mx_max_partition[i] > mKrMax[0]){
+            //         mKrMax[0] = mx_max_partition[i];
+            //     }
+            //     if(my_max_partition[i] > mKrMax[1]) {
+            //         mKrMax[1] = my_max_partition[i];
+            //     }
+            //     if(mz_max_partition[i] > mKrMax[2]) {
+            //         mKrMax[2] = mz_max_partition[i];
+            //     }
+            //     if(kx_min_partition[i] < mKMin[0]){
+            //         mKMin[0] = kx_min_partition[i];
+            //     }
+            //     if(ky_min_partition[i] < mKMin[1]) {
+            //         mKMin[1] = ky_min_partition[i];
+            //     }
+            //     if(kz_min_partition[i] < mKMin[2]) {
+            //         mKMin[2] = kz_min_partition[i];
+            //     }
+            //     if(mx_min_partition[i] < mKrMin[0]){
+            //         mKrMin[0] = mx_min_partition[i];
+            //     }
+            //     if(my_min_partition[i] < mKrMin[1]) {
+            //         mKrMin[1] = my_min_partition[i];
+            //     }
+            //     if(mz_min_partition[i] < mKrMin[2]) {
+            //         mKrMin[2] = mz_min_partition[i];
+            //     }
 
-                if(gkx_max_partition[i] > mgKMax[0]){
-                    mgKMax[0] = gkx_max_partition[i];
-                }
-                if(gky_max_partition[i] > mgKMax[1]) {
-                    mgKMax[1] = gky_max_partition[i];
-                }
-                if(gkz_max_partition[i] > mgKMax[2]) {
-                    mgKMax[2] = gkz_max_partition[i];
-                }
-                if(gmx_max_partition[i] > mgKrMax[0]){
-                    mgKrMax[0] = gmx_max_partition[i];
-                }
-                if(gmy_max_partition[i] > mgKrMax[1]) {
-                    mgKrMax[1] = gmy_max_partition[i];
-                }
-                if(gmz_max_partition[i] > mgKrMax[2]) {
-                    mgKrMax[2] = gmz_max_partition[i];
-                }
-                if(gkx_min_partition[i] < mgKMin[0]){
-                    mgKMin[0] = gkx_min_partition[i];
-                }
-                if(gky_min_partition[i] < mgKMin[1]) {
-                    mgKMin[1] = gky_min_partition[i];
-                }
-                if(gkz_min_partition[i] < mgKMin[2]) {
-                    mgKMin[2] = gkz_min_partition[i];
-                }
-                if(gmx_min_partition[i] < mgKrMin[0]){
-                    mgKrMin[0] = gmx_min_partition[i];
-                }
-                if(gmy_min_partition[i] < mgKrMin[1]) {
-                    mgKrMin[1] = gmy_min_partition[i];
-                }
-                if(gmz_min_partition[i] < mgKrMin[2]) {
-                    mgKrMin[2] = gmz_min_partition[i];
-                }
-            }
+            //     if(gkx_max_partition[i] > mgKMax[0]){
+            //         mgKMax[0] = gkx_max_partition[i];
+            //     }
+            //     if(gky_max_partition[i] > mgKMax[1]) {
+            //         mgKMax[1] = gky_max_partition[i];
+            //     }
+            //     if(gkz_max_partition[i] > mgKMax[2]) {
+            //         mgKMax[2] = gkz_max_partition[i];
+            //     }
+            //     if(gmx_max_partition[i] > mgKrMax[0]){
+            //         mgKrMax[0] = gmx_max_partition[i];
+            //     }
+            //     if(gmy_max_partition[i] > mgKrMax[1]) {
+            //         mgKrMax[1] = gmy_max_partition[i];
+            //     }
+            //     if(gmz_max_partition[i] > mgKrMax[2]) {
+            //         mgKrMax[2] = gmz_max_partition[i];
+            //     }
+            //     if(gkx_min_partition[i] < mgKMin[0]){
+            //         mgKMin[0] = gkx_min_partition[i];
+            //     }
+            //     if(gky_min_partition[i] < mgKMin[1]) {
+            //         mgKMin[1] = gky_min_partition[i];
+            //     }
+            //     if(gkz_min_partition[i] < mgKMin[2]) {
+            //         mgKMin[2] = gkz_min_partition[i];
+            //     }
+            //     if(gmx_min_partition[i] < mgKrMin[0]){
+            //         mgKrMin[0] = gmx_min_partition[i];
+            //     }
+            //     if(gmy_min_partition[i] < mgKrMin[1]) {
+            //         mgKrMin[1] = gmy_min_partition[i];
+            //     }
+            //     if(gmz_min_partition[i] < mgKrMin[2]) {
+            //         mgKrMin[2] = gmz_min_partition[i];
+            //     }
+            // }
 
-            // Check that the maximum stiffness is not zero
-            this->CheckMaximumStiffness();
+            // // Check that the maximum stiffness is not zero
+            // this->CheckMaximumStiffness();
 
             // Scale mKNormMin to calibrate new omega_n
-            const double omega_n_factor = r_process_info[OMEGA_N_FACTOR];
+            const double mass_array_scale_factor = mMMin/(mKNormMin*r_process_info[OMEGA_N_FACTOR]);
             
             // Estimate nodal stiffness and replace nodal_mass by it
             block_for_each(rNodes, [&](ModelPart::NodeType& rNode) {
@@ -1484,8 +1484,9 @@ namespace Kratos {
                     estimated_nodal_mass_array[i] = (1.0-mass_array_alpha)*estimated_nodal_mass_array[i] + mass_array_alpha*estimated_nodal_mass_array_old[i];
                     estimated_particle_moment_intertia_array[i] = (1.0-mass_array_alpha)*estimated_particle_moment_intertia_array[i] + mass_array_alpha*estimated_particle_moment_intertia_array_old[i];
                     //Save estimated_nodal_mass_array_old
-                    estimated_nodal_mass_array_old[i] = estimated_nodal_mass_array[i];
-                    estimated_particle_moment_intertia_array_old[i] = estimated_particle_moment_intertia_array[i];
+                    // TODO. Ignasi: testing constant stiffness
+                    // estimated_nodal_mass_array_old[i] = estimated_nodal_mass_array[i];
+                    // estimated_particle_moment_intertia_array_old[i] = estimated_particle_moment_intertia_array[i];
 
                     // Globally estimated stiffness
                     // Check no stiffness is zero
@@ -1503,8 +1504,10 @@ namespace Kratos {
                     globally_estimated_particle_moment_intertia_array_old[i] = globally_estimated_particle_moment_intertia_array[i];
 
                     // Use estimated nodal mass array scaled so that the Dt is similar to the original one
-                    nodal_mass_array[i] = (1.0-mass_array_alpha)*estimated_nodal_mass_array[i]*mMMin/(mKNormMin*omega_n_factor) + mass_array_alpha*nodal_mass_array[i];
-                    particle_moment_intertia_array[i] = (1.0-mass_array_alpha)*estimated_particle_moment_intertia_array[i]*mMMin/(mKNormMin*omega_n_factor) + mass_array_alpha*particle_moment_intertia_array[i];
+                    nodal_mass_array[i] = estimated_nodal_mass_array_old[i]*mass_array_scale_factor;
+                    particle_moment_intertia_array[i] = estimated_particle_moment_intertia_array_old[i]*mass_array_scale_factor;
+                    // nodal_mass_array[i] = (1.0-mass_array_alpha)*estimated_nodal_mass_array[i]*mass_array_scale_factor + mass_array_alpha*nodal_mass_array[i];
+                    // particle_moment_intertia_array[i] = (1.0-mass_array_alpha)*estimated_particle_moment_intertia_array[i]*mass_array_scale_factor + mass_array_alpha*particle_moment_intertia_array[i];
                     // TODO. Ignasi: check which stiffness is better (the locally estimated or the globally estimated)
                     // nodal_mass_array[i] = (1.0-mass_array_alpha)*globally_estimated_nodal_mass_array[i]*mMMin/mgKNormMin + mass_array_alpha*nodal_mass_array[i];
                     // particle_moment_intertia_array[i] = (1.0-mass_array_alpha)*globally_estimated_particle_moment_intertia_array[i]*mMMin/mgKNormMin + mass_array_alpha*particle_moment_intertia_array[i];
@@ -1517,7 +1520,7 @@ namespace Kratos {
                 const double omega_1_old = r_process_info[OMEGA_1];
                 const double omega_1_factor = r_process_info[OMEGA_1_FACTOR];
 
-                const double K_max_scaled = mKNormMax * mMMin/(mKNormMin*omega_n_factor);
+                const double K_max_scaled = mKNormMax * mass_array_scale_factor;
                 const double omega_ratio = std::sqrt(mMMax/K_max_scaled)*omega_1_factor;
                 double omega_1_new = omega_1_old*omega_ratio;
 
@@ -1526,26 +1529,15 @@ namespace Kratos {
                     omega_1_new = omega_1_old;
                 }
 
-                // TODO. Ignasi: seguir
-
-                // const double gK_max_scaled = mgKNormMax * mMMin/mgKNormMin;
-                // const double gomega_ratio = std::sqrt(mMMax/gK_max_scaled)*omega_1_factor;
-                // double gomega_1_new = omega_1_old*gomega_ratio;
-
-                // if (gomega_ratio <= 1.0) {
-                //     std::cout << "gomega_ratio <= 1.0 !! gomega_ratio: " << gomega_ratio << std::endl;
-                //     gomega_1_new = omega_1_old;
-                // }
-
+                // TODO. Ignasi
                 // KRATOS_WATCH(mMMin)
                 // KRATOS_WATCH(mMMax)
 
                 // KRATOS_WATCH(mKNormMin)
                 // KRATOS_WATCH(mKNormMax)
-                // const double mass_ratio = mMMin/mKNormMin;
-                // KRATOS_WATCH(mass_ratio)
-                // KRATOS_WATCH(omega_ratio)
+                // KRATOS_WATCH(mass_array_scale_factor)
                 // KRATOS_WATCH(K_max_scaled)
+                // KRATOS_WATCH(omega_ratio)
                 // std::fstream id_k_file;
                 // id_k_file.open ("id_kx_ky_kz.txt", std::fstream::out | std::fstream::app);
                 // id_k_file.precision(12);
@@ -1557,9 +1549,16 @@ namespace Kratos {
                 // }
                 // id_k_file.close();
 
+                // const double gK_max_scaled = mgKNormMax * mMMin/mgKNormMin;
+                // const double gomega_ratio = std::sqrt(mMMax/gK_max_scaled)*omega_1_factor;
+                // double gomega_1_new = omega_1_old*gomega_ratio;
+                // if (gomega_ratio <= 1.0) {
+                //     std::cout << "gomega_ratio <= 1.0 !! gomega_ratio: " << gomega_ratio << std::endl;
+                //     gomega_1_new = omega_1_old;
+                // }
                 // KRATOS_WATCH(mgKNormMin)
                 // KRATOS_WATCH(mgKNormMax)
-                // const double gmass_ratio = mMMin/mgKNormMin;
+                // const double gmass_ratio = mMMin/(mgKNormMin*r_process_info[OMEGA_N_FACTOR]);
                 // KRATOS_WATCH(gmass_ratio)
                 // KRATOS_WATCH(gomega_ratio)
                 // KRATOS_WATCH(gK_max_scaled)
