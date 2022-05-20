@@ -3,6 +3,22 @@ entries:
   product: For Developers
   output: web
   folders:
+  - title: Documentation Guide
+    output: web
+    folderitems:
+    - title: Source Documentation
+      url: /pages/1_Kratos/2_For_Developers/Documentation_Guide/Source_Documentation.html
+      output: web
+      subfolders:
+      - title: data
+        output: web
+        subfolderitems:
+        - title: example 1
+          output: web
+        - title: example 2
+          output: web
+        - title: example 3
+          output: web
   - title: General
     output: web
     folderitems:

@@ -64,18 +64,3 @@ entries:
     - title: Shape Update Optimization Stanford Bunny
       url: /pages/2_Applications/Shape_Optimization_Application/99_Examples/11_Shape_Update_Optimization_Stanford_Bunny.html
       output: web
-    - title: Bead optimization of a plate
-      url: /pages/2_Applications/Shape_Optimization_Application/99_Examples/Bead_optimization_of_a_plate.html
-      output: web
-    - title: Optimization of a Solid Hook
-      url: /pages/2_Applications/Shape_Optimization_Application/99_Examples/Optimization_of_a_Solid Hook.html
-      output: web
-    - title: Smooth surface wrapping
-      url: /pages/2_Applications/Shape_Optimization_Application/99_Examples/Smooth_surface_wrapping.html
-      output: web
-    - title: Strain energy minimization 3D hook
-      url: /pages/2_Applications/Shape_Optimization_Application/99_Examples/Strain_energy_minimization_3D_hook.html
-      output: web
-    - title: Strain energy minimization 3D shell
-      url: /pages/2_Applications/Shape_Optimization_Application/99_Examples/Strain_energy_minimization_3D_shell.html
-      output: web
