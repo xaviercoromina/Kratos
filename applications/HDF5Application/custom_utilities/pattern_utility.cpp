@@ -322,7 +322,8 @@ std::string PlaceholderPattern::FormatRegexLiteral(const std::string& rLiteral)
 const ModelPartPattern::PlaceholderMap ModelPartPattern::mModelPartPlaceholderMap = {
     {"<model_part_name>", ".+"},
     {"<step>", RegexUtility::UnsignedInteger().first},
-    {"<time>", RegexUtility::FloatingPoint().first}
+    {"<time>", RegexUtility::FloatingPoint().first},
+    {"<rank>", RegexUtility::Integer().first}
 };
 
 
