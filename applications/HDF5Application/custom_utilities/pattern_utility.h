@@ -36,25 +36,85 @@ namespace Kratos
 ///@name Kratos Classes
 ///@{
 
-/** A class for interfacing placeholders and regular expressions.
+
+/** @brief Static-only utility class for common regexes.
+ *
+ *  @details Static access to pairs of regex patterns (as @c std::string)
+ *           and their associated regexes (as @c std::regex).
+ *  @note No instances are allowed to be constructed from this class.
+ */
+class RegexUtility
+{
+public:
+    ///@name Inquiry
+    ///@{
+
+    /** @brief Get a string-regex pair representing an integer.
+     *
+     *  @return A pair of
+     *           - @c std::string of a regex pattern representing an @a integer.
+     *           - @c std::regex of that string.
+     *  @note This function can be called safely from other static functions.
+     */
+    static std::pair<std::string,std::regex> Integer();
+
+    /** @brief Get a string-regex pair representing an unsigned integer.
+     *
+     *  @return A pair of
+     *           - @c std::string of a regex pattern representing an <em>unsigned integer</em>.
+     *           - @c std::regex of that string.
+     *  @note This function can be called safely from other static functions.
+     */
+    static std::pair<std::string,std::regex> UnsignedInteger();
+
+    /** @brief Get a string-regex pair representing an integer.
+     *
+     *  @return A pair of
+     *           - @c std::string of a regex pattern representing a <em>floating point</em>
+     *             number in decimal or scientific notation.
+     *           - @c std::regex of that string.
+     *  @note This function can be called safely from other static functions.
+     */
+    static std::pair<std::string,std::regex> FloatingPoint();
+
+    ///@}
+
+private:
+    ///@name Life Cycle
+    ///@{
+
+    /// @brief Deleted default constructor (no instances of this class are allowed).
+    RegexUtility() = delete;
+
+    /// @brief Deleted move constructor (no instances of this class are allowed).
+    RegexUtility(RegexUtility&& rOther) = delete;
+
+    /// @brief Deleted copy constructor (no instances of this class are allowed).
+    RegexUtility(const RegexUtility& rOther) = delete;
+
+    ///@}
+}; // class RegexUtility
+
+
+/** @brief A class for interfacing placeholders and regular expressions.
  *
  *  @note placeholders should be separated by literals, otherwise
- *  regex will probably not capture them as you'd expect.
- *  BAD example:
- *      pattern:    "<placeholder_1><placeholder_2>"
- *      string:     "abcdefg"
- *      result:
- *          "<placeholder_1>" : "abcdef"
- *          "<placeholder_2>" : "g"
- *  CORRECT example:
- *      pattern:    "<placeholder_1>d<placeholder_2>"
- *      string:     "abcdefg"
- *      result:
- *          "<placeholder_1>" : "abc"
- *          "<placeholder_2>" : "efg"
+ *        regex will probably not capture them as you'd expect.
+ *        BAD example:
+ *            pattern:    "<placeholder_1><placeholder_2>"
+ *            string:     "abcdefg"
+ *            result:
+ *                "<placeholder_1>" : "abcdef"
+ *                "<placeholder_2>" : "g"
+ *        CORRECT example:
+ *            pattern:    "<placeholder_1>d<placeholder_2>"
+ *            string:     "abcdefg"
+ *            result:
+ *                "<placeholder_1>" : "abc"
+ *                "<placeholder_2>" : "efg"
  *
  *  @note placeholders not present in the pattern are discarded,
- *  and won't be keys in @ref{PlaceholderPattern::Match}.
+ *        and won't be keys in @ref{PlaceholderPattern::Match}.
  */
 class KRATOS_API(HDF5Application) PlaceholderPattern
 {
@@ -79,13 +139,13 @@ public:
     /// Default constructor
     PlaceholderPattern() = default;
 
-    /** Constructor
-     *  @param rPattern pattern string with placeholders
-     *  @param rPlaceholders pairs of placeholders and their corresponding regex strings
+    /** @brief Construct from a placeholder pattern and its associated map.
+     *  @param rPattern Pattern string with placeholders.
+     *  @param rPlaceholders Pairs of placeholders and their corresponding regex strings.
      *                       Example: {{"<name>", ".+"}, {"<identifier>", "[0-9]+"}}
      *
-     *  @note the corresponding regexes must be bare, not containing groups or position
-     *  constraints (such as line begin or end modifiers).
+     *  @warning The corresponding regexes must be bare, not containing groups (checked)
+     *           or position constraints such as line begin or end modifiers (not checked).
      */
     PlaceholderPattern(const std::string& rPattern,
                        const PlaceholderMap& rPlaceholderMap);
@@ -112,7 +172,7 @@ public:
     ///@name Operations
     ///@{
 
-    /// Check whether a string satisfies the pattern
+    /// @brief Check whether a string satisfies the pattern
     bool IsAMatch(const std::string& rString) const;
 
     /** Find all placeholders' values in the input string.
@@ -189,6 +249,7 @@ private:
  *      <model_part_name>
  *      <step>
  *      <time>
+ *      <rank>
  *  See @ref{PlaceholderPattern} for supported functionalities. Other
  *  placeholders can be added at compile time by tweaking the construction
  *  of the static member @ref{ModelPartPattern::mModelpartPlaceholderMap}.

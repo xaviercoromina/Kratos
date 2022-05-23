@@ -13,6 +13,7 @@
 // Core includes
 #include "ghc/filesystem.hpp"
 #include "includes/define.h"
+#include "includes/exception.h"
 
 // Project includes
 #include "pattern_utility.h"
@@ -23,6 +24,42 @@
 
 namespace Kratos
 {
+
+
+std::pair<std::string,std::regex> RegexUtility::Integer()
+{
+    std::pair<std::string,std::regex> output;
+
+    // The clutter is due to the many uncapturing groups
+    output.first = R"(-?(?:0$|(?:[1-9]+[0-9]*?)|[1-9]+[0-9]*?))";
+    output.second = std::regex(output.first);
+
+    return output;
+}
+
+
+std::pair<std::string,std::regex> RegexUtility::UnsignedInteger()
+{
+    std::pair<std::string,std::regex> output;
+
+    // The clutter is due to the many uncapturing groups
+    output.first = R"((?:0$|(?:[1-9]+[0-9]*?)|[1-9]+[0-9]*?))";
+    output.second = std::regex(output.first);
+
+    return output;
+}
+
+
+std::pair<std::string,std::regex> RegexUtility::FloatingPoint()
+{
+    std::pair<std::string,std::regex> output;
+
+    // The clutter is due to the many uncapturing groups
+    output.first = R"(-?(?:(?:(?:[1-9][0-9]*?)(?:\.[0-9]*?)??)|(?:0(?:\.[0-9]*?)??)?)(?:[eE][\+-]?(?:0$|(?:[1-9]+[0-9]*?)|[1-9]+[0-9]*?)?)?)";
+    output.second = std::regex(output.first);
+
+    return output;
+}
 
 
 PlaceholderPattern::PlaceholderPattern(const std::string& rPattern,
@@ -49,14 +86,14 @@ PlaceholderPattern::PlaceholderPattern(const std::string& rPattern,
     const auto it_end = rPlaceholderMap.end();
 
     for ( ; it_pair!=it_end; ++it_pair){
+        // Make sure that input pattern has no capturing groups of its own.
+        KRATOS_ERROR_IF(std::regex(it_pair->second).mark_count())
+            << "pattern " << it_pair->second
+            << " of placeholder '" << it_pair->first << "'"
+            << " has internal capturing group(s) (this is forbidden in PlaceholderPattern)";
+
         // Wrap the regex in a group
-        std::string regex;
-        if (it_pair->second.front()!='(' || it_pair->second.back()!=')') {
-            regex = "(" + it_pair->second + ")";
-        }
-        else {
-            regex = it_pair->second;
-        }
+        std::string regex = "(" + it_pair->second + ")";
 
         const auto placeholder_size = it_pair->first.size();
         const auto regex_size = regex.size();
@@ -220,7 +257,7 @@ std::vector<PlaceholderPattern::PathType> PlaceholderPattern::Glob() const
                     if (std::regex_match(item.path().filename().string(), pattern_part_regex)) {
                         tmp_paths.emplace_back(item);
                     }
-                } // for r_item in path.glob(*)
+                } // for r_item in r_path.glob(*)
             } // if r_path.is_directory()
         } // for r_path in paths
 
@@ -284,8 +321,8 @@ std::string PlaceholderPattern::FormatRegexLiteral(const std::string& rLiteral)
 
 const ModelPartPattern::PlaceholderMap ModelPartPattern::mModelPartPlaceholderMap = {
     {"<model_part_name>", ".+"},
-    {"<step>", "[0-9]+"},
-    {"<time>", "[+-]?[0-9]*[.]?[0-9]+"}
+    {"<step>", RegexUtility::UnsignedInteger().first},
+    {"<time>", RegexUtility::FloatingPoint().first}
 };
 
 
