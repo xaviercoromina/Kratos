@@ -4,8 +4,8 @@
 //   _|\_\_|  \__,_|\__|\___/ ____/
 //                   Multi-Physics
 //
-//  License:		 BSD License
-//					 Kratos default license: kratos/license.txt
+//  License:         BSD License
+//                   Kratos default license: kratos/license.txt
 //
 //  Main authors:    Eduard Gómez
 //
@@ -15,6 +15,9 @@
 #define KRATOS_COMPRESSIBLE_NAVIER_STOKES_EXPLICIT_SOLVING_STRATEGY_BFECC
 
 /* System includes */
+#if __cplusplus >= 201703L
+#include <optional>
+#endif
 
 /* External includes */
 
@@ -26,7 +29,7 @@
 
 /* Appication includes */
 #include "fluid_dynamics_application_variables.h"
-#include "compressible_navier_stokes_explicit_solving_startegy.h"
+#include "compressible_navier_stokes_explicit_solving_strategy.h"
 
 namespace Kratos
 {
@@ -69,6 +72,30 @@ public:
     /// The local vector definition
     typedef typename TDenseSpace::VectorType LocalSystemVectorType;
     typedef typename TDenseSpace::MatrixType LocalSystemMatrixType;
+
+    // Replace with proper std::optional when upgrading to c++17
+#if __cplusplus >= 201703L
+    using std::optional;
+#else
+    /** Naive implementation of std::optional, used as a replacement for c++11 support.
+     * Use only with simple types.
+     */
+    template<typename T>
+    struct optional {
+        optional()           noexcept : mHasValue(false) { }
+        optional(const T& V) noexcept : mHasValue(true), mValue(V) { }
+
+        void reset() noexcept { mHasValue = false; }
+
+        T& operator*() noexcept { return mValue; }
+        T operator*() const noexcept { return mValue; }
+        
+        bool has_value() const noexcept { return mHasValue;}
+    private:
+        bool mHasValue;
+        T mValue;
+    };
+#endif
 
     /** Counted pointer of ClassName */
     KRATOS_CLASS_POINTER_DEFINITION(CompressibleNavierStokesExplicitSolvingStrategyBFECC);
@@ -150,27 +177,6 @@ public:
     ~CompressibleNavierStokesExplicitSolvingStrategyBFECC() override = default;
 
     /**
-     * @brief This method provides the defaults parameters to avoid conflicts between the different constructors
-     * @return The default parameters
-     */
-    Parameters GetDefaultParameters() const override
-    {
-        Parameters default_parameters = Parameters(R"(
-        {
-            "name" : "compressible_navier_stokes_explicit_solving_strategy_bfecc",
-            "rebuild_level" : 0,
-            "move_mesh_flag": false,
-            "calculate_non_conservative_magnitudes" : true,
-            "shock_capturing_settings" : { }
-        })");
-
-        // Getting base class default parameters
-        const Parameters base_default_parameters = BaseType::GetDefaultParameters();
-        default_parameters.RecursivelyAddMissingParameters(base_default_parameters);
-        return default_parameters;
-    }
-
-    /**
      * @brief Returns the name of the class as used in the settings (snake_case format)
      * @return The name of the class
      */
@@ -189,6 +195,25 @@ public:
     ///@}
     ///@name Operations
     ///@{
+
+    /**
+     * @brief This method provides the defaults parameters to avoid conflicts between the different constructors
+     * @return The default parameters
+     */
+    Parameters GetDefaultParameters() const override
+    {
+        KRATOS_TRY
+
+        Parameters default_parameters {};
+        default_parameters.AddString("explicit_solving_strategy", Name());
+
+        // Getting base class default parameters
+        const Parameters base_default_parameters = BaseType::GetDefaultParameters();
+        default_parameters.RecursivelyAddMissingParameters(base_default_parameters);
+        return default_parameters;
+
+        KRATOS_CATCH("")
+    }
 
 
     ///@}
@@ -311,8 +336,8 @@ private:
     ///@{
 
     struct Stash {
-        double conductivity = 0.0;
-        double dynamic_viscosity = 0.0;
+        optional<double> conductivity = {};
+        optional<double> dynamic_viscosity = {};
     } mDiffusionStash;
 
     ///@}
@@ -326,33 +351,55 @@ private:
 
     void StashDiffusiveConstants()
     {
+        KRATOS_TRY
+
         auto& model_part = BaseType::GetModelPart();
-        if(model_part.NumberOfElements() == 0) return;
+        
+        KRATOS_ERROR_IF(model_part.NumberOfElements() == 0) << "Model part is devoid of elements!"; // This error must be removed when MPI is implemented
 
         auto& properties = model_part.ElementsBegin()->GetProperties();
 
-        auto& r_conductivity = properties.GetValue(CONDUCTIVITY);
-        auto& r_dynamic_viscosity = properties.GetValue(DYNAMIC_VISCOSITY);
+        if(properties.Has(CONDUCTIVITY))
+        {
+            auto& r_conductivity = properties.GetValue(CONDUCTIVITY);
+            mDiffusionStash.conductivity = r_conductivity;
+            r_conductivity = 0;
+        }
 
-        mDiffusionStash.conductivity = r_conductivity;
-        mDiffusionStash.dynamic_viscosity = r_dynamic_viscosity;
+        if(properties.Has(DYNAMIC_VISCOSITY))
+        {
+            auto& r_dynamic_viscosity = properties.GetValue(DYNAMIC_VISCOSITY);
+            mDiffusionStash.dynamic_viscosity = r_dynamic_viscosity;
+            r_dynamic_viscosity = 0;
+        }
 
-        r_conductivity = 0;
-        r_dynamic_viscosity = 0;
+        KRATOS_CATCH("")
     }
 
     void PopDiffusiveConstants()
     {
+        KRATOS_TRY
+
         auto& model_part = BaseType::GetModelPart();
-        if(model_part.NumberOfElements() == 0) return;
+        
+        KRATOS_ERROR_IF(model_part.NumberOfElements() == 0) << "Model part is devoid of elements!"; // This error must be removed when MPI is implemented
 
         auto& properties = model_part.ElementsBegin()->GetProperties();
 
-        properties.SetValue(CONDUCTIVITY, mDiffusionStash.conductivity);
-        properties.SetValue(DYNAMIC_VISCOSITY, mDiffusionStash.dynamic_viscosity);
+        if(mDiffusionStash.conductivity.has_value())
+        {
+            properties.SetValue(CONDUCTIVITY, *mDiffusionStash.conductivity);
+        }
 
-        mDiffusionStash.conductivity = 0;
-        mDiffusionStash.dynamic_viscosity = 0;
+        if(mDiffusionStash.dynamic_viscosity.has_value())
+        {
+            properties.SetValue(DYNAMIC_VISCOSITY, *mDiffusionStash.dynamic_viscosity);
+        }
+
+        mDiffusionStash.conductivity.reset();
+        mDiffusionStash.dynamic_viscosity.reset();
+
+        KRATOS_CATCH("")
     }
 
     ///@}

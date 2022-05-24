@@ -4,8 +4,8 @@
 //   _|\_\_|  \__,_|\__|\___/ ____/
 //                   Multi-Physics
 //
-//  License:		 BSD License
-//					 Kratos default license: kratos/license.txt
+//  License:         BSD License
+//                   Kratos default license: kratos/license.txt
 //
 //  Main authors:    Ruben Zorrilla, Eduard Gómez
 //
@@ -57,9 +57,9 @@ namespace Kratos
  * @details This is the base class from which we will derive all the explicit strategies
  * for the compressible Navier Stokes equations (BFECC, RK4, ...)
  */
-template <typename TBaseExplicitStartegy>
+template <typename TBaseExplicitStrategy>
 class CompressibleNavierStokesExplicitSolvingStrategy
-: public TBaseExplicitStartegy
+: public TBaseExplicitStrategy
 {
 public:
     ///@name Type Definitions
@@ -67,19 +67,16 @@ public:
 
     /// The base class definition
 
-    typedef TBaseExplicitStartegy BaseType;
+    typedef TBaseExplicitStrategy BaseType;
 
     /// The explicit builder and solver definition
     typedef typename BaseType::ExplicitBuilderType ExplicitBuilderType;
 
     /// The local vector definition
-    typedef typename TBaseExplicitStartegy::LocalSystemVectorType LocalSystemVectorType;
+    typedef typename TBaseExplicitStrategy::LocalSystemVectorType LocalSystemVectorType;
 
     /// Pointer definition of CompressibleNavierStokesExplicitSolvingStrategy
     KRATOS_CLASS_POINTER_DEFINITION(CompressibleNavierStokesExplicitSolvingStrategy);
-
-    /// Local Flags
-    KRATOS_DEFINE_LOCAL_FLAG(SHOCK_CAPTURING);
 
     ///@}
     ///@name Life Cycle
@@ -175,8 +172,7 @@ public:
 
         Parameters default_parameters = Parameters(R"(
         {
-            "name" : "compressible_navier_stokes_explicit_explicit_solving_strategy_runge_kutta_4",
-            "rebuild_level" : 0,
+            "explicit_solving_strategy" : "",
             "move_mesh_flag": false,
             "calculate_non_conservative_magnitudes" : true,
             "shock_capturing_settings" : { }

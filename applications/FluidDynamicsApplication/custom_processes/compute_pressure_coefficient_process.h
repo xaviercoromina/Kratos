@@ -41,7 +41,6 @@ namespace Kratos
 ///@name Type Definitions
 ///@{
 
-using NodeType = ModelPart::NodeType;
 
 ///@}
 ///@name  Enum's
@@ -55,13 +54,13 @@ using NodeType = ModelPart::NodeType;
 ///@name Kratos Classes
 ///@{
 
-/// Utility to modify the distances of an embedded object in order to avoid bad intersections
-/// Besides, it also deactivate the full negative distance elements
+/// This process computes the pressure coefficient as a function of reference fluid properties
 class KRATOS_API(FLUID_DYNAMICS_APPLICATION) ComputePressureCoefficientProcess : public Process
 {
 public:
     ///@name Type Definitions
     ///@{
+    using NodeType = ModelPart::NodeType;
 
     /// Pointer definition of ComputePressureCoefficientProcess
     KRATOS_CLASS_POINTER_DEFINITION(ComputePressureCoefficientProcess);
@@ -69,11 +68,6 @@ public:
     ///@}
     ///@name Life Cycle
     ///@{
-
-    /// Constructor with Kratos parameters.
-    ComputePressureCoefficientProcess(
-        ModelPart& rModelPart,
-        Parameters Params);
 
     /// Constructor with Kratos model
     ComputePressureCoefficientProcess(
@@ -87,6 +81,12 @@ public:
     ///@name Operators
     ///@{
 
+    ///@}
+    ///@name Operations
+    ///@{
+
+    const Parameters GetDefaultParameters() const override;
+
     void Execute() override;
 
     void ExecuteInitialize() override;
@@ -94,10 +94,6 @@ public:
     void ExecuteFinalizeSolutionStep() override;
 
     void ExecuteBeforeOutputStep() override;
-
-    ///@}
-    ///@name Operations
-    ///@{
 
     ///@}
     ///@name Access
@@ -143,17 +139,23 @@ private:
     ModelPart& mrModelPart;
     bool mComputeAsPostProcess;
     double mFreestreamStaticPressure;   // Freestream pressure
-    double mFreestreamDynamicPressure;  // Freestream q=rho*V²/2  
+    double mFreestreamDynamicPressure;  // Freestream q=rho*V²/2
+    std::function<double(const NodeType&)> mGetPressure;
 
     ///@}
-    ///@name Protected Operators
+    ///@name Private Operators
     ///@{
 
     ///@}
     ///@name Private Operations
     ///@{
 
-    void CheckDefaultsAndProcessSettings(Parameters Params);
+
+    void SelectExecutionTime(Parameters Params);
+
+    void SelectPressureGetter(Parameters Params);
+
+    void ReadFreestreamValues(Parameters Params);
 
     ///@}
     ///@name Private  Access

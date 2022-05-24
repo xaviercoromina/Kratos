@@ -4,8 +4,8 @@
 //   _|\_\_|  \__,_|\__|\___/ ____/
 //                   Multi-Physics
 //
-//  License:		 BSD License
-//					 Kratos default license: kratos/license.txt
+//  License:         BSD License
+//                   Kratos default license: kratos/license.txt
 //
 //  Main authors:    Ruben Zorrilla, Eduard Gómez
 //
@@ -26,7 +26,7 @@
 
 // Application includes
 #include "fluid_dynamics_application_variables.h"
-#include "compressible_navier_stokes_explicit_solving_startegy.h"
+#include "compressible_navier_stokes_explicit_solving_strategy.h"
 
 namespace Kratos
 {
@@ -145,12 +145,31 @@ public:
     ///@{
 
     /**
+     * @brief This method provides the defaults parameters to avoid conflicts between the different constructors
+     * @return The default parameters
+     */
+    Parameters GetDefaultParameters() const override
+    {
+        KRATOS_TRY
+
+        Parameters default_parameters {};
+        default_parameters.AddString("explicit_solving_strategy", Name());
+
+        // Getting base class default parameters
+        const Parameters base_default_parameters = BaseType::GetDefaultParameters();
+        default_parameters.RecursivelyAddMissingParameters(base_default_parameters);
+        return default_parameters;
+
+        KRATOS_CATCH("")
+    }
+
+    /**
      * @brief Returns the name of the class as used in the settings (snake_case format)
      * @return The name of the class
      */
     static std::string Name()
     {
-        return "compressible_navier_stokes_explicit_solving_strategy_runge_kutta_4";
+        return "compressible_navier_stokes_explicit_solving_strategy_runge_kutta_" + TButcherTableau::Name();
     }
 
     /// Turn back information as a string.
