@@ -51,28 +51,42 @@ public:
 
     /** @brief Get a string-regex pair representing an integer.
      *
+     *  @details Matches the following pattern:
+     *           - optional leading '-'
+     *           - 0 or [1-9]+[0-9]*
+     *
      *  @return A pair of
-     *           - @c std::string of a regex pattern representing an @a integer.
-     *           - @c std::regex of that string.
+     *          - @c std::string of a regex pattern representing an @a integer.
+     *          - @c std::regex of that string.
      *  @note This function can be called safely from other static functions.
      */
     static std::pair<std::string,std::regex> Integer();
 
     /** @brief Get a string-regex pair representing an unsigned integer.
      *
+     *  @details Matches the following pattern:
+     *           - 0 or [1-9]+[0-9]*
+     *
      *  @return A pair of
-     *           - @c std::string of a regex pattern representing an <em>unsigned integer</em>.
-     *           - @c std::regex of that string.
+     *          - @c std::string of a regex pattern representing an <em>unsigned integer</em>.
+     *          - @c std::regex of that string.
      *  @note This function can be called safely from other static functions.
      */
     static std::pair<std::string,std::regex> UnsignedInteger();
 
     /** @brief Get a string-regex pair representing an integer.
      *
+     *  @details Matches the following pattern:
+     *           - optional leading '-'
+     *           - whole part identical to @ref RegexUtility::Integer
+     *           - optional decimal point, optionally followed by the fractional part [0-9]*
+     *           - optional scientific notation suffix [eE][\+-][0-9]+
+     *
      *  @return A pair of
-     *           - @c std::string of a regex pattern representing a <em>floating point</em>
-     *             number in decimal or scientific notation.
-     *           - @c std::regex of that string.
+     *          - @c std::string of a regex pattern representing a <em>floating point</em>
+     *            number in decimal or scientific notation.
+     *          - @c std::regex of that string.
+     *
      *  @note This function can be called safely from other static functions.
      */
     static std::pair<std::string,std::regex> FloatingPoint();
@@ -162,10 +176,10 @@ public:
     ///@name Operators
     ///@{
 
-    /// Move assignment operator
+    /// @brief Move assignment operator
     PlaceholderPattern& operator=(PlaceholderPattern&& rOther) = default;
 
-    /// Copy assignment operator
+    /// @brief Copy assignment operator
     PlaceholderPattern& operator=(const PlaceholderPattern& rOther) = default;
 
     ///@}
@@ -175,41 +189,38 @@ public:
     /// @brief Check whether a string satisfies the pattern
     bool IsAMatch(const std::string& rString) const;
 
-    /** Find all placeholders' values in the input string.
-     *  @param rString string that matches the input pattern
-     *  @return a map associating a vector of strings, i.e. the values
-     *  of placeholders in the input string, to the placeholders
+    /** @brief Find all placeholders' values in the input string.
      *
-     *  @note the returned placeholder values appear in the same order
-     *  they do in the input pattern.
+     *  @param rString String matching the input pattern.
+     *  @return Map associating a vector of strings, i.e. the values
+     *          of placeholders in the input string, to the placeholders.
+     *
+     *  @note The returned placeholder values appear in the same order
+     *        they do in the input pattern.
      */
     MatchType Match(const std::string& rString) const;
 
-    /**
-     *  Return a copy of the pattern that has its placeholders replaced
-     *  with the corresponding values specified in the input map.
+    /** @brief Substitute values in the stored pattern.
      *
+     *  @details Return a copy of the pattern that has its placeholders replaced
+     *           with the corresponding values specified in the input map.
      *  @param rPlaceholderValueMap string - string map associating values to placeholders
      *                              {"palceholder" : "placeholder_value"}
      */
     std::string Apply(const PlaceholderMap& rPlaceholderValueMap) const;
 
-    /** Collect all file/directory paths that match the pattern.
-     *
-     *  @note the search begins from the filesystem root if the pattern is an absolute path,
-     *  otherwise it begins from the cwd.
-     */
-    std::vector<PathType> Glob() const;
-
     ///@}
     ///@name Inquiry
     ///@{
 
-    /// Get the regex for the input pattern
+    /// @brief Get the regex for the input pattern.
     const std::regex& GetRegex() const;
 
-    /// Get the string representation of the regex
+    /// @brief Get the string representation of the regex.
     const std::string& GetRegexString() const;
+
+    /// @brief Get the pattern with placeholders.
+    const std::string& GetPatternString() const;
 
     ///@}
 
@@ -281,12 +292,37 @@ public:
     using PlaceholderPattern::operator=;
 
     ///@}
+    ///@name Operations
+    ///@{
+
+    using PlaceholderPattern::Apply;
+
+    /** @brief Substitute values from the specified @ref ModelPart in the stored pattern.
+     *
+     *  @param rModelPart: Model part to extract the values of placeholders from.
+     *  @note @p rModelPart must store @ref STEP and @ref TIME.
+     *  @todo Add support for string formatting. Options are:
+     *        - @c snprintf from the C STL (security issues due to allowing the user to freely specify the format)
+     *        - @c fmt::format (requires fmtlib)
+     *        - @c std::format (==fmtlib adopted in the standard, requires C++20)
+     *        - @c boost::format (requires boost)
+     */
+    std::string Apply(const ModelPart& rModelPart) const;
+
+    /** @brief Collect all file/directory paths that match the pattern.
+     *
+     *  @note the search begins from the filesystem root if the pattern is an absolute path,
+     *        otherwise it begins from @c cwd.
+     */
+    std::vector<PathType> Glob() const;
+
+    ///@}
 
 private:
     ///@name Static Member Variables
     ///@{
 
-    static const PlaceholderPattern::PlaceholderMap mModelPartPlaceholderMap;
+    static const ModelPartPattern::PlaceholderMap mModelPartPlaceholderMap;
 
     ///@}
 }; // class ModelPartPattern

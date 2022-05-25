@@ -99,9 +99,7 @@ class TestModelPartPattern(KratosUnittest.TestCase):
         valid_strings = [
             "mdpa_name_NAME_step_1_time_1.0_suffix",
             "mdpa_name_N_step_1_time_1.0_suffix",
-            "mdpa_name_NAME_step_01_time_1.0_suffix",
             "mdpa_name_NAME_step_123456789_time_1.0_suffix",
-            "mdpa_name_NAME_step_0101_time_1.0_suffix",
             "mdpa_name_NAME_step_1_time_1_suffix",
             "mdpa_name_NAME_step_1_time_-1.0_suffix",
             "mdpa_name_NAME_step_1_time_-1_suffix",
@@ -109,6 +107,8 @@ class TestModelPartPattern(KratosUnittest.TestCase):
         ]
 
         invalid_strings = [
+            "mdpa_name_NAME_step_01_time_1.0_suffix",
+            "mdpa_name_NAME_step_0101_time_1.0_suffix",
             "mdpa_name__step_1_time_1.0_suffix",
             "mdpa_name_NAME_step__time_1.0_suffix",
             "mdpa_name_NAME_step_1O_time_1.0_suffix",
@@ -120,10 +120,10 @@ class TestModelPartPattern(KratosUnittest.TestCase):
         ]
 
         for string in valid_strings:
-            self.assertTrue(pattern.IsAMatch(string))
+            self.assertTrue(pattern.IsAMatch(string), msg = "{} should match but it doesn't".format(string))
 
         for string in invalid_strings:
-            self.assertFalse(pattern.IsAMatch(string))
+            self.assertFalse(pattern.IsAMatch(string), msg = "{} shouldn't match but it does".format(string))
 
     def test_Match(self) -> None:
         pattern_string = "<model_part_name>/name_<model_part_name>_step_<step>_time_<time>suffix"
@@ -132,8 +132,8 @@ class TestModelPartPattern(KratosUnittest.TestCase):
         placeholders = ("<model_part_name>", "<step>", "<time>")
         values = [
             dict(zip(placeholders, ("mdpa name", "1", "1.0"))),
-            dict(zip(placeholders, ("mdpa name", "01", "1"))),
-            dict(zip(placeholders, (r'()[]\\"-+_*' + "'", "090", "0.010")))
+            dict(zip(placeholders, ("mdpa name", "10", "1"))),
+            dict(zip(placeholders, (r'()[]\\"-+_*' + "'", "90", "0.010")))
         ]
 
         for dictionary in values:
@@ -154,22 +154,36 @@ class TestModelPartPattern(KratosUnittest.TestCase):
         pattern = "prefix/<step>_<model_part_name>_<time><not_a_placeholder>/<time>.suffix"
         model_part_pattern = ModelPartPattern(pattern)
         model_part_names = ("mdpa name", r"""\/=()@$&^""")
-        times = (-5.0, -5, 0.0, 1.0, 30, "010.010")
+        times = (-5.0, -5, 0.0, 1.0, 30, "10.0101E-1")
+        steps = (0, 1, 1009)
 
-        for model_part_name, time in itertools.product(model_part_names, times):
+        model_part = KratosMultiphysics.Model().CreateModelPart("_")
+
+        for model_part_name, time, step in itertools.product(model_part_names, times, steps):
             placeholder_map = {
                 "<model_part_name>" : model_part_name,
-                "<time>" : str(time)
+                "<time>" : str(time),
+                "<step>" : str(step)
             }
 
             reference = pattern
             for placeholder, value in placeholder_map.items():
                 reference = reference.replace(placeholder, value)
 
-            self.assertEqual(
-                reference,
-                model_part_pattern.Apply(placeholder_map))
+            # Test apply from a map
+            applied_string = model_part_pattern.Apply(placeholder_map)
+            self.assertEqual(applied_string,
+                             reference)
 
+            # Test apply from a model part
+            model_part.Name = model_part_name
+            model_part.ProcessInfo[KratosMultiphysics.TIME] = time
+            model_part.ProcessInfo[KratosMultiphysics.STEP] = step
+            applied_string = model_part_pattern.Apply(model_part)
+            # Testing the output string directly doesn't make sense
+            # until formatting options are implemented.
+            #self.assertEqual(model_part_pattern.Apply(model_part),
+            #                 reference)
 
     def test_Glob(self) -> None:
         valid_paths = {
@@ -180,12 +194,12 @@ class TestModelPartPattern(KratosUnittest.TestCase):
             self.valid_root / "mdpa name_step_2_time_1.0.h5",
             self.valid_root / "mdpa name_step_3_time_0.5.h5",
             self.valid_root / "mdpa name_step_3_time_2.h5",
-            self.valid_root / "mdpa name_step_3_time_03.h5",
-            self.valid_root / "mdpa name_step_3_time_004.0.h5",
-            self.valid_root / "mdpa name_step_04_time_1.h5",
         }
 
         invalid_paths = {
+            self.valid_root / "mdpa name_step_3_time_03.h5",
+            self.valid_root / "mdpa name_step_3_time_004.0.h5",
+            self.valid_root / "mdpa name_step_04_time_1.h5",
             self.valid_root / "mdpa_name_step_1_time_1.h5",
             self.valid_root / "m_dpa_name_step_1_time_1.h5",
             self.valid_root / "mdpa name_step_04_time_2.hdf5",
@@ -208,7 +222,7 @@ class TestModelPartPattern(KratosUnittest.TestCase):
         pattern = ModelPartPattern(pattern_string)
         paths = [pathlib.Path(path) for path in pattern.Glob()]
         for path in valid_paths:
-            self.assertIn(path, paths)
+            self.assertIn(path, paths, msg = path)
 
         extra = {
             self.valid_root / "mdpa_name_step_1_time_1.h5",
@@ -216,18 +230,18 @@ class TestModelPartPattern(KratosUnittest.TestCase):
         }
         self.assertEqual(len(paths), len(valid_paths) + len(extra))
         for path in valid_paths | extra:
-            self.assertIn(path, paths)
+            self.assertIn(path, paths, msg = path)
         for path in invalid_paths - extra:
-            self.assertNotIn(path, paths)
+            self.assertNotIn(path, paths, msg = path)
 
         # Partial pattern (<model_part_name> replaced)
         pattern = ModelPartPattern(pattern_string.replace("<model_part_name>", "mdpa name"))
         paths = [pathlib.Path(path) for path in pattern.Glob()]
         self.assertEqual(len(paths), len(valid_paths))
         for path in valid_paths:
-            self.assertIn(path, paths)
+            self.assertIn(path, paths, msg = path)
         for path in invalid_paths:
-            self.assertNotIn(path, paths)
+            self.assertNotIn(path, paths, msg = path)
 
 
 if __name__ == "__main__":

@@ -53,13 +53,13 @@ public:
 }; // class PointLocatorAdaptorTrampoline
 
 /// Convert an array of paths to an array of strings
-std::vector<std::string> Glob (const PlaceholderPattern& rInstance) {
+std::vector<std::string> Glob (const ModelPartPattern& rInstance) {
     std::vector<std::string> output;
     auto result = rInstance.Glob();
     std::transform(result.begin(),
                    result.end(),
                    std::back_inserter(output),
-                   [](const PlaceholderPattern::PathType& rItem) {return rItem.string();});
+                   [](const ModelPartPattern::PathType& rItem) {return rItem.string();});
     return output;
 }
 } // namespace
@@ -109,16 +109,18 @@ void AddCustomUtilitiesToPython(pybind11::module& rModule)
     pybind11::class_<PlaceholderPattern, PlaceholderPattern::Pointer>(
         rModule, "PlaceholderPattern")
         .def(pybind11::init<const std::string&,const PlaceholderPattern::PlaceholderMap&>())
-        .def("IsAMatch", &PlaceholderPattern::IsAMatch)
-        .def("Match", &PlaceholderPattern::Match)
-        .def("Apply", &PlaceholderPattern::Apply)
-        .def("Glob", &Glob)
-        .def("GetRegexString", &PlaceholderPattern::GetRegexString)
+        .def("IsAMatch", &PlaceholderPattern::IsAMatch, "Check whether a string satisfies the pattern")
+        .def("Match", &PlaceholderPattern::Match, "Find all placeholders' values in the input string.")
+        .def("Apply", &PlaceholderPattern::Apply, "Substitute values from the input map into the stored pattern.")
+        .def("GetRegexString", &PlaceholderPattern::GetRegexString, "Get the string representation of the regex.")
         ;
 
     pybind11::class_<ModelPartPattern, ModelPartPattern::Pointer, PlaceholderPattern>(
         rModule, "ModelPartPattern")
         .def(pybind11::init<const std::string&>())
+        .def("Glob", &Glob, "Collect all file/directory paths that match the pattern.")
+        .def("Apply", static_cast<std::string(ModelPartPattern::*)(const ModelPartPattern::PlaceholderMap&)const>(&ModelPartPattern::Apply), "Substitute values from the input map into the stored pattern.")
+        .def("Apply", static_cast<std::string(ModelPartPattern::*)(const ModelPart&)const>(&ModelPartPattern::Apply), "Substitute values from the model part into the stored pattern.")
         ;
 
     #undef KRATOS_DEFINE_VERTEX_GETVALUE_OVERLOAD_BINDING

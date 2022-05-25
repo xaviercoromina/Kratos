@@ -20,6 +20,8 @@
 
 // STL includes
 #include <algorithm>
+#include <iomanip>
+#include <sstream>
 
 
 namespace Kratos
@@ -30,8 +32,7 @@ std::pair<std::string,std::regex> RegexUtility::Integer()
 {
     std::pair<std::string,std::regex> output;
 
-    // The clutter is due to the many uncapturing groups
-    output.first = R"(-?(?:0$|(?:[1-9]+[0-9]*?)|[1-9]+[0-9]*?))";
+    output.first = R"(0|(?:-?[1-9]+[0-9]*))";
     output.second = std::regex(output.first);
 
     return output;
@@ -42,8 +43,7 @@ std::pair<std::string,std::regex> RegexUtility::UnsignedInteger()
 {
     std::pair<std::string,std::regex> output;
 
-    // The clutter is due to the many uncapturing groups
-    output.first = R"((?:0$|(?:[1-9]+[0-9]*?)|[1-9]+[0-9]*?))";
+    output.first = R"(0|(?:[1-9]+[0-9]*))";
     output.second = std::regex(output.first);
 
     return output;
@@ -54,8 +54,8 @@ std::pair<std::string,std::regex> RegexUtility::FloatingPoint()
 {
     std::pair<std::string,std::regex> output;
 
-    // The clutter is due to the many uncapturing groups
-    output.first = R"(-?(?:(?:(?:[1-9][0-9]*?)(?:\.[0-9]*?)??)|(?:0(?:\.[0-9]*?)??)?)(?:[eE][\+-]?(?:0$|(?:[1-9]+[0-9]*?)|[1-9]+[0-9]*?)?)?)";
+    // Clutter due to the many uncapturing groups
+    output.first = R"(-?(?:(?:(?:[1-9][0-9]*)(?:\.[0-9]*)?)|(?:0(?:\.[0-9]*)?))(?:[eE][\+-]?[0-9]+)?)";
     output.second = std::regex(output.first);
 
     return output;
@@ -106,8 +106,7 @@ PlaceholderPattern::PlaceholderPattern(const std::string& rPattern,
             // Replace it with its regex (if found)
             if (position_in_pattern != std::string::npos) {
                 mRegexString.replace(position_in_pattern, placeholder_size, regex);
-            }
-            else {
+            } else {
                 break;
             }
 
@@ -147,8 +146,7 @@ PlaceholderPattern::PlaceholderPattern(const std::string& rPattern,
     while (it_erase!=mPlaceholderGroupMap.end()) {
         if (it_erase->second.empty()) {
             it_erase = mPlaceholderGroupMap.erase(it_erase);
-        }
-        else {
+        } else {
             ++it_erase;
         }
     }
@@ -195,8 +193,7 @@ PlaceholderPattern::MatchType PlaceholderPattern::Match(const std::string& rStri
                 }
             } // for i_group
         } // for placeholder, group_indices
-    } // if regex_match
-    else {
+    } /*if regex_match*/ else {
         KRATOS_ERROR << "'" << rString << "' is not a match for '" << this->GetRegexString() << "'";
     }
 
@@ -213,58 +210,18 @@ std::string PlaceholderPattern::Apply(const PlaceholderMap& rPlaceholderValueMap
     auto output = mPattern;
 
     for (const auto& r_pair : rPlaceholderValueMap) {
-        KRATOS_ERROR_IF(mPlaceholderGroupMap.find(r_pair.first)==mPlaceholderGroupMap.end()) << r_pair.first << " is not registered a placeholder in" << mPattern;
+        KRATOS_ERROR_IF(mPlaceholderGroupMap.find(r_pair.first)==mPlaceholderGroupMap.end()) << r_pair.first << " is not a registered placeholder in " << mPattern;
         while (true) {
             auto position = output.find(r_pair.first);
-            if (position != output.npos) output.replace(position, r_pair.first.size(), r_pair.second);
-            else break;
+            if (position != output.npos) {
+                output.replace(position, r_pair.first.size(), r_pair.second);
+            } else {
+                break;
+            }
         } // while placeholder in output
     } // for placeholder, value in map
 
     return output;
-
-    KRATOS_CATCH("");
-}
-
-
-std::vector<PlaceholderPattern::PathType> PlaceholderPattern::Glob() const
-{
-    KRATOS_TRY
-
-    PathType pattern(mRegexString.substr(1, mRegexString.size()-2));
-    auto it_pattern_part = pattern.begin();
-    std::vector<PathType> paths;
-
-    // Decide where to begin globbing
-    if (pattern.is_absolute()) {
-        paths.emplace_back(pattern.root_path());
-        ++it_pattern_part;
-    }
-    else {
-        paths.emplace_back(ghc::filesystem::current_path());
-    }
-
-    // Compare the pattern parts to the globbed files'/directories' parts
-    for ( ; it_pattern_part!=pattern.end(); ++it_pattern_part) {
-        if (paths.empty()) break;
-
-        std::regex pattern_part_regex(it_pattern_part->string());
-        std::vector<PathType> tmp_paths;
-
-        for (const auto& r_path : paths) {
-            if (ghc::filesystem::is_directory(r_path)) {
-                for (auto item : ghc::filesystem::directory_iterator(r_path)) {
-                    if (std::regex_match(item.path().filename().string(), pattern_part_regex)) {
-                        tmp_paths.emplace_back(item);
-                    }
-                } // for r_item in r_path.glob(*)
-            } // if r_path.is_directory()
-        } // for r_path in paths
-
-        paths = tmp_paths;
-    } // for pattern_part in pattern.parts
-
-    return paths;
 
     KRATOS_CATCH("");
 }
@@ -279,6 +236,12 @@ const std::regex& PlaceholderPattern::GetRegex() const
 const std::string& PlaceholderPattern::GetRegexString() const
 {
     return mRegexString;
+}
+
+
+const std::string& PlaceholderPattern::GetPatternString() const
+{
+    return mPattern;
 }
 
 
@@ -302,8 +265,7 @@ std::string PlaceholderPattern::FormatRegexLiteral(const std::string& rLiteral)
             position = output.find(char_to_escape, position);
             if (position == output.npos) {
                 break;
-            }
-            else {
+            } else {
                 // Escape the sensitive character
                 if (!position || output[position-1] != '\\') {
                     output.replace(position, 1, escaped);
@@ -330,6 +292,82 @@ const ModelPartPattern::PlaceholderMap ModelPartPattern::mModelPartPlaceholderMa
 ModelPartPattern::ModelPartPattern(const std::string& rPattern)
     : PlaceholderPattern(rPattern, mModelPartPlaceholderMap)
 {
+}
+
+
+std::string ModelPartPattern::Apply(const ModelPart& rModelPart) const
+{
+    KRATOS_TRY
+
+    // TODO: implement formatting, see the documentation in the header. @matekelemen
+
+    ModelPartPattern::PlaceholderMap map;
+    const auto& r_pattern = this->GetPatternString();
+
+    if (r_pattern.find("<model_part_name>") != r_pattern.npos) {
+        map.emplace("<model_part_name>", rModelPart.Name());
+    }
+
+    if (r_pattern.find("<step>") != r_pattern.npos) {
+        map.emplace("<step>", std::to_string(rModelPart.GetProcessInfo().GetValue(STEP)));
+    }
+
+    if (r_pattern.find("<time>") != r_pattern.npos) {
+        // Hardcoded formatting - to be changed later
+        std::stringstream stream;
+        stream << std::scientific << std::setprecision(4) << rModelPart.GetProcessInfo().GetValue(TIME);
+        map.emplace("<time>", stream.str());
+    }
+
+    if (r_pattern.find("<rank>") != r_pattern.npos) {
+        map.emplace("<rank>", std::to_string(rModelPart.GetCommunicator().MyPID()));
+    }
+
+    return this->Apply(map);
+
+    KRATOS_CATCH("");
+}
+
+
+std::vector<ModelPartPattern::PathType> ModelPartPattern::Glob() const
+{
+    KRATOS_TRY
+
+    PathType pattern(this->GetRegexString().substr(1, this->GetRegexString().size()-2));
+    auto it_pattern_part = pattern.begin();
+    std::vector<PathType> paths;
+
+    // Decide where to begin globbing
+    if (pattern.is_absolute()) {
+        paths.emplace_back(pattern.root_path());
+        ++it_pattern_part;
+    } else {
+        paths.emplace_back(ghc::filesystem::current_path());
+    }
+
+    // Compare the pattern parts to the globbed files'/directories' parts
+    for ( ; it_pattern_part!=pattern.end(); ++it_pattern_part) {
+        if (paths.empty()) break;
+
+        std::regex pattern_part_regex(it_pattern_part->string());
+        std::vector<PathType> tmp_paths;
+
+        for (const auto& r_path : paths) {
+            if (ghc::filesystem::is_directory(r_path)) {
+                for (auto item : ghc::filesystem::directory_iterator(r_path)) {
+                    if (std::regex_match(item.path().filename().string(), pattern_part_regex)) {
+                        tmp_paths.emplace_back(item);
+                    }
+                } // for r_item in r_path.glob(*)
+            } // if r_path.is_directory()
+        } // for r_path in paths
+
+        paths = tmp_paths;
+    } // for pattern_part in pattern.parts
+
+    return paths;
+
+    KRATOS_CATCH("");
 }
 
 
