@@ -39,14 +39,13 @@ class ExplicitUPwSolver(UPwSolver):
             "calculate_xi"        : false,
             "xi_1_factor"         : 1.0,
             "use_nodal_mass_array": false,
-            "delta"               : 3.5,
+            "delta"               : 0.5,
             "deltab"              : 1.0,
             "b_0"                 : 1.5,
             "b_1"                 : -2.0,
             "b_2"                 : 0.5,
-            "xi_1_f"              : 1.0,
             "xi_n_f"              : 1.0,
-            "xib_1_f"             : 1.0,
+            "xib_1_f"             : 0.0,
             "xib_n_f"             : 1.0
         }""")
         this_defaults.AddMissingParameters(super().GetDefaultParameters())
@@ -167,19 +166,19 @@ class ExplicitUPwSolver(UPwSolver):
             rayleigh_alpha = 2.0*xi_1*omega_1-rayleigh_beta*omega_1*omega_1
         if (scheme_type == "Explicit_CDF"):
 
-            # p_n = 2.0*np.sqrt((2.0*(2.0+delta))/(4.0-delta))
             p_n = Dt*omega_n
+            p_1 = Dt*omega_1
 
-            bb_0 = -p_n
-            bb_1 = 5.0/4.0*p_n
-            bb_2 = -1.0/4.0*p_n
+            bb_0 = -(1.0+3.0/(4.0*delta))*p_n
+            bb_1 = (5.0+3.0/delta)*p_n/4.0
+            bb_2 = -p_n/4
 
-            xib_1 = 1.0*self.settings["xib_1_f"].GetDouble()
+            xib_1 = ((delta+2.0)/(2.0*delta*bb_2*p_1)-p_1/(4.0*bb_2))*self.settings["xib_1_f"].GetDouble()
             xib_n = 1.0*self.settings["xib_n_f"].GetDouble()
             rayleigh_beta_b = 2.0*(xib_n*omega_n-xib_1*omega_1)/(omega_n*omega_n-omega_1*omega_1)
             rayleigh_alpha_b = 2.0*xib_1*omega_1-rayleigh_beta_b*omega_1*omega_1
             
-            xi_1 = xi_1*self.settings["xi_1_f"].GetDouble()
+            xi_1 = xi_1*self.settings["xi_1_factor"].GetDouble()
             xi_n = xi_n*self.settings["xi_n_f"].GetDouble()
             rayleigh_beta = 2.0*(xi_n*omega_n-xi_1*omega_1)/(omega_n*omega_n-omega_1*omega_1)
             rayleigh_alpha = 2.0*xi_1*omega_1-rayleigh_beta*omega_1*omega_1
