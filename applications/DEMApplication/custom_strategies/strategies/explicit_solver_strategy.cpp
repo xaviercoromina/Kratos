@@ -357,14 +357,14 @@ namespace Kratos {
                     globally_estimated_nodal_mass_array[i] = estimated_nodal_mass_array[i];
                 } else {
                     // TODO. Ignasi: check...
-                    globally_estimated_nodal_mass_array[i] = ( external_force_old[i]
-                                                            + reaction_old[i]
-                                                            - nodal_mass_array[i]*acceleration[i]
-                                                            - rayleigh_alpha*nodal_mass_array[i]*velocity[i]
-                                                            ) / ( rayleigh_beta*velocity[i]+displacement[i] );
                     // globally_estimated_nodal_mass_array[i] = ( external_force_old[i]
                     //                                         + reaction_old[i]
-                    //                                         ) / ( displacement[i] );
+                    //                                         - nodal_mass_array[i]*acceleration[i]
+                    //                                         - rayleigh_alpha*nodal_mass_array[i]*velocity[i]
+                    //                                         ) / ( rayleigh_beta*velocity[i]+displacement[i] );
+                    globally_estimated_nodal_mass_array[i] = ( external_force_old[i]
+                                                            + reaction_old[i]
+                                                            ) / ( displacement[i] );
                     // Stiffness must be positive
                     if (globally_estimated_nodal_mass_array[i] < 0.0) {
                         globally_estimated_nodal_mass_array[i] = -globally_estimated_nodal_mass_array[i];
@@ -374,14 +374,14 @@ namespace Kratos {
                     globally_estimated_particle_moment_intertia_array[i] = estimated_particle_moment_intertia_array[i];
                 } else {
                     // TODO. Ignasi: check...
-                    globally_estimated_particle_moment_intertia_array[i] = ( external_moment_old[i]
-                                                                            + reaction_moment_old[i]
-                                                                            - particle_moment_intertia_array[i]*angular_acceleration[i]
-                                                                            - rayleigh_alpha*particle_moment_intertia_array[i]*angular_velocity[i]
-                                                                            ) / ( rayleigh_beta*angular_velocity[i]+rotated_angle[i] );
                     // globally_estimated_particle_moment_intertia_array[i] = ( external_moment_old[i]
                     //                                                         + reaction_moment_old[i]
-                    //                                                         ) / ( rotated_angle[i] );
+                    //                                                         - particle_moment_intertia_array[i]*angular_acceleration[i]
+                    //                                                         - rayleigh_alpha*particle_moment_intertia_array[i]*angular_velocity[i]
+                    //                                                         ) / ( rayleigh_beta*angular_velocity[i]+rotated_angle[i] );
+                    globally_estimated_particle_moment_intertia_array[i] = ( external_moment_old[i]
+                                                                            + reaction_moment_old[i]
+                                                                            ) / ( rotated_angle[i] );
                     // Stiffness must be positive
                     if (globally_estimated_particle_moment_intertia_array[i] < 0.0) {
                         globally_estimated_particle_moment_intertia_array[i] = -globally_estimated_particle_moment_intertia_array[i];
@@ -1506,13 +1506,13 @@ namespace Kratos {
                     // globally_estimated_particle_moment_intertia_array_old[i] = globally_estimated_particle_moment_intertia_array[i];
 
                     // Use estimated nodal mass array scaled so that the Dt is similar to the original one
+                    // TODO. Ignasi: check which stiffness is better (the locally estimated or the globally estimated)
                     // nodal_mass_array[i] = estimated_nodal_mass_array_old[i]*mass_array_scale_factor;
                     // particle_moment_intertia_array[i] = estimated_particle_moment_intertia_array_old[i]*mass_array_scale_factor;
-                    // nodal_mass_array[i] = (1.0-mass_array_alpha)*estimated_nodal_mass_array[i]*mass_array_scale_factor + mass_array_alpha*nodal_mass_array[i];
-                    // particle_moment_intertia_array[i] = (1.0-mass_array_alpha)*estimated_particle_moment_intertia_array[i]*mass_array_scale_factor + mass_array_alpha*particle_moment_intertia_array[i];
-                    // TODO. Ignasi: check which stiffness is better (the locally estimated or the globally estimated)
                     nodal_mass_array[i] = globally_estimated_nodal_mass_array_old[i]*gmass_array_scale_factor;
                     particle_moment_intertia_array[i] = globally_estimated_particle_moment_intertia_array_old[i]*gmass_array_scale_factor;
+                    // nodal_mass_array[i] = (1.0-mass_array_alpha)*estimated_nodal_mass_array[i]*mass_array_scale_factor + mass_array_alpha*nodal_mass_array[i];
+                    // particle_moment_intertia_array[i] = (1.0-mass_array_alpha)*estimated_particle_moment_intertia_array[i]*mass_array_scale_factor + mass_array_alpha*particle_moment_intertia_array[i];
                     // nodal_mass_array[i] = (1.0-mass_array_alpha)*globally_estimated_nodal_mass_array[i]*mMMin/mgKNormMin + mass_array_alpha*nodal_mass_array[i];
                     // particle_moment_intertia_array[i] = (1.0-mass_array_alpha)*globally_estimated_particle_moment_intertia_array[i]*mMMin/mgKNormMin + mass_array_alpha*particle_moment_intertia_array[i];
                 }
@@ -1528,6 +1528,7 @@ namespace Kratos {
                 const double gK_max_scaled = mgKNormMax * gmass_array_scale_factor;
                 const double omega_ratio = std::sqrt(mMMax/K_max_scaled)*omega_1_factor;
                 const double gomega_ratio = std::sqrt(mMMax/gK_max_scaled)*omega_1_factor;
+                // TODO. Ignasi: check which stiffness is better (the locally estimated or the globally estimated)
                 // double omega_1_new = omega_1_old*omega_ratio;
                 double omega_1_new = omega_1_old*gomega_ratio;
 
