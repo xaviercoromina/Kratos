@@ -55,22 +55,17 @@ class DEM2D_ControlModuleTestSolution(DEMAnalysisStage, KratosUnittest.TestCase)
 
     def Finalize(self):
         tolerance = 1.001
-        node_5_found = False
-        node_6_found = False
-        for node in self.rigid_face_model_part.Nodes:
-            if node.Id == 5:
-                node_force_x = node.GetSolutionStepValue(DEM.CONTACT_FORCES_X)
-                expected_value = 316.79
-                self.assertAlmostEqual(node_force_x, expected_value, delta=tolerance)
-                node_5_found = True
-            elif node.Id == 6:
-                node_force_y = node.GetSolutionStepValue(DEM.CONTACT_FORCES_Y)
-                expected_value = 150.1
-                self.assertAlmostEqual(node_force_y, expected_value, delta=tolerance)
-                node_6_found = True
-        self.assertTrue(node_5_found)
-        self.assertTrue(node_6_found)
+        node = self.rigid_face_model_part.GetNode(5)
+        node_force_x = node.GetSolutionStepValue(DEM.CONTACT_FORCES_X)
+        expected_value = 316.79
+        self.assertAlmostEqual(node_force_x, expected_value, delta=tolerance)
 
+        node = self.rigid_face_model_part.GetNode(6)
+        node_force_y = node.GetSolutionStepValue(DEM.CONTACT_FORCES_Y)
+        expected_value = 150.1
+        self.assertAlmostEqual(node_force_y, expected_value, delta=tolerance)
+
+        self.procedures.RemoveFoldersWithResults(str(self.main_path), str(self.problem_name), '')
         super().Finalize()
 
 class DEM2D_ControlModuleTestSolutionRadial(DEMAnalysisStage, KratosUnittest.TestCase):

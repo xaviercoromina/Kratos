@@ -78,7 +78,6 @@ class MdpaCreator():
         #self.WriteVariableData(VELOCITY_Y, mdpa, model_part)
         #self.WriteVariableData(VELOCITY_Z, mdpa, model_part)
 
-    @classmethod
     def WriteVariableData(self, variable_name, mdpa, model_part):
 
         mdpa.write('Begin NodalData ' + str(variable_name) + '\n')
@@ -198,7 +197,6 @@ class PostUtils():
         self.previous_vector_of_inner_nodes = []
         self.previous_time = 0.0
 
-    @classmethod
     def Flush(self, a):
         a.flush()
 
@@ -262,7 +260,6 @@ class PostUtils():
                 f.write(tmp)
                 self.Flush(f)
 
-    @classmethod
     def PrintEulerAngles(self, spheres_model_part, cluster_model_part):
         PostUtilities().ComputeEulerAngles(spheres_model_part, cluster_model_part)
 
@@ -431,7 +428,6 @@ class Procedures():
         self.AddRigidFaceVariables(rigid_face_model_part, DEM_parameters)
         self.AddMpiVariables(rigid_face_model_part)
 
-    @classmethod
     def AddCommonVariables(self, model_part, DEM_parameters):
         model_part.AddNodalSolutionStepVariable(VELOCITY)
         model_part.AddNodalSolutionStepVariable(DISPLACEMENT)
@@ -558,7 +554,6 @@ class Procedures():
 
         #model_part.AddNodalSolutionStepVariable(SPRAYED_MATERIAL)
 
-    @classmethod
     def AddRigidFaceVariables(self, model_part, DEM_parameters):
 
         model_part.AddNodalSolutionStepVariable(ELASTIC_FORCES)
@@ -593,7 +588,6 @@ class Procedures():
         self.AddRigidFaceVariables(model_part, self.DEM_parameters)
         model_part.AddNodalSolutionStepVariable(TOTAL_FORCES)
 
-    @classmethod
     def AddClusterVariables(self, model_part, DEM_parameters):
         # KINEMATIC
         model_part.AddNodalSolutionStepVariable(PARTICLE_ROTATION_ANGLE)
@@ -633,14 +627,12 @@ class Procedures():
     def SetInitialNodalValues(self, spheres_model_part, cluster_model_part, dem_inlet_model_part, rigid_face_model_part):
         pass
 
-    @classmethod
     def SetUpBufferSizeInAllModelParts(self, spheres_model_part, spheres_b_size, cluster_model_part, clusters_b_size, dem_inlet_model_part, inlet_b_size, rigid_face_model_part, rigid_b_size):
         spheres_model_part.SetBufferSize(spheres_b_size)
         cluster_model_part.SetBufferSize(clusters_b_size)
         dem_inlet_model_part.SetBufferSize(inlet_b_size)
         rigid_face_model_part.SetBufferSize(rigid_b_size)
 
-    @classmethod
     def FindMaxNodeIdAccrossModelParts(self, creator_destructor, all_model_parts):
 
         max_candidates = []
@@ -715,7 +707,6 @@ class Procedures():
 
         Model_Data.close()
 
-    @classmethod
     def MonitorPhysicalProperties(self, model_part, physics_calculator, properties_list):
 
         # This function returns a list of arrays (also lists)
@@ -761,7 +752,6 @@ class Procedures():
 
         return properties_list
 
-    @classmethod
     def RemoveFoldersWithResults(self, main_path, problem_name, run_code=''):
         shutil.rmtree(os.path.join(main_path, problem_name + '_Post_Files' + run_code), ignore_errors=True)
         shutil.rmtree(os.path.join(main_path, problem_name + '_Graphs'), ignore_errors=True)
@@ -802,7 +792,6 @@ class Procedures():
             pass
 
 
-    @classmethod
     def CreateDirectories(self, main_path, problem_name, run_code='', do_print_results=True):
 
         root = os.path.join(main_path, problem_name)
@@ -818,7 +807,6 @@ class Procedures():
 
         return [post_path, graphs_path]
 
-    @classmethod
     def FindMaxNodeIdInModelPart(self, model_part):
 
         maxid = 0
@@ -852,7 +840,6 @@ class Procedures():
         creator_destructor.SetHighNode(b_box_high)
         creator_destructor.CalculateSurroundingBoundingBox(spheres_model_part, clusters_model_part, rigid_faces_model_part, dem_inlet_model_part, self.bounding_box_enlargement_factor, self.automatic_bounding_box_OPTION)
 
-    @classmethod
     def DeleteFiles(self):
         files_to_delete_list = glob('*.time')
         for to_erase_file in files_to_delete_list:
@@ -875,7 +862,6 @@ class Procedures():
             b = str(var)
             raise Exception("The type expected was " + a + " but " + b + " was read.")
 
-    @classmethod
     def Flush(self, a):
         a.flush()
 
@@ -1002,7 +988,6 @@ class DEMFEMProcedures():
         self.domain_size = self.DEM_parameters["Dimension"].GetInt()
         evaluate_computation_of_fem_results()
 
-    @classmethod
     def UpdateTimeInModelParts(self, all_model_parts, time, dt, step, is_time_to_print=False):
 
         spheres_model_part = all_model_parts.Get("SpheresPart")
@@ -1015,7 +1000,6 @@ class DEMFEMProcedures():
         self.UpdateTimeInOneModelPart(dem_inlet_model_part, time, dt, step, is_time_to_print)
         self.UpdateTimeInOneModelPart(rigid_face_model_part, time, dt, step, is_time_to_print)
 
-    @classmethod
     def UpdateTimeInOneModelPart(self, model_part, time, dt, step, is_time_to_print=False):
         KratosPrintWarning('This method is deprecated, please use the new one from the sphere strategy.')
         model_part.ProcessInfo[TIME] = time
@@ -1037,7 +1021,6 @@ class DEMFEMProcedures():
                 identifier = smp[IDENTIFIER]
                 self.particle_graph_forces[identifier].close()
 
-    @classmethod
     def PrintPoisson(self, model_part, DEM_parameters, filename, time):
 
         if DEM_parameters["Dimension"].GetInt() == 3:
@@ -1414,12 +1397,10 @@ class DEMIo():
         )
         self.SetMultifileLists(self.multifiles)
 
-    @classmethod
     def KratosPrintInfo(self, message):
         Logger.PrintInfo(message, label="DEM")
         Logger.Flush()
 
-    @classmethod
     def Flush(self, a):
         a.flush()
 
@@ -1443,7 +1424,6 @@ class DEMIo():
         self.Configure(DEM_parameters["problem_name"].GetString(), DEM_parameters["OutputFileType"].GetString(), DEM_parameters["Multifile"].GetString(), DEM_parameters["ContactMeshOption"].GetBool())
         self.SetOutputName(DEM_parameters["problem_name"].GetString())
 
-    @classmethod
     def PushPrintVar(self, variable, name, print_list):
         if Var_Translator(variable):
             print_list.append(name)
@@ -1631,7 +1611,6 @@ class DEMIo():
 
             mfilelist.index += 1
 
-    @classmethod
     def GetMultiFileListName(self, name):
         return name
 
@@ -1910,7 +1889,6 @@ class DEMIo():
 
         #self.gid_io.WriteMesh(bounding_box_model_part.GetCommunicator().LocalMesh()) #BOUNDING BOX IMPLEMENTATION
 
-    @classmethod
     def BuildGraphicalBoundingBox(self, bounding_box_model_part, max_node_Id, max_element_Id, BBMinX, BBMinY, BBMinZ, BBMaxX, BBMaxY, BBMaxZ):
         # BB Nodes:
         node1 = bounding_box_model_part.CreateNewNode(max_node_Id + 1, BBMinX, BBMinY, BBMinZ)
@@ -1953,10 +1931,8 @@ class ParallelUtils():
     def PerformInitialPartition(self, model_part):
         pass
 
-    @classmethod
     def SetCommunicator(self, spheres_model_part, model_part_io_spheres, spheres_mp_filename):
         return [model_part_io_spheres, spheres_model_part]
 
-    @classmethod
     def GetSearchStrategy(self, solver, model_part):
         return solver.search_strategy
