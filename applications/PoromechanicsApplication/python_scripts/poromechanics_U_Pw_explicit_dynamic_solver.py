@@ -40,10 +40,8 @@ class ExplicitUPwSolver(UPwSolver):
             "xi_1_factor"         : 1.0,
             "use_nodal_mass_array": false,
             "delta"               : 0.5,
-            "deltab"              : 1.0,
             "b_0"                 : 1.5,
             "b_1"                 : -2.0,
-            "b_2"                 : 0.5,
             "xi_n_f"              : 1.0,
             "xib_1_f"             : 0.0,
             "xib_n_f"             : 1.0
@@ -145,13 +143,13 @@ class ExplicitUPwSolver(UPwSolver):
         rayleigh_alpha = self.settings["rayleigh_alpha"].GetDouble()
         rayleigh_beta = self.settings["rayleigh_beta"].GetDouble()
         delta = self.settings["delta"].GetDouble()
-        deltab = self.settings["deltab"].GetDouble()
+        # deltab = self.settings["deltab"].GetDouble()
         b_0 = self.settings["b_0"].GetDouble()
         b_1 = self.settings["b_1"].GetDouble()
-        b_2 = self.settings["b_2"].GetDouble()
-        bb_0 = 0.0
-        bb_1 = 0.0
-        bb_2 = 0.0
+        # b_2 = self.settings["b_2"].GetDouble()
+        # bb_0 = 0.0
+        # bb_1 = 0.0
+        # bb_2 = 0.0
         rayleigh_alpha_b = 0.0
         rayleigh_beta_b = 0.0
         if (scheme_type == "Explicit_Central_Differences" and g_factor >= 1.0):
@@ -169,12 +167,8 @@ class ExplicitUPwSolver(UPwSolver):
             p_n = Dt*omega_n
             p_1 = Dt*omega_1
 
-            bb_0 = -(1.0+3.0/(4.0*delta))*p_n
-            bb_1 = (5.0+3.0/delta)*p_n/4.0
-            bb_2 = -p_n/4
-
-            xib_1 = ((delta+2.0)/(2.0*delta*bb_2*p_1)-p_1/(4.0*bb_2))*self.settings["xib_1_f"].GetDouble()
-            xib_n = 1.0*self.settings["xib_n_f"].GetDouble()
+            xib_1 = p_1*self.settings["xib_1_f"].GetDouble()
+            xib_n = p_n*self.settings["xib_n_f"].GetDouble()
             rayleigh_beta_b = 2.0*(xib_n*omega_n-xib_1*omega_1)/(omega_n*omega_n-omega_1*omega_1)
             rayleigh_alpha_b = 2.0*xib_1*omega_1-rayleigh_beta_b*omega_1*omega_1
             
@@ -198,26 +192,26 @@ class ExplicitUPwSolver(UPwSolver):
             KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: rayleigh_alpha_b: ",rayleigh_alpha_b)
             KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: rayleigh_beta_b: ",rayleigh_beta_b)
             KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: delta: ",delta)
-            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: deltab: ",deltab)
+            # KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: deltab: ",deltab)
             KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: b_0: ",b_0)
             KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: b_1: ",b_1)
-            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: b_2: ",b_2)
-            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: bb_0: ",bb_0)
-            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: bb_1: ",bb_1)
-            KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: bb_2: ",bb_2)
+            # KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: b_2: ",b_2)
+            # KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: bb_0: ",bb_0)
+            # KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: bb_1: ",bb_1)
+            # KratosMultiphysics.Logger.PrintInfo("::[ExplicitUPwSolver]:: bb_2: ",bb_2)
         
         process_info.SetValue(StructuralMechanicsApplication.RAYLEIGH_ALPHA, rayleigh_alpha)
         process_info.SetValue(StructuralMechanicsApplication.RAYLEIGH_BETA, rayleigh_beta)
         process_info.SetValue(KratosPoro.G_COEFFICIENT, g_coeff)
         process_info.SetValue(KratosPoro.THETA_FACTOR, theta_factor)
         process_info.SetValue(KratosPoro.DELTA, delta)
-        process_info.SetValue(KratosPoro.DELTA_B, deltab)
+        # process_info.SetValue(KratosPoro.DELTA_B, deltab)
         process_info.SetValue(KratosPoro.B_0, b_0)
         process_info.SetValue(KratosPoro.B_1, b_1)
-        process_info.SetValue(KratosPoro.B_2, b_2)
-        process_info.SetValue(KratosPoro.B_B_0, bb_0)
-        process_info.SetValue(KratosPoro.B_B_1, bb_1)
-        process_info.SetValue(KratosPoro.B_B_2, bb_2)
+        # process_info.SetValue(KratosPoro.B_2, b_2)
+        # process_info.SetValue(KratosPoro.B_B_0, bb_0)
+        # process_info.SetValue(KratosPoro.B_B_1, bb_1)
+        # process_info.SetValue(KratosPoro.B_B_2, bb_2)
         process_info.SetValue(KratosPoro.RAYLEIGH_ALPHA_B, rayleigh_alpha_b)
         process_info.SetValue(KratosPoro.RAYLEIGH_BETA_B, rayleigh_beta_b)
         process_info.SetValue(KratosPoro.USE_NODAL_MASS_ARRAY, self.settings["use_nodal_mass_array"].GetBool())
