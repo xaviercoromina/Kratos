@@ -13,10 +13,11 @@ from KratosMultiphysics.HDF5Application import ModelPartPattern
 import pathlib
 import functools
 import abc
+import typing
 
 
-def RequiresInitialized(*object_names: str):
-    """Member function decorator that checks whether input names exist in the class and have values other than None."""
+def RequiresInitialized(*object_names: str) -> typing.Callable:
+    """@brief Member function decorator that checks whether input names exist in the class and have values other than @c None."""
     def Decorator(function):
         @functools.wraps(function)
         def WrappedFunction(this, *args, **kwargs):
@@ -32,7 +33,7 @@ def RequiresInitialized(*object_names: str):
 
 
 def RecursivelyRemoveExtraParameters(subject: KratosMultiphysics.Parameters, reference: KratosMultiphysics.Parameters) -> None:
-    """Recursively remove all entries from subject that aren't in reference."""
+    """@brief Recursively remove all entries from @p subject that aren't in @p reference."""
     for key in subject.keys():
         if not reference.Has(key):
             subject.RemoveValue(key)
@@ -54,33 +55,25 @@ else:
 
 
 class CheckpointIOProcessBase(abc.ABC, KratosMultiphysics.Process, metaclass=AbstractProcessMetaClass):
-    """
-    Base class for managing checkpoint input/output operations.
+    """ @brief Base class for managing checkpoint input/output operations.
 
-    Public methods (new or overridden):
-        __init__(self, model, parameters)
-        Execute(self)
-
-    Pure virtual methods:
-        Execute(self)
-        _GetProcessMap(self)
-
-    Notes:
-     - Derived classes must override Execute and _GetProcessMap.
-
-     - This class provides a flexible interface for generating and managing a
-       user defined io process (via KratosMultiphysics.HDF5Application.user_defined_io_process.Factory).
-
-     - Operations can be defined by overriding _GetProcessMap, which associates parameter generator functions to
-       operation names they create parameters for. See CheckpointInputProcess and CheckpointOutputProcess
-       for examples.
-
-     - As the logic of when to load/write checkpoints tends to be more complex, the process
-       gets carried out must be delegated to Execute rather than ExecuteInitialize, ExecuteFinalize, etc.
-       Deciding on when to call Execute and thus performing the IO process is the user's task.
-
-     - _GetIOParameters can be overridden to control what parameters get passed on to the HDF5 factory,
-       but the output must be compatible with KratosMultiphysics.HDF5Application.user_defined_io_process.Factory.
+        @details This class provides a flexible interface for generating and managing a user defined
+                 io process (via @ref KratosMultiphysics.HDF5Application.user_defined_io_process.Factory).
+                 Public methods (new or overridden):
+                 - @ref CheckpointIOProcessBase.__init__
+                 - @ref CheckpointIOProcessBase.Execute
+                 Pure virtual methods:
+                 - @ref CheckpointIOProcessBase.Execute
+                 - @ref CheckpointIOProcessBase._GetProcessMap
+                 @notes - Derived classes must override @c Execute and @c _GetProcessMap.
+                        - Operations can be defined by overriding @c _GetProcessMap, which associates parameter generator functions to
+                          operation names they create parameters for. See @ref CheckpointInputProcess and @ref CheckpointOutputProcess
+                          for examples.
+                        - As the logic of when to load/write checkpoints tends to be more complex, the process
+                          gets carried out must be delegated to @c Execute rather than @c ExecuteInitialize, @c ExecuteFinalize, etc.
+                          Deciding on when to call @c Execute and thus performing the IO process is the user's task.
+                        - @c _GetIOParameters can be overridden to control what parameters get passed on to the HDF5 factory,
+                          but the output must be compatible with @ref KratosMultiphysics.HDF5Application.user_defined_io_process.Factory.
     """
 
     def __init__(self, model: KratosMultiphysics.Model, parameters: KratosMultiphysics.Parameters):
@@ -88,7 +81,7 @@ class CheckpointIOProcessBase(abc.ABC, KratosMultiphysics.Process, metaclass=Abs
         parameters.ValidateAndAssignDefaults(self.GetDefaultParameters())
         self.model = model
         self.model_part = self.model.GetModelPart(parameters["model_part_name"].GetString())
-        self.parameters = parameters["checkpoint_settings"]
+        self.parameters = parameters["checkpoint_settings"].Clone()
 
         # Placeholder for initialization later
         self.process = None
@@ -100,7 +93,7 @@ class CheckpointIOProcessBase(abc.ABC, KratosMultiphysics.Process, metaclass=Abs
 
     @abc.abstractmethod
     def Execute(self) -> None:
-        """Pure virtual function for executing the io process."""
+        """@brief Pure virtual function for executing the io process."""
         pass
 
     @staticmethod
@@ -183,6 +176,8 @@ class CheckpointIOProcessBase(abc.ABC, KratosMultiphysics.Process, metaclass=Abs
 
 
 class CheckpointInputProcess(CheckpointIOProcessBase):
+    """@brief Default input process for a checkpoint solver."""
+
     @RequiresInitialized("process")
     def Execute(self) -> None:
         self.process.ExecuteInitializeSolutionStep()
@@ -223,7 +218,13 @@ class CheckpointInputProcess(CheckpointIOProcessBase):
         return parameters
 
 
-class CheckpointOutputProcess(CheckpointIOProcessBase):
+class CheckpointOutputProcess(KratosMultiphysics.OutputProcess, CheckpointIOProcessBase):
+
+    def __init__(self, model: KratosMultiphysics.Model, parameters: KratosMultiphysics.Parameters):
+        """@brief Defer construction to the base class @ref CheckpointIOProcessBase"""
+        KratosMultiphysics.OutputProcess.__init__(self)
+        CheckpointIOProcessBase.__init__(self, model, parameters)
+
     @RequiresInitialized("process")
     def Execute(self) -> None:
         self.process.ExecuteFinalizeSolutionStep()
@@ -266,11 +267,9 @@ class CheckpointOutputProcess(CheckpointIOProcessBase):
 
 
 class Factory:
-    """
-    Create a wrapped solver that has the additional functionality of writing/loading checkpoints.
-
-    The factory exposes the class of the wrapped solver via the Type property, and can
-    instantiate it by calling Create or __call__.
+    """@brief Create a wrapped solver that has the additional functionality of writing/loading checkpoints.
+    @details The factory exposes the class of the wrapped solver via the Type property, and can
+             instantiate it by calling Create or __call__.
     """
 
     def __init__(self, solver_type: PythonSolver):
@@ -283,56 +282,33 @@ class Factory:
                 pass
 
         class WrappedSolver(abc.ABC, solver_type, metaclass=AbstractSolverMetaClass):
+            """ @brief A wrapped PythonSolver with additional checkpoint writing/loading functionality.
+                @details - The underlying solver must manage <b>EXACTLY ONE</b> root model part that can be
+                           accessed via @c GetComputingModelPart().GetRootModelPart(). This requirement
+                           is not checked at runtime and satisfying it is the responsibility of the user.
+                         - The output file pattern must include a "<step>" placeholder to identify which
+                           step the checkpoint belongs to.
+                         - Steps are assumed to begin at 1.
+                         - Derived classes must implement @c _ShouldLoadCheckpoint, that determines which checkpoint
+                           to load if necessary. By default, no checkpoint is loaded if the returned step is equal
+                           to the current step of the model part.
+                         - The buffer size is assumed (and required) to be constant, though this requirement is not checked.
+                         - The number of kept files depends on the model part's buffer size. Checkpoints
+                           need to restore the state of the buffer as well, so the true number of files is
+                           \f( max_files_to_keep \cdot buffer_size \f)
+                         - By default, checkpoints are written during the first few steps while the buffer gets
+                           filled up, and then, beginning at that step, periodically at every @c checkpoint_frequency
+                           (with additional buffer checkpoints written when necessary; if the buffer size matches
+                           or exceeds @c checkpoint_frequency, a checkpoint is written at each step).
+                           If you need a different logic, override @c _IsCheckpointOutputStep.
+                         - Historical and non-historical variables of nodes, elements, and conditions in the
+                           solver's model part are <b>detected at solver initialization time</b>. All of the mentioned variables
+                           are written/loaded to/from checkpoints along with the model part's process info.
+                           If you need to customize what data gets stored in checkpoints, derive new classes
+                           from @ref CheckpointIOProcessBase and override @c _CheckpointInputProcessFactory and
+                           @c _CheckpointOutputProcessFactory accordingly. Depending on whether you need to touch
+                           the input parameter structure, you may need to override @c GetDefaultParameters as well.
             """
-                A wrapped PythonSolver with additional checkpoint writing/loading functionality.
-
-                Public methods (new or overridden):
-                    __init__(self, model, parameters)
-                    Initialize(self)
-                    AdvanceInTime(self, time)
-                    FinalizeSolutionStep(self)
-                    LoadCheckpoint(self, target_step)
-                    GetCheckpoints(self)
-                    GetMainModelPart(self)
-                    GetDefaultParameters()
-
-                Pure virtual methods:
-                    _ShouldLoadCheckpoint(self)
-
-                Notes:
-                 - The underlying solver must manage EXACTLY ONE root model part that can be
-                   accessed via GetComputingModelPart().GetRootModelPart(). This requirement
-                   is not checked at runtime and satisfying it is the responsibility of the user.
-
-                 - The output file pattern must include a "<step>" placeholder to identify which
-                   step the checkpoint belongs to.
-
-                 - Steps are assumed to begin at 1.
-
-                 - Derived classes must implement _ShouldLoadCheckpoint, that determines which checkpoint
-                   to load if necessary. By default, no checkpoint is loaded if the returned step is equal
-                   to the current step of the model part.
-
-                 - The buffer size is assumed (and required) to be constant, though this requirement is not checked.
-
-                 - The number of kept files depends on the model part's buffer size. Checkpoints
-                   need to restore the state of the buffer as well, so the true number of files is:
-                   max_files_to_keep * buffer_size
-
-                 - By default, checkpoints are written during the first few steps while the buffer gets
-                   filled up, and then, beginning at that step, periodically at every 'checkpoint_frequency'
-                   (with additional buffer checkpoints written when necessary; if the buffer size matches
-                   or exceeds 'checkpoint_frequency', a checkpoint is written at each step).
-                   If you need a different logic, override _IsCheckpointOutputStep.
-
-                 - Historical and non-historical variables of nodes, elements, and conditions in the
-                   solver's model part are detected at solver initialization time. All of the mentioned variables
-                   are written/loaded to/from checkpoints along with the model part's process info.
-                   If you need to customize what data gets stored in checkpoints, derive new classes
-                   from CheckpointIOProcessBase and override _CheckpointInputProcessFactory and
-                   _CheckpointOutputProcessFactory accordingly. Depending on whether you need to touch
-                   the input parameter structure, you may need to override GetDefaultParameters as well.
-                """
 
             __name__ = solver_type.__name__ + "WithCheckpoints"
             __qualname__ = solver_type.__qualname__ + "WithCheckpoints"
@@ -363,20 +339,17 @@ class Factory:
                 self.checkpoint_output_process = None
 
             def Initialize(self) -> None:
-                """
-                Collect all variables in the model part and initialize the IO processes.
-                Note: initialization must be executed on a populated model part.
+                """ @brief Collect all variables in the @ref ModelPart and initialize the IO processes.
+                @warning Initialization must be executed on a populated @ref ModelPart.
                 """
                 super().Initialize()
                 self.__InitializeIOProcesses()
 
             def AdvanceInTime(self, time: float) -> float:
-                """
-                Calls the base class' method first, then loads a checkpoint and resets TIME if necessary.
-
-                Note: loading a checkpoint is only possible in AdvanceInTime because PythonSolver
-                keeps track of TIME separately, based on the return value of this function. Override
-                this method in derived classes if you need more control over when checkpoints are loaded.
+                """ @brief Calls the base class' method first, then loads a checkpoint and resets @c TIME if necessary.
+                @note Loading a checkpoint is only possible in @c AdvanceInTime because @ref PythonSolver
+                      keeps track of @c TIME separately, based on the return value of this function. Override
+                      this method in derived classes if you need more control over when checkpoints are loaded.
                 """
                 super().AdvanceInTime(time)
                 step_to_load = self._ShouldLoadCheckpoint()
@@ -386,6 +359,7 @@ class Factory:
 
             @RequiresInitialized("checkpoint_output_process")
             def FinalizeSolutionStep(self) -> None:
+                """ @brief Write checkpoints if necessary, and delete obsolete ones."""
                 super().FinalizeSolutionStep()
                 if self._IsCheckpointOutputStep():
                     # Write checkpoint
@@ -501,35 +475,35 @@ class Factory:
                 return parameters
 
             def _IsCheckpointOutputStep(self) -> bool:
-                """Virtual function determining whether a checkpoint should be written at the end of the current step."""
+                """ @brief Virtual function determining whether a checkpoint should be written at the end of the current step.
+                @details By default check"""
                 buffer_size = self.GetMainModelPart().GetBufferSize()
                 step = self.GetMainModelPart().ProcessInfo[KratosMultiphysics.STEP]
                 return self.checkpoint_frequency - buffer_size <= (step-1-buffer_size) % self.checkpoint_frequency
 
             @abc.abstractmethod
             def _ShouldLoadCheckpoint(self) -> int:
-                """
-                Pure virtual function for determining which step to load a checkpoint from, if necessary.
-                Return the current step if no checkpoint needs to be loaded.
+                """ @brief Pure virtual function for determining which step to load a checkpoint from, if necessary.
+                @return Step index whose checkpoint is to be loaded, or the current step index if no loading is necessary.
                 """
                 return self.GetMainModelPart().ProcessInfo[KratosMultiphysics.STEP]
 
             def _CheckpointInputProcessFactory(self) -> CheckpointIOProcessBase:
-                """Virtual function instantiating a checkpoint loader process."""
+                """ @brief Virtual function instantiating a checkpoint loader process."""
                 parameters = self.checkpoint_parameters.Clone()
                 parameters.AddString("model_part_name", self.GetMainModelPart().FullName())
                 RecursivelyRemoveExtraParameters(parameters, CheckpointInputProcess.GetDefaultParameters())
                 return CheckpointInputProcess(self.model, parameters)
 
             def _CheckpointOutputProcessFactory(self) -> CheckpointIOProcessBase:
-                """Virtual function instantiating a checkpoint writer process."""
+                """ @brief Virtual function instantiating a checkpoint writer process."""
                 parameters = self.checkpoint_parameters.Clone()
                 parameters.AddString("model_part_name", self.GetMainModelPart().FullName())
                 RecursivelyRemoveExtraParameters(parameters, CheckpointOutputProcess.GetDefaultParameters())
                 return CheckpointOutputProcess(self.model, parameters)
 
             def __InitializeIOProcesses(self) -> None:
-                """Instantiate and initialize checkpoint io processes."""
+                """ @brief Instantiate and initialize checkpoint io processes."""
                 self.checkpoint_input_process = self._CheckpointInputProcessFactory()
                 self.checkpoint_input_process.ExecuteInitialize()
 
@@ -539,9 +513,11 @@ class Factory:
         self.solver = WrappedSolver
 
     def Create(self, model: KratosMultiphysics.Model, parameters: KratosMultiphysics.Parameters) -> PythonSolver:
+        """ @brief Construct an instance of the augmented solver."""
         return self.Type(model, parameters)
 
     def __call__(self, model: KratosMultiphysics.Model, parameters: KratosMultiphysics.Parameters) -> PythonSolver:
+        """ @brief Construct an instance of the augmented solver."""
         return self.Create(model, parameters)
 
     @property
