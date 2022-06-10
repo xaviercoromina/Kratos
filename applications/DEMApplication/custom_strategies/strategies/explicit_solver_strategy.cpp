@@ -361,7 +361,7 @@ namespace Kratos {
                     //                                         + reaction_old[i]
                     //                                         - nodal_mass_array[i]*acceleration[i]
                     //                                         - rayleigh_alpha*nodal_mass_array[i]*velocity[i]
-                    //                                         ) / ( rayleigh_beta*velocity[i]+displacement[i] );
+                                                            // ) / ( rayleigh_beta*velocity[i]+displacement[i] );
                     globally_estimated_nodal_mass_array[i] = ( external_force_old[i]
                                                             + reaction_old[i]
                                                             ) / ( displacement[i] );
@@ -1507,10 +1507,10 @@ namespace Kratos {
 
                     // Use estimated nodal mass array scaled so that the Dt is similar to the original one
                     // TODO. Ignasi: check which stiffness is better (the locally estimated or the globally estimated)
-                    // nodal_mass_array[i] = estimated_nodal_mass_array_old[i]*mass_array_scale_factor;
-                    // particle_moment_intertia_array[i] = estimated_particle_moment_intertia_array_old[i]*mass_array_scale_factor;
-                    nodal_mass_array[i] = globally_estimated_nodal_mass_array_old[i]*gmass_array_scale_factor;
-                    particle_moment_intertia_array[i] = globally_estimated_particle_moment_intertia_array_old[i]*gmass_array_scale_factor;
+                    nodal_mass_array[i] = estimated_nodal_mass_array_old[i]*mass_array_scale_factor;
+                    particle_moment_intertia_array[i] = estimated_particle_moment_intertia_array_old[i]*mass_array_scale_factor;
+                    // nodal_mass_array[i] = globally_estimated_nodal_mass_array_old[i]*gmass_array_scale_factor;
+                    // particle_moment_intertia_array[i] = globally_estimated_particle_moment_intertia_array_old[i]*gmass_array_scale_factor;
                     // nodal_mass_array[i] = (1.0-mass_array_alpha)*estimated_nodal_mass_array[i]*mass_array_scale_factor + mass_array_alpha*nodal_mass_array[i];
                     // particle_moment_intertia_array[i] = (1.0-mass_array_alpha)*estimated_particle_moment_intertia_array[i]*mass_array_scale_factor + mass_array_alpha*particle_moment_intertia_array[i];
                     // nodal_mass_array[i] = (1.0-mass_array_alpha)*globally_estimated_nodal_mass_array[i]*mMMin/mgKNormMin + mass_array_alpha*nodal_mass_array[i];
@@ -1529,8 +1529,8 @@ namespace Kratos {
                 const double omega_ratio = std::sqrt(mMMax/K_max_scaled)*omega_1_factor;
                 const double gomega_ratio = std::sqrt(mMMax/gK_max_scaled)*omega_1_factor;
                 // TODO. Ignasi: check which stiffness is better (the locally estimated or the globally estimated)
-                // double omega_1_new = omega_1_old*omega_ratio;
-                double omega_1_new = omega_1_old*gomega_ratio;
+                double omega_1_new = omega_1_old*omega_ratio;
+                // double omega_1_new = omega_1_old*gomega_ratio;
 
                 if (omega_ratio <= 1.0) {
                     std::cout << "omega_ratio <= 1.0 !! omega_ratio: " << omega_ratio << std::endl;
@@ -1542,14 +1542,15 @@ namespace Kratos {
                 }
 
                 // TODO. Ignasi
-                // KRATOS_WATCH(mMMin)
-                // KRATOS_WATCH(mMMax)
+                KRATOS_WATCH(mMMin)
+                KRATOS_WATCH(mMMax)
 
-                // KRATOS_WATCH(mKNormMin)
-                // KRATOS_WATCH(mKNormMax)
-                // KRATOS_WATCH(mass_array_scale_factor)
-                // KRATOS_WATCH(K_max_scaled)
-                // KRATOS_WATCH(omega_ratio)
+                KRATOS_WATCH(mKNormMin)
+                KRATOS_WATCH(mKNormMax)
+                KRATOS_WATCH(mass_array_scale_factor)
+                KRATOS_WATCH(K_max_scaled)
+                KRATOS_WATCH(omega_ratio)
+                // TODO. Ignasi
                 // std::fstream id_k_file;
                 // id_k_file.open ("id_kx_ky_kz.txt", std::fstream::out | std::fstream::app);
                 // id_k_file.precision(12);
@@ -1561,11 +1562,12 @@ namespace Kratos {
                 // }
                 // id_k_file.close();
 
-                // KRATOS_WATCH(mgKNormMin)
-                // KRATOS_WATCH(mgKNormMax)
-                // KRATOS_WATCH(gmass_array_scale_factor)
-                // KRATOS_WATCH(gK_max_scaled)
-                // KRATOS_WATCH(gomega_ratio)
+                KRATOS_WATCH(mgKNormMin)
+                KRATOS_WATCH(mgKNormMax)
+                KRATOS_WATCH(gmass_array_scale_factor)
+                KRATOS_WATCH(gK_max_scaled)
+                KRATOS_WATCH(gomega_ratio)
+                // TODO. Ignasi
                 // std::fstream g_id_k_file;
                 // g_id_k_file.open ("g_id_kx_ky_kz.txt", std::fstream::out | std::fstream::app);
                 // g_id_k_file.precision(12);
@@ -1577,7 +1579,8 @@ namespace Kratos {
                 // }
                 // g_id_k_file.close();
 
-                // KRATOS_ERROR << "paraaaaaaaaaaaaaaa" << std::endl;  // TODO. Ignasi
+                // TODO. Ignasi
+                KRATOS_ERROR << "paraaaaaaaaaaaaaaa" << std::endl;
                 
                 r_process_info[OMEGA_1] = omega_1_new;
 
