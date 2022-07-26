@@ -308,6 +308,7 @@ class Factory:
                            from @ref CheckpointIOProcessBase and override @c _CheckpointInputProcessFactory and
                            @c _CheckpointOutputProcessFactory accordingly. Depending on whether you need to touch
                            the input parameter structure, you may need to override @c GetDefaultParameters as well.
+                @note - @ref Initialize must be called before invoking solution loop methods.
             """
 
             __name__ = solver_type.__name__ + "WithCheckpoints"
@@ -411,7 +412,7 @@ class Factory:
                 # Set process info
                 self.GetMainModelPart().ProcessInfo[KratosMultiphysics.STEP] = original_step
 
-            def GetCheckpoints(self) -> list[dict]:
+            def GetCheckpoints(self) -> list:
                 """
                 Return a list of dictionaries containing all file paths matching the
                 checkpoint file pattern as well as all placeholders' values in each file
