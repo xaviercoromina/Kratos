@@ -25,6 +25,9 @@
 namespace Kratos
 {
 
-}
+/// Additional identifier for solution steps to help keeping track of them during checkpointing.
+KRATOS_DEFINE_APPLICATION_VARIABLE(HDF5_APPLICATION, int, ANALYSIS_PATH);
+
+} // namespace Kratos
 
 #endif	/* KRATOS_HDF5_APPLICATION_VARIABLES_H_INCLUDED */
