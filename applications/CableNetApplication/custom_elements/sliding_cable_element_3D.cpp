@@ -21,6 +21,8 @@
 #include "includes/define.h"
 #include "structural_mechanics_application_variables.h"
 #include "includes/checks.h"
+#include "includes/variables.h"
+#include "utilities/atomic_utilities.h"
 
 
 namespace Kratos {
@@ -51,7 +53,7 @@ SlidingCableElement3D::Create(IndexType NewId, GeometryType::Pointer pGeom,
 SlidingCableElement3D::~SlidingCableElement3D() {}
 
 void SlidingCableElement3D::EquationIdVector(EquationIdVectorType &rResult,
-                                        ProcessInfo &rCurrentProcessInfo) {
+                                             const ProcessInfo &rCurrentProcessInfo) const {
 
   const int points_number = GetGeometry().PointsNumber();
   const int dimension = 3;
@@ -71,7 +73,7 @@ void SlidingCableElement3D::EquationIdVector(EquationIdVectorType &rResult,
   }
 }
 void SlidingCableElement3D::GetDofList(DofsVectorType &rElementalDofList,
-                                  ProcessInfo &rCurrentProcessInfo) {
+                                       const ProcessInfo &rCurrentProcessInfo) const {
 
   const int points_number = GetGeometry().PointsNumber();
   const int dimension = 3;
@@ -103,7 +105,7 @@ void SlidingCableElement3D::Initialize(const ProcessInfo& rCurrentProcessInfo)
     KRATOS_CATCH("")
 }
 
-void SlidingCableElement3D::GetValuesVector(Vector &rValues, int Step) {
+void SlidingCableElement3D::GetValuesVector(Vector &rValues, int Step) const {
 
   KRATOS_TRY;
   const int points_number = GetGeometry().PointsNumber();
@@ -125,7 +127,7 @@ void SlidingCableElement3D::GetValuesVector(Vector &rValues, int Step) {
   KRATOS_CATCH("")
 }
 
-void SlidingCableElement3D::GetFirstDerivativesVector(Vector &rValues, int Step) {
+void SlidingCableElement3D::GetFirstDerivativesVector(Vector &rValues, int Step) const {
 
   KRATOS_TRY;
   const int points_number = GetGeometry().PointsNumber();
@@ -147,7 +149,7 @@ void SlidingCableElement3D::GetFirstDerivativesVector(Vector &rValues, int Step)
   KRATOS_CATCH("")
 }
 
-void SlidingCableElement3D::GetSecondDerivativesVector(Vector &rValues, int Step) {
+void SlidingCableElement3D::GetSecondDerivativesVector(Vector &rValues, int Step) const {
 
   KRATOS_TRY;
   const int points_number = GetGeometry().PointsNumber();
@@ -316,6 +318,7 @@ Vector SlidingCableElement3D::GetDirectionVectorNt() const
 
 Vector SlidingCableElement3D::GetInternalForces()
 {
+  constexpr double numerical_limit = std::numeric_limits<double>::epsilon();
   const int points_number = GetGeometry().PointsNumber();
   const int dimension = 3;
   const int segments_number = points_number-1;
@@ -336,8 +339,14 @@ Vector SlidingCableElement3D::GetInternalForces()
   Values.SetStressVector(temp_stress);
   mpConstitutiveLaw->CalculateMaterialResponse(Values,ConstitutiveLaw::StressMeasure_PK2);
 
-
+ 
   double total_internal_force = (temp_stress[0]+prestress) * area * current_length / ref_length;
+
+  mIsCompressed = false;
+  if ((total_internal_force < 0.00)&&(std::abs(current_length-ref_length)>numerical_limit)) {
+        mIsCompressed = true;
+    }
+
 
   Vector internal_forces = total_internal_force*this->GetDirectionVectorNt();
 
@@ -523,7 +532,7 @@ inline Matrix SlidingCableElement3D::TotalStiffnessMatrix(const ProcessInfo& rCu
 
 void SlidingCableElement3D::CalculateLeftHandSide(
             MatrixType& rLeftHandSideMatrix,
-            ProcessInfo& rCurrentProcessInfo)
+            const ProcessInfo& rCurrentProcessInfo)
 {
   KRATOS_TRY;
   const int points_number = GetGeometry().PointsNumber();
@@ -532,13 +541,16 @@ void SlidingCableElement3D::CalculateLeftHandSide(
   // resizing the matrices + create memory for LHS
   rLeftHandSideMatrix = ZeroMatrix(local_size, local_size);
   // creating LHS
+
+  if (!mIsCompressed) {
   noalias(rLeftHandSideMatrix) = this->TotalStiffnessMatrix(rCurrentProcessInfo);
+  }
 
   KRATOS_CATCH("")
 }
 
 void SlidingCableElement3D::CalculateRightHandSide(
-    VectorType &rRightHandSideVector, ProcessInfo &rCurrentProcessInfo)
+    VectorType &rRightHandSideVector, const ProcessInfo &rCurrentProcessInfo)
 {
   KRATOS_TRY;
   const int points_number = GetGeometry().PointsNumber();
@@ -547,32 +559,43 @@ void SlidingCableElement3D::CalculateRightHandSide(
 
 
   rRightHandSideVector = ZeroVector(local_size);
-  noalias(rRightHandSideVector) -= this->GetInternalForces();
-
+  Vector internal_forces = this->GetInternalForces();
+  if (!mIsCompressed) {
+        noalias(rRightHandSideVector) -= internal_forces;
+    }
   if (this->HasSelfWeight()) noalias(rRightHandSideVector) += this->CalculateBodyForces();
   KRATOS_CATCH("")
 }
 
 void SlidingCableElement3D::CalculateLocalSystem(MatrixType &rLeftHandSideMatrix,
-                                            VectorType &rRightHandSideVector,
-                                            ProcessInfo &rCurrentProcessInfo)
+                                                 VectorType &rRightHandSideVector,
+                                                 const ProcessInfo &rCurrentProcessInfo)
 {
   KRATOS_TRY;
   const int points_number = GetGeometry().PointsNumber();
   const int dimension = 3;
   const SizeType local_size = dimension*points_number;
 
-  rLeftHandSideMatrix = ZeroMatrix(local_size, local_size);
-  noalias(rLeftHandSideMatrix) = this->TotalStiffnessMatrix(rCurrentProcessInfo);
 
   rRightHandSideVector = ZeroVector(local_size);
-  noalias(rRightHandSideVector) -= this->GetInternalForces();
+  Vector internal_forces = this->GetInternalForces();
+  if (!mIsCompressed) {
+        noalias(rRightHandSideVector) -= internal_forces;
+    }
 
   if (this->HasSelfWeight()) noalias(rRightHandSideVector) += this->CalculateBodyForces();
+
+  rLeftHandSideMatrix = ZeroMatrix(local_size, local_size);
+
+  if (!mIsCompressed) {
+  noalias(rLeftHandSideMatrix) = this->TotalStiffnessMatrix(rCurrentProcessInfo);
+  }
   KRATOS_CATCH("")
 }
 
-void SlidingCableElement3D::CalculateLumpedMassVector(VectorType &rMassVector)
+void SlidingCableElement3D::CalculateLumpedMassVector(
+  VectorType &rLumpedMassVector,
+  const ProcessInfo& rCurrentProcessInfo) const
 {
     KRATOS_TRY;
 
@@ -586,8 +609,9 @@ void SlidingCableElement3D::CalculateLumpedMassVector(VectorType &rMassVector)
     const SizeType local_size = dimension*points_number;
 
     // Clear matrix
-    if (rMassVector.size() != local_size)
-        rMassVector.resize( local_size );
+    if (rLumpedMassVector.size() != local_size) {
+      rLumpedMassVector.resize(local_size);
+    }
 
     const double A = this->GetProperties()[CROSS_AREA];
     const double L = this->GetRefLength();
@@ -609,8 +633,8 @@ void SlidingCableElement3D::CalculateLumpedMassVector(VectorType &rMassVector)
         for (int j = 0; j < dimension; ++j) {
             int index = i * dimension + j;
 
-            rMassVector[index] = nodal_mass;
-            //rMassVector[index] = total_mass;
+            rLumpedMassVector[index] = nodal_mass;
+            //rLumpedMassVector[index] = total_mass;
         }
     }
 
@@ -619,7 +643,7 @@ void SlidingCableElement3D::CalculateLumpedMassVector(VectorType &rMassVector)
 
 void SlidingCableElement3D::CalculateMassMatrix(
     MatrixType &rMassMatrix,
-    ProcessInfo &rCurrentProcessInfo)
+    const ProcessInfo &rCurrentProcessInfo)
 {
     KRATOS_TRY;
     const int points_number = GetGeometry().PointsNumber();
@@ -628,7 +652,7 @@ void SlidingCableElement3D::CalculateMassMatrix(
 
     // Compute lumped mass matrix
     VectorType temp_vector(local_size);
-    CalculateLumpedMassVector(temp_vector);
+    CalculateLumpedMassVector(temp_vector, rCurrentProcessInfo);
 
     // Clear matrix
     if (rMassMatrix.size1() != local_size || rMassMatrix.size2() != local_size)
@@ -643,7 +667,7 @@ void SlidingCableElement3D::CalculateMassMatrix(
 }
 
 void SlidingCableElement3D::CalculateDampingMatrix(
-    MatrixType &rDampingMatrix, ProcessInfo &rCurrentProcessInfo) {
+    MatrixType &rDampingMatrix, const ProcessInfo &rCurrentProcessInfo) {
 
   KRATOS_TRY;
   const int points_number = GetGeometry().PointsNumber();
@@ -681,7 +705,7 @@ void SlidingCableElement3D::CalculateDampingMatrix(
 void SlidingCableElement3D::AddExplicitContribution(
     const VectorType& rRHSVector,
     const Variable<VectorType>& rRHSVariable,
-    Variable<double >& rDestinationVariable,
+    const Variable<double >& rDestinationVariable,
     const ProcessInfo& rCurrentProcessInfo
     )
 {
@@ -694,14 +718,13 @@ void SlidingCableElement3D::AddExplicitContribution(
 
     if (rDestinationVariable == NODAL_MASS) {
         VectorType element_mass_vector(local_size);
-        this->CalculateLumpedMassVector(element_mass_vector);
+        this->CalculateLumpedMassVector(element_mass_vector, rCurrentProcessInfo);
 
         for (int i = 0; i < points_number; ++i) {
             double &r_nodal_mass = r_geom[i].GetValue(NODAL_MASS);
             int index = i * dimension;
 
-            #pragma omp atomic
-            r_nodal_mass += element_mass_vector(index);
+            AtomicAdd(r_nodal_mass, element_mass_vector(index));
         }
     }
     KRATOS_CATCH("")
@@ -709,7 +732,7 @@ void SlidingCableElement3D::AddExplicitContribution(
 
 void SlidingCableElement3D::AddExplicitContribution(
     const VectorType &rRHSVector, const Variable<VectorType> &rRHSVariable,
-    Variable<array_1d<double, 3>> &rDestinationVariable,
+    const Variable<array_1d<double, 3>> &rDestinationVariable,
     const ProcessInfo &rCurrentProcessInfo
     )
 {
@@ -733,34 +756,26 @@ void SlidingCableElement3D::AddExplicitContribution(
             size_t index = dimension * i;
             array_1d<double, 3> &r_force_residual = GetGeometry()[i].FastGetSolutionStepValue(FORCE_RESIDUAL);
             for (size_t j = 0; j < dimension; ++j) {
-                #pragma omp atomic
-                r_force_residual[j] += rRHSVector[index + j] - damping_residual_contribution[index + j];
+                AtomicAdd(r_force_residual[j], rRHSVector[index + j] - damping_residual_contribution[index + j] );
             }
         }
     } else if (rDestinationVariable == NODAL_INERTIA) {
 
         // Getting the vector mass
         VectorType mass_vector(local_size);
-        CalculateLumpedMassVector(mass_vector);
+        CalculateLumpedMassVector(mass_vector, rCurrentProcessInfo);
 
         for (int i = 0; i < points_number; ++i) {
             double &r_nodal_mass = GetGeometry()[i].GetValue(NODAL_MASS);
-            array_1d<double, dimension> &r_nodal_inertia = GetGeometry()[i].GetValue(NODAL_INERTIA);
             int index = i * dimension;
 
-            #pragma omp atomic
-            r_nodal_mass += mass_vector[index];
-
-            for (int k = 0; k < dimension; ++k) {
-                #pragma omp atomic
-                r_nodal_inertia[k] += 0.0;
-            }
+            AtomicAdd(r_nodal_mass, mass_vector[index]);
         }
     }
     KRATOS_CATCH("")
 }
 
-int SlidingCableElement3D::Check(const ProcessInfo& rCurrentProcessInfo)
+int SlidingCableElement3D::Check(const ProcessInfo& rCurrentProcessInfo) const
 {
     KRATOS_TRY
 
@@ -868,7 +883,7 @@ Vector SlidingCableElement3D::CalculateProjectionLengths()
 }
 
 
-void SlidingCableElement3D::FinalizeSolutionStep(ProcessInfo& rCurrentProcessInfo)
+void SlidingCableElement3D::FinalizeSolutionStep(const ProcessInfo& rCurrentProcessInfo)
 {
     KRATOS_TRY;
     ProcessInfo temp_process_information;
@@ -902,9 +917,11 @@ double SlidingCableElement3D::ReturnTangentModulus1D(const ProcessInfo& rCurrent
 void SlidingCableElement3D::save(Serializer &rSerializer) const {
   KRATOS_SERIALIZE_SAVE_BASE_CLASS(rSerializer, Element);
     rSerializer.save("mpConstitutiveLaw", mpConstitutiveLaw);
+    rSerializer.save("mIscompressed", mIsCompressed);
 }
 void SlidingCableElement3D::load(Serializer &rSerializer) {
   KRATOS_SERIALIZE_LOAD_BASE_CLASS(rSerializer, Element);
   rSerializer.load("mpConstitutiveLaw", mpConstitutiveLaw);
+  rSerializer.load("mIscompressed", mIsCompressed);
 }
 } // namespace Kratos.

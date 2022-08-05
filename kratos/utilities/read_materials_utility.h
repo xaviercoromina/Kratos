@@ -66,9 +66,6 @@ class KRATOS_API(KRATOS_CORE) ReadMaterialsUtility
     /// Definition of the size type
     typedef std::size_t SizeType;
 
-    /// Definition of the mesh id (always zero)
-    static constexpr IndexType mesh_id = 0;
-
     ///@}
     ///@name Pointer Definitions
 
@@ -118,6 +115,46 @@ class KRATOS_API(KRATOS_CORE) ReadMaterialsUtility
      * @param MaterialData The configuration parameters defining the properties
      */
     void ReadMaterials(Parameters MaterialData);
+
+    /**
+     * @brief This method assigns the material parameters to a property from configuration parameters
+     * @param MaterialData The parameters containing all the configurations of the materials
+     * @param rProperty The reference to the property for which the materials are to be assigned
+     */
+    virtual void AssignMaterialToProperty(
+        const Parameters MaterialData,
+        Properties& rProperty
+        );
+
+    /**
+     * @brief This method assigns the constitutive law to a property from configuration parameters
+     * @param MaterialData The parameters containing all the configurations of the materials
+     * @param rProperty The reference to the property for which the materials are to be assigned
+     */
+    virtual void AssignConstitutiveLawToProperty(
+        const Parameters MaterialData,
+        Properties& rProperty
+        );
+
+    /**
+     * @brief This method assigns the variables to a property from configuration parameters
+     * @param MaterialData The parameters containing all the configurations of the materials
+     * @param rProperty The reference to the property for which the materials are to be assigned
+     */
+    virtual void AssignVariablesToProperty(
+        const Parameters MaterialData,
+        Properties& rProperty
+        );
+
+    /**
+     * @brief This method assigns the tables to a property from configuration parameters
+     * @param MaterialData The parameters containing all the configurations of the materials
+     * @param rProperty The reference to the property for which the materials are to be assigned
+     */
+    virtual void AssignTablesToProperty(
+        const Parameters MaterialData,
+        Properties& rProperty
+        );
 
     ///@}
     ///@name Access
@@ -228,7 +265,7 @@ class KRATOS_API(KRATOS_CORE) ReadMaterialsUtility
         const Parameters VariablesParameters,
         const IndexType PropertyId = 0
         );
-        
+
     /**
      * @brief Trims out a component name, separating by '."
      * @details Trims out a component name, removing unnecessary module information.
@@ -238,7 +275,7 @@ class KRATOS_API(KRATOS_CORE) ReadMaterialsUtility
      * @param rLine Component name in materials json file
      */
     void TrimComponentName(std::string& rLine);
-    
+
     ///@}
     ///@name Protected  Access
     ///@{
