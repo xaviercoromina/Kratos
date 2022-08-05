@@ -349,19 +349,16 @@ public:
 
             // Revert solution of the displacement
             NodesArrayType& r_all_nodes_array = r_model_part.Nodes();
-            const auto it_all_node_begin = r_all_nodes_array.begin();
 
             array_1d<double, 3> auxiliar_disp = ZeroVector(3);
 
-            #pragma omp parallel for firstprivate(auxiliar_disp)
-            for(int i = 0; i < static_cast<int>(r_all_nodes_array.size()); ++i) {
-                auto it_node = it_all_node_begin + i;
-                array_1d<double, 3>& disp = it_node->FastGetSolutionStepValue(DISPLACEMENT);
-                noalias(auxiliar_disp) = it_node->FastGetSolutionStepValue(DISPLACEMENT, 1);
-                if (!it_node->IsFixed(DISPLACEMENT_X)) disp[0] = auxiliar_disp[0];
-                if (!it_node->IsFixed(DISPLACEMENT_Y)) disp[1] = auxiliar_disp[1];
-                if (!it_node->IsFixed(DISPLACEMENT_Z)) disp[2] = auxiliar_disp[2];
-            }
+            block_for_each(r_all_nodes_array, [&auxiliar_disp](NodeType& rNode) {
+                array_1d<double, 3>& r_disp = rNode.FastGetSolutionStepValue(DISPLACEMENT);
+                noalias(auxiliar_disp) = rNode.FastGetSolutionStepValue(DISPLACEMENT, 1);
+                if (!rNode.IsFixed(DISPLACEMENT_X)) r_disp[0] = auxiliar_disp[0];
+                if (!rNode.IsFixed(DISPLACEMENT_Y)) r_disp[1] = auxiliar_disp[1];
+                if (!rNode.IsFixed(DISPLACEMENT_Z)) r_disp[2] = auxiliar_disp[2];
+            });
         } else if (it_node_begin->SolutionStepsDataHas(WEIGHTED_GAP)) {
             VariableUtils().SetVariable(WEIGHTED_GAP, 0.0, r_nodes_array);
             if (frictional) {
