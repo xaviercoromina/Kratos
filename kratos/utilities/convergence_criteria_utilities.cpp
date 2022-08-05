@@ -124,10 +124,16 @@ void KRATOS_API(KRATOS_CORE) OutputConvergenceStatus(
 
         std::ostringstream stringbuf;
         stringbuf << "CONVERGENCE CHECK:\n";
-        for(int i = 0; i < VariableSize; ++i) {
+
+        const int max_length_var_name = (*std::max_element(rVariableDataVector.begin(), rVariableDataVector.end(), [](const VariableData* p_var_data_1, const VariableData* p_var_data_2){
+            return p_var_data_1->Name().length() < p_var_data_2->Name().length();
+        }))->Name().length();
+
+        for(int i = 0; i < VariableSize; i++) {
             const auto r_var_data = rVariableDataVector[i];
-            const std::size_t key_map = rLocalKeyMap[r_var_data->Key()];
-            stringbuf << " " << r_var_data->Name() << " : ratio = " << r_var_ratio[key_map] << "; exp.ratio = " << rRatioToleranceVector[key_map] << " abs = " << r_var_abs[key_map] << " exp.abs = " << rAbsToleranceVector[key_map] << "\n";
+            const int key_map = rLocalKeyMap[r_var_data->Key()];
+            const std::string space_str(max_length_var_name-r_var_data->Name().length(), ' ');
+            stringbuf << " " << r_var_data->Name() << space_str <<" : ratio = " << r_var_ratio[key_map] << "; exp.ratio = " << rRatioToleranceVector[key_map] << " abs = " << r_var_abs[key_map] << " exp.abs = " << rAbsToleranceVector[key_map] << "\n";
         }
         KRATOS_INFO("") << stringbuf.str();
     }
