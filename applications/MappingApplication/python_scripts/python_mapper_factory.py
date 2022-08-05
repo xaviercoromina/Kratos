@@ -1,5 +1,3 @@
-from __future__ import print_function, absolute_import, division  # makes KratosMultiphysics backward compatible with python 2.6 and 2.7
-
 # Python factory for all the currently available Mappers in Kratos
 # The intention is to give the users a unique place to create Mappers
 # The goal is to implement the Mappers from the other Apps also in the
@@ -7,51 +5,35 @@ from __future__ import print_function, absolute_import, division  # makes Kratos
 # the long run.
 # This way users won't notice / won't have to change their code
 
-import KratosMultiphysics
-from KratosMultiphysics.MappingApplication import MapperFactory
+import KratosMultiphysics as KM
 
-def _CreateCoreMortarMapper(model_part_origin, model_part_destination, mapper_settings):
-    # return core mortar mapper
-    raise NotImplementedError
+from importlib import import_module
 
-def _CreateApproximateMortarMapper(model_part_origin, model_part_destination, mapper_settings):
-    # return mapper from FSIApp
-    raise NotImplementedError
-
-def _CreateVertexMorphingMapper(model_part_origin, model_part_destination, mapper_settings):
-    # return mapper from ShapeOptApp
-    raise NotImplementedError
-
-def _CreateEmpireMortarMapper(model_part_origin, model_part_destination, mapper_settings):
-    # return mortar mapper from Empire
-    raise NotImplementedError
-
-available_mappers = {
-    "mortar"                      : _CreateCoreMortarMapper,
-    "approximate_mortar"          : _CreateApproximateMortarMapper,
-    "vertex_morphing"             : _CreateVertexMorphingMapper,
-    "empire_mortar"               : _CreateEmpireMortarMapper
-}
-
-def CreateMapper(model_part_origin, model_part_destination, mapper_settings):
-    if not isinstance(mapper_settings, KratosMultiphysics.Parameters):
+def _InternalCreateMapper(mapper_factory, err_info, model_part_origin, model_part_destination, mapper_settings):
+    if not isinstance(mapper_settings, KM.Parameters):
         raise Exception("expected input shall be a Parameters object, encapsulating a json string")
 
     mapper_type = mapper_settings["mapper_type"].GetString()
 
-    if MapperFactory.HasMapper(mapper_type): # use the MappingApp if it has the requested mapper
-        return MapperFactory.CreateMapper(model_part_origin, model_part_destination, mapper_settings)
-    elif mapper_type in available_mappers:
-        return available_mappers[mapper_type](model_part_origin, model_part_destination, mapper_settings)
+    # use the MappingApp if it has the requested mapper
+    if mapper_factory.HasMapper(mapper_type):
+        return mapper_factory.CreateMapper(model_part_origin, model_part_destination, mapper_settings)
     else:
-        list_mappers = MapperFactory.GetRegisteredMapperNames()
-        list_mappers.extend(available_mappers.keys())
+        mapper_module = import_module(mapper_type)
+        return mapper_module.Create(model_part_origin, model_part_destination, mapper_settings)
 
-        err_msg  = 'The requested mapper "{}" is not available\n'.format(mapper_type)
-        err_msg += 'The following mappers are available:'
-        for avail_mapper in list_mappers:
-            err_msg += '\n\t{}'.format(avail_mapper)
-        raise Exception(err_msg)
+    list_avail_mappers = mapper_factory.GetRegisteredMapperNames()
+
+    err_msg  = 'The requested mapper "{}" is not available in {}\n'.format(mapper_type, err_info)
+    err_msg += 'The following mappers are available:'
+    for avail_mapper in list_avail_mappers:
+        err_msg += '\n\t{}'.format(avail_mapper)
+    raise Exception(err_msg)
+
+
+def CreateMapper(model_part_origin, model_part_destination, mapper_settings):
+    return _InternalCreateMapper(KM.MapperFactory, "serial (non-MPI)", model_part_origin, model_part_destination, mapper_settings)
 
 def CreateMPIMapper(model_part_origin, model_part_destination, mapper_settings):
-    return MapperFactory.CreateMPIMapper(model_part_origin, model_part_destination, mapper_settings)
+    from KratosMultiphysics.MappingApplication.MPIExtension import MPIMapperFactory
+    return _InternalCreateMapper(MPIMapperFactory, "MPI", model_part_origin, model_part_destination, mapper_settings)

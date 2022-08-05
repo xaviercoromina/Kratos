@@ -14,16 +14,9 @@
 #define  KRATOS_TRIGEN_DROPLET_MODELER_H_INCLUDED
 
 // System includes
-#include <string>
-#include <iostream>
-#include <stdlib.h>
 
-#if !defined(KRATOS_TRIANGLE_EXTERNAL_H_INCLUDED)
-#define  KRATOS_TRIANGLE_EXTERNAL_H_INCLUDED
+// External includes
 #include "triangle.h"
-#endif
-
-#include <boost/timer.hpp>
 
 // Project includes
 #include "includes/define.h"
@@ -32,8 +25,7 @@
 #include "meshing_application_variables.h"
 #include "processes/node_erase_process.h"
 #include "spatial_containers/spatial_containers.h"
-
-
+#include "utilities/timer.h"
 
 namespace Kratos
 {
@@ -129,7 +121,7 @@ public:
             KRATOS_THROW_ERROR(std::logic_error,"Add  ----IS_FLUID---- variable!!!!!! ERROR","");
 
         KRATOS_WATCH("Trigen Droplet Refining Mesher")
-        boost::timer auxiliary;
+        const auto inital_time = std::chrono::steady_clock::now();
 
 
 //clearing elements
@@ -353,7 +345,7 @@ public:
         char options1[] = "Pne";
         triangulate(options1, &in_mid, &out_mid, &vorout_mid);
         //print out the mesh generation time
-        std::cout<<"mesh generation time = "<<auxiliary.elapsed();
+        std::cout << "mesh generation time = " << Timer::ElapsedSeconds(inital_time) << std::endl;
         //number of newly generated triangles
         unsigned int el_number=out_mid.numberoftriangles;
 
@@ -900,9 +892,9 @@ private:
             nfluid += int( temp[2].FastGetSolutionStepValue(IS_FLUID) );
 
             //check the number of nodes of boundary
-            int nboundary = int( temp[0].FastGetSolutionStepValue(IS_BOUNDARY) );
-            nboundary += int( temp[1].FastGetSolutionStepValue(IS_BOUNDARY) );
-            nboundary += int( temp[2].FastGetSolutionStepValue(IS_BOUNDARY) );
+            // int nboundary = int( temp[0].FastGetSolutionStepValue(IS_BOUNDARY) );
+            // nboundary += int( temp[1].FastGetSolutionStepValue(IS_BOUNDARY) );
+            // nboundary += int( temp[2].FastGetSolutionStepValue(IS_BOUNDARY) );
             //first check that we are working with fluid elements, otherwise throw an error
             //if (nfluid!=3)
             //	KRATOS_ERROR(std::logic_error,"THATS NOT FLUID or NOT TRIANGLE!!!!!! ERROR","");
@@ -1437,6 +1429,3 @@ inline std::ostream& operator << (std::ostream& rOStream,
 }  // namespace Kratos.
 
 #endif // KRATOS_TRIGEN_PFEM_MODELER_H_INCLUDED  defined
-
-
-

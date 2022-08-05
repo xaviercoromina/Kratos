@@ -25,7 +25,7 @@ class FluidTransportSolver(PythonSolver):
         # There is only a single rank in OpenMP, we always print
         self._is_printing_rank = True
 
-        self.min_buffer_size = 2
+        self.min_buffer_size = 3
 
         # Either retrieve the model part from the model or create a new one
         model_part_name = self.settings["model_part_name"].GetString()
@@ -44,7 +44,7 @@ class FluidTransportSolver(PythonSolver):
         KratosMultiphysics.Logger.PrintInfo("FluidTransportSolver", "Construction of FluidTransportSolver finished.")
 
     @classmethod
-    def GetDefaultSettings(cls):
+    def GetDefaultParameters(cls):
         this_defaults = KratosMultiphysics.Parameters("""{
             "solver_type": "fluid_transport_solver",
             "model_part_name": "FluidTransportDomain",
@@ -91,7 +91,7 @@ class FluidTransportSolver(PythonSolver):
 	        }
         }""")
 
-        this_defaults.AddMissingParameters(super(FluidTransportSolver, cls).GetDefaultSettings())
+        this_defaults.AddMissingParameters(super(FluidTransportSolver, cls).GetDefaultParameters())
         return this_defaults
 
     def AddVariables(self):

@@ -27,9 +27,9 @@
 #include "trilinos_space.h"
 
 // FluidDynamicsApplication dependencies
-#include "custom_strategies/strategies/gear_scheme.h"
-#include "custom_strategies/strategies/residualbased_predictorcorrector_velocity_bossak_scheme_turbulent.h"
-#include "custom_strategies/strategies/residualbased_predictorcorrector_velocity_bdf_scheme_turbulent.h"
+#include "custom_strategies/schemes/bdf2_turbulent_scheme.h"
+#include "custom_strategies/schemes/residualbased_predictorcorrector_velocity_bossak_scheme_turbulent.h"
+#include "custom_strategies/schemes/residualbased_simple_steady_scheme.h"
 
 namespace Kratos {
 namespace Python {
@@ -43,10 +43,10 @@ void AddTrilinosSchemesToPython(pybind11::module& m)
 
     using TrilinosBaseScheme = Scheme< TrilinosSparseSpace, UblasLocalSpace >;
 
-    using TrilinosGearScheme = GearScheme<TrilinosSparseSpace, UblasLocalSpace>;
-    py::class_< TrilinosGearScheme, typename TrilinosGearScheme::Pointer, TrilinosBaseScheme >( m,"TrilinosGearScheme")
-    .def(py::init<Process::Pointer >() )
+    using TrilinosBDF2TurbulentScheme = BDF2TurbulentScheme<TrilinosSparseSpace, UblasLocalSpace>;
+    py::class_< TrilinosBDF2TurbulentScheme, typename TrilinosBDF2TurbulentScheme::Pointer, TrilinosBaseScheme >( m,"TrilinosBDF2TurbulentScheme")
     .def(py::init<>()) // constructor without a turbulence model
+    .def(py::init<Process::Pointer>() ) // constructor with a turbulence model
     .def(py::init<const Variable<int>&>()) // constructor for periodic conditions
     ;
 
@@ -54,15 +54,18 @@ void AddTrilinosSchemesToPython(pybind11::module& m)
     py::class_ < TrilinosVelocityBossakSchemeTurbulent, typename TrilinosVelocityBossakSchemeTurbulent::Pointer,TrilinosBaseScheme >
     (m,"TrilinosPredictorCorrectorVelocityBossakSchemeTurbulent")
     .def(py::init<double, double, unsigned int, Process::Pointer >())
+    .def(py::init<double, double, unsigned int, double, Process::Pointer >())
     .def(py::init<double,double,unsigned int >())
     .def(py::init<double,unsigned int, const Variable<int>&>())
     ;
 
-    using TrilinosVelocityBDFSchemeTurbulent = ResidualBasedPredictorCorrectorBDFSchemeTurbulent<TrilinosSparseSpace, UblasLocalSpace>;
-    py::class_ < TrilinosVelocityBDFSchemeTurbulent, typename TrilinosVelocityBDFSchemeTurbulent::Pointer, TrilinosBaseScheme >
-    (m,"TrilinosResidualBasedPredictorCorrectorBDFScheme")
-    .def(py::init<unsigned int, Kratos::Flags& >() )
+    using TrilinosResidualBasedSimpleSteadyScheme = ResidualBasedSimpleSteadyScheme<TrilinosSparseSpace, UblasLocalSpace>;
+    py::class_ < TrilinosResidualBasedSimpleSteadyScheme, typename TrilinosResidualBasedSimpleSteadyScheme::Pointer, TrilinosBaseScheme >
+    (m,"TrilinosResidualBasedSimpleSteadyScheme")
+    .def(py::init<double, double, unsigned int, Process::Pointer >())
+    .def(py::init<double,double,unsigned int >())
     ;
+
 }
 
 }

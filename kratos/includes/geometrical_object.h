@@ -84,16 +84,14 @@ public:
     explicit GeometricalObject(IndexType NewId = 0)
         : IndexedObject(NewId),
           Flags(),
-          mpGeometry(),
-          mReferenceCounter(0)
+          mpGeometry()
     {}
 
     /// Default constructor.
     GeometricalObject(IndexType NewId, GeometryType::Pointer pGeometry)
         : IndexedObject(NewId),
           Flags(),
-          mpGeometry(pGeometry),
-          mReferenceCounter(0)
+          mpGeometry(pGeometry)
     {}
 
     /// Destructor.
@@ -103,8 +101,7 @@ public:
     GeometricalObject(GeometricalObject const& rOther)
         : IndexedObject(rOther.Id()),
           Flags(rOther),
-          mpGeometry(rOther.mpGeometry),
-          mReferenceCounter(0)
+          mpGeometry(rOther.mpGeometry)
     {}
 
 
@@ -127,6 +124,15 @@ public:
     ///@}
     ///@name Access
     ///@{
+
+    /**
+     * @brief Sets the pointer to the geometry
+     * @param pGeometry The pointer of the geometry
+     */
+    virtual void SetGeometry(GeometryType::Pointer pGeometry)
+    {
+        mpGeometry = pGeometry;
+    }
 
     /**
      * @brief Returns the pointer to the geometry
@@ -189,6 +195,67 @@ public:
     void SetFlags(Flags const& rThisFlags)
     {
         Flags::operator=(rThisFlags);
+    }
+
+    ///@}
+    ///@name Data
+    ///@{
+
+    /**
+     * Access Data:
+     */
+    KRATOS_DEPRECATED_MESSAGE("This method is deprecated. Use 'GetData()' instead.")
+    DataValueContainer& Data()
+    {
+        return pGetGeometry()->GetData();
+    }
+
+    DataValueContainer& GetData()
+    {
+        return pGetGeometry()->GetData();
+    }
+
+    DataValueContainer const& GetData() const
+    {
+        return GetGeometry().GetData();
+    }
+
+    void SetData(DataValueContainer const& rThisData)
+    {
+        return GetGeometry().SetData(rThisData);
+    }
+
+    /**
+     * Check if the Data exists with Has(..) methods:
+     */
+    template<class TDataType> bool Has(const Variable<TDataType>& rThisVariable) const
+    {
+        return GetData().Has(rThisVariable);
+    }
+
+    /**
+     * Set Data with SetValue and the Variable to set:
+     */
+    template<class TVariableType> void SetValue(
+        const TVariableType& rThisVariable,
+        typename TVariableType::Type const& rValue)
+    {
+        GetData().SetValue(rThisVariable, rValue);
+    }
+
+    /**
+     * Get Data with GetValue and the Variable to get:
+     */
+    template<class TVariableType> typename TVariableType::Type& GetValue(
+        const TVariableType& rThisVariable)
+    {
+        return GetData().GetValue(rThisVariable);
+    }
+
+    template<class TVariableType> typename TVariableType::Type const& GetValue(
+        const TVariableType& rThisVariable) const
+    {
+        return GetData().GetValue(rThisVariable);
     }
 
     ///@}
@@ -333,10 +400,10 @@ private:
     ///@}
     ///@name Private Operators
     ///@{
-    
+
     //*********************************************
     //this block is needed for refcounting
-    mutable std::atomic<int> mReferenceCounter;
+    mutable std::atomic<int> mReferenceCounter{0};
 
     friend void intrusive_ptr_add_ref(const GeometricalObject* x)
     {

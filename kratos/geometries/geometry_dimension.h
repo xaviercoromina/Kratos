@@ -21,26 +21,12 @@
 // External includes
 
 // Project includes
+#include "includes/define.h"
+#include "includes/serializer.h"
 
 namespace Kratos
 {
 
-///@name Kratos Globals
-///@{
-
-///@}
-///@name Type Definitions
-///@{
-
-///@}
-///@name  Enum's
-///@{
-
-///@}
-///@name  Functions
-///@{
-
-///@}
 ///@name Kratos Classes
 ///@{
 
@@ -186,8 +172,6 @@ public:
 
     ///@}
 
-protected:
-
 private:
     ///@name Member Variables
     ///@{
@@ -228,15 +212,8 @@ private:
 }; // Class GeometryDimension
 
 ///@}
-
-///@name Type Definitions
-///@{
-
-
-///@}
 ///@name Input and output
 ///@{
-
 
 /// input stream function
 inline std::istream& operator >> ( std::istream& rIStream,
@@ -258,5 +235,3 @@ inline std::ostream& operator << ( std::ostream& rOStream,
 }  // namespace Kratos.
 
 #endif // KRATOS_GEOMETRY_DIMENSION_H_INCLUDED  defined
-
-

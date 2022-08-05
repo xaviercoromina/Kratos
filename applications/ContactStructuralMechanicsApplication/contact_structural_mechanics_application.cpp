@@ -1,10 +1,11 @@
-// KRATOS  ___|  |                   |                   |
-//       \___ \  __|  __| |   |  __| __| |   |  __| _` | |
-//             | |   |    |   | (    |   |   | |   (   | |
-//       _____/ \__|_|   \__,_|\___|\__|\__,_|_|  \__,_|_| MECHANICS
+// KRATOS    ______            __             __  _____ __                  __                   __
+//          / ____/___  ____  / /_____ ______/ /_/ ___// /________  _______/ /___  ___________ _/ /
+//         / /   / __ \/ __ \/ __/ __ `/ ___/ __/\__ \/ __/ ___/ / / / ___/ __/ / / / ___/ __ `/ / 
+//        / /___/ /_/ / / / / /_/ /_/ / /__/ /_ ___/ / /_/ /  / /_/ / /__/ /_/ /_/ / /  / /_/ / /  
+//        \____/\____/_/ /_/\__/\__,_/\___/\__//____/\__/_/   \__,_/\___/\__/\__,_/_/   \__,_/_/  MECHANICS
 //
 //  License:		 BSD License
-//					 license: StructuralMechanicsApplication/license.txt
+//					 license: ContactStructuralMechanicsApplication/license.txt
 //
 //  Main authors:    Vicente Mataix
 //
@@ -122,8 +123,12 @@ KratosContactStructuralMechanicsApplication::KratosContactStructuralMechanicsApp
 
 void KratosContactStructuralMechanicsApplication::Register()
 {
-    // Calling base class register to register Kratos components
-    KratosApplication::Register();
+    KRATOS_INFO("") << "    KRATOS    ______            __             __  _____ __                  __                   __\n"
+                    << "             / ____/___  ____  / /_____ ______/ /_/ ___// /________  _______/ /___  ___________ _/ /\n"
+                    << "            / /   / __ \\/ __ \\/ __/ __ `/ ___/ __/\\__ \\/ __/ ___/ / / / ___/ __/ / / / ___/ __ `/ / \n"
+                    << "           / /___/ /_/ / / / / /_/ /_/ / /__/ /_ ___/ / /_/ /  / /_/ / /__/ /_/ /_/ / /  / /_/ / /  \n"
+                    << "           \\____/\\____/_/ /_/\\__/\\__,_/\\___/\\__//____/\\__/_/   \\__,_/\\___/\\__/\\__,_/_/   \\__,_/_/  MECHANICS\n"
+                    << "Initializing KratosContactStructuralMechanicsApplication..." << std::endl;
 
     // VARIABLES
     // MPC Contact related variables
@@ -131,6 +136,7 @@ void KratosContactStructuralMechanicsApplication::Register()
     KRATOS_REGISTER_VARIABLE( REACTION_CHECK_STIFFNESS_FACTOR )                       // The reaction factor to be considered on the tension check
 
     /* Mortar method general variables */
+    KRATOS_REGISTER_VARIABLE( CONSIDER_TESSELLATION )                                 // If we consider tesellation when doing the mortar segmentation
     KRATOS_REGISTER_VARIABLE( INNER_LOOP_ITERATION )                                  // The number of loops in the simplified semi-smooth inner iteration
     KRATOS_REGISTER_VARIABLE( INTEGRATION_ORDER_CONTACT )                             // The integration order computed in the contact
     KRATOS_REGISTER_VARIABLE( DISTANCE_THRESHOLD )                                    // The distance threshold considered
@@ -139,7 +145,6 @@ void KratosContactStructuralMechanicsApplication::Register()
     KRATOS_REGISTER_VARIABLE( SLIP_THRESHOLD )                                        // The threshold employed to search an slip/stick node
     KRATOS_REGISTER_3D_VARIABLE_WITH_COMPONENTS( AUXILIAR_COORDINATES )               // Auxiliar coordinates used to map
     KRATOS_REGISTER_3D_VARIABLE_WITH_COMPONENTS( DELTA_COORDINATES )                  // Delta coordinates used to map
-
 
     /* Weighted values */
     KRATOS_REGISTER_VARIABLE( WEIGHTED_GAP )                                          // The integrated gap employed in mortar formulation
@@ -153,6 +158,7 @@ void KratosContactStructuralMechanicsApplication::Register()
     KRATOS_REGISTER_VARIABLE( ACTIVE_SET_COMPUTED )                                   // To know if the active set has been computed
     KRATOS_REGISTER_VARIABLE( ACTIVE_SET_CONVERGED )                                  // To know if the active set has converged
     KRATOS_REGISTER_VARIABLE( SLIP_SET_CONVERGED )                                    // To know if the slip set has converged
+    KRATOS_REGISTER_VARIABLE( OPERATOR_THRESHOLD )                                    // Consider objetive/non-objetive formulation threshold
     KRATOS_REGISTER_VARIABLE( SLIP_AUGMENTATION_COEFFICIENT )                         // Coefficient to improve the slip computation convergence (augmented part related)
     KRATOS_REGISTER_VARIABLE( DYNAMIC_FACTOR )                                        // The factor considered for dynamic problems (in order to take intro account the gap evolution)
     KRATOS_REGISTER_VARIABLE( LAGRANGE_MULTIPLIER_CONTACT_PRESSURE )                  // The lagrange multiplier for normal contact pressure
