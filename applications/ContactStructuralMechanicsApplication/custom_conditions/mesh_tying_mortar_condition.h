@@ -1,10 +1,11 @@
-// KRATOS  ___|  |                   |                   |
-//       \___ \  __|  __| |   |  __| __| |   |  __| _` | |
-//             | |   |    |   | (    |   |   | |   (   | |
-//       _____/ \__|_|   \__,_|\___|\__|\__,_|_|  \__,_|_| MECHANICS
+// KRATOS    ______            __             __  _____ __                  __                   __
+//          / ____/___  ____  / /_____ ______/ /_/ ___// /________  _______/ /___  ___________ _/ /
+//         / /   / __ \/ __ \/ __/ __ `/ ___/ __/\__ \/ __/ ___/ / / / ___/ __/ / / / ___/ __ `/ /
+//        / /___/ /_/ / / / / /_/ /_/ / /__/ /_ ___/ / /_/ /  / /_/ / /__/ /_/ /_/ / /  / /_/ / /
+//        \____/\____/_/ /_/\__/\__,_/\___/\__//____/\__/_/   \__,_/\___/\__/\__,_/_/   \__,_/_/  MECHANICS
 //
-//  License:             BSD License
-//                                       license: StructuralMechanicsApplication/license.txt
+//  License:		 BSD License
+//					 license: ContactStructuralMechanicsApplication/license.txt
 //
 //  Main authors:  Vicente Mataix Ferrandiz
 //
@@ -107,7 +108,7 @@ public:
     typedef GeometryType::IntegrationPointsArrayType                         IntegrationPointsType;
 
     // Type definition of the components of an array_1d
-    typedef VariableComponent<VectorComponentAdaptor<array_1d<double, 3> > > Array1DComponentsType;
+    typedef Variable<double> Array1DComponentsType;
 
     typedef typename std::vector<array_1d<PointType,TDim>>                  ConditionArrayListType;
 
@@ -295,33 +296,6 @@ public:
         DofsVectorType& rConditionalDofList,
         const ProcessInfo& rCurrentProcessInfo
         ) const override;
-
-    /**
-     * Get on rVariable a double Value
-     */
-    void GetValueOnIntegrationPoints(
-        const Variable<double>& rVariable,
-        std::vector<double>& rValues,
-        const ProcessInfo& rCurrentProcessInfo
-        ) override;
-
-    /**
-     * Get on rVariable a array_1d Value
-     */
-    void GetValueOnIntegrationPoints(
-        const Variable<array_1d<double, 3 > >& rVariable,
-        std::vector<array_1d<double, 3 > >& rValues,
-        const ProcessInfo& rCurrentProcessInfo
-        ) override;
-
-    /**
-     * Get on rVariable a Vector Value
-     */
-    void GetValueOnIntegrationPoints(
-        const Variable<Vector>& rVariable,
-        std::vector<Vector>& rValues,
-        const ProcessInfo& rCurrentProcessInfo
-        ) override;
 
     /**
      * Calculate a double Variable
@@ -633,17 +607,17 @@ protected:
      * It returns theintegration method considered
      */
 
-    IntegrationMethod GetIntegrationMethod() override
+    IntegrationMethod GetIntegrationMethod() const override
     {
         // Setting the auxiliar integration points
         const IndexType integration_order = GetProperties().Has(INTEGRATION_ORDER_CONTACT) ? GetProperties().GetValue(INTEGRATION_ORDER_CONTACT) : 2;
         switch (integration_order) {
-            case 1: return GeometryData::GI_GAUSS_1;
-            case 2: return GeometryData::GI_GAUSS_2;
-            case 3: return GeometryData::GI_GAUSS_3;
-            case 4: return GeometryData::GI_GAUSS_4;
-            case 5: return GeometryData::GI_GAUSS_5;
-            default: return GeometryData::GI_GAUSS_2;
+            case 1: return GeometryData::IntegrationMethod::GI_GAUSS_1;
+            case 2: return GeometryData::IntegrationMethod::GI_GAUSS_2;
+            case 3: return GeometryData::IntegrationMethod::GI_GAUSS_3;
+            case 4: return GeometryData::IntegrationMethod::GI_GAUSS_4;
+            case 5: return GeometryData::IntegrationMethod::GI_GAUSS_5;
+            default: return GeometryData::IntegrationMethod::GI_GAUSS_2;
         }
     }
 

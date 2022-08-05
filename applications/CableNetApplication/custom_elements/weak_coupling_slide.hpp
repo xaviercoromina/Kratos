@@ -33,7 +33,7 @@ namespace Kratos
      * @author Klaus B Sautter
      */
 
-    class WeakSlidingElement3D3N : public Element
+    class KRATOS_API(CABLE_NET_APPLICATION) WeakSlidingElement3D3N : public Element
     {
     protected:
         //const values
@@ -42,7 +42,7 @@ namespace Kratos
         static constexpr unsigned int msLocalSize = msNumberOfNodes * msDimension;
 
     public:
-        KRATOS_CLASS_POINTER_DEFINITION(WeakSlidingElement3D3N);
+        KRATOS_CLASS_INTRUSIVE_POINTER_DEFINITION(WeakSlidingElement3D3N);
 
 
         typedef Element BaseType;

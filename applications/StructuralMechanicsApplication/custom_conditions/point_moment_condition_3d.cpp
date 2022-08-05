@@ -17,6 +17,7 @@
 
 // Project includes
 #include "custom_conditions/point_moment_condition_3d.h"
+#include "includes/variables.h"
 #include "includes/checks.h"
 
 namespace Kratos
@@ -122,7 +123,7 @@ void PointMomentCondition3D::GetDofList(
 void PointMomentCondition3D::GetValuesVector(
     Vector& rValues,
     int Step
-    )
+    ) const
 {
     const array_1d<double, 3 > & r_rotation = GetGeometry()[0].FastGetSolutionStepValue(ROTATION, Step);
 
@@ -138,7 +139,7 @@ void PointMomentCondition3D::GetValuesVector(
 void PointMomentCondition3D::GetFirstDerivativesVector(
     Vector& rValues,
     int Step
-    )
+    ) const
 {
     const array_1d<double, 3 > & r_angular_vel = GetGeometry()[0].FastGetSolutionStepValue(ANGULAR_VELOCITY, Step);
 
@@ -154,7 +155,7 @@ void PointMomentCondition3D::GetFirstDerivativesVector(
 void PointMomentCondition3D::GetSecondDerivativesVector(
     Vector& rValues,
     int Step
-    )
+    ) const
 {
     const array_1d<double, 3 > & r_angular_acc = GetGeometry()[0].FastGetSolutionStepValue(ANGULAR_ACCELERATION, Step);
 
@@ -236,8 +237,6 @@ double PointMomentCondition3D::GetPointMomentIntegrationWeight() const
 
 int PointMomentCondition3D::Check( const ProcessInfo& rCurrentProcessInfo ) const
 {
-    KRATOS_CHECK_VARIABLE_KEY(ROTATION);
-
     const auto& r_node = this->GetGeometry()[0];
     KRATOS_CHECK_VARIABLE_IN_NODAL_DATA(ROTATION, r_node);
 

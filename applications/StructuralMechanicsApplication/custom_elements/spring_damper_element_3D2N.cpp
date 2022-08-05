@@ -150,7 +150,7 @@ void SpringDamperElement3D2N::EquationIdVector( EquationIdVectorType& rResult, c
 //*********************************DISPLACEMENT***************************************
 //************************************************************************************
 
-void SpringDamperElement3D2N::GetValuesVector( Vector& rValues, int Step )
+void SpringDamperElement3D2N::GetValuesVector( Vector& rValues, int Step ) const
 {
     //GIVES THE VECTOR WITH THE DOFS VARIABLES OF THE ELEMENT (i.e. ELEMENT DISPLACEMENTS)
     if ( rValues.size() != msElementSize )
@@ -177,7 +177,7 @@ void SpringDamperElement3D2N::GetValuesVector( Vector& rValues, int Step )
 //************************************VELOCITY****************************************
 //************************************************************************************
 
-void SpringDamperElement3D2N::GetFirstDerivativesVector( Vector& rValues, int Step )
+void SpringDamperElement3D2N::GetFirstDerivativesVector( Vector& rValues, int Step ) const
 {
     //GIVES THE VECTOR WITH THE TIME DERIVATIVE OF THE DOFS VARIABLES OF THE ELEMENT (i.e. ELEMENT VELOCITIES)
     if ( rValues.size() != msElementSize )
@@ -202,7 +202,7 @@ void SpringDamperElement3D2N::GetFirstDerivativesVector( Vector& rValues, int St
 //*********************************ACCELERATION***************************************
 //************************************************************************************
 
-void SpringDamperElement3D2N::GetSecondDerivativesVector( Vector& rValues, int Step )
+void SpringDamperElement3D2N::GetSecondDerivativesVector( Vector& rValues, int Step ) const
 {
     //GIVES THE VECTOR WITH THE TIME SECOND DERIVATIVE OF THE DOFS VARIABLES OF THE ELEMENT (i.e. ELEMENT ACCELERATIONS)
     if ( rValues.size() != msElementSize )
@@ -232,7 +232,7 @@ void SpringDamperElement3D2N::GetSecondDerivativesVector( Vector& rValues, int S
 void SpringDamperElement3D2N::CalculateLocalSystem(
     MatrixType& rLeftHandSideMatrix,
     VectorType& rRightHandSideVector,
-    ProcessInfo& rCurrentProcessInfo
+    const ProcessInfo& rCurrentProcessInfo
     )
 {
 
@@ -251,7 +251,7 @@ void SpringDamperElement3D2N::CalculateLocalSystem(
 //***********************************************************************************
 //***********************************************************************************
 
-void SpringDamperElement3D2N::CalculateRightHandSide(VectorType& rRightHandSideVector, ProcessInfo& rCurrentProcessInfo )
+void SpringDamperElement3D2N::CalculateRightHandSide(VectorType& rRightHandSideVector, const ProcessInfo& rCurrentProcessInfo )
 {
 
     if ( rRightHandSideVector.size() != msElementSize ) {
@@ -308,7 +308,7 @@ void SpringDamperElement3D2N::CalculateRightHandSide(VectorType& rRightHandSideV
 //***********************************************************************************
 //***********************************************************************************
 
-void SpringDamperElement3D2N::CalculateLeftHandSide( MatrixType& rLeftHandSideMatrix, ProcessInfo& rCurrentProcessInfo )
+void SpringDamperElement3D2N::CalculateLeftHandSide( MatrixType& rLeftHandSideMatrix, const ProcessInfo& rCurrentProcessInfo )
 {
     // Resizing the LHS
     std::size_t system_size = msElementSize;
@@ -345,7 +345,7 @@ void SpringDamperElement3D2N::CalculateLeftHandSide( MatrixType& rLeftHandSideMa
 //************************************************************************************
 //************************************************************************************
 
-void SpringDamperElement3D2N::CalculateMassMatrix( MatrixType& rMassMatrix, ProcessInfo& rCurrentProcessInfo )
+void SpringDamperElement3D2N::CalculateMassMatrix( MatrixType& rMassMatrix, const ProcessInfo& rCurrentProcessInfo )
 {
     KRATOS_TRY
 
@@ -365,7 +365,7 @@ void SpringDamperElement3D2N::CalculateMassMatrix( MatrixType& rMassMatrix, Proc
 //************************************************************************************
 //************************************************************************************
 
-void SpringDamperElement3D2N::CalculateDampingMatrix( MatrixType& rDampingMatrix, ProcessInfo& rCurrentProcessInfo )
+void SpringDamperElement3D2N::CalculateDampingMatrix( MatrixType& rDampingMatrix, const ProcessInfo& rCurrentProcessInfo )
 {
     KRATOS_TRY;
 
@@ -406,26 +406,6 @@ void SpringDamperElement3D2N::CalculateDampingMatrix( MatrixType& rDampingMatrix
 int SpringDamperElement3D2N::Check( const ProcessInfo& rCurrentProcessInfo ) const
 {
     KRATOS_TRY
-
-    // Check that all required variables have been registered
-
-    // The displacement terms
-    KRATOS_CHECK_VARIABLE_KEY(DISPLACEMENT)
-    KRATOS_CHECK_VARIABLE_KEY(VELOCITY)
-    KRATOS_CHECK_VARIABLE_KEY(ACCELERATION)
-    KRATOS_CHECK_VARIABLE_KEY(NODAL_MASS)
-    KRATOS_CHECK_VARIABLE_KEY(NODAL_DISPLACEMENT_STIFFNESS)
-
-    // The rotational terms
-    KRATOS_CHECK_VARIABLE_KEY(ROTATION)
-    KRATOS_CHECK_VARIABLE_KEY(ANGULAR_VELOCITY)
-    KRATOS_CHECK_VARIABLE_KEY(ANGULAR_ACCELERATION)
-    KRATOS_CHECK_VARIABLE_KEY(NODAL_INERTIA)
-    KRATOS_CHECK_VARIABLE_KEY(NODAL_ROTATIONAL_STIFFNESS)
-
-    KRATOS_CHECK_VARIABLE_KEY(NODAL_DAMPING_RATIO)
-    KRATOS_CHECK_VARIABLE_KEY(NODAL_ROTATIONAL_DAMPING_RATIO)
-    KRATOS_CHECK_VARIABLE_KEY(VOLUME_ACCELERATION)
 
     // Verify that the dofs exist
     for ( std::size_t i = 0; i < this->GetGeometry().size(); i++ ) {

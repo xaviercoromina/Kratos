@@ -33,12 +33,12 @@ namespace Kratos
      * @author Klaus B Sautter
      */
 
-    class RingElement3D : public Element
+    class KRATOS_API(CABLE_NET_APPLICATION) RingElement3D : public Element
     {
     protected:
 
     public:
-        KRATOS_CLASS_POINTER_DEFINITION(RingElement3D);
+        KRATOS_CLASS_INTRUSIVE_POINTER_DEFINITION(RingElement3D);
 
 
         typedef Element BaseType;
@@ -121,7 +121,9 @@ namespace Kratos
         double CalculateGreenLagrangeStrain() const;
         double LinearStiffness() const;
 
-        void CalculateLumpedMassVector(VectorType &rMassVector);
+        void CalculateLumpedMassVector(
+            VectorType &rLumpedMassVector,
+            const ProcessInfo& rCurrentProcessInfo) const override;
 
         void CalculateMassMatrix(
             MatrixType& rMassMatrix,
