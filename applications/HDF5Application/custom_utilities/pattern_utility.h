@@ -128,7 +128,7 @@ private:
  *                "<placeholder_2>" : "efg"
  *
  *  @note placeholders not present in the pattern are discarded,
- *        and won't be keys in @ref{PlaceholderPattern::Match}.
+ *        and won't be keys in @ref PlaceholderPattern::Match.
  */
 class KRATOS_API(HDF5Application) PlaceholderPattern
 {
@@ -247,23 +247,17 @@ private:
     ///@}
 }; // class PlaceholderPattern
 
-///@} // Kratos Classes
-///@} addtogroup
-///@addtogroup HDF5Application
-///@{
-///@name Kratos Classes
-///@{
 
-/** A class for working with formatted strings related to @ref{ModelPart}s.
+/** @brief A class for working with formatted strings related to @ref ModelParts.
  *
- *  Operations on strings with the following placeholders are supported:
- *      <model_part_name>
- *      <step>
- *      <time>
- *      <rank>
- *  See @ref{PlaceholderPattern} for supported functionalities. Other
- *  placeholders can be added at compile time by tweaking the construction
- *  of the static member @ref{ModelPartPattern::mModelpartPlaceholderMap}.
+ *  @details Operations on strings with the following placeholders are supported:
+ *           - <model_part_name>
+ *           - <step>
+ *           - <time>
+ *           - <rank>
+ *           See @ref PlaceholderPattern for supported functionalities. Other
+ *           placeholders can be added at compile time by tweaking the construction
+ *           of the static member @ref ModelPartPattern::mModelpartPlaceholderMap.
  */
 class KRATOS_API(HDF5Application) ModelPartPattern : public PlaceholderPattern
 {
@@ -318,14 +312,99 @@ public:
 
     ///@}
 
+protected:
+    ///@name Protected Methods
+    ///@{
+
+    /// @brief Forwarding constructor for derived classes.
+    ModelPartPattern(const std::string& rPattern, const PlaceholderMap& rPlaceholderMap);
+
+    static const PlaceholderMap& GetPlaceholderMap();
+
+    ///@}
+
 private:
     ///@name Static Member Variables
     ///@{
 
-    static const ModelPartPattern::PlaceholderMap mModelPartPlaceholderMap;
+    static PlaceholderMap mModelPartPlaceholderMap;
 
     ///@}
 }; // class ModelPartPattern
+
+
+/** @brief A class for working with formatted strings related to @ref Checkpoint.
+ *
+ *  @details An extension of @ref ModelPartPattern with <path_id>. Operations on
+ *           strings with the following placeholders are supported:
+ *           - <model_part_name>
+ *           - <step>
+ *           - <time>
+ *           - <rank>
+ *           - <path_id>
+ *           See @ref PlaceholderPattern for supported functionalities. Other
+ *           placeholders can be added at compile time by tweaking the construction
+ *           of the static member @ref CheckpointPattern::mCheckpointPlaceholderMap.
+ */
+class CheckpointPattern : public ModelPartPattern
+{
+public:
+    ///@name Type Definitions
+    ///@{
+
+    KRATOS_CLASS_POINTER_DEFINITION(CheckpointPattern);
+
+    ///@}
+    ///@name Life Cycle
+    ///@{
+
+    CheckpointPattern() = default;
+
+    CheckpointPattern(const std::string& rPattern);
+
+    CheckpointPattern(CheckpointPattern&& rOther) = default;
+
+    CheckpointPattern(const CheckpointPattern& rOther) = default;
+
+    ///@}
+    ///@name Operators
+    ///@{
+
+    using ModelPartPattern::operator=;
+
+    ///@}
+    ///@name Operations
+    ///@{
+
+    using PlaceholderPattern::Apply;
+
+    /** @brief Substitute values from the specified @ref ModelPart and path ID into the stored pattern.
+     *
+     *  @param rModelPart: Model part to extract the values of placeholders from.
+     *  @param PathID: path ID of the checkpoint.
+     *  @note @p rModelPart must store @ref STEP and @ref TIME.
+     */
+    std::string Apply(const ModelPart& rModelPart, std::size_t PathID) const;
+
+    ///@}
+
+protected:
+    ///@name Protected Operations
+    ///@{
+
+    static const PlaceholderMap& GetPlaceholderMap();
+
+    ///@}
+
+private:
+    ///@name Member Variables
+    ///@{
+
+    static PlaceholderMap mCheckpointPlaceholderMap;
+
+    ///@}
+}; // class CheckpointPattern
+
 
 ///@} // Kratos Classes
 ///@} addtogroup

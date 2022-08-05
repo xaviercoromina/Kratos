@@ -100,30 +100,51 @@ void AddCustomUtilitiesToPython(pybind11::module& rModule)
         .def("IsLocated", &HDF5::Detail::Vertex::IsLocated)
         .def("GetID", &HDF5::Detail::Vertex::GetID)
         ;
+    #undef KRATOS_DEFINE_VERTEX_GETVALUE_OVERLOAD_BINDING
 
     pybind11::class_<HDF5::Detail::VertexContainerType, HDF5::Detail::VertexContainerType::Pointer>(rModule, "VertexContainer")
         .def(pybind11::init<>())
         .def("push_back", &HDF5::Detail::VertexContainerType::push_back)
         ;
 
-    pybind11::class_<PlaceholderPattern, PlaceholderPattern::Pointer>(
-        rModule, "PlaceholderPattern")
+    pybind11::class_<PlaceholderPattern, PlaceholderPattern::Pointer>(rModule, "PlaceholderPattern")
         .def(pybind11::init<const std::string&,const PlaceholderPattern::PlaceholderMap&>())
-        .def("IsAMatch", &PlaceholderPattern::IsAMatch, "Check whether a string satisfies the pattern")
-        .def("Match", &PlaceholderPattern::Match, "Find all placeholders' values in the input string.")
-        .def("Apply", &PlaceholderPattern::Apply, "Substitute values from the input map into the stored pattern.")
-        .def("GetRegexString", &PlaceholderPattern::GetRegexString, "Get the string representation of the regex.")
+        .def("IsAMatch",
+             &PlaceholderPattern::IsAMatch,
+             "Check whether a string satisfies the pattern")
+        .def("Match",
+             &PlaceholderPattern::Match,
+             "Find all placeholders' values in the input string.")
+        .def("Apply",
+             &PlaceholderPattern::Apply,
+             "Substitute values from the input map into the stored pattern.")
+        .def("GetRegexString",
+             &PlaceholderPattern::GetRegexString,
+             "Get the string representation of the regex.")
         ;
 
-    pybind11::class_<ModelPartPattern, ModelPartPattern::Pointer, PlaceholderPattern>(
-        rModule, "ModelPartPattern")
+    pybind11::class_<ModelPartPattern, ModelPartPattern::Pointer, PlaceholderPattern>(rModule, "ModelPartPattern")
         .def(pybind11::init<const std::string&>())
-        .def("Glob", &Glob, "Collect all file/directory paths that match the pattern.")
-        .def("Apply", static_cast<std::string(ModelPartPattern::*)(const ModelPartPattern::PlaceholderMap&)const>(&ModelPartPattern::Apply), "Substitute values from the input map into the stored pattern.")
-        .def("Apply", static_cast<std::string(ModelPartPattern::*)(const ModelPart&)const>(&ModelPartPattern::Apply), "Substitute values from the model part into the stored pattern.")
+        .def("Glob",
+             &Glob,
+             "Collect all file/directory paths that match the pattern.")
+        .def("Apply",
+             static_cast<std::string(ModelPartPattern::*)(const ModelPartPattern::PlaceholderMap&)const>(&ModelPartPattern::Apply),
+             "Substitute values from the input map into the stored pattern.")
+        .def("Apply",
+             static_cast<std::string(ModelPartPattern::*)(const ModelPart&)const>(&ModelPartPattern::Apply),
+             "Substitute values from the model part into the stored pattern.")
         ;
 
-    #undef KRATOS_DEFINE_VERTEX_GETVALUE_OVERLOAD_BINDING
+    pybind11::class_<CheckpointPattern, CheckpointPattern::Pointer, ModelPartPattern>(rModule, "CheckpointPattern")
+        .def(pybind11::init<const std::string&>())
+        .def("Apply",
+             static_cast<std::string(CheckpointPattern::*)(const CheckpointPattern::PlaceholderMap&)const>(&CheckpointPattern::Apply),
+             "Substitute values from the input map into the stored pattern.")
+        .def("Apply",
+             static_cast<std::string(CheckpointPattern::*)(const ModelPart&,std::size_t)const>(&CheckpointPattern::Apply),
+             "Substitute values from the provided model part and path ID into the stored pattern.")
+        ;
 }
 
 

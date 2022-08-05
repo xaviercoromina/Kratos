@@ -3,7 +3,7 @@ import KratosMultiphysics
 from KratosMultiphysics import KratosUnittest
 
 # HDF5 imports
-from KratosMultiphysics.HDF5Application import ModelPartPattern
+from KratosMultiphysics.HDF5Application import ModelPartPattern, CheckpointPattern
 
 # STL imports
 import pathlib
@@ -11,6 +11,7 @@ import itertools
 
 
 class TestModelPartPattern(KratosUnittest.TestCase):
+
     def setUp(self) -> None:
         """
         Create the following directory structure relative to the working directory:
@@ -177,7 +178,7 @@ class TestModelPartPattern(KratosUnittest.TestCase):
 
             # Test apply from a model part
             model_part.Name = model_part_name
-            model_part.ProcessInfo[KratosMultiphysics.TIME] = time
+            model_part.ProcessInfo[KratosMultiphysics.TIME] = float(time)
             model_part.ProcessInfo[KratosMultiphysics.STEP] = step
             applied_string = model_part_pattern.Apply(model_part)
             # Testing the output string directly doesn't make sense
@@ -243,6 +244,52 @@ class TestModelPartPattern(KratosUnittest.TestCase):
         for path in invalid_paths:
             self.assertNotIn(path, paths, msg = path)
 
+
+class TestCheckpointPattern(KratosUnittest.TestCase):
+
+    def setUp(self) -> None:
+        KratosMultiphysics.kratos_utilities.DeleteDirectoryIfExisting(str(self.test_files_directory))
+        for file_path in self.valid_paths + self.invalid_paths:
+            file_path.parent.mkdir(exist_ok = True, parents = True)
+            file_path.touch(exist_ok = False)
+
+    def tearDown(self) -> None:
+        KratosMultiphysics.kratos_utilities.DeleteDirectoryIfExisting(str(self.test_files_directory))
+
+    @property
+    def test_files_directory(self) -> pathlib.Path:
+        return pathlib.Path("test_path_pattern")
+
+    @property
+    def valid_paths(self) -> list:
+        return [self.test_files_directory / "mdpa_name_step_1_time_2_path_id_3.h5",
+                self.test_files_directory / "mdpa_name_step_1_time_2_path_id_4.h5"]
+
+    @property
+    def invalid_paths(self) -> list:
+        return [self.test_files_directory / "mdpa_name_step_1_time_2_path_id_-3.h5",
+                self.test_files_directory / "mdpa_name_step_1_time_2_path_id_3.hdf5",
+                self.test_files_directory / "in.valid",
+                self.test_files_directory / "mdpa_name_step_1_time_2_path_id_5.h5" / "mdpa_name_step_1_time_2_path_id_5.h5"]
+
+    def test_Glob(self) -> None:
+        pattern = self.test_files_directory / "<model_part_name>_step_<step>_time_<time>_path_id_<path_id>.h5"
+
+        # Relative glob
+        checkpoint_pattern = CheckpointPattern(str(pattern))
+        globbed_paths = checkpoint_pattern.Glob()
+        self.CheckGlobbedResults(globbed_paths)
+
+        # Absolute glob
+        checkpoint_pattern = CheckpointPattern(str(pattern.absolute()))
+        globbed_paths = checkpoint_pattern.Glob()
+        self.CheckGlobbedResults(globbed_paths)
+
+    def CheckGlobbedResults(self, paths: list) -> None:
+        for path in [str(p.absolute()) for p in self.valid_paths]:
+            self.assertIn(path, paths)
+        for path in [str(p.absolute()) for p in self.invalid_paths]:
+            self.assertNotIn(path, paths)
 
 if __name__ == "__main__":
     KratosUnittest.main()

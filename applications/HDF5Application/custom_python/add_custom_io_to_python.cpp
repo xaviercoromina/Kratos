@@ -89,8 +89,6 @@ void AddCustomIOToPython(pybind11::module& m)
         .def("Flush",&HDF5::File::Flush)
         .def("GetFileSize",&HDF5::File::GetFileSize)
         .def("GetFileName",&HDF5::File::GetFileName)
-        .def("WriteIntAttribute", [](HDF5::File& rFile, const std::string& rObjectPath, const std::string& rName, int Attribute) {rFile.WriteAttribute(rObjectPath, rName, Attribute);})
-        .def("ReadIntAttribute", [](HDF5::File& rFile, const std::string& rObjectPath, const std::string& rName) {int output = 0; rFile.ReadAttribute(rObjectPath, rName, output); return output;})
         ;
 
     py::class_<HDF5::FileSerial, HDF5::FileSerial::Pointer, HDF5::File>(m,"HDF5FileSerial")

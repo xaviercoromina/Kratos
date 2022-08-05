@@ -245,6 +245,20 @@ const std::string& PlaceholderPattern::GetPatternString() const
 }
 
 
+const ModelPartPattern::PlaceholderMap& ModelPartPattern::GetPlaceholderMap()
+{
+    if (mModelPartPlaceholderMap.empty()) {
+        mModelPartPlaceholderMap = PlaceholderMap {
+            {"<model_part_name>", ".+"},
+            {"<step>", RegexUtility::UnsignedInteger().first},
+            {"<time>", RegexUtility::FloatingPoint().first},
+            {"<rank>", RegexUtility::Integer().first}
+        };
+    }
+    return mModelPartPlaceholderMap;
+}
+
+
 std::string PlaceholderPattern::FormatRegexLiteral(const std::string& rLiteral)
 {
     KRATOS_TRY
@@ -281,16 +295,11 @@ std::string PlaceholderPattern::FormatRegexLiteral(const std::string& rLiteral)
 }
 
 
-const ModelPartPattern::PlaceholderMap ModelPartPattern::mModelPartPlaceholderMap = {
-    {"<model_part_name>", ".+"},
-    {"<step>", RegexUtility::UnsignedInteger().first},
-    {"<time>", RegexUtility::FloatingPoint().first},
-    {"<rank>", RegexUtility::Integer().first}
-};
+ModelPartPattern::PlaceholderMap ModelPartPattern::mModelPartPlaceholderMap;
 
 
 ModelPartPattern::ModelPartPattern(const std::string& rPattern)
-    : PlaceholderPattern(rPattern, mModelPartPlaceholderMap)
+    : PlaceholderPattern(rPattern, ModelPartPattern::GetPlaceholderMap())
 {
 }
 
@@ -333,15 +342,17 @@ std::vector<ModelPartPattern::PathType> ModelPartPattern::Glob() const
 {
     KRATOS_TRY
 
+    // Create a path from the regex string omitting the leading '^' and trailing '$\0'
     PathType pattern(this->GetRegexString().substr(1, this->GetRegexString().size()-2));
+
     auto it_pattern_part = pattern.begin();
     std::vector<PathType> paths;
 
     // Decide where to begin globbing
-    if (pattern.is_absolute()) {
+    if (pattern.is_absolute()) { // the pattern is absolute => begin globbing at the filesystem root
         paths.emplace_back(pattern.root_path());
         ++it_pattern_part;
-    } else {
+    } else { // the pattern is relative => begin globbing at the current working directory
         paths.emplace_back(ghc::filesystem::current_path());
     }
 
@@ -369,6 +380,44 @@ std::vector<ModelPartPattern::PathType> ModelPartPattern::Glob() const
 
     KRATOS_CATCH("");
 }
+
+
+ModelPartPattern::ModelPartPattern(const std::string& rPattern, const PlaceholderMap& rPlaceholderMap)
+    : PlaceholderPattern(rPattern, rPlaceholderMap)
+{
+}
+
+
+CheckpointPattern::CheckpointPattern(const std::string& rPattern)
+    : ModelPartPattern(rPattern, CheckpointPattern::GetPlaceholderMap())
+{
+}
+
+
+std::string CheckpointPattern::Apply(const ModelPart& rModelPart, std::size_t PathID) const
+{
+    KRATOS_TRY
+
+    std::string output = ModelPartPattern::Apply(rModelPart);
+    PlaceholderMap map {{"path_id", std::to_string(PathID)}};
+    this->Apply(map);
+    return output;
+
+    KRATOS_CATCH("")
+}
+
+
+const CheckpointPattern::PlaceholderMap& CheckpointPattern::GetPlaceholderMap()
+{
+    if (mCheckpointPlaceholderMap.empty()) {
+        mCheckpointPlaceholderMap = ModelPartPattern::GetPlaceholderMap();
+        mCheckpointPlaceholderMap.emplace("<path_id>", RegexUtility::UnsignedInteger().first);
+    }
+    return mCheckpointPlaceholderMap;
+}
+
+
+CheckpointPattern::PlaceholderMap CheckpointPattern::mCheckpointPlaceholderMap;
 
 
 } // namespace Kratos

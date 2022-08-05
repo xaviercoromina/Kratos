@@ -4,16 +4,15 @@ import KratosMultiphysics
 # HDF5 imports
 from KratosMultiphysics.HDF5Application.checkpoint.snapshot import Snapshot
 
-# STD Imports
-import pathlib
-import abc
-import typing
 
 
 class Checkpoint:
     """@brief Class representing a checkpoint, consisting of one or more consecutive @ref Snapshot."""
 
     def __init__(self, snapshots: list):
+        """@brief Construct a Checkpoint from a list of @ref Snapshot.
+           @param snapshots: list of @ref Snapshot that make up the checkpoint. The number of snapshots must
+                             match the buffer size of the model part the checkpoint will be loaded into."""
         self.__snapshots = sorted(snapshots)
         if not self.IsValid():
             raise ValueError(f"Invalid Snapshots:\n{'\n'.join(str(snapshot) for snapshot in self.__snapshots)}")
@@ -30,8 +29,7 @@ class Checkpoint:
 
     def Load(self, model_part: KratosMultiphysics.ModelPart) -> None:
         """@brief Load data from the Snapshots to the provided @ref ModelPart.
-           @details The model part's buffer size must match the number of stored
-                    snapshots.
+           @details The model part's buffer size must match the number of stored snapshots.
         """
         if self.GetBufferSize() != model_part.GetBufferSize():
             raise RuntimeError(f"Buffer size mismatch! (model part: {model_part.GetBufferSize()}, checkpoint: {self.GetBufferSize()})")
