@@ -24,6 +24,8 @@
 // Project includes
 #include "includes/kratos_application.h"
 
+// Application includes
+#include "custom_modelers/hrom_visualization_mesh_modeler.h"
 
 namespace Kratos {
 
@@ -49,7 +51,7 @@ namespace Kratos {
 /// Short class definition.
 /** Detail class definition.
 */
-class KratosRomApplication : public KratosApplication {
+class KRATOS_API(ROM_APPLICATION) KratosRomApplication : public KratosApplication {
 public:
     ///@name Type Definitions
     ///@{
@@ -175,8 +177,8 @@ private:
     ///@name Member Variables
     ///@{
 
-    // const Elem2D   mElem2D;
-    // const Elem3D   mElem3D;
+    // Modelers
+    const HRomVisualizationMeshModeler mHRomVisualizationMeshModeler;
 
     ///@}
     ///@name Private Operators
