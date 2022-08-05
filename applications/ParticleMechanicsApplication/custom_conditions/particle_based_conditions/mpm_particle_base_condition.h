@@ -182,7 +182,7 @@ public:
     void CalculateLocalSystem(
         MatrixType& rLeftHandSideMatrix,
         VectorType& rRightHandSideVector,
-        ProcessInfo& rCurrentProcessInfo
+        const ProcessInfo& rCurrentProcessInfo
         ) override;
 
     /**
@@ -192,7 +192,7 @@ public:
       */
     void CalculateRightHandSide(
         VectorType& rRightHandSideVector,
-        ProcessInfo& rCurrentProcessInfo
+        const ProcessInfo& rCurrentProcessInfo
         ) override;
 
     /**
@@ -202,7 +202,7 @@ public:
       */
     void CalculateMassMatrix(
         MatrixType& rMassMatrix,
-        ProcessInfo& rCurrentProcessInfo
+        const ProcessInfo& rCurrentProcessInfo
         ) override;
 
     /**
@@ -213,7 +213,7 @@ public:
       */
     void CalculateDampingMatrix(
         MatrixType& rDampingMatrix,
-        ProcessInfo& rCurrentProcessInfo
+        const ProcessInfo& rCurrentProcessInfo
         ) override;
 
     /**
@@ -266,12 +266,12 @@ public:
 
     void SetValuesOnIntegrationPoints(
         const Variable<double>& rVariable,
-        std::vector<double>& rValues,
+        const std::vector<double>& rValues,
         const ProcessInfo& rCurrentProcessInfo) override;
 
     void SetValuesOnIntegrationPoints(
         const Variable<array_1d<double, 3 > >& rVariable,
-        std::vector<array_1d<double, 3 > > rValues,
+        const std::vector<array_1d<double, 3 > >& rValues,
         const ProcessInfo& rCurrentProcessInfo) override;
 
     ///@}
@@ -297,6 +297,7 @@ protected:
     ///@{
 
     array_1d<double, 3> m_xg;
+    array_1d<double, 3> m_displacement;
     array_1d<double, 3> m_acceleration;
     array_1d<double, 3> m_velocity;
     array_1d<double, 3> m_normal;
@@ -321,7 +322,7 @@ protected:
     virtual void CalculateAll(
         MatrixType& rLeftHandSideMatrix,
         VectorType& rRightHandSideVector,
-        ProcessInfo& rCurrentProcessInfo,
+        const ProcessInfo& rCurrentProcessInfo,
         const bool CalculateStiffnessMatrixFlag,
         const bool CalculateResidualVectorFlag
         );
@@ -332,10 +333,10 @@ protected:
     virtual double GetIntegrationWeight();
 
     /**
-     * Calculate Shape Function Values in a given point
+     * Calculate Shape Function Values as a vector
      */
 
-    virtual Vector& MPMShapeFunctionPointValues(Vector& rResult, const array_1d<double,3>& rPoint);
+    virtual void MPMShapeFunctionPointValues(Vector& rResult) const;
 
     /**
      * Calculation of the Current Displacement
@@ -392,6 +393,7 @@ private:
     {
         KRATOS_SERIALIZE_SAVE_BASE_CLASS( rSerializer, Condition );
         rSerializer.save("xg",m_xg);
+        rSerializer.save("displacement",m_displacement);
         rSerializer.save("acceleration",m_acceleration);
         rSerializer.save("velocity",m_velocity);
         rSerializer.save("normal",m_normal);
@@ -403,6 +405,7 @@ private:
     {
         KRATOS_SERIALIZE_LOAD_BASE_CLASS( rSerializer, Condition );
         rSerializer.load("xg",m_xg);
+        rSerializer.load("displacement",m_displacement);
         rSerializer.load("acceleration",m_acceleration);
         rSerializer.load("velocity",m_velocity);
         rSerializer.load("normal",m_normal);

@@ -291,8 +291,9 @@ public:
 		KRATOS_CATCH("");
 	}
 
-	void CalculateLeftHandSide(MatrixType& rLeftHandSideMatrix,
-			ProcessInfo& rCurrentProcessInfo) override
+	void CalculateLeftHandSide(
+		MatrixType& rLeftHandSideMatrix,
+		const ProcessInfo& rCurrentProcessInfo) override
 	{
 		VectorType RHS;
 		this->CalculateLocalSystem(rLeftHandSideMatrix, RHS, rCurrentProcessInfo);
@@ -456,28 +457,33 @@ public:
 	///@name Access
 	///@{
 
-    void GetValueOnIntegrationPoints(const Variable<array_1d<double, 3 > >& rVariable,
-            std::vector<array_1d<double, 3 > >& rValues,
-            const ProcessInfo& rCurrentProcessInfo) override;
+    void CalculateOnIntegrationPoints(
+		const Variable<array_1d<double, 3 > >& rVariable,
+		std::vector<array_1d<double, 3 > >& rValues,
+		const ProcessInfo& rCurrentProcessInfo) override;
 
 
-    void GetValueOnIntegrationPoints(const Variable<double>& rVariable,
-            std::vector<double>& rValues,
-            const ProcessInfo& rCurrentProcessInfo) override;
+    void CalculateOnIntegrationPoints(
+		const Variable<double>& rVariable,
+		std::vector<double>& rValues,
+		const ProcessInfo& rCurrentProcessInfo) override;
 
 
-    void GetValueOnIntegrationPoints(const Variable<array_1d<double, 6 > >& rVariable,
-            std::vector<array_1d<double, 6 > >& rValues,
-            const ProcessInfo& rCurrentProcessInfo) override;
+    void CalculateOnIntegrationPoints(
+		const Variable<array_1d<double, 6 > >& rVariable,
+		std::vector<array_1d<double, 6 > >& rValues,
+		const ProcessInfo& rCurrentProcessInfo) override;
 
-    void GetValueOnIntegrationPoints(const Variable<Vector>& rVariable,
-            std::vector<Vector>& rValues,
-            const ProcessInfo& rCurrentProcessInfo) override;
+    void CalculateOnIntegrationPoints(
+		const Variable<Vector>& rVariable,
+		std::vector<Vector>& rValues,
+		const ProcessInfo& rCurrentProcessInfo) override;
 
 
-    void GetValueOnIntegrationPoints(const Variable<Matrix>& rVariable,
-            std::vector<Matrix>& rValues,
-            const ProcessInfo& rCurrentProcessInfo) override;
+    void CalculateOnIntegrationPoints(
+		const Variable<Matrix>& rVariable,
+		std::vector<Matrix>& rValues,
+		const ProcessInfo& rCurrentProcessInfo) override;
 
 	///@}
 	///@name Inquiry
@@ -574,7 +580,7 @@ protected:
 
 		if (WallVelMag > Small)
 		{
-			const ShapeFunctionsType& N = row(this->GetGeometry().ShapeFunctionsValues(GeometryData::GI_GAUSS_1),0);
+			const ShapeFunctionsType& N = row(this->GetGeometry().ShapeFunctionsValues(GeometryData::IntegrationMethod::GI_GAUSS_1),0);
 			EvaluateInPoint(rho, DENSITY, N);
 			EvaluateInPoint(nu, VISCOSITY, N);
 

@@ -17,7 +17,7 @@
 #include "containers/model.h"
 #include "includes/model_part.h"
 #include "includes/cfd_variables.h"
-#include "includes/dem_variables.h"
+#include "fluid_dynamics_application_variables.h"
 
 // Application includes
 #include "custom_constitutive/newtonian_2d_law.h"
@@ -29,6 +29,7 @@ KRATOS_TEST_CASE_IN_SUITE(QSVMSDEMCoupled2D4N, FluidDynamicsApplicationFastSuite
 {
     Model model;
     unsigned int buffer_size = 2;
+    unsigned int Dim = 2;
     ModelPart& model_part = model.CreateModelPart("Main",buffer_size);
 
     // Variables addition
@@ -46,6 +47,7 @@ KRATOS_TEST_CASE_IN_SUITE(QSVMSDEMCoupled2D4N, FluidDynamicsApplicationFastSuite
     model_part.AddNodalSolutionStepVariable(FLUID_FRACTION);
     model_part.AddNodalSolutionStepVariable(FLUID_FRACTION_RATE);
     model_part.AddNodalSolutionStepVariable(FLUID_FRACTION_GRADIENT);
+    model_part.AddNodalSolutionStepVariable(PERMEABILITY);
 
     // Process info creation
     double delta_time = 0.1;
@@ -72,6 +74,11 @@ KRATOS_TEST_CASE_IN_SUITE(QSVMSDEMCoupled2D4N, FluidDynamicsApplicationFastSuite
         it_node->AddDof(PRESSURE,REACTION_WATER_PRESSURE);
         double& r_fluid_fraction = it_node->FastGetSolutionStepValue(FLUID_FRACTION);
         r_fluid_fraction = 1.0;
+        Matrix& r_permeability = it_node->FastGetSolutionStepValue(PERMEABILITY);
+        r_permeability = ZeroMatrix(Dim, Dim);
+        for (unsigned int d = 0; d < Dim; ++d){
+            r_permeability(d,d) = 1.0e+30;
+        }
     }
 
     std::vector<ModelPart::IndexType> element_nodes {1, 2, 4, 3};
@@ -108,7 +115,7 @@ KRATOS_TEST_CASE_IN_SUITE(QSVMSDEMCoupled2D4N, FluidDynamicsApplicationFastSuite
     Vector RHS = ZeroVector(12);
     Matrix LHS = ZeroMatrix(12,12);
 
-    std::vector<double> output = {-2.665425819,-1.87894198,-0.02477280423,-10.27651236,-5.037560437,-0.05013494554,-19.87147169,-19.57971097,-0.06709466598,-14.8532568,-21.17045328,-0.05799758425}; // QSVMSDEMCoupled2D4N
+    std::vector<double> output = {-2.61213,-1.82565,-0.0244409,-10.2651,-5.0261,-0.0501826,-19.9154,-19.6237,-0.067314,-14.874,-21.1912,-0.0580624}; // QSVMSDEMCoupled2D4N
 
     for (ModelPart::ElementIterator i = model_part.ElementsBegin(); i != model_part.ElementsEnd(); i++) {
         const auto& r_process_info = model_part.GetProcessInfo();
@@ -122,7 +129,7 @@ KRATOS_TEST_CASE_IN_SUITE(QSVMSDEMCoupled2D4N, FluidDynamicsApplicationFastSuite
         //KRATOS_WATCH(RHS);
 
         for (unsigned int j = 0; j < output.size(); j++) {
-            KRATOS_CHECK_NEAR(RHS[j], output[j], 1e-6);
+            KRATOS_CHECK_NEAR(RHS[j], output[j], 1e-4);
         }
     }
 }

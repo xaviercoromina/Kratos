@@ -419,6 +419,13 @@ public:
     virtual void InitVerbosityParameter(const IndexType VerbosityMMG);
 
     /**
+     * @brief This sets the optimization mode using the API
+     * where edge lengths are preserved, ignoring the metric values.
+     * @param[in] EnableMeshOptimization Boolean to set the mesh optimization mode
+     */
+    virtual void SetMeshOptimizationModeParameter(const bool EnableMeshOptimization);
+
+    /**
      * @brief This sets the size of the mesh
      * @param[in,out] rMMGMeshInfo The number of nodes, conditions and elements
      */
@@ -661,6 +668,13 @@ public:
     virtual void GenerateSolDataFromModelPart(ModelPart& rModelPart);
 
     /**
+     * @brief This method generates solution (metric) data from an existing model part
+     * for the isosurface algorithm
+     * @param[in,out] rModelPart The model part of interest to study
+     */
+    virtual void GenerateIsosurfaceMetricDataFromModelPart(ModelPart& rModelPart);
+
+    /**
      * @brief This method generates displacement data from an existing model part
      * @param[in,out] rModelPart The model part of interest to study
      */
@@ -715,6 +729,18 @@ public:
      * @param[in,out] rModelPart The model part of interest to study
      */
     virtual void AssignAndClearAuxiliarSubModelPartForFlags(ModelPart& rModelPart);
+
+    /**
+     * @brief Sets the number of parameters to be defined locally at each reference color.
+     * Required by the library.
+     */
+    void SetNumberOfLocalParameters(IndexType NumberOfLocalParameter);
+
+    /**
+     * @brief Sets the local hmin, hmax and hausdorff value for all entities with the given
+     * color reference.
+     */
+    void SetLocalParameter(IndexType rColor, double HMin, double HMax, double HausdorffValue);
 
     ///@}
     ///@name Access
@@ -789,6 +815,7 @@ private:
     SizeType mEchoLevel = 0;                                               /// The echo level of the utilities
     bool mRemoveRegions = false;                                           /// Cuttig-out specified regions during surface remeshing
     DiscretizationOption mDiscretization = DiscretizationOption::STANDARD; /// Discretization The discretization type
+    bool mUsingMetricTensor = true;                                        /// Controls if the metric used is a tensor (true) or a scalar (false)
 
     ///@}
     ///@name Private Operators

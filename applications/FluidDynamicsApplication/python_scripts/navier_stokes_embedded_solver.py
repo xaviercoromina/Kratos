@@ -125,7 +125,7 @@ class EmbeddedFormulation(object):
             "element_type": "embedded_weakly_compressible_navier_stokes_discontinuous",
             "is_slip": true,
             "slip_length": 1.0e8,
-            "penalty_coefficient": 10.0,
+            "penalty_coefficient": 0.1,
             "dynamic_tau": 1.0,
             "level_set_type": "discontinuous"
         }""")
@@ -260,6 +260,7 @@ class NavierStokesEmbeddedMonolithicSolver(FluidSolver):
             "analysis_type": "non_linear",
             "reform_dofs_at_each_step": false,
             "consider_periodic_conditions": false,
+            "assign_neighbour_elements_to_conditions": true,
             "relative_velocity_tolerance": 1e-3,
             "absolute_velocity_tolerance": 1e-5,
             "relative_pressure_tolerance": 1e-3,
@@ -270,8 +271,7 @@ class NavierStokesEmbeddedMonolithicSolver(FluidSolver):
             "volume_model_part_name" : "volume_model_part",
             "skin_parts": [""],
             "no_skin_parts":[""],
-            "assign_neighbour_elements_to_conditions": true,
-            "time_stepping"                : {
+            "time_stepping": {
                 "automatic_time_step" : true,
                 "CFL_number"          : 1,
                 "minimum_delta_time"  : 1e-2,
@@ -303,7 +303,6 @@ class NavierStokesEmbeddedMonolithicSolver(FluidSolver):
             self.settings["fm_ale_settings"]["fm_ale_solver_settings"].ValidateAndAssignDefaults(self._get_fm_ale_solver_default_settings(mesh_movement))
 
     def __init__(self, model, custom_settings):
-        self._validate_settings_in_baseclass=True # To be removed eventually
         # TODO: DO SOMETHING IN HERE TO REMOVE THE "time_order" FROM THE DEFAULT SETTINGS BUT KEEPING THE BACKWARDS COMPATIBILITY
         super(NavierStokesEmbeddedMonolithicSolver,self).__init__(model,custom_settings)
 
@@ -314,7 +313,7 @@ class NavierStokesEmbeddedMonolithicSolver(FluidSolver):
         self.level_set_type = self.embedded_formulation.level_set_type
         self.element_integrates_in_time = self.embedded_formulation.element_integrates_in_time
         self.element_has_nodal_properties = self.embedded_formulation.element_has_nodal_properties
-        self.historical_nodal_properties_variables_list = self.embedded_formulation.historical_nodal_properties_variables_list 
+        self.historical_nodal_properties_variables_list = self.embedded_formulation.historical_nodal_properties_variables_list
         self.non_historical_nodal_properties_variables_list = self.embedded_formulation.non_historical_nodal_properties_variables_list
 
         ## Set the distance reading filename
@@ -358,11 +357,17 @@ class NavierStokesEmbeddedMonolithicSolver(FluidSolver):
         KratosMultiphysics.Logger.PrintInfo(self.__class__.__name__, "Fluid solver variables added correctly.")
 
     def AddDofs(self):
-        super(NavierStokesEmbeddedMonolithicSolver, self).AddDofs()
+        # Add formulation DOFs and reactions
+        super().AddDofs()
+
+        # Add mesh motion problem DOFs for the FM-ALE algorithm
         if self._FmAleIsActive():
-            KratosMultiphysics.VariableUtils().AddDof(KratosMultiphysics.MESH_DISPLACEMENT_X, KratosMultiphysics.MESH_REACTION_X, self.main_model_part)
-            KratosMultiphysics.VariableUtils().AddDof(KratosMultiphysics.MESH_DISPLACEMENT_Y, KratosMultiphysics.MESH_REACTION_Y, self.main_model_part)
-            KratosMultiphysics.VariableUtils().AddDof(KratosMultiphysics.MESH_DISPLACEMENT_Z, KratosMultiphysics.MESH_REACTION_Z, self.main_model_part)
+            dofs_and_reactions_to_add = []
+            dofs_and_reactions_to_add.append(["MESH_DISPLACEMENT_X", "MESH_REACTION_X"])
+            dofs_and_reactions_to_add.append(["MESH_DISPLACEMENT_Y", "MESH_REACTION_Y"])
+            dofs_and_reactions_to_add.append(["MESH_DISPLACEMENT_Z", "MESH_REACTION_Z"])
+            KratosMultiphysics.VariableUtils.AddDofsList(dofs_and_reactions_to_add, self.main_model_part)
+
             KratosMultiphysics.Logger.PrintInfo(self.__class__.__name__, "FM-ALE DOFs added correctly.")
 
     def PrepareModelPart(self):

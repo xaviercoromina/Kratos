@@ -75,7 +75,7 @@ public:
     ///@}
     ///@name Pointer Definitions
     /// Pointer definition of ConvectionDiffusionReactionElement
-    KRATOS_CLASS_POINTER_DEFINITION(ConvectionDiffusionReactionElement);
+    KRATOS_CLASS_INTRUSIVE_POINTER_DEFINITION(ConvectionDiffusionReactionElement);
 
     ///@}
     ///@name Life Cycle
@@ -158,7 +158,7 @@ public:
     {
         KRATOS_TRY
         return Kratos::make_intrusive<CurrentElementType>(
-            NewId, Element::GetGeometry().Create(ThisNodes), pProperties);
+            NewId, this->GetGeometry().Create(ThisNodes), pProperties);
         KRATOS_CATCH("");
     }
 
@@ -192,7 +192,7 @@ public:
     {
         KRATOS_TRY
         return Kratos::make_intrusive<CurrentElementType>(
-            NewId, Element::GetGeometry().Create(ThisNodes), Element::pGetProperties());
+            NewId, this->GetGeometry().Create(ThisNodes), this->pGetProperties());
         KRATOS_CATCH("");
     }
 

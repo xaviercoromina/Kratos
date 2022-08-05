@@ -67,7 +67,6 @@ void FluidElementData<TDim, TNumNodes, TElementIntegratesInTime>::FillFromHistor
     const Variable<double> &rVariable,
     const Geometry<Node<3>> &rGeometry)
 {
-    noalias(rData) = ZeroVector(TNumNodes);
     for (size_t i = 0; i < TNumNodes; i++) {
         rData[i] = rGeometry[i].FastGetSolutionStepValue(rVariable);
     }
@@ -90,10 +89,22 @@ void FluidElementData<TDim, TNumNodes, TElementIntegratesInTime>::FillFromHistor
 
 template <size_t TDim, size_t TNumNodes, bool TElementIntegratesInTime>
 void FluidElementData<TDim, TNumNodes, TElementIntegratesInTime>::FillFromHistoricalNodalData(
+    NodalTensorData& rData,
+    const Variable<Matrix>& rVariable,
+    const Geometry<Node<3>>& rGeometry)
+{
+    for (size_t i = 0; i < TNumNodes; i++) {
+        const Matrix& r_nodal_values =
+            rGeometry[i].FastGetSolutionStepValue(rVariable);
+        rData[i] = r_nodal_values;
+    }
+}
+
+template <size_t TDim, size_t TNumNodes, bool TElementIntegratesInTime>
+void FluidElementData<TDim, TNumNodes, TElementIntegratesInTime>::FillFromHistoricalNodalData(
     NodalScalarData& rData, const Variable<double>& rVariable,
     const Geometry<Node<3>>& rGeometry, const unsigned int Step)
 {
-    noalias(rData) = ZeroVector(TNumNodes);
     for (size_t i = 0; i < TNumNodes; i++) {
         rData[i] = rGeometry[i].FastGetSolutionStepValue(rVariable,Step);
     }
@@ -119,7 +130,6 @@ void FluidElementData<TDim, TNumNodes, TElementIntegratesInTime>::FillFromNonHis
     const Variable<double>& rVariable,
     const Geometry<Node<3>>& rGeometry)
 {
-    noalias(rData) = ZeroVector(TNumNodes);
     for (size_t i = 0; i < TNumNodes; i++) {
         rData[i] = rGeometry[i].GetValue(rVariable);
     }
@@ -156,6 +166,15 @@ void FluidElementData<TDim, TNumNodes, TElementIntegratesInTime>::FillFromProces
 template <size_t TDim, size_t TNumNodes, bool TElementIntegratesInTime>
 void FluidElementData<TDim, TNumNodes, TElementIntegratesInTime>::FillFromElementData(double& rData,
     const Variable<double>& rVariable, const Element& rElement)
+{
+    rData = rElement.GetValue(rVariable);
+}
+
+template <size_t TDim, size_t TNumNodes, bool TElementIntegratesInTime>
+void FluidElementData<TDim, TNumNodes, TElementIntegratesInTime>::FillFromElementData(
+    Vector& rData,
+    const Variable<Vector>& rVariable,
+    const Element& rElement)
 {
     rData = rElement.GetValue(rVariable);
 }
