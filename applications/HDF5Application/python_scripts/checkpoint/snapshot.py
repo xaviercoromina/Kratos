@@ -144,8 +144,7 @@ class SnapshotIOBase(abc.ABC):
 
     @staticmethod
     def _ExtractNodalFlagNames(model_part: KratosMultiphysics.ModelPart) -> "list[str]":
-        ##! @todo
-        return []
+        return KratosMultiphysics.KratosGlobals.Kernel.GetFlagNames()
 
     @staticmethod
     def _ExtractElementDataNames(model_part: KratosMultiphysics.ModelPart, check_mesh_consistency: bool = False) -> "list[str]":
@@ -154,8 +153,7 @@ class SnapshotIOBase(abc.ABC):
 
     @staticmethod
     def _ExtractElementFlagNames(model_part: KratosMultiphysics.ModelPart) -> "list[str]":
-        ##! @todo
-        return []
+        return KratosMultiphysics.KratosGlobals.Kernel.GetFlagNames()
 
     @staticmethod
     def _ExtractConditionDataNames(model_part: KratosMultiphysics.ModelPart, check_mesh_consistency: bool = False) -> "list[str]":
@@ -164,8 +162,7 @@ class SnapshotIOBase(abc.ABC):
 
     @staticmethod
     def _ExtractConditionFlagNames(model_part: KratosMultiphysics.ModelPart) -> "list[str]":
-        ##! @todo
-        return []
+        return KratosMultiphysics.KratosGlobals.Kernel.GetFlagNames()
 
     @classmethod
     def GetDefaultParameters(cls) -> KratosMultiphysics.Parameters:
