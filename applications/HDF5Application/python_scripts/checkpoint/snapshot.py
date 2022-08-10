@@ -4,7 +4,7 @@ import KratosMultiphysics
 # HDF5 imports
 import KratosMultiphysics.HDF5Application as HDF5Application
 from KratosMultiphysics.HDF5Application.core.utils import ParametersWrapper
-from KratosMultiphysics.HDF5Application.utils import OpenHDF5File
+from KratosMultiphysics.HDF5Application.core.file_io import OpenHDF5File
 import KratosMultiphysics.HDF5Application.core.operations.model_part as Operations
 from KratosMultiphysics.HDF5Application import CheckpointPattern
 
@@ -116,14 +116,14 @@ class SnapshotIOBase(abc.ABC):
 
     def __call__(self, model_part: KratosMultiphysics.ModelPart) -> None:
         """@brief Execute all defined IO operations."""
-        with OpenHDF5File(self.__parameters["io_settings"], model_part.IsDistributed()) as file:
+        with OpenHDF5File(self.__parameters["io_settings"], model_part) as file:
             for operation in self._GetOperations(model_part):
                 operation(model_part, file)
 
     def ReadStepAndPathID(self) -> "tuple[int,int]":
         model = KratosMultiphysics.Model()
         model_part = model.CreateModelPart("temporary")
-        with OpenHDF5File(self.__GetInputParameters(), KratosMultiphysics.IsDistributedRun()) as file:
+        with OpenHDF5File(self.__GetInputParameters(), model_part) as file:
             Operations.ReadProcessInfo(self.__parameters["operation_settings"])(model_part, file)
         step = model_part.ProcessInfo[KratosMultiphysics.STEP]
         path_id = model_part.ProcessInfo[HDF5Application.ANALYSIS_PATH]
@@ -248,7 +248,7 @@ class DefaultSnapshotInput(SnapshotIOBase):
     def GetDefaultIOParameters() -> KratosMultiphysics.Parameters:
         return KratosMultiphysics.Parameters("""
         {
-            "file_name" : "checkpoints/<model_part_name>_snapshot_<path_id>_<step>.h5",
+            "file_name" : "",
             "file_access_mode" : "read_only",
             "echo_level" : 0
         }
