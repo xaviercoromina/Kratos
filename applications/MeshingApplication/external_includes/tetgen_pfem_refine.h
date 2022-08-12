@@ -69,6 +69,16 @@ namespace Kratos
 		///@name Type Definitions
 		///@{
 
+		typedef Node<3> PointType;
+		typedef Node<3>::Pointer PointPointerType;
+		//typedef PointerVector<PointType>           PointVector;
+		typedef std::vector<PointType::Pointer>           PointVector;
+		typedef PointVector::iterator PointIterator;
+		typedef std::vector<double>               DistanceVector;
+		typedef std::vector<double>::iterator     DistanceIterator;
+		typedef Bucket<3, PointType, PointVector, PointPointerType, PointIterator, DistanceIterator > BucketType;
+		typedef Tree< KDTreePartition<BucketType> > kd_tree;
+
 		/// Pointer definition of TetGenPfemModeler
 		KRATOS_CLASS_POINTER_DEFINITION(TetGenPfemModeler);
 
@@ -96,6 +106,50 @@ namespace Kratos
 		///@name Operations
 		///@{
 
+
+		virtual std::string GetCharCodeWithMeshGenerationOptions(const bool add_nodes_option) {
+			if(add_nodes_option) {
+				return "rQJYYqnS";
+			} else {
+				return "rQJYnS";
+			}
+		}
+
+		virtual void MarkNodesToEraseIfNeeded(ModelPart& ThisModelPart, const double h_factor) {
+			unsigned int max_results = 50;
+			PointVector res(max_results);
+			DistanceVector res_distances(max_results);
+			Node<3> work_point(0,0.0,0.0,0.0);
+ 			//if the remove_node switch is activated, we check if the nodes got too close
+			PointVector list_of_nodes;
+
+			list_of_nodes.reserve(ThisModelPart.Nodes().size());
+
+			for(ModelPart::NodesContainerType::iterator i_node = ThisModelPart.NodesBegin() ; i_node != ThisModelPart.NodesEnd() ; i_node++)
+			{
+					(list_of_nodes).push_back(*(i_node.base()));
+			}
+
+			unsigned int bucket_size = 20;
+			kd_tree  nodes_tree1(list_of_nodes.begin(),list_of_nodes.end(), bucket_size);
+
+			for(ModelPart::NodesContainerType::const_iterator in = ThisModelPart.NodesBegin(); in != ThisModelPart.NodesEnd(); in++)
+			{
+				//radius means the distance, closer than which no node shall be allowd. if closer -> mark for erasing
+				const double radius=h_factor*in->FastGetSolutionStepValue(NODAL_H);
+
+				work_point[0]=in->X();
+				work_point[1]=in->Y();
+				work_point[2]=in->Z();
+
+				unsigned int  n_points_in_radius = nodes_tree1.SearchInRadius(work_point, radius, res.begin(),res_distances.begin(), max_results);
+				if (n_points_in_radius>1) {
+					if (in->FastGetSolutionStepValue(IS_BOUNDARY)==0.0 && in->FastGetSolutionStepValue(IS_STRUCTURE)==0.0 && in->FastGetSolutionStepValue(IS_LAGRANGIAN_INLET)==0.0) {
+						in->Set(TO_ERASE,true);
+					}
+				}
+			}
+		}
 
 		//*******************************************************************************************
 		//*******************************************************************************************
@@ -125,78 +179,12 @@ namespace Kratos
 			ThisModelPart.Conditions().clear();
 
 			boost::timer auxiliary;
-			////////////////////////////////////////////////////////////
-			typedef Node<3> PointType;
-			typedef Node<3>::Pointer PointPointerType;
-			//typedef PointerVector<PointType>           PointVector;
-			typedef std::vector<PointType::Pointer>           PointVector;
-			typedef PointVector::iterator PointIterator;
-			typedef std::vector<double>               DistanceVector;
-			typedef std::vector<double>::iterator     DistanceIterator;
 
 			int step_data_size = ThisModelPart.GetNodalSolutionStepDataSize();
 
-			// bucket types
-			//typedef Bucket<3, PointType, ModelPart::NodesContainerType, PointPointerType, PointIterator, DistanceIterator > BucketType;
-			//typedef Bins< 3, PointType, PointVector, PointPointerType, PointIterator, DistanceIterator > StaticBins;
-			// bucket types
-			typedef Bucket<3, PointType, PointVector, PointPointerType, PointIterator, DistanceIterator > BucketType;
-
-
-			//*************
-			// DynamicBins;
-			typedef Tree< KDTreePartition<BucketType> > kd_tree; //Kdtree;
-			//typedef Tree< StaticBins > Bin; 			     //Binstree;
-			unsigned int bucket_size = 20;
-
-			//performing the interpolation - all of the nodes in this list will be preserved
-			unsigned int max_results = 50;
-			//PointerVector<PointType> res(max_results);
-			//NodeIterator res(max_results);
-			PointVector res(max_results);
-			DistanceVector res_distances(max_results);
-			Node<3> work_point(0,0.0,0.0,0.0);
-			KRATOS_WATCH(h_factor)
- 			//if the remove_node switch is activated, we check if the nodes got too close
 			if (rem_nodes==true)
 			{
-
-				PointVector list_of_nodes;
-				list_of_nodes.reserve(ThisModelPart.Nodes().size());
-				for(ModelPart::NodesContainerType::iterator i_node = ThisModelPart.NodesBegin() ; i_node != ThisModelPart.NodesEnd() ; i_node++)
-				{
-						(list_of_nodes).push_back(*(i_node.base()));
-						//(list_of_nodes).push_back(i_node.base());
-				}
-
-				kd_tree  nodes_tree1(list_of_nodes.begin(),list_of_nodes.end(), bucket_size);
-				//std::cout<<nodes_tree2<<std::endl;
-
-				unsigned int n_points_in_radius;
-				//radius means the distance, closer than which no node shall be allowd. if closer -> mark for erasing
-				double radius;
-
-				for(ModelPart::NodesContainerType::const_iterator in = ThisModelPart.NodesBegin();
-					in != ThisModelPart.NodesEnd(); in++)
-					{
-					radius=h_factor*in->FastGetSolutionStepValue(NODAL_H);
-
-					work_point[0]=in->X();
-					work_point[1]=in->Y();
-					work_point[2]=in->Z();
-
-					n_points_in_radius = nodes_tree1.SearchInRadius(work_point, radius, res.begin(),res_distances.begin(), max_results);
-						if (n_points_in_radius>1)
-						{
-						if (in->FastGetSolutionStepValue(IS_BOUNDARY)==0.0 && in->FastGetSolutionStepValue(IS_STRUCTURE)==0.0 && in->FastGetSolutionStepValue(IS_LAGRANGIAN_INLET)==0.0)
-							{
-							in->Set(TO_ERASE,true);
-							//below is just for the bladder example
-
-							}
-						}
-
-					}
+				MarkNodesToEraseIfNeeded(ThisModelPart, h_factor);
 
 				node_erase.Execute();
 			}
@@ -306,10 +294,14 @@ namespace Kratos
 				nfluid += int( (nodes_begin + out.tetrahedronlist[base+2]-1)->FastGetSolutionStepValue(IS_FLUID) );
 				nfluid += int((nodes_begin + out.tetrahedronlist[base+3]-1)->FastGetSolutionStepValue(IS_FLUID) );
 
-				int n_lag = int( (nodes_begin + out.tetrahedronlist[base]-1)->FastGetSolutionStepValue(IS_LAGRANGIAN_INLET) );
-				n_lag += int( (nodes_begin + out.tetrahedronlist[base+1]-1)->FastGetSolutionStepValue(IS_LAGRANGIAN_INLET) );
-				n_lag += int( (nodes_begin + out.tetrahedronlist[base+2]-1)->FastGetSolutionStepValue(IS_LAGRANGIAN_INLET) );
-				n_lag += int((nodes_begin + out.tetrahedronlist[base+3]-1)->FastGetSolutionStepValue(IS_LAGRANGIAN_INLET) );
+				int n_lag = 0;
+                if (ThisModelPart.GetNodalSolutionStepVariablesList().Has(IS_LAGRANGIAN_INLET))
+                {
+                    n_lag = int( (nodes_begin + out.tetrahedronlist[base]-1)->FastGetSolutionStepValue(IS_LAGRANGIAN_INLET) );
+                    n_lag += int( (nodes_begin + out.tetrahedronlist[base+1]-1)->FastGetSolutionStepValue(IS_LAGRANGIAN_INLET) );
+                    n_lag += int( (nodes_begin + out.tetrahedronlist[base+2]-1)->FastGetSolutionStepValue(IS_LAGRANGIAN_INLET) );
+                    n_lag += int((nodes_begin + out.tetrahedronlist[base+3]-1)->FastGetSolutionStepValue(IS_LAGRANGIAN_INLET) );
+                }
 
 
 				//cases:
@@ -461,7 +453,6 @@ namespace Kratos
 
 					//in2.tetrahedronvolumelist[counter] = 0.217*prescribed_h*prescribed_h*prescribed_h;
 					//in2.tetrahedronvolumelist[counter] = 0.0004;
-					//KRATOS_WATCH(in2.tetrahedronvolumelist[counter])
 					counter += 1;
 				}
 
@@ -500,16 +491,15 @@ namespace Kratos
 
 			//HERE WE ADD THE VOLUME CONSTRAINT  -the desired volume of the equidistant tertrahedra
 			//based upon average nodal_h (that is the  "a" switch
-			//char regeneration_options[] = "rQJYq1.8anS";
 			if (add_nodes==true)
 				{
-				char mesh_regen_opts[] = "rQJYYqnS";
+				char* mesh_regen_opts = &(GetCharCodeWithMeshGenerationOptions(true)[0]);
 				tetrahedralize(mesh_regen_opts, &in2, &outnew);
 				KRATOS_WATCH("Adaptive remeshing executed")
 				}
 			else
 				{
-				char mesh_regen_opts[] = "rQJYnS";
+				char* mesh_regen_opts = &(GetCharCodeWithMeshGenerationOptions(false)[0]);
 				tetrahedralize(mesh_regen_opts, &in2, &outnew);
 				KRATOS_WATCH("Non-Adaptive remeshing executed")
 				}
@@ -561,7 +551,6 @@ namespace Kratos
 					Node<3>::Pointer pnode = ThisModelPart.CreateNewNode(id,x,y,z);
 
 					//putting the new node also in an auxiliary list
-					//KRATOS_WATCH("adding nodes to list")
 					list_of_new_nodes.push_back( pnode );
 
 					//std::cout << "new node id = " << pnode->Id() << std::endl;
@@ -580,10 +569,10 @@ namespace Kratos
 			std::cout << "During refinement we added " << outnew.numberofpoints-n_points_before_refinement<< "nodes " <<std::endl;
 
 
-			bucket_size = 50;
+			unsigned int  bucket_size = 50;
 
 			//performing the interpolation - all of the nodes in this list will be preserved
-			max_results = 800;
+			unsigned int  max_results = 800;
 			PointVector results(max_results);
 			DistanceVector results_distances(max_results);
 			array_1d<double,4> N;
@@ -591,7 +580,7 @@ namespace Kratos
 
 
 			//double* work_array;
-			//Node<3> work_point(0,0.0,0.0,0.0);
+			Node<3> work_point(0,0.0,0.0,0.0);
 
 
 
@@ -685,7 +674,6 @@ namespace Kratos
 						);
 
 
-					//KRATOS_WATCH(results.size())
 					for(auto it=results.begin(); it!=results.begin() + number_of_points_in_radius; it++)
 	 				{
 						bool is_inside=false;
@@ -777,7 +765,7 @@ ModelPart::NodesContainerType& ModelNodes = ThisModelPart.Nodes();
 				{
 					int index = outnew.neighborlist[base+i];
 					if(index > 0)
-						neighb(i) =  GlobalPointer<Element>(&*(el_begin + index-1)); //*((el_begin + index-1).base());
+						neighb(i) = GlobalPointer<Element>(&*(el_begin + index-1));
 					else
 						neighb(i) = Element::WeakPointer();
 				}
@@ -797,7 +785,7 @@ ModelPart::NodesContainerType& ModelNodes = ThisModelPart.Nodes();
 				in->FastGetSolutionStepValue(IS_BOUNDARY) = 0;
 			}
 
-                        std::cout << "reset the boundary flag" << adding_neighb.elapsed() << std::endl;;
+
 			//***********************************************************************************
 			//***********************************************************************************
 			boost::timer adding_faces;
@@ -856,14 +844,11 @@ ModelPart::NodesContainerType& ModelNodes = ThisModelPart.Nodes();
 			if (aux_after_ref[in->GetId()]==0 && in->GetId()>aux_before_ref.size() && in->GetId()<aux_after_ref.size())
 				{
 				in->Set(TO_ERASE,true);
-				KRATOS_WATCH("This is that ugly ugly lonely interior node a666a. IT SHALL BE TERRRRMINATED!!!!!!")
-				KRATOS_WATCH(in->GetId())
 				}
 			//if this was an interior node after first step and became single due to derefinement - erase it
 			if (aux_after_ref[in->GetId()]==0 && in->GetId()<aux_before_ref.size() && aux_before_ref[in->GetId()]!=0)
 				{
 				in->Set(TO_ERASE,true);
-				KRATOS_WATCH("This is that ugly ugly lonely interior node. IT SHALL BE TERRRRMINATED!!!!!!")
 				}
 			}
 			*/
@@ -1138,7 +1123,6 @@ ModelPart::NodesContainerType& ModelNodes = ThisModelPart.Nodes();
 			const double x2 = c3[0]; const double y2 = c3[1]; const double z2 = c3[2];
 			const double x3 = c4[0]; const double y3 = c4[1]; const double z3 = c4[2];
 
-// 			KRATOS_WATCH("111111111111111111111");
 			//calculate min side lenght
 			//(use xc as a auxiliary vector) !!!!!!!!!!!!
 			double aux;
@@ -1155,7 +1139,6 @@ ModelPart::NodesContainerType& ModelNodes = ThisModelPart.Nodes();
 			mJ(0,0) = x1-x0; mJ(0,1) = y1-y0; mJ(0,2) = z1-z0;
 			mJ(1,0) = x2-x0; mJ(1,1) = y2-y0; mJ(1,2) = z2-z0;
 			mJ(2,0) = x3-x0; mJ(2,1) = y3-y0; mJ(2,2) = z3-z0;
-// 			KRATOS_WATCH("33333333333333333333333");
 
 			//inverse of the jacobian
 			//first column
@@ -1172,26 +1155,21 @@ ModelPart::NodesContainerType& ModelNodes = ThisModelPart.Nodes();
 			mJinv(2,2) = mJ(0,0)*mJ(1,1) - mJ(0,1)*mJ(1,0);
 			//calculation of determinant (of the input matrix)
 
-// 			KRATOS_WATCH("44444444444444444444444444");
 			double detJ = mJ(0,0)*mJinv(0,0)
 				+ mJ(0,1)*mJinv(1,0)
 				+ mJ(0,2)*mJinv(2,0);
 
 			volume = detJ * 0.16666666667;
-// 			KRATOS_WATCH("55555555555555555555555");
 
 			if(volume < 1e-3 * hmax*hmax*hmax)  //this is a sliver and we will remove it
 			{
- 			//KRATOS_WATCH("666666666666666666666666666");
 				//very bad element // ser a very high center for it to be eliminated
 				xc[0]=0.0; xc[1]=0.0; xc[2]=0.0;
 				radius = 10000000;
-// 			KRATOS_WATCH("777777777777777777777777");
 			}
 			else
 			{
 
-// 			KRATOS_WATCH("888888888888888888888888");
 				double x0_2 = x0*x0 + y0*y0 + z0*z0;
 				double x1_2 = x1*x1 + y1*y1 + z1*z1;
 				double x2_2 = x2*x2 + y2*y2 + z2*z2;
@@ -1214,7 +1192,6 @@ ModelPart::NodesContainerType& ModelNodes = ThisModelPart.Nodes();
 				radius		  += pow(xc[1] - y0,2);
 				radius		  += pow(xc[2] - z0,2);
 				radius = sqrt(radius);
-// 			KRATOS_WATCH("999999999999999999999999999");
 			}
 			KRATOS_CATCH("")
 		}
