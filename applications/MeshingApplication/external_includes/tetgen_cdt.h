@@ -515,7 +515,7 @@ namespace Kratos
                 //defintions for spatial search
 //                 typedef Node < 3 > PointType;
 //                 typedef Node < 3 > ::Pointer PointTypePointer;
-                array_1d<double, 4 > N;
+                Vector N; N.resize(4);
                 const int max_results = 10000;
                 BinBasedFastPointLocator<3>::ResultContainerType results(max_results);
 
