@@ -18,31 +18,31 @@ namespace Kratos
 {
 
 /**
- * @class SetAutomatedInitialStateProcess
+ * @class SetAutomatedInitialStressProcess
  * @ingroup StructuralMechanicsApplication
  * @brief This class set the local axes of the elements according to a cylindrical coordinates
  * @author Alejandro Cornejo
 */
 
-class KRATOS_API(STRUCTURAL_MECHANICS_APPLICATION) SetAutomatedInitialStateProcess
+class KRATOS_API(STRUCTURAL_MECHANICS_APPLICATION) SetAutomatedInitialStressProcess
     : public Process
 {
 
 public:
 
 
-    KRATOS_CLASS_POINTER_DEFINITION(SetAutomatedInitialStateProcess);
+    KRATOS_CLASS_POINTER_DEFINITION(SetAutomatedInitialStressProcess);
 
 
     /// Constructor
-    SetAutomatedInitialStateProcess(
+    SetAutomatedInitialStressProcess(
         ModelPart& rThisModelPart,
         Parameters ThisParameters = Parameters(R"({})")
         );
 
 
     /// Destructor
-    ~SetAutomatedInitialStateProcess() override = default;
+    ~SetAutomatedInitialStressProcess() override = default;
 
     /**
      * @brief This function is designed for being called at the beginning of the computations
@@ -63,13 +63,13 @@ public:
     /// Turn back information as a string.
     std::string Info() const override
     {
-        return "SetAutomatedInitialStateProcess";
+        return "SetAutomatedInitialStressProcess";
     }
 
     /// Print information about this object.
     void PrintInfo(std::ostream& rOStream) const override
     {
-        rOStream << "SetAutomatedInitialStateProcess";
+        rOStream << "SetAutomatedInitialStressProcess";
     }
 
     /// Print object's data.
@@ -88,7 +88,7 @@ protected:
 private:
 
     /// Assignment operator.
-    SetAutomatedInitialStateProcess& operator=(SetAutomatedInitialStateProcess const& rOther);
+    SetAutomatedInitialStressProcess& operator=(SetAutomatedInitialStressProcess const& rOther);
 
     /// Copy constructor.
     //SetAutomatedInitialStateProcess(SetAutomatedInitialStateProcess const& rOther);
@@ -97,11 +97,11 @@ private:
 
 /// input stream function
 inline std::istream& operator >> (std::istream& rIStream,
-                                  SetAutomatedInitialStateProcess& rThis);
+                                  SetAutomatedInitialStressProcess& rThis);
 
 /// output stream function
 inline std::ostream& operator << (std::ostream& rOStream,
-                                  const SetAutomatedInitialStateProcess& rThis)
+                                  const SetAutomatedInitialStressProcess& rThis)
 {
     rThis.PrintInfo(rOStream);
     rOStream << std::endl;

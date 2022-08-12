@@ -33,7 +33,7 @@
 #include "custom_processes/set_cartesian_local_axes_process.h"
 #include "custom_processes/set_cylindrical_local_axes_process.h"
 #include "custom_processes/set_spherical_local_axes_process.h"
-#include "custom_processes/set_automated_initial_state_process.h"
+#include "custom_processes/set_automated_initial_stress_process.h"
 
 namespace Kratos {
 namespace Python {
@@ -110,7 +110,7 @@ void  AddCustomProcessesToPython(pybind11::module& m)
     py::class_<SetSphericalLocalAxesProcess, SetSphericalLocalAxesProcess::Pointer, Process>(m,"SetSphericalLocalAxesProcess")
         .def(py::init<ModelPart&, Parameters>());
 
-    py::class_<SetAutomatedInitialStateProcess, SetAutomatedInitialStateProcess::Pointer, Process>(m,"SetAutomatedInitialStateProcess")
+    py::class_<SetAutomatedInitialStressProcess, SetAutomatedInitialStressProcess::Pointer, Process>(m,"SetAutomatedInitialStressProcess")
     .def(py::init<ModelPart&, Parameters>());
 }
 
