@@ -7,6 +7,7 @@ from KratosMultiphysics.HDF5Application.core.utils import ParametersWrapper
 from KratosMultiphysics.HDF5Application.core.file_io import OpenHDF5File
 import KratosMultiphysics.HDF5Application.core.operations.model_part as Operations
 from KratosMultiphysics.HDF5Application import CheckpointPattern
+from .mpi_utilities import MPIUnion
 
 # Core imports
 import abc
@@ -139,8 +140,11 @@ class SnapshotIOBase(abc.ABC):
 
     @staticmethod
     def _ExtractNodalDataNames(model_part: KratosMultiphysics.ModelPart, check_mesh_consistency: bool = False) -> "list[str]":
-        return list(model_part.GetNonHistoricalVariablesNames(model_part.Nodes,
-                                                              check_mesh_consistency))
+        data_communicator = model_part.GetCommunicator().GetDataCommunicator()
+        local_names = model_part.GetNonHistoricalVariablesNames(model_part.Nodes, check_mesh_consistency)
+        output =  list(MPIUnion(list(local_names), data_communicator))
+        print(f"ExtractNodalDataNames: {output} on rank {data_communicator.Rank()}")
+        return output
 
     @staticmethod
     def _ExtractNodalFlagNames(model_part: KratosMultiphysics.ModelPart) -> "list[str]":
@@ -148,8 +152,9 @@ class SnapshotIOBase(abc.ABC):
 
     @staticmethod
     def _ExtractElementDataNames(model_part: KratosMultiphysics.ModelPart, check_mesh_consistency: bool = False) -> "list[str]":
-        return list(model_part.GetNonHistoricalVariablesNames(model_part.Elements,
-                                                              check_mesh_consistency))
+        data_communicator = model_part.GetCommunicator().GetDataCommunicator()
+        local_names = model_part.GetNonHistoricalVariablesNames(model_part.Elements, check_mesh_consistency)
+        return list(MPIUnion(list(local_names), data_communicator))
 
     @staticmethod
     def _ExtractElementFlagNames(model_part: KratosMultiphysics.ModelPart) -> "list[str]":
@@ -157,8 +162,9 @@ class SnapshotIOBase(abc.ABC):
 
     @staticmethod
     def _ExtractConditionDataNames(model_part: KratosMultiphysics.ModelPart, check_mesh_consistency: bool = False) -> "list[str]":
-        return list(model_part.GetNonHistoricalVariablesNames(model_part.Conditions,
-                                                              check_mesh_consistency))
+        data_communicator = model_part.GetCommunicator().GetDataCommunicator()
+        local_names = model_part.GetNonHistoricalVariablesNames(model_part.Conditions, check_mesh_consistency)
+        return list(MPIUnion(list(local_names), data_communicator))
 
     @staticmethod
     def _ExtractConditionFlagNames(model_part: KratosMultiphysics.ModelPart) -> "list[str]":
@@ -222,9 +228,9 @@ class DefaultSnapshotOutput(SnapshotIOBase):
         for operation, variable_names in ((Operations.NodalSolutionStepDataOutput, self._ExtractNodalSolutionStepDataNames(model_part)),
                                           (Operations.NodalDataValueOutput, self._ExtractNodalDataNames(model_part)),
                                           (Operations.NodalFlagValueOutput, self._ExtractNodalFlagNames(model_part)),
-                                          (Operations.ElementDataValueOutput, self._ExtractElementDataNames(model_part)),
+                                          #(Operations.ElementDataValueOutput, self._ExtractElementDataNames(model_part)),
                                           (Operations.ElementFlagValueOutput, self._ExtractElementFlagNames(model_part)),
-                                          (Operations.ConditionDataValueOutput, self._ExtractConditionDataNames(model_part)),
+                                          #(Operations.ConditionDataValueOutput, self._ExtractConditionDataNames(model_part)),
                                           (Operations.ConditionFlagValueOutput, self._ExtractConditionFlagNames(model_part))):
             parameters = self.parameters["operation_settings"]
             parameters.AddStringArray("list_of_variables", variable_names)
