@@ -16,7 +16,7 @@
 #undef KRATOS_API_EXPORT
 #undef KRATOS_API_IMPORT
 #if _WIN32
-    #if defined(__MINGW32__) || defined(__MINGW64__)
+    #if defined(__MINGW32__) || defined(__MINGW64__) || defined (__INTEL_LLVM_COMPILER)
         #define KRATOS_API_EXPORT __attribute__((visibility("default")))
         #define KRATOS_API_IMPORT __attribute__((visibility("default")))
     #else 
