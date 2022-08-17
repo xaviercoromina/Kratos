@@ -13,6 +13,7 @@ def Factory(settings, Model):
         """{
             "help"                     : "This automates the application of initial conditions in terms of imposed stress",
             "model_part_name"          : "please_specify_model_part_name",
+            "variable_name"            : "SPECIFY_VARIABLE_NAME",
             "hole_generatrix_axis"     : [0.0,0.0,1.0],
             "hole_generatrix_point"    : [0.0,0.0,0.0],
             "hole_radius_offset"       : 0.0,
