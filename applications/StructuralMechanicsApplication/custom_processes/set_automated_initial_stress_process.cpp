@@ -37,7 +37,8 @@ void SetAutomatedInitialStressProcess::ExecuteInitialize()
         
     // KRATOS_ERROR_IF(MathUtils<double>::Norm3(r_generatrix_axis) < std::numeric_limits<double>::epsilon()) << "The r_generatrix_axis has norm zero" << std::endl;
     const double tol = 1.0e-6;
-    
+    // string variable_name = mThisParameters["variable_name"].GetString();
+
     block_for_each(mrThisModelPart.Elements(), [&](Element &rElement) {
 
         int TableFirstId;       
@@ -56,6 +57,7 @@ void SetAutomatedInitialStressProcess::ExecuteInitialize()
         double centroid_relative_distance;
         array_1d<double, 6> initial_stress_vector;
         double radial_vector_norm;
+        // const Variable<Vector>& r_variable;
 
         ElemId = rElement.Id();
         // KRATOS_WATCH(ElemId)    
@@ -119,8 +121,10 @@ void SetAutomatedInitialStressProcess::ExecuteInitialize()
 
                 index+=1;
         }
-
-        rElement.SetValue(INITIAL_STRESS_VECTOR, initial_stress_vector);
+    
+        const Variable<Vector>& r_variable = KratosComponents<Variable<Vector>>::Get(mThisParameters["variable_name"].GetString());
+        // rElement.SetValue(INITIAL_STRESS_VECTOR, initial_stress_vector);
+        rElement.SetValue(r_variable, initial_stress_vector);
         // KRATOS_WATCH(rElement.GetValue(INITIAL_STRESS_VECTOR))
     });
     
@@ -136,6 +140,7 @@ const Parameters SetAutomatedInitialStressProcess::GetDefaultParameters() const
     {
         "help"                     : "This automates the application of initial conditions in terms of imposed stress",
         "model_part_name"          : "please_specify_model_part_name",
+        "variable_name"            : "SPECIFY_VARIABLE_NAME",
         "hole_generatrix_axis"     : [0.0,0.0,1.0],
         "hole_generatrix_point"    : [0.0,0.0,0.0],
         "hole_radius_offset"       : 0.0,
