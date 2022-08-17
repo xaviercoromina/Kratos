@@ -6,7 +6,8 @@
 //  License:		 BSD License
 //					 license: structural_mechanics_application/license.txt
 //
-//  Main authors:    Alejandro Cornejo
+//  Main authors:    Luis Antônio Gonçalves Junior
+//                   Alejandro Cornejo
 //
 
 #if !defined(KRATOS_SET_AUTOMATED_INITIAL_STATE_PROCESS )
@@ -18,31 +19,31 @@ namespace Kratos
 {
 
 /**
- * @class SetAutomatedInitialStressProcess
+ * @class SetAutomatedInitialVariableProcess
  * @ingroup StructuralMechanicsApplication
  * @brief This class set the local axes of the elements according to a cylindrical coordinates
  * @author Alejandro Cornejo
 */
 
-class KRATOS_API(STRUCTURAL_MECHANICS_APPLICATION) SetAutomatedInitialStressProcess
+class KRATOS_API(STRUCTURAL_MECHANICS_APPLICATION) SetAutomatedInitialVariableProcess
     : public Process
 {
 
 public:
 
 
-    KRATOS_CLASS_POINTER_DEFINITION(SetAutomatedInitialStressProcess);
+    KRATOS_CLASS_POINTER_DEFINITION(SetAutomatedInitialVariableProcess);
 
 
     /// Constructor
-    SetAutomatedInitialStressProcess(
+    SetAutomatedInitialVariableProcess(
         ModelPart& rThisModelPart,
         Parameters ThisParameters = Parameters(R"({})")
         );
 
 
     /// Destructor
-    ~SetAutomatedInitialStressProcess() override = default;
+    ~SetAutomatedInitialVariableProcess() override = default;
 
     /**
      * @brief This function is designed for being called at the beginning of the computations
@@ -63,13 +64,13 @@ public:
     /// Turn back information as a string.
     std::string Info() const override
     {
-        return "SetAutomatedInitialStressProcess";
+        return "SetAutomatedInitialVariableProcess";
     }
 
     /// Print information about this object.
     void PrintInfo(std::ostream& rOStream) const override
     {
-        rOStream << "SetAutomatedInitialStressProcess";
+        rOStream << "SetAutomatedInitialVariableProcess";
     }
 
     /// Print object's data.
@@ -88,7 +89,7 @@ protected:
 private:
 
     /// Assignment operator.
-    SetAutomatedInitialStressProcess& operator=(SetAutomatedInitialStressProcess const& rOther);
+    SetAutomatedInitialVariableProcess& operator=(SetAutomatedInitialVariableProcess const& rOther);
 
     /// Copy constructor.
     //SetAutomatedInitialStateProcess(SetAutomatedInitialStateProcess const& rOther);
@@ -97,11 +98,11 @@ private:
 
 /// input stream function
 inline std::istream& operator >> (std::istream& rIStream,
-                                  SetAutomatedInitialStressProcess& rThis);
+                                  SetAutomatedInitialVariableProcess& rThis);
 
 /// output stream function
 inline std::ostream& operator << (std::ostream& rOStream,
-                                  const SetAutomatedInitialStressProcess& rThis)
+                                  const SetAutomatedInitialVariableProcess& rThis)
 {
     rThis.PrintInfo(rOStream);
     rOStream << std::endl;

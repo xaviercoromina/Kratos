@@ -45,7 +45,8 @@ def Factory(settings, Model):
     layer_number_string = layer_string[-1]
     # stress_string = process_settings["initial_stress_table"]["filename"].GetString().split("_")[1].split(".")[0]
     stress_string = filename.split("_")[1].split(".")[0]
-      
+    variable_string = process_settings["variable_name"].GetString().split("_")[0] + " " + process_settings["variable_name"].GetString().split("_")[1].split("_")[0]
+
     # for i in range(0,6):
 
     #     process_settings["initial_stress_table"]["filename"].SetString(layer_string + "_" + stress_string[:-1] + str(i+1)+".csv")
@@ -82,7 +83,7 @@ def Factory(settings, Model):
         # print(computing_model_part.GetTable(table_id))
         
         if not isfile(filepath + layer_string + "_" + stress_string[:-1] + str(i + 2) + ".csv") or i == 5:
-            Logger.PrintInfo("SetAutomatedInitialStressProcess:: ","Initial stress tables of " + layer_string + " were successfully imported")
+            Logger.PrintInfo("SetAutomatedInitialVariableProcess:: ", variable_string.capitalize() + " tables of " + layer_string + " were successfully imported")
      
             if not isfile(filepath + layer_string[:-1] + str(int(layer_number_string) + 1) + "_" + stress_string + ".csv") and not process_settings["last_layer"].GetBool():
                 ErrorMsg = "Table " + "\"" + layer_string[:-1] + str(int(layer_number_string) + 1) + "_" + stress_string + ".csv\" not found"
@@ -93,4 +94,4 @@ def Factory(settings, Model):
         i += 1
         # print(i)
     
-    return SMA.SetAutomatedInitialStressProcess(computing_model_part, process_settings)
+    return SMA.SetAutomatedInitialVariableProcess(computing_model_part, process_settings)

@@ -6,11 +6,12 @@
 //  License:		 BSD License
 //					 license: structural_mechanics_application/license.txt
 //
-//  Main authors:    Alejandro Cornejo
+//  Main authors:    Luis Antônio Gonçalves Junior
+//                   Alejandro Cornejo
 //
 
 #include "includes/model_part.h"
-#include "custom_processes/set_automated_initial_stress_process.h"
+#include "custom_processes/set_automated_initial_variable_process.h"
 #include "utilities/parallel_utilities.h"
 #include "utilities/math_utils.h"
 #include "custom_utilities/constitutive_law_utilities.h"
@@ -18,7 +19,7 @@
 
 namespace Kratos
 {
-SetAutomatedInitialStressProcess::SetAutomatedInitialStressProcess(
+SetAutomatedInitialVariableProcess::SetAutomatedInitialVariableProcess(
     ModelPart& rThisModelPart,
     Parameters ThisParameters
     ):mrThisModelPart(rThisModelPart),
@@ -30,7 +31,7 @@ SetAutomatedInitialStressProcess::SetAutomatedInitialStressProcess(
 /***********************************************************************************/
 /***********************************************************************************/
 
-void SetAutomatedInitialStressProcess::ExecuteInitialize()
+void SetAutomatedInitialVariableProcess::ExecuteInitialize()
 {
     // KRATOS_WATCH(mrThisModelPart.Tables())
     KRATOS_TRY
@@ -134,7 +135,7 @@ void SetAutomatedInitialStressProcess::ExecuteInitialize()
 /***********************************************************************************/
 /***********************************************************************************/
 
-const Parameters SetAutomatedInitialStressProcess::GetDefaultParameters() const
+const Parameters SetAutomatedInitialVariableProcess::GetDefaultParameters() const
 {
     const Parameters default_parameters = Parameters(R"(
     {
