@@ -11,14 +11,14 @@ def Factory(settings, Model):
 
     default_settings = KM.Parameters(
         """{
-            "help"                     : "This automates the application of initial conditions in terms of imposed stress",
+            "help"                     : "This automates the application of initial strain/stress variables using csv tables",
             "model_part_name"          : "please_specify_model_part_name",
             "variable_name"            : "SPECIFY_VARIABLE_NAME",
             "hole_generatrix_axis"     : [0.0,0.0,1.0],
             "hole_generatrix_point"    : [0.0,0.0,0.0],
             "hole_radius_offset"       : 0.0,
             "last_layer"               : false,
-            "initial_stress_table"     : {
+            "initial_variable_table"     : {
                         "name"             : "csv_table",
                         "filename"         : "sample.csv",
                         "delimiter"        : ",",
@@ -33,39 +33,19 @@ def Factory(settings, Model):
     process_settings.ValidateAndAssignDefaults(default_settings)
     computing_model_part = Model[process_settings["model_part_name"].GetString()]
 
-    if process_settings["initial_stress_table"]["filename"].GetString().find("/") != -1:
-        filepath = process_settings["initial_stress_table"]["filename"].GetString().split("/")[0] + "/"
-        filename = process_settings["initial_stress_table"]["filename"].GetString().split("/")[1]
+    if process_settings["initial_variable_table"]["filename"].GetString().find("/") != -1:
+        filepath = process_settings["initial_variable_table"]["filename"].GetString().split("/")[0] + "/"
+        filename = process_settings["initial_variable_table"]["filename"].GetString().split("/")[1]
     else:
         filepath = ""
-        filename = process_settings["initial_stress_table"]["filename"].GetString()
+        filename = process_settings["initial_variable_table"]["filename"].GetString()
 
     layer_string = filename.split("_")[0]
-    # layer_string = process_settings["initial_stress_table"]["filename"].GetString().split("_")[0]
     layer_number_string = layer_string[-1]
-    # stress_string = process_settings["initial_stress_table"]["filename"].GetString().split("_")[1].split(".")[0]
     stress_string = filename.split("_")[1].split(".")[0]
     variable_string = process_settings["variable_name"].GetString().split("_")[0] + " " + process_settings["variable_name"].GetString().split("_")[1].split("_")[0]
 
-    # for i in range(0,6):
-
-    #     process_settings["initial_stress_table"]["filename"].SetString(layer_string + "_" + stress_string[:-1] + str(i+1)+".csv")
-    #     process_settings["initial_stress_table"]["table_id"].SetInt(i)
-
-    #     # print(process_settings["initial_stress_table"]["table_id"].SetInt(i))
-
-    #     ReadCsvTableUtility(process_settings["initial_stress_table"]).Read(computing_model_part)
-    #     print(computing_model_part.GetTable(i))
-        
-    #     if not isfile(layer_string + "_" + stress_string[:-1] + str(i+2) + ".csv"):
-    #         break
-    #     # i=+1
-    
-    # print(process_settings["model_part_name"].GetString())
-
     i = 0
-
-    # print(computing_model_part)   
 
     if not isfile(filepath + layer_string[:-1] + str(i + 1) + "_" + stress_string + ".csv"):
         ErrorMsg = "Table " + "\"" + layer_string[:-1] + str(i + 1) + "_" + stress_string + ".csv\" not found"
@@ -75,12 +55,10 @@ def Factory(settings, Model):
         
         table_id = int(layer_number_string + str(i))
 
-        process_settings["initial_stress_table"]["filename"].SetString(filepath + layer_string + "_" + stress_string[:-1] + str(i+1)+".csv")
-        process_settings["initial_stress_table"]["table_id"].SetInt(table_id)
+        process_settings["initial_variable_table"]["filename"].SetString(filepath + layer_string + "_" + stress_string[:-1] + str(i+1)+".csv")
+        process_settings["initial_variable_table"]["table_id"].SetInt(table_id)
 
-        ReadCsvTableUtility(process_settings["initial_stress_table"]).Read(computing_model_part)
-        # print(table_id)
-        # print(computing_model_part.GetTable(table_id))
+        ReadCsvTableUtility(process_settings["initial_variable_table"]).Read(computing_model_part)
         
         if not isfile(filepath + layer_string + "_" + stress_string[:-1] + str(i + 2) + ".csv") or i == 5:
             Logger.PrintInfo("SetAutomatedInitialVariableProcess:: ", variable_string.capitalize() + " tables of " + layer_string + " were successfully imported")
@@ -89,9 +67,6 @@ def Factory(settings, Model):
                 ErrorMsg = "Table " + "\"" + layer_string[:-1] + str(int(layer_number_string) + 1) + "_" + stress_string + ".csv\" not found"
                 raise RuntimeError(ErrorMsg)
 
-        # print(process_settings["last_layer"])
-        
         i += 1
-        # print(i)
     
     return SMA.SetAutomatedInitialVariableProcess(computing_model_part, process_settings)
