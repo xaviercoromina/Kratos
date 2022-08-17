@@ -36,7 +36,8 @@ void SetAutomatedInitialStressProcess::ExecuteInitialize()
     KRATOS_TRY
         
     // KRATOS_ERROR_IF(MathUtils<double>::Norm3(r_generatrix_axis) < std::numeric_limits<double>::epsilon()) << "The r_generatrix_axis has norm zero" << std::endl;
-
+    const double tol = 1.0e-6;
+    
     block_for_each(mrThisModelPart.Elements(), [&](Element &rElement) {
 
         int TableFirstId;       
@@ -54,6 +55,7 @@ void SetAutomatedInitialStressProcess::ExecuteInitialize()
         array_1d<double, 3> radial_position_vector;
         double centroid_relative_distance;
         array_1d<double, 6> initial_stress_vector;
+        double radial_vector_norm;
 
         ElemId = rElement.Id();
         // KRATOS_WATCH(ElemId)    
@@ -86,9 +88,22 @@ void SetAutomatedInitialStressProcess::ExecuteInitialize()
         // KRATOS_WATCH(hole_radius_offset)  
 
         noalias(radial_position_vector) = element_centroid - intersection_point;
-        // KRATOS_WATCH(radial_position_vector)  
+        // KRATOS_WATCH(radial_position_vector)
+
+        // radial_vector_norm = std::sqrt(radial_position_vector[0] * radial_position_vector[0] + radial_position_vector[1] * radial_position_vector[1] + radial_position_vector[2] * radial_position_vector[2]);
+        // KRATOS_WATCH(radial_vector_norm)
 
         centroid_relative_distance = std::sqrt(radial_position_vector[0] * radial_position_vector[0] + radial_position_vector[1] * radial_position_vector[1] + radial_position_vector[2] * radial_position_vector[2]) - hole_radius_offset;
+        // KRATOS_ERROR_IF(centroid_relative_distance < 0.0) << "Thickness of element " << ElemId << " is too small." << std::endl;
+        
+        if (centroid_relative_distance < 0.0 && abs(centroid_relative_distance) <= tol) {
+            centroid_relative_distance = 0.0;
+        }
+        else if(centroid_relative_distance < 0.0 && abs(centroid_relative_distance) >= tol){
+            KRATOS_ERROR << "Thickness of element " << ElemId << " is too small." << std::endl;
+        }
+            
+        
         // KRATOS_WATCH(centroid_relative_distance)    
 
         TableFirstId = mThisParameters["initial_stress_table"]["table_id"].GetInt()-mrThisModelPart.Tables().size()+1;
@@ -102,10 +117,10 @@ void SetAutomatedInitialStressProcess::ExecuteInitialize()
 
                 initial_stress_vector[index] = mrThisModelPart.GetTable(TableId).GetValue(centroid_relative_distance);
 
-                rElement.SetValue(INITIAL_STRESS_VECTOR, initial_stress_vector);
-
                 index+=1;
         }
+
+        rElement.SetValue(INITIAL_STRESS_VECTOR, initial_stress_vector);
         // KRATOS_WATCH(rElement.GetValue(INITIAL_STRESS_VECTOR))
     });
     
@@ -124,6 +139,7 @@ const Parameters SetAutomatedInitialStressProcess::GetDefaultParameters() const
         "hole_generatrix_axis"     : [0.0,0.0,1.0],
         "hole_generatrix_point"    : [0.0,0.0,0.0],
         "hole_radius_offset"       : 0.0,
+        "last_layer"               : false,
         "initial_stress_table"     : {
                     "name"             : "csv_table",
                     "filename"         : "sample.csv",
