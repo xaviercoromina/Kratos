@@ -74,10 +74,10 @@ void SetAutomatedInitialVariableProcess::ExecuteInitialize()
             KRATOS_ERROR << "Thickness of element " << ElemId << " is too small." << std::endl;
         }
 
-        int TableFirstId = mThisParameters["initial_variable_table"]["table_id"].GetInt()-mrThisModelPart.Tables().size()+1;
+        int TableFirstId = mThisParameters["initial_variable_table"]["table_id"].GetInt() - mrThisModelPart.Tables().size()+1;
         
         int count = 0;
-        array_1d<double, 6> initial_variable_vector; 
+        array_1d<double, 6> initial_variable_vector = ZeroVector(); 
 
         for (IndexType TableId = TableFirstId; TableId < TableFirstId + mrThisModelPart.Tables().size(); ++TableId) {
                 initial_variable_vector[count] = mrThisModelPart.GetTable(TableId).GetValue(centroid_relative_distance);  
