@@ -96,7 +96,7 @@ from NightlyTests import ALMTaylorPatchTestContact                              
 from NightlyTests import ALMHertzSimpleTestContact                                   as TALMHertzSimpleTestContact
 from NightlyTests import ALMHertzSimpleSphereTestContact                             as TALMHertzSimpleSphereTestContact
 from NightlyTests import ALMBeamsTestContact                                         as TALMBeamsTestContact
-from NightlyTests import ALMHertzSphereTestContact                                    as TALMHertzSphereTestContact
+from NightlyTests import ALMHertzSphereTestContact                                   as TALMHertzSphereTestContact
 from NightlyTests import ALMHertzCompleteTestContact                                 as TALMHertzCompleteTestContact
 
 # Components ALM frictionless tests
@@ -117,7 +117,7 @@ from NightlyTests import ComponentsALMTaylorPatchTestContact                    
 from NightlyTests import ComponentsALMHertzSimpleTestContact                                   as TComponentsALMHertzSimpleTestContact
 from NightlyTests import ComponentsALMHertzSimpleSphereTestContact                             as TComponentsALMHertzSimpleSphereTestContact
 from NightlyTests import ComponentsALMBeamsTestContact                                         as TComponentsALMBeamsTestContact
-from NightlyTests import ComponentsALMHertzSphereTestContact                                    as TComponentsALMHertzSphereTestContact
+from NightlyTests import ComponentsALMHertzSphereTestContact                                   as TComponentsALMHertzSphereTestContact
 from NightlyTests import ComponentsALMHertzCompleteTestContact                                 as TComponentsALMHertzCompleteTestContact
 
 # ALM frictional tests
