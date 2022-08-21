@@ -96,7 +96,7 @@ from NightlyTests import ALMTaylorPatchTestContact                              
 from NightlyTests import ALMHertzSimpleTestContact                                   as TALMHertzSimpleTestContact
 from NightlyTests import ALMHertzSimpleSphereTestContact                             as TALMHertzSimpleSphereTestContact
 from NightlyTests import ALMBeamsTestContact                                         as TALMBeamsTestContact
-#from NightlyTests import ALMHertzSphereTestContact                                    as TALMHertzSphereTestContact
+from NightlyTests import ALMHertzSphereTestContact                                    as TALMHertzSphereTestContact
 from NightlyTests import ALMHertzCompleteTestContact                                 as TALMHertzCompleteTestContact
 
 # Components ALM frictionless tests
@@ -117,7 +117,7 @@ from NightlyTests import ComponentsALMTaylorPatchTestContact                    
 from NightlyTests import ComponentsALMHertzSimpleTestContact                                   as TComponentsALMHertzSimpleTestContact
 from NightlyTests import ComponentsALMHertzSimpleSphereTestContact                             as TComponentsALMHertzSimpleSphereTestContact
 from NightlyTests import ComponentsALMBeamsTestContact                                         as TComponentsALMBeamsTestContact
-#from NightlyTests import ComponentsALMHertzSphereTestContact                                    as TComponentsALMHertzSphereTestContact
+from NightlyTests import ComponentsALMHertzSphereTestContact                                    as TComponentsALMHertzSphereTestContact
 from NightlyTests import ComponentsALMHertzCompleteTestContact                                 as TComponentsALMHertzCompleteTestContact
 
 # ALM frictional tests
@@ -338,12 +338,12 @@ def AssembleTestSuites():
     validationSuite.addTests(nightlySuite)
 
     # ALM frictionless tests
-    #nightlySuite.addTest(TALMHertzSphereTestContact('test_execution'))
+    nightlySuite.addTest(TALMHertzSphereTestContact('test_execution'))
     validationSuite.addTest(TALMHertzSimpleTestContact('test_execution'))
     validationSuite.addTest(TALMHertzCompleteTestContact('test_execution'))
 
     # Components ALM frictionless tests
-    #nightlySuite.addTest(TComponentsALMHertzSphereTestContact('test_execution'))
+    nightlySuite.addTest(TComponentsALMHertzSphereTestContact('test_execution'))
     validationSuite.addTest(TComponentsALMHertzSimpleTestContact('test_execution'))
     validationSuite.addTest(TComponentsALMHertzCompleteTestContact('test_execution'))
 
@@ -490,9 +490,10 @@ def AssembleTestSuites():
               TThreeDPatchNotMatchingTestContact,
               #### NIGTHLY
               TALMTaylorPatchTestContact,
-              #####TALMHertzSphereTestContact,  # FIXME: This test requieres the axisymmetric to work (memmory error, correct it)
+              TALMHertzSphereTestContact,
               TALMHertzSimpleSphereTestContact,
               TComponentsALMTaylorPatchTestContact,
+              TComponentsALMHertzSphereTestContact,
               TALMPureFrictionalTestContact,
               TALMBasicFrictionTestContact,
               TALMStaticEvolutionLoadFrictionTestContact,
@@ -505,7 +506,6 @@ def AssembleTestSuites():
               TBeamContactWithFrictionTest,
               TPlateTest,  # TODO: Fix this
               ### VALIDATION
-              #####TComponentsALMHertzSphereTestContact,  # FIXME: This test requieres the axisymmetric to work (memmory error, correct it)
               TALMHertzSimpleTestContact,
               TALMHertzCompleteTestContact,
               TALMBeamsTestContact,
