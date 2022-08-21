@@ -10,10 +10,10 @@
     "model_part_name" : "Structure",
         "domain_size"     : 2,
         "solver_type"                        : "Static",
-        "echo_level"                         : 1,
+        "echo_level"                         : 0,
 
         "analysis_type"                      : "non_linear",
-      "model_import_settings"              : {
+        "model_import_settings"              : {
             "input_type"     : "mdpa",
             "input_filename" : "ALM_frictionless_contact_test_2D/hertz_sphere_plate_test"
         },
@@ -46,7 +46,6 @@
             "help"          : "This process fixes the selected components of a given vector variable",
             "process_name"  : "AssignVectorVariableProcess",
             "Parameters"    : {
-                "mesh_id"         : 0,
                 "model_part_name" : "Structure.Parts_parts_plate",
                 "variable_name"   : "DISPLACEMENT",
                 "value"           : [0.0,0.0,0.0],
@@ -58,7 +57,6 @@
             "help"          : "This process fixes the selected components of a given vector variable",
             "process_name"  : "AssignVectorVariableProcess",
             "Parameters"    : {
-                "mesh_id"         : 0,
                 "model_part_name" : "Structure.DISPLACEMENT_bc_symmetry",
                 "variable_name"   : "DISPLACEMENT",
                 "value"           : [0.0,null,0.0],
@@ -66,16 +64,13 @@
             }
         }],
         "loads_process_list"       : [{
-            "python_module"   : "assign_vector_by_direction_to_condition_process",
-            "kratos_module" : "KratosMultiphysics.ContactStructuralMechanicsApplication",
-            "help"                  : "This process fixes the selected components of a given vector variable",
-            "process_name"          : "AssignVectorByDirectionToConditionProcess",
-            "Parameters"            : {
-                "mesh_id"         : 0,
+            "python_module"       : "assign_scalar_variable_to_conditions_process",
+            "kratos_module"       : "KratosMultiphysics",
+            "process_name"        : "AssignScalarVariableToConditionsProcess",
+            "Parameters"          : {
                 "model_part_name" : "Structure.LineLoad2D_bc_pressure",
-                "variable_name"   : "LINE_LOAD",
-                "modulus"         : 0.2,
-                "direction"       : [0.0,-1.0,0.0]
+                "variable_name"   : "NEGATIVE_FACE_PRESSURE",
+                "value"           : 0.2
             }
         }],
         "contact_process_list" :[
