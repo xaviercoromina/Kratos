@@ -6,7 +6,7 @@
             "Material": {
                     "name": "Material",
                     "constitutive_law": {
-                            "name": "LinearElasticPlaneStrain2DLaw"
+                            "name": "LinearElasticAxisym2DLaw"
                     },
                     "Variables": {
                             "YOUNG_MODULUS": 2.00000E+03,
@@ -23,7 +23,7 @@
             "Material": {
                     "name": "Material",
                     "constitutive_law": {
-                            "name": "LinearElasticPlaneStrain2DLaw"
+                            "name": "LinearElasticAxisym2DLaw"
                     },
                     "Variables": {
                             "YOUNG_MODULUS": 2.00000E+09,
