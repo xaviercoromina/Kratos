@@ -13,73 +13,83 @@
 #if !defined(KRATOS_INTERVAL_UTILITY_H_INCLUDED)
 #define  KRATOS_INTERVAL_UTILITY_H_INCLUDED
 
-#include <cmath>
 #include "includes/define.h"
 #include "includes/kratos_parameters.h"
 
 namespace Kratos
 {
+namespace Detail
+{
 
-/**this function manages intervals. It aims at being used within processes
-*
-*/
+/**
+ *  @brief Utility class for membership tests on a 1D interval.
+ *
+ *  @note This class template has specializations for @a double and @a int but is not implemented for other types.
+ *  @ingroup KratosCore
+ */
+template <class TValue>
 class IntervalUtility
 {
 public:
 
     KRATOS_CLASS_POINTER_DEFINITION(IntervalUtility);
 
-    IntervalUtility(  Parameters settings )
-    {
-        KRATOS_TRY
+    /// Default constructor initializing boundaries to "Begin" and "End".
+    IntervalUtility();
 
-        if(settings.Has("interval"))
-        {
-            if(settings["interval"][1].IsString() )
-            {
-                if(settings["interval"][1].GetString() == std::string("End"))
-                    settings["interval"][1].SetDouble(1e30);
-                else
-                    KRATOS_ERROR << "the second value of interval can be \"End\" or a number, interval currently: \n"+settings["interval"].PrettyPrintJsonString();
-            }
-        }
-        else
-        {
-            Parameters defaults(R"( {"default_interval": [0.0, 1e30]} )");
-            settings.AddValue("interval", defaults["default_interval"]);
-        }
+    /**
+     *  @brief Construct from parameters containing "interval".
+     *
+     *  @details "interval" is expected as an array with exactly 2 items, defining
+     *           the begin and end of the interval respectively. The first item can
+     *           either be a numeric value or "Begin" (setting the smallest representable
+     *           value of @a TValue), while the second one can be a numeric value or
+     *           "End" (setting the highest representable value of @a TValue).
+     *
+     *  @note String values ("Begin" and "End") are replaced with their numeric counterparts
+     *        in the input @a Settings.
+     *
+     *  @note If "interval" is not in @a Settings, an "interval" with values corresponding
+     *        to "Begin" and "End" are added to it.
+     *
+     *  @note Other parameters in @a Settings are not checked.
+     */
+    IntervalUtility(Parameters Settings);
 
-        minterval_begin = settings["interval"][0].GetDouble();
-        minterval_end = settings["interval"][1].GetDouble();
+    IntervalUtility(IntervalUtility&& rOther) = default;
 
-        KRATOS_CATCH("");
-    }
+    IntervalUtility(const IntervalUtility& rOther) = default;
 
-    double GetIntervalBegin()
-    {
-        return minterval_begin;
-    }
+    TValue GetIntervalBegin() const noexcept;
 
-    double GetIntervalEnd()
-    {
-        return minterval_end;
-    }
+    TValue GetIntervalEnd() const noexcept;
 
-    bool IsInInterval(double time )
-    {
-        const double eps = std::max(1e-14*minterval_begin, 1e-30);
-        if(time > minterval_begin-eps && time < minterval_end+eps)
-            return true;
-        else
-            return false;
-    }
+    /**
+     *  @brief Check whether the input value is within the defined interval [Begin, End].
+     *
+     *  @details This member has explicit specializations for different types
+     *           that have slight variations in behaviour around the interval
+     *           boundaries. Check the individual specializations for the exact
+     *           behaviour.
+     */
+    bool IsInInterval(TValue Value) const noexcept;
+
+    static Parameters GetDefaultParameters();
 
 private:
-    double minterval_begin;
-    double minterval_end;
+    TValue mBegin;
+
+    TValue mEnd;
 };
 
+} // namespace Detail
 
-}
+/// A class providing membership tests on 1D rational intervals (eg.: time intervals).
+using IntervalUtility = Detail::IntervalUtility<double>;
+
+/// A class providing membership tests on 1D integer intervals (eg.: step intervals).
+using DiscreteIntervalUtility = Detail::IntervalUtility<int>;
+
+} // namespace Kratos
 
 #endif // KRATOS_INTERVAL_UTILITY_H_INCLUDED
