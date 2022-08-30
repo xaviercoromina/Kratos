@@ -4,11 +4,11 @@ import KratosMultiphysics
 
 import KratosMultiphysics.KratosUnittest as KratosUnittest
 from KratosMultiphysics import eigen_solver_factory
-import KratosMultiphysics.EigenSolversApplication as EigenSolversApplication
+import KratosMultiphysics.LinearSolversApplication as LinearSolversApplication
 
 from math import sqrt
 
-@KratosUnittest.skipUnless(EigenSolversApplication.HasFEAST(),"FEAST not found in EigenSolversApplication, skipping.")
+@KratosUnittest.skipUnless(LinearSolversApplication.HasFEAST(),"FEAST not found in LinearSolversApplication, skipping.")
 class TestFeastEigensystemSolver(KratosUnittest.TestCase):
     def test_real_symmetric_gev(self):
 
@@ -19,6 +19,8 @@ class TestFeastEigensystemSolver(KratosUnittest.TestCase):
             "symmetric": true,
             "number_of_eigenvalues": 3,
             "search_lowest_eigenvalues": true,
+            "sort_eigenvalues": true,
+            "sort_order": "sr",
             "e_min": 0.0,
             "e_max": 0.2,
             "echo_level": 0
@@ -77,6 +79,8 @@ class TestFeastEigensystemSolver(KratosUnittest.TestCase):
             "solver_type": "feast",
             "symmetric": false,
             "number_of_eigenvalues": 3,
+            "sort_eigenvalues": true,
+            "sort_order": "sr",
             "e_mid_re": 10.0,
             "e_mid_im": 0.0,
             "e_r": 3.0,

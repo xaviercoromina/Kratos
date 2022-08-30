@@ -1,10 +1,8 @@
-/*
-//  KRATOS _______
-//        / ____(_)___ ____  ____
-//       / __/ / / __ `/ _ \/ __ \
-//      / /___/ / /_/ /  __/ / / /
-//     /_____/_/\__, /\___/_/ /_/ SolversApplication
-//             /____/
+/* KRATOS  _     _                       ____        _
+//        | |   (_)_ __   ___  __ _ _ __/ ___|  ___ | |_   _____ _ __ ___
+//        | |   | | '_ \ / _ \/ _` | '__\___ \ / _ \| \ \ / / _ \ '__/ __|
+//        | |___| | | | |  __/ (_| | |   ___) | (_) | |\ V /  __/ |  \__ |
+//        |_____|_|_| |_|\___|\__,_|_|  |____/ \___/|_| \_/ \___|_|  |___/ Application
 //
 //  Author: Thomas Oberbichler
 */
@@ -40,8 +38,9 @@
 #include "custom_solvers/feast_eigensystem_solver.h"
 #endif
 
+#include "custom_solvers/spectra_sym_g_eigs_shift_solver.h"
+
 #include "factories/standard_linear_solver_factory.h"
-#include "eigen_solvers_application.h"
 
 /* Utilities */
 #include "custom_utilities/feast_condition_number_utility.h"
@@ -132,6 +131,21 @@ void register_feast_eigensystem_solver(pybind11::module& m, const std::string& n
     using Base = LinearSolver<SparseSpaceType, DenseSpaceType>;
 
     py::class_<EigenSystemSolverType, typename EigenSystemSolverType::Pointer, Base >
+        (m, name.c_str())
+        .def(py::init<Parameters>())
+    ;
+}
+
+void register_spectra_sym_g_eigs_shift_solver(pybind11::module& m, const std::string& name)
+{
+    namespace py = pybind11;
+
+    using Base = LinearSolver<UblasSpace<double, CompressedMatrix, Vector>,
+        UblasSpace<double, Matrix, Vector>>;
+
+    using SpectraSymGEigsRealSolverType = SpectraSymGEigsShiftSolver<>;
+
+    py::class_<SpectraSymGEigsRealSolverType, typename SpectraSymGEigsRealSolverType::Pointer, Base >
         (m, name.c_str())
         .def(py::init<Parameters>())
     ;
@@ -243,6 +257,9 @@ void AddCustomSolversToPython(pybind11::module& m)
     register_feast_eigensystem_solver<FEASTEigensystemSolver<true, complex, complex>>(m, "ComplexFEASTSymmetricEigensystemSolver");
     register_feast_eigensystem_solver<FEASTEigensystemSolver<false, complex, complex>>(m, "ComplexFEASTGeneralEigensystemSolver");
 #endif
+
+    // --- spectra eigensystem solver
+    register_spectra_sym_g_eigs_shift_solver(m, "SpectraSymGEigsShiftSolver");
 
     typedef UblasSpace<double, CompressedMatrix, boost::numeric::ublas::vector<double>> SparseSpaceType;
     typedef UblasSpace<double, Matrix, Vector> LocalSpaceType;

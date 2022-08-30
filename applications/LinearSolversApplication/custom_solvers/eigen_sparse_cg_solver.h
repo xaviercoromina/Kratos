@@ -1,10 +1,8 @@
-/*
-//  KRATOS _______
-//        / ____(_)___ ____  ____
-//       / __/ / / __ `/ _ \/ __ \
-//      / /___/ / /_/ /  __/ / / /
-//     /_____/_/\__, /\___/_/ /_/ SolversApplication
-//             /____/
+/* KRATOS  _     _                       ____        _
+//        | |   (_)_ __   ___  __ _ _ __/ ___|  ___ | |_   _____ _ __ ___
+//        | |   | | '_ \ / _ \/ _` | '__\___ \ / _ \| \ \ / / _ \ '__/ __|
+//        | |___| | | | |  __/ (_| | |   ___) | (_) | |\ V /  __/ |  \__ |
+//        |_____|_|_| |_|\___|\__,_|_|  |____/ \___/|_| \_/ \___|_|  |___/ Application
 //
 //  Author: Thomas Oberbichler
 */
@@ -17,6 +15,7 @@
 
 // Project includes
 #include "includes/define.h"
+#include "linear_solvers_define.h"
 #include "linear_solvers/direct_solver.h"
 #include "spaces/ublas_space.h"
 #include "includes/ublas_interface.h"
@@ -29,8 +28,8 @@ class EigenSparseCGSolver
 {
 public:
     using Scalar = TScalar;
-    using SparseMatrix = Eigen::SparseMatrix<Scalar, Eigen::RowMajor, int>;
-    using Vector = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
+    using SparseMatrix = Kratos::EigenSparseMatrix<Scalar>;
+    using Vector = Kratos::EigenDynamicVector<Scalar>;
 
 private:
     SparseMatrix m_a;

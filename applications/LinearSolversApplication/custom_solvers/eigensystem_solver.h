@@ -1,10 +1,8 @@
-/*
-//  KRATOS _______
-//        / ____(_)___ ____  ____
-//       / __/ / / __ `/ _ \/ __ \
-//      / /___/ / /_/ /  __/ / / /
-//     /_____/_/\__, /\___/_/ /_/ SolversApplication
-//             /____/
+/* KRATOS  _     _                       ____        _
+//        | |   (_)_ __   ___  __ _ _ __/ ___|  ___ | |_   _____ _ __ ___
+//        | |   | | '_ \ / _ \/ _` | '__\___ \ / _ \| \ \ / / _ \ '__/ __|
+//        | |___| | | | |  __/ (_| | |   ___) | (_) | |\ V /  __/ |  \__ |
+//        |_____|_|_| |_|\___|\__,_|_|  |____/ \___/|_| \_/ \___|_|  |___/ Application
 //
 //  Authors: Thomas Oberbichler
 //           Armin Geiser
@@ -19,14 +17,15 @@
 
 // Project includes
 #include "includes/define.h"
+#include "linear_solvers_define.h"
 #if defined EIGEN_USE_MKL_ALL
-#include "eigen_pardiso_ldlt_solver.h"
+#include "eigen_pardiso_lu_solver.h"
 #endif // defined EIGEN_USE_MKL_ALL
 #include "eigen_sparse_lu_solver.h"
 #include "includes/kratos_parameters.h"
 #include "linear_solvers/iterative_solver.h"
-#include "utilities/openmp_utils.h"
 #include "custom_utilities/ublas_wrapper.h"
+#include "utilities/builtin_timer.h"
 
 namespace Kratos
 {
@@ -91,8 +90,8 @@ class EigensystemSolver
         DenseMatrixType& rEigenvectors) override
     {
         using scalar_t = double;
-        using vector_t = Eigen::VectorXd;
-        using matrix_t = Eigen::MatrixXd;
+        using vector_t = Kratos::EigenDynamicVector<scalar_t>;
+        using matrix_t = Kratos::EigenDynamicMatrix<scalar_t>;
 
         // --- get settings
 
@@ -112,8 +111,7 @@ class EigensystemSolver
 
 
         // --- timer
-
-        double start_time = OpenMPUtils::GetCurrentTime();
+        const auto timer = BuiltinTimer();
 
         KRATOS_INFO_IF("EigensystemSolver:", echo_level > 0) << "Start"  << std::endl;
 
@@ -180,7 +178,7 @@ class EigensystemSolver
 
         #if defined USE_EIGEN_MKL
         if (mParam["use_mkl_if_available"].GetBool()) {
-            p_solver = Kratos::make_unique<DirectSolverWrapper<EigenPardisoLDLTSolver<double>>>();
+            p_solver = Kratos::make_unique<DirectSolverWrapper<EigenPardisoLUSolver<double>>>();
         } else {
             p_solver = Kratos::make_unique<DirectSolverWrapper<EigenSparseLUSolver<double>>>();
         }
@@ -288,8 +286,7 @@ class EigensystemSolver
 
         // --- output
         if (echo_level > 0) {
-            double end_time = OpenMPUtils::GetCurrentTime();
-            double duration = end_time - start_time;
+            double duration = timer.ElapsedSeconds();
 
             Eigen::IOFormat fmt(Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", ", ", "", "", "[ ", " ]");
 
@@ -317,8 +314,8 @@ private:
 
     struct DirectSolverWrapperBase
     {
-        typedef Eigen::Map<const Eigen::SparseMatrix<double, Eigen::RowMajor, int>> MatrixMapType;
-        typedef Eigen::Matrix<double, Eigen::Dynamic, 1> EigenVectorType;
+        typedef Eigen::Map<const Kratos::EigenSparseMatrix<double>> MatrixMapType;
+        typedef Kratos::EigenDynamicVector<double> EigenVectorType;
         typedef Eigen::Ref<const EigenVectorType> ConstVectorRefType;
         typedef Eigen::Ref<EigenVectorType> VectorRefType;
 

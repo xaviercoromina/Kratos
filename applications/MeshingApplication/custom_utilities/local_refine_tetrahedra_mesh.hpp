@@ -28,7 +28,7 @@
 #include "geometries/tetrahedra_3d_4.h"
 #include "custom_utilities/local_refine_geometry_mesh.hpp"
 #include "utilities/split_tetrahedra.h"
-#include "utilities/split_triangle.c"
+#include "utilities/split_triangle.h"
 
 namespace Kratos
 {
@@ -389,7 +389,7 @@ public:
                     CalculateEdgesFaces(geom, Coord, edge_ids, aux);
 
                     // Create the new conditions
-                    bool create_condition =  Split_Triangle(edge_ids, t, &number_elem, &splitted_edges, &nint);
+                    bool create_condition =  TriangleSplit::Split_Triangle(edge_ids, t, &number_elem, &splitted_edges, &nint);
 
                     if(create_condition==true)
                     {

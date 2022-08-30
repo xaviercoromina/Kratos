@@ -1,10 +1,8 @@
-/*
-//  KRATOS _______
-//        / ____(_)___ ____  ____
-//       / __/ / / __ `/ _ \/ __ \
-//      / /___/ / /_/ /  __/ / / /
-//     /_____/_/\__, /\___/_/ /_/ SolversApplication
-//             /____/
+/* KRATOS  _     _                       ____        _
+//        | |   (_)_ __   ___  __ _ _ __/ ___|  ___ | |_   _____ _ __ ___
+//        | |   | | '_ \ / _ \/ _` | '__\___ \ / _ \| \ \ / / _ \ '__/ __|
+//        | |___| | | | |  __/ (_| | |   ___) | (_) | |\ V /  __/ |  \__ |
+//        |_____|_|_| |_|\___|\__,_|_|  |____/ \___/|_| \_/ \___|_|  |___/ Application
 //
 //  Author: Manuel Messmer
 */
@@ -17,6 +15,7 @@
 #include <Eigen/Eigenvalues>
 // Project includes
 #include "includes/define.h"
+#include "linear_solvers_define.h"
 #include "spaces/ublas_space.h"
 #include "utilities/builtin_timer.h"
 #include "linear_solvers/linear_solver.h"
@@ -74,8 +73,8 @@ public:
 
         KRATOS_INFO_IF("DenseEigenvalueSolver", mEchoLevel > 0) << "Start"  << std::endl;
 
-        using vector_t = Eigen::VectorXd;
-        using matrix_t = Eigen::MatrixXd;
+        using vector_t = Kratos::EigenDynamicVector<TScalar>;
+        using matrix_t = Kratos::EigenDynamicMatrix<TScalar>;
 
         Eigen::Map<matrix_t> A(rA.data().begin(), rA.size1(), rA.size2());
 

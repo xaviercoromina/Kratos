@@ -1,10 +1,8 @@
-/*
-//  KRATOS _______
-//        / ____(_)___ ____  ____
-//       / __/ / / __ `/ _ \/ __ \
-//      / /___/ / /_/ /  __/ / / /
-//     /_____/_/\__, /\___/_/ /_/ SolversApplication
-//             /____/
+/* KRATOS  _     _                       ____        _
+//        | |   (_)_ __   ___  __ _ _ __/ ___|  ___ | |_   _____ _ __ ___
+//        | |   | | '_ \ / _ \/ _` | '__\___ \ / _ \| \ \ / / _ \ '__/ __|
+//        | |___| | | | |  __/ (_| | |   ___) | (_) | |\ V /  __/ |  \__ |
+//        |_____|_|_| |_|\___|\__,_|_|  |____/ \___/|_| \_/ \___|_|  |___/ Application
 //
 //  Author: Thomas Oberbichler
 */
@@ -114,8 +112,8 @@ public:
      */
     void PerformSolutionStep(SparseMatrixType& rA, VectorType& rX, VectorType& rB) override
     {
-        Eigen::Map<Eigen::Matrix<DataType, Eigen::Dynamic, 1>> x(rX.data().begin(), rX.size());
-        Eigen::Map<Eigen::Matrix<DataType, Eigen::Dynamic, 1>> b(rB.data().begin(), rB.size());
+        Eigen::Map<Kratos::EigenDynamicVector<DataType>> x(rX.data().begin(), rX.size());
+        Eigen::Map<Kratos::EigenDynamicVector<DataType>> b(rB.data().begin(), rB.size());
 
         const bool success = m_solver.Solve(b, x);
 
