@@ -887,7 +887,7 @@ namespace Kratos
 
 					//now we invert the matrix
 					BoundedMatrix<double, TDim+1 , TDim+1  > inverse_mass_matrix=ZeroMatrix(TDim+1 , TDim+1);
-					if(TDim==3)
+					if constexpr (TDim==3)
 						InvertMatrix( mass_matrix,  inverse_mass_matrix);
 					else
 						InvertMatrix3x3( mass_matrix,  inverse_mass_matrix);
@@ -1382,7 +1382,6 @@ namespace Kratos
 		//we start with the first position, then it will enter the loop.
 		position = pparticle.Coordinates(); //initial coordinates
 
-		double only_integral  = 0.0 ;
 
 		is_found = FindNodeOnMesh(position, N ,pelement,result_begin,MaxNumberOfResults); //good, now we know where this point is:
 		if(is_found == true)
@@ -1402,7 +1401,6 @@ namespace Kratos
 				nsubsteps=1;
 			substep_dt = delta_t / double(nsubsteps);
 
-			only_integral = 1.0;// weight;//*double(nsubsteps);
 			position += vel*substep_dt;//weight;
 
 			//DONE THE FIRST LOCATION OF THE PARTICLE, NOW WE PROCEED TO STREAMLINE INTEGRATION USING THE MESH SEDIMENT_VELOCITY
@@ -1425,7 +1423,6 @@ namespace Kratos
 						noalias(vel) += geom[j].FastGetSolutionStepValue(mVelocityVar)*N[j];
 					}
 
-					only_integral += 1.0; //values saved for the current time step
 
 					position+=vel*substep_dt;//weight;
 
@@ -1509,7 +1506,6 @@ namespace Kratos
 		//we start with the first position, then it will enter the loop.
 		position = pparticle.Coordinates(); // + (pparticle)->FastGetSolutionStepValue(DISPLACEMENT); //initial coordinates
 
-		double only_integral  = 0.0 ;
 
 		is_found = FindNodeOnMesh(position, N ,pelement,result_begin,MaxNumberOfResults); //good, now we know where this point is:
 		if(is_found == true)
@@ -1530,7 +1526,6 @@ namespace Kratos
 				nsubsteps=1;
 			substep_dt = delta_t / double(nsubsteps);
 
-			only_integral = 1.0;// weight;//*double(nsubsteps);
 			position -= vel*substep_dt;//weight;
 
 			for(unsigned int i=0; i<(nsubsteps-1); i++)// this is for the substeps n+1. in the first one we already knew the position of the particle.
@@ -1551,7 +1546,6 @@ namespace Kratos
 					}
 
 
-					only_integral += 1.0;//weight ; //values saved for the current time step
 					position-=vel*substep_dt;//weight;
 				  }
 				  else KEEP_INTEGRATING=false;
@@ -1616,7 +1610,8 @@ namespace Kratos
 		//we check all the neighbour elements
 		for (unsigned int i=0;i!=(neighb_elems.size());i++)
 		{
-
+			if(neighb_elems(i).get()!=nullptr)
+			{
 				Geometry<Node<3> >& geom = neighb_elems[i].GetGeometry();
 				bool is_found_2 = CalculatePosition(geom,coords[0],coords[1],coords[2],N);
 				if (is_found_2)
@@ -1624,6 +1619,7 @@ namespace Kratos
 					pelement=neighb_elems(i)->shared_from_this();
 					return true;
 				}
+			}
 		}
 
 	    //if checking all the neighbour elements did not work, we have to use the bins
@@ -1715,7 +1711,8 @@ namespace Kratos
 		//we check all the neighbour elements
 		for (unsigned int i=0;i!=(neighb_elems.size());i++)
 		{
-
+			if(neighb_elems(i).get()!=nullptr)
+			{
 				Geometry<Node<3> >& geom = neighb_elems[i].GetGeometry();
 				bool is_found_2 = CalculatePosition(geom,coords[0],coords[1],coords[2],N);
 				if (is_found_2)
@@ -1729,6 +1726,7 @@ namespace Kratos
 					}
 					return true;
 				}
+			}
 		}
 
 
