@@ -108,6 +108,68 @@ class ConstitutiveLawUtilities
     ///@{
 
     /**
+     * @brief This method computes the elastic ConstitutiveMatrix
+     */
+    static void CalculateElasticMatrix(
+        Matrix &rConstitutiveMatrix,
+        const double E,
+        const double nu);
+
+    /**
+     * @brief This method computes the deviatoric part of the strain
+     * @param rStrainVector The total strain
+     * @param rVolumetricStrainVector The volumetric strain part
+     * @param rDeviatoricStrainVector The deviatoric strain part
+     */
+    static void CalculateDeviatoricStrainVector(
+        const Vector &rStrainVector,
+        const Vector &rVolumetricStrainVector,
+        Vector &rDeviatoricStrainVector);
+
+    /**
+     * @brief This method computes the volumetric part of the strain
+     * @param rStrainVector The total strain
+     * @param rVolumetricStrainVector The volumetric strain part
+     */
+    static void CalculateVolumetricStrainVector(
+        const Vector &rStrainVector,
+        Vector &rVolumetricStrainVector);
+
+
+    /**
+     * @brief This method creates an identity vector
+     * @param rIdentityVector The resulting Identity Vector
+     */
+    static void CalculateIdentityVector(
+        BoundedVectorType& rIdentityVector
+    )
+    {
+        if (rIdentityVector.size() != VoigtSize) {
+            rIdentityVector.resize(VoigtSize);
+            noalias(rIdentityVector) = ZeroVector(VoigtSize);
+        }
+
+        for (IndexType i = 0; i < Dimension; ++i)
+            rIdentityVector[i] = 1.0;
+    }
+
+    /**
+     * @brief This method computes the Bulk modulus K = E / (2(1+nu))
+     * @param rValues Parameters of the constitutive law
+     */
+    static double CalculateBulkModulus(
+        const double YoungModulus,
+        const double PoissonRatio);
+
+    /**
+     * @brief This method computes the Shear modulus G = E / (3(1-2nu))
+     * @param rValues Parameters of the constitutive law
+     */
+    static double CalculateShearModulus(
+        const double YoungModulus,
+        const double PoissonRatio);
+
+    /**
      * @brief This method computes the first invariant from a given stress vector
      * @param rStressVector The stress vector on Voigt notation
      * @param rI1 The first invariant
@@ -340,7 +402,10 @@ class ConstitutiveLawUtilities
         array_1d<double, Dimension> principal_stress_vector = ZeroVector(Dimension);
         ConstitutiveLawUtilities<TVoigtSize>::CalculatePrincipalStresses(principal_stress_vector, rPredictiveStressVector);
         // The rEquivalentStress is the maximum principal stress
-        rEquivalentStress = std::max(std::max(principal_stress_vector[0], principal_stress_vector[1]), principal_stress_vector[2]);
+        if (Dimension == 3) 
+            rEquivalentStress = std::max(std::max(principal_stress_vector[0], principal_stress_vector[1]), principal_stress_vector[2]);
+        else // 2D
+            rEquivalentStress = std::max(principal_stress_vector[0], principal_stress_vector[1]);
     }
 
     /**
@@ -471,6 +536,22 @@ class ConstitutiveLawUtilities
 
     /**
      * @brief This method returns the initial uniaxial stress threshold
+     * for MohrCoulomb
+     * @param rThreshold The uniaxial stress threshold
+     * @param rValues Parameters of the constitutive law
+     */
+    static void GetInitialUniaxialThresholdMohrCoulomb(
+        ConstitutiveLaw::Parameters& rValues,
+        double& rThreshold)
+    {
+        const Properties& r_material_properties = rValues.GetMaterialProperties();
+        const double cohesion = r_material_properties[COHESION_MC];
+        const double friction_angle = r_material_properties[INTERNAL_FRICTION_ANGLE] * Globals::Pi / 180.0;
+        rThreshold = cohesion * std::cos(friction_angle);
+    }
+
+    /**
+     * @brief This method returns the initial uniaxial stress threshold
      * for Rankine
      * @param rThreshold The uniaxial stress threshold
      * @param rValues Parameters of the constitutive law
@@ -578,7 +659,12 @@ class ConstitutiveLawUtilities
         double& rAParameter,
         const double CharacteristicLength)
     {
-        CalculateDamageParameterHuberVonMises(rValues, rAParameter, CharacteristicLength);
+        const Properties& r_material_properties = rValues.GetMaterialProperties();
+        const double fracture_energy = r_material_properties[FRAC_ENERGY_T];
+        const double young_modulus = r_material_properties[YOUNG_MODULUS];
+        const double cohesion = r_material_properties[COHESION_MC];
+        rAParameter = 1.00 / (fracture_energy * young_modulus / (CharacteristicLength * std::pow(cohesion, 2)) - 0.5);
+        KRATOS_ERROR_IF(rAParameter < 0.0) << "Fracture energy is too low, increase FRACTURE_ENERGY..." << std::endl;
     }
 
     /**
@@ -725,6 +811,45 @@ class ConstitutiveLawUtilities
         rMaxValues[1] = V[1];
     }
 
+    /**
+     * @brief Calculation of the Hencky strain vector (true strain, natural strain, logarithmic strain)
+     * @details See https://en.wikipedia.org/wiki/Finite_strain_theory#Seth%E2%80%93Hill_family_of_generalized_strain_tensors
+     * @param rCauchyTensor The right Cauchy tensor
+     * @param rStrainVector The Hencky strain vector
+     */
+    static void CalculateHenckyStrain(
+        const MatrixType& rCauchyTensor,
+        VectorType& rStrainVector);
+
+    /**
+     * @brief Calculation of the Biot strain vector
+     * @details See https://en.wikipedia.org/wiki/Finite_strain_theory#Seth%E2%80%93Hill_family_of_generalized_strain_tensors
+     * @param rCauchyTensor The right Cauchy tensor
+     * @param rStrainVector The Biot strain vector
+     */
+    static void CalculateBiotStrain(
+        const MatrixType& rCauchyTensor,
+        VectorType& rStrainVector);
+
+    /**
+     * @brief Calculation of the Almansi strain vector
+     * @details See https://en.wikipedia.org/wiki/Finite_strain_theory#Seth%E2%80%93Hill_family_of_generalized_strain_tensors
+     * @param rLeftCauchyTensor The left Cauchy tensor
+     * @param rStrainVector The Almansi strain vector
+     */
+    static void CalculateAlmansiStrain(
+        const MatrixType& rLeftCauchyTensor,
+        VectorType& rStrainVector);
+
+    /**
+     * @brief Calculation of the Green-Lagrange strain vector
+     * @details See https://en.wikipedia.org/wiki/Finite_strain_theory#Seth%E2%80%93Hill_family_of_generalized_strain_tensors
+     * @param rCauchyTensor The right Cauchy tensor
+     * @param rStrainVector The Green-Lagrange strain vector
+     */
+    static void CalculateGreenLagrangianStrain(
+        const MatrixType& rCauchyTensor,
+        VectorType& rStrainVector);
   private:
 
 }; // class ConstitutiveLawUtilities

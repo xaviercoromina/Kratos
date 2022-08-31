@@ -10,16 +10,16 @@
 //  Main authors:    Vicente Mataix Ferrandiz
 //
 
-/* System includes */
-
-/* External includes */
-
-/* Project includes */
-//#include "includes/node.h"
-#include "includes/dof.h"
-
 #ifndef KRATOS_KEY_HASH_H_INCLUDED
 #define KRATOS_KEY_HASH_H_INCLUDED
+
+// System includes
+
+// External includes
+
+// Project includes
+#include "includes/dof.h"
+#include "includes/indexed_object.h"
 
 namespace Kratos
 {
@@ -38,9 +38,6 @@ namespace Kratos
 
     /// The definition of the hash type
     typedef std::size_t HashType;
-
-    // The node definition
-    //typedef Node<3> NodeType;
 
 ///@}
 ///@name  Enum's
@@ -164,24 +161,6 @@ namespace Kratos
     };
 
     /**
-     * @brief This is a hasher for variables pointers
-     * @tparam TVariable The type of variable to be hashed
-     */
-    template<class TVariable>
-    struct pVariableHasher
-    {
-        /**
-         * @brief This is the () operator
-         * @param pVariable The variable pointer to be hashed
-         * @return The corresponding hash
-         */
-        HashType operator()(const TVariable* pVariable) const
-        {
-            return pVariable->Key();
-        }
-    };
-
-    /**
      * @brief This is a key comparer between two variables
      * @tparam TVariable The type of variable to be compared
      */
@@ -203,6 +182,24 @@ namespace Kratos
     };
 
     /**
+     * @brief This is a hasher for variables pointers
+     * @tparam TVariable The type of variable to be hashed
+     */
+    template<class TVariable>
+    struct pVariableHasher
+    {
+        /**
+         * @brief This is the () operator
+         * @param pVariable The variable pointer to be hashed
+         * @return The corresponding hash
+         */
+        HashType operator()(const TVariable* pVariable) const
+        {
+            return pVariable->Key();
+        }
+    };
+
+    /**
      * @brief This is a key comparer between two variables pointers
      * @tparam TVariable The type of variable to be compared
      */
@@ -220,6 +217,86 @@ namespace Kratos
             ) const
         {
             return pFirst->Key() == pSecond->Key();
+        }
+    };
+
+    /**
+     * @brief This is a hasher for indexed objects
+     * @tparam TIndexedObject Type of indexed object
+     */
+    template<class TIndexedObject>
+    struct IndexedObjectHasher
+    {
+        /**
+         * @brief This is the () operator
+         * @param rIndexedObject The indexed object to be hashed
+         * @return The corresponding hash
+         */
+        HashType operator()(const TIndexedObject& rIndexedObject) const
+        {
+            return rIndexedObject.Id();
+        }
+    };
+
+    /**
+     * @brief This is a key comparer between two indexed objects
+     * @tparam TIndexedObject Type of indexed object
+     */
+    template<class TIndexedObject>
+    struct IndexedObjectComparator
+    {
+        /**
+         * @brief This is the () operator
+         * @param rFirst The first class to be compared
+         * @param rSecond The second class to be compared
+         */
+        bool operator()(
+            const TIndexedObject& rFirst,
+            const TIndexedObject& rSecond
+            ) const
+        {
+            return rFirst.Id() == rSecond.Id();
+        }
+    };
+
+    /**
+     * @brief This is a hasher for indexed objects (pointer)
+     * @tparam TpIndexedObject Pointer type to indexed object
+     * @note Must be tenmplated to take into account the shared, intrussive,etc... pointers
+     */
+    template<class TpIndexedObject>
+    struct IndexedObjectPointerHasher
+    {
+        /**
+         * @brief This is the () operator
+         * @param pIndexedObject The indexed object pointer to be hashed
+         * @return The corresponding hash
+         */
+        HashType operator()(const TpIndexedObject pIndexedObject) const
+        {
+            return pIndexedObject->Id();
+        }
+    };
+
+    /**
+     * @brief This is a key comparer between two indexed objects (pointer)
+     * @tparam TpIndexedObject Pointer type to indexed object
+     * @note Must be tenmplated to take into account the shared, intrussive,etc... pointers
+     */
+    template<class TpIndexedObject>
+    struct IndexedObjectPointerComparator
+    {
+        /**
+         * @brief This is the () operator
+         * @param pFirst The first class to be compared
+         * @param pSecond The second class to be compared
+         */
+        bool operator()(
+            const TpIndexedObject pFirst,
+            const TpIndexedObject pSecond
+            ) const
+        {
+            return pFirst->Id() == pSecond->Id();
         }
     };
 

@@ -1,4 +1,3 @@
-from __future__ import print_function, absolute_import, division  # makes KratosMultiphysics backward compatible with python 2.6 and 2.7
 import KratosMultiphysics
 
 def GetDefaultInputParameters():
@@ -28,6 +27,10 @@ def GetDefaultInputParameters():
 
         "ElementType" : "SwimmingDEMElement",
 
+        "error_projection_parameters"   :{
+            "u_characteristic"  : 1.0
+        },
+
         "do_print_results_option" : true,
         "output_interval" : 0.5,
 
@@ -44,7 +47,12 @@ def GetDefaultInputParameters():
                 "time_averaging_type" : 0
             },
 
+            "gentle_coupling_initiation": {
+                "initiation_interval": 0
+            },
+
             "backward_coupling" : {
+                "backward_time_interval" : 1,
                 "meso_scale_length" : 0.2,
                 "meso_scale_length_comment" : " the radius of the support of the averaging function for homogenization (<=0 for automatic calculation)",
                 "shape_factor" : 0.5,
@@ -53,7 +61,8 @@ def GetDefaultInputParameters():
                 "min_fluid_fraction" : 0.2,
                 "fluid_fraction_grad_type" : 0,
                 "calculate_diffusivity_option" : false,
-                "viscosity_modification_type" : 0
+                "viscosity_modification_type" : 0,
+                "averaging_time_interval" : 1
             }
         },
 
@@ -95,11 +104,12 @@ def GetDefaultInputParameters():
         "stationarity" : {
             "stationary_problem_option" : false,
             "stationary_problem_option_comment" : " stationary, stop calculating the fluid after it reaches the stationary state",
-            "max_pressure_variation_rate_tol" : 1e-3,
-            "max_pressure_variation_rate_tol_comment": " for stationary problems, criterion to stop the fluid calculations",
+            "tolerance" : 1e-3,
+            "tolerance_comment": " fraction of the historically-averaged, spatial-averaged time derivative of the pressure that is considered significant",
             "time_steps_per_stationarity_step" : 15,
-            "time_steps_per_stationarity_step_comment": " number of fluid time steps between consecutive assessment of stationarity steps",
-            "time_steps_per_analytic_processing_step": 1
+            "time_steps_per_stationarity_step_comment" : " number of fluid time steps between consecutive assessment of stationarity steps",
+            "time_steps_per_analytic_processing_step" : 1,
+            "time_steps_before_first_assessment" : 4
         },
 
         "debug_tool_cycle" : 10,
@@ -160,11 +170,15 @@ def GetDefaultInputParameters():
             "fluid_model_type_comment" : " untouched, velocity incremented by 1/fluid_fraction (0), modified mass conservation only (1)"
         },
 
-        "dem_parameters" : {},
+        "dem_parameters" : {
+            "seed" : 42
+        },
 
         "custom_dem" : {
             "do_solve_dem" : true,
             "do_search_neighbours" : true,
+            "do_search_dem_neighbours" : true,
+            "do_search_fem_neighbours" : true,
             "type_of_dem_inlet" : "VelocityImposed",
             "translational_integration_scheme" : "Hybrid_Bashforth"
         },

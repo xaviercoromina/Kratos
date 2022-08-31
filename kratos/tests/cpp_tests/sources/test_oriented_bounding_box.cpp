@@ -13,7 +13,7 @@
 
 // Project includes
 #include "testing/testing.h"
-#include "includes/oriented_bounding_box.h"
+#include "geometries/oriented_bounding_box.h"
 #include "includes/checks.h"
 #include "geometries/point.h"
 #include "utilities/intersection_utilities.h"
@@ -234,8 +234,8 @@ namespace Kratos {
             }
         }
 
-        auto r_edges_1 = first_quad.Edges();
-        auto r_edges_2 = second_quad.Edges();
+        auto r_edges_1 = first_quad.GenerateEdges();
+        auto r_edges_2 = second_quad.GenerateEdges();
         Point int_pt(0.0,0.0,0.0);
         for (auto& r_edge_1 : r_edges_1) {
             for (auto& r_edge_2 : r_edges_2) {

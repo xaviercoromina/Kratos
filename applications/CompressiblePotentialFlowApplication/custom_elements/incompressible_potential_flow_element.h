@@ -19,19 +19,9 @@
 
 #include "utilities/geometry_utilities.h"
 #include "utilities/enrichment_utilities.h"
-#include "custom_utilities/potential_flow_utilities.h"
 
 namespace Kratos
 {
-template <unsigned int TNumNodes, unsigned int TDim>
-struct ElementalData
-{
-    array_1d<double, TNumNodes> potentials, distances;
-    double vol;
-
-    BoundedMatrix<double, TNumNodes, TDim> DN_DX;
-    array_1d<double, TNumNodes> N;
-};
 ///@name Kratos Classes
 ///@{
 
@@ -39,6 +29,15 @@ template <int Dim, int NumNodes>
 class IncompressiblePotentialFlowElement : public Element
 {
 public:
+    template <unsigned int TNumNodes, unsigned int TDim>
+    struct ElementalData
+    {
+        array_1d<double, TNumNodes> potentials, distances;
+        double vol;
+
+        BoundedMatrix<double, TNumNodes, TDim> DN_DX;
+        array_1d<double, TNumNodes> N;
+    };
     ///@name Type Definitions
     ///@{
 
@@ -124,33 +123,33 @@ public:
 
     void CalculateLocalSystem(MatrixType& rLeftHandSideMatrix,
                               VectorType& rRightHandSideVector,
-                              ProcessInfo& rCurrentProcessInfo) override;
+                              const ProcessInfo& rCurrentProcessInfo) override;
 
     void CalculateRightHandSide(VectorType& rRightHandSideVector,
-                                ProcessInfo& rCurrentProcessInfo) override;
+                                const ProcessInfo& rCurrentProcessInfo) override;
 
     void CalculateLeftHandSide(MatrixType& rLeftHandSideMatrix,
-                                ProcessInfo& rCurrentProcessInfo) override;
+                                const ProcessInfo& rCurrentProcessInfo) override;
 
-    void EquationIdVector(EquationIdVectorType& rResult, ProcessInfo& CurrentProcessInfo) override;
+    void EquationIdVector(EquationIdVectorType& rResult, const ProcessInfo& CurrentProcessInfo) const override;
 
-    void GetDofList(DofsVectorType& rElementalDofList, ProcessInfo& rCurrentProcessInfo) override;
+    void GetDofList(DofsVectorType& rElementalDofList, const ProcessInfo& rCurrentProcessInfo) const override;
 
-    void FinalizeSolutionStep(ProcessInfo& rCurrentProcessInfo) override;
+    void FinalizeSolutionStep(const ProcessInfo& rCurrentProcessInfo) override;
 
     ///@}
     ///@name Access
     ///@{
 
-    void GetValueOnIntegrationPoints(const Variable<double>& rVariable,
+    void CalculateOnIntegrationPoints(const Variable<double>& rVariable,
                                      std::vector<double>& rValues,
                                      const ProcessInfo& rCurrentProcessInfo) override;
 
-    void GetValueOnIntegrationPoints(const Variable<int>& rVariable,
+    void CalculateOnIntegrationPoints(const Variable<int>& rVariable,
                                      std::vector<int>& rValues,
                                      const ProcessInfo& rCurrentProcessInfo) override;
 
-    void GetValueOnIntegrationPoints(const Variable<array_1d<double, 3>>& rVariable,
+    void CalculateOnIntegrationPoints(const Variable<array_1d<double, 3>>& rVariable,
                                      std::vector<array_1d<double, 3>>& rValues,
                                      const ProcessInfo& rCurrentProcessInfo) override;
 
@@ -158,7 +157,7 @@ public:
     ///@name Inquiry
     ///@{
 
-    int Check(const ProcessInfo& rCurrentProcessInfo) override;
+    int Check(const ProcessInfo& rCurrentProcessInfo) const override;
 
     ///@}
     ///@name Input and output
@@ -209,24 +208,28 @@ private:
                                           BoundedMatrix<double, NumNodes, NumNodes>& lhs,
                                           const ElementalData<NumNodes, Dim>& data) const;
 
+    void CalculateBlockLeftHandSideWakeElement(BoundedMatrix<double, NumNodes, NumNodes>& rLhs_total,
+                                            BoundedMatrix<double, NumNodes, NumNodes>& rLhs_wake_condition,
+                                            const ElementalData<NumNodes, Dim>& rData,
+                                            const ProcessInfo& rCurrentProcessInfo);
+
     void AssignLocalSystemSubdividedElement(MatrixType& rLeftHandSideMatrix,
                                             BoundedMatrix<double, NumNodes, NumNodes>& lhs_positive,
                                             BoundedMatrix<double, NumNodes, NumNodes>& lhs_negative,
                                             BoundedMatrix<double, NumNodes, NumNodes>& lhs_total,
+                                            BoundedMatrix<double, NumNodes, NumNodes>& rLhs_wake_condition,
                                             const ElementalData<NumNodes, Dim>& data) const;
 
     void AssignLocalSystemWakeElement(MatrixType& rLeftHandSideMatrix,
                                       BoundedMatrix<double, NumNodes, NumNodes>& lhs_total,
+                                      BoundedMatrix<double, NumNodes, NumNodes>& rLhs_wake_condition,
                                       const ElementalData<NumNodes, Dim>& data) const;
 
     void AssignLocalSystemWakeNode(MatrixType& rLeftHandSideMatrix,
                                    BoundedMatrix<double, NumNodes, NumNodes>& lhs_total,
+                                    BoundedMatrix<double, NumNodes, NumNodes>& rLhs_wake_condition,
                                    const ElementalData<NumNodes, Dim>& data,
                                    unsigned int& row) const;
-
-    void CheckWakeCondition() const;
-
-    void ComputePotentialJump(const ProcessInfo& rCurrentProcessInfo);
 
     void ComputeElementInternalEnergy();
 

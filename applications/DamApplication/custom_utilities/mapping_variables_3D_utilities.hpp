@@ -442,9 +442,8 @@ protected:
                 std::cout << "None of the old elements contains node " << itNodeNew->Id() << std::endl;
                 if (add_stress)
                 {
-                    Matrix NodalStress = ZeroMatrix(3,3);
-                    itNodeNew->FastGetSolutionStepValue(NODAL_CAUCHY_STRESS_TENSOR) = NodalStress;
-                    itNodeNew->FastGetSolutionStepValue(INITIAL_NODAL_CAUCHY_STRESS_TENSOR) = NodalStress;
+                    itNodeNew->FastGetSolutionStepValue(NODAL_CAUCHY_STRESS_TENSOR) = ZeroMatrix(3,3);
+                    itNodeNew->FastGetSolutionStepValue(INITIAL_NODAL_CAUCHY_STRESS_TENSOR) = ZeroMatrix(3,3);
                 }
                 continue;
             }
@@ -536,7 +535,7 @@ private:
     {
 
         // Compute X, Y and Z limits of the current geometry
-        unsigned int NumThreads = OpenMPUtils::GetNumThreads();
+        unsigned int NumThreads = ParallelUtilities::GetNumThreads();
         std::vector<double> X_max_partition(NumThreads);
         std::vector<double> X_min_partition(NumThreads);
         std::vector<double> Y_max_partition(NumThreads);

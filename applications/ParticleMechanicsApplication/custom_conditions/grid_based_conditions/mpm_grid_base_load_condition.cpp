@@ -17,6 +17,7 @@
 
 // Project includes
 #include "custom_conditions/grid_based_conditions/mpm_grid_base_load_condition.h"
+#include "includes/checks.h"
 
 namespace Kratos
 {
@@ -25,37 +26,37 @@ namespace Kratos
 
     void MPMGridBaseLoadCondition::EquationIdVector(
         EquationIdVectorType& rResult,
-        ProcessInfo& rCurrentProcessInfo )
+        const ProcessInfo& rCurrentProcessInfo) const
     {
         KRATOS_TRY
 
-        GeometryType& rGeom = GetGeometry();
-        const unsigned int NumberOfNodes = rGeom.size();
-        const unsigned int dim = rGeom.WorkingSpaceDimension();
-        if (rResult.size() != dim * NumberOfNodes)
+        const GeometryType& r_geometry = GetGeometry();
+        const unsigned int number_of_nodes = r_geometry.size();
+        const unsigned int dimension = r_geometry.WorkingSpaceDimension();
+        if (rResult.size() != dimension * number_of_nodes)
         {
-            rResult.resize(dim*NumberOfNodes,false);
+            rResult.resize(dimension*number_of_nodes,false);
         }
 
-        const unsigned int pos = rGeom[0].GetDofPosition(DISPLACEMENT_X);
+        const unsigned int pos = r_geometry[0].GetDofPosition(DISPLACEMENT_X);
 
-        if(dim == 2)
+        if(dimension == 2)
         {
-            for (unsigned int i = 0; i < NumberOfNodes; ++i)
+            for (unsigned int i = 0; i < number_of_nodes; ++i)
             {
                 const unsigned int index = i * 2;
-                rResult[index    ] = rGeom[i].GetDof(DISPLACEMENT_X,pos    ).EquationId();
-                rResult[index + 1] = rGeom[i].GetDof(DISPLACEMENT_Y,pos + 1).EquationId();
+                rResult[index    ] = r_geometry[i].GetDof(DISPLACEMENT_X,pos    ).EquationId();
+                rResult[index + 1] = r_geometry[i].GetDof(DISPLACEMENT_Y,pos + 1).EquationId();
             }
         }
         else
         {
-            for (unsigned int i = 0; i < NumberOfNodes; ++i)
+            for (unsigned int i = 0; i < number_of_nodes; ++i)
             {
                 const unsigned int index = i * 3;
-                rResult[index    ] = rGeom[i].GetDof(DISPLACEMENT_X,pos    ).EquationId();
-                rResult[index + 1] = rGeom[i].GetDof(DISPLACEMENT_Y,pos + 1).EquationId();
-                rResult[index + 2] = rGeom[i].GetDof(DISPLACEMENT_Z,pos + 2).EquationId();
+                rResult[index    ] = r_geometry[i].GetDof(DISPLACEMENT_X,pos    ).EquationId();
+                rResult[index + 1] = r_geometry[i].GetDof(DISPLACEMENT_Y,pos + 1).EquationId();
+                rResult[index + 2] = r_geometry[i].GetDof(DISPLACEMENT_Z,pos + 2).EquationId();
             }
         }
         KRATOS_CATCH("")
@@ -65,32 +66,32 @@ namespace Kratos
     //***********************************************************************
     void MPMGridBaseLoadCondition::GetDofList(
         DofsVectorType& ElementalDofList,
-        ProcessInfo& rCurrentProcessInfo
-        )
+        const ProcessInfo& rCurrentProcessInfo
+        ) const
     {
         KRATOS_TRY
 
-        GeometryType& rGeom = GetGeometry();
-        const unsigned int NumberOfNodes = rGeom.size();
-        const unsigned int dim =  rGeom.WorkingSpaceDimension();
+        const GeometryType& r_geometry = GetGeometry();
+        const unsigned int number_of_nodes = r_geometry.size();
+        const unsigned int dimension =  r_geometry.WorkingSpaceDimension();
         ElementalDofList.resize(0);
-        ElementalDofList.reserve(dim * NumberOfNodes);
+        ElementalDofList.reserve(dimension * number_of_nodes);
 
-        if(dim == 2)
+        if(dimension == 2)
         {
-            for (unsigned int i = 0; i < NumberOfNodes; ++i)
+            for (unsigned int i = 0; i < number_of_nodes; ++i)
             {
-                ElementalDofList.push_back( rGeom[i].pGetDof(DISPLACEMENT_X));
-                ElementalDofList.push_back( rGeom[i].pGetDof(DISPLACEMENT_Y));
+                ElementalDofList.push_back( r_geometry[i].pGetDof(DISPLACEMENT_X));
+                ElementalDofList.push_back( r_geometry[i].pGetDof(DISPLACEMENT_Y));
             }
         }
         else
         {
-            for (unsigned int i = 0; i < NumberOfNodes; ++i)
+            for (unsigned int i = 0; i < number_of_nodes; ++i)
             {
-                ElementalDofList.push_back( rGeom[i].pGetDof(DISPLACEMENT_X));
-                ElementalDofList.push_back( rGeom[i].pGetDof(DISPLACEMENT_Y));
-                ElementalDofList.push_back( rGeom[i].pGetDof(DISPLACEMENT_Z));
+                ElementalDofList.push_back( r_geometry[i].pGetDof(DISPLACEMENT_X));
+                ElementalDofList.push_back( r_geometry[i].pGetDof(DISPLACEMENT_Y));
+                ElementalDofList.push_back( r_geometry[i].pGetDof(DISPLACEMENT_Z));
             }
         }
         KRATOS_CATCH("")
@@ -102,25 +103,25 @@ namespace Kratos
     void MPMGridBaseLoadCondition::GetValuesVector(
         Vector& rValues,
         int Step
-        )
+        ) const
     {
-        GeometryType& rGeom = GetGeometry();
-        const unsigned int NumberOfNodes = rGeom.size();
-        const unsigned int dim = rGeom.WorkingSpaceDimension();
-        const unsigned int MatSize = NumberOfNodes * dim;
+        const GeometryType& r_geometry = GetGeometry();
+        const unsigned int number_of_nodes = r_geometry.size();
+        const unsigned int dimension = r_geometry.WorkingSpaceDimension();
+        const unsigned int matrix_size = number_of_nodes * dimension;
 
-        if (rValues.size() != MatSize)
+        if (rValues.size() != matrix_size)
         {
-            rValues.resize(MatSize, false);
+            rValues.resize(matrix_size, false);
         }
 
-        for (unsigned int i = 0; i < NumberOfNodes; i++)
+        for (unsigned int i = 0; i < number_of_nodes; i++)
         {
-            const array_1d<double, 3 > & Displacement = rGeom[i].FastGetSolutionStepValue(DISPLACEMENT, Step);
-            unsigned int index = i * dim;
-            for(unsigned int k = 0; k < dim; ++k)
+            const array_1d<double, 3 > & r_displacement = r_geometry[i].FastGetSolutionStepValue(DISPLACEMENT, Step);
+            unsigned int index = i * dimension;
+            for(unsigned int k = 0; k < dimension; ++k)
             {
-                rValues[index + k] = Displacement[k];
+                rValues[index + k] = r_displacement[k];
             }
         }
     }
@@ -131,25 +132,25 @@ namespace Kratos
     void MPMGridBaseLoadCondition::GetFirstDerivativesVector(
         Vector& rValues,
         int Step
-        )
+        ) const
     {
-        GeometryType& rGeom = GetGeometry();
-        const unsigned int NumberOfNodes = rGeom.size();
-        const unsigned int dim = rGeom.WorkingSpaceDimension();
-        const unsigned int MatSize = NumberOfNodes * dim;
+        const GeometryType& r_geometry = GetGeometry();
+        const unsigned int number_of_nodes = r_geometry.size();
+        const unsigned int dimension = r_geometry.WorkingSpaceDimension();
+        const unsigned int matrix_size = number_of_nodes * dimension;
 
-        if (rValues.size() != MatSize)
+        if (rValues.size() != matrix_size)
         {
-            rValues.resize(MatSize, false);
+            rValues.resize(matrix_size, false);
         }
 
-        for (unsigned int i = 0; i < NumberOfNodes; i++)
+        for (unsigned int i = 0; i < number_of_nodes; i++)
         {
-            const array_1d<double, 3 > & Velocity = rGeom[i].FastGetSolutionStepValue(VELOCITY, Step);
-            const unsigned int index = i * dim;
-            for(unsigned int k = 0; k<dim; ++k)
+            const array_1d<double, 3 > & r_velocity = r_geometry[i].FastGetSolutionStepValue(VELOCITY, Step);
+            const unsigned int index = i * dimension;
+            for(unsigned int k = 0; k<dimension; ++k)
             {
-                rValues[index + k] = Velocity[k];
+                rValues[index + k] = r_velocity[k];
             }
         }
     }
@@ -160,25 +161,25 @@ namespace Kratos
     void MPMGridBaseLoadCondition::GetSecondDerivativesVector(
         Vector& rValues,
         int Step
-        )
+        ) const
     {
-        GeometryType& rGeom = GetGeometry();
-        const unsigned int NumberOfNodes = rGeom.size();
-        const unsigned int dim = rGeom.WorkingSpaceDimension();
-        const unsigned int MatSize = NumberOfNodes * dim;
+        const GeometryType& r_geometry = GetGeometry();
+        const unsigned int number_of_nodes = r_geometry.size();
+        const unsigned int dimension = r_geometry.WorkingSpaceDimension();
+        const unsigned int matrix_size = number_of_nodes * dimension;
 
-        if (rValues.size() != MatSize)
+        if (rValues.size() != matrix_size)
         {
-            rValues.resize(MatSize, false);
+            rValues.resize(matrix_size, false);
         }
 
-        for (unsigned int i = 0; i < NumberOfNodes; i++)
+        for (unsigned int i = 0; i < number_of_nodes; i++)
         {
-            const array_1d<double, 3 > & Acceleration = rGeom[i].FastGetSolutionStepValue(ACCELERATION, Step);
-            const unsigned int index = i * dim;
-            for(unsigned int k = 0; k < dim; ++k)
+            const array_1d<double, 3 > & r_acceleration = r_geometry[i].FastGetSolutionStepValue(ACCELERATION, Step);
+            const unsigned int index = i * dimension;
+            for(unsigned int k = 0; k < dimension; ++k)
             {
-                rValues[index + k] = Acceleration[k];
+                rValues[index + k] = r_acceleration[k];
             }
         }
     }
@@ -186,7 +187,7 @@ namespace Kratos
     //************************************************************************************
     //************************************************************************************
 
-    void MPMGridBaseLoadCondition::CalculateRightHandSide( VectorType& rRightHandSideVector, ProcessInfo& rCurrentProcessInfo )
+    void MPMGridBaseLoadCondition::CalculateRightHandSide( VectorType& rRightHandSideVector, const ProcessInfo& rCurrentProcessInfo )
     {
         // Calculation flags
         const bool CalculateStiffnessMatrixFlag = false;
@@ -198,7 +199,7 @@ namespace Kratos
 
     //************************************************************************************
     //************************************************************************************
-    void MPMGridBaseLoadCondition::CalculateLocalSystem( MatrixType& rLeftHandSideMatrix, VectorType& rRightHandSideVector, ProcessInfo& rCurrentProcessInfo )
+    void MPMGridBaseLoadCondition::CalculateLocalSystem( MatrixType& rLeftHandSideMatrix, VectorType& rRightHandSideVector, const ProcessInfo& rCurrentProcessInfo )
     {
         //calculation flags
         const bool CalculateStiffnessMatrixFlag = true;
@@ -212,7 +213,7 @@ namespace Kratos
 
     void MPMGridBaseLoadCondition::CalculateMassMatrix(
         MatrixType& rMassMatrix,
-        ProcessInfo& rCurrentProcessInfo
+        const ProcessInfo& rCurrentProcessInfo
         )
     {
         if(rMassMatrix.size1() != 0)
@@ -226,7 +227,7 @@ namespace Kratos
 
     void MPMGridBaseLoadCondition::CalculateDampingMatrix(
         MatrixType& rDampingMatrix,
-        ProcessInfo& rCurrentProcessInfo
+        const ProcessInfo& rCurrentProcessInfo
         )
     {
         if(rDampingMatrix.size1() != 0)
@@ -240,7 +241,7 @@ namespace Kratos
 
     void MPMGridBaseLoadCondition::CalculateAll(
         MatrixType& rLeftHandSideMatrix, VectorType& rRightHandSideVector,
-        ProcessInfo& rCurrentProcessInfo,
+        const ProcessInfo& rCurrentProcessInfo,
         bool CalculateStiffnessMatrixFlag,
         bool CalculateResidualVectorFlag
         )
@@ -251,27 +252,18 @@ namespace Kratos
     //***********************************************************************
     //***********************************************************************
 
-    int MPMGridBaseLoadCondition::Check( const ProcessInfo& rCurrentProcessInfo )
+    int MPMGridBaseLoadCondition::Check( const ProcessInfo& rCurrentProcessInfo ) const
     {
-        if ( DISPLACEMENT.Key() == 0 )
-        {
-            KRATOS_ERROR <<  "DISPLACEMENT has Key zero! (check if the application is correctly registered" << std::endl;
-        }
+        // Base check
+        Condition::Check(rCurrentProcessInfo);
 
-        //verify that the dofs exist
-        for ( unsigned int i = 0; i < this->GetGeometry().size(); i++ )
-        {
-            if ( this->GetGeometry()[i].SolutionStepsDataHas( DISPLACEMENT ) == false )
-            {
-                KRATOS_ERROR << "missing variable DISPLACEMENT on node " << this->GetGeometry()[i].Id() << std::endl;
-            }
+        // Check that the condition's nodes contain all required SolutionStepData and Degrees of freedom
+        for (const auto& r_node : this->GetGeometry().Points()) {
+            KRATOS_CHECK_VARIABLE_IN_NODAL_DATA(DISPLACEMENT,r_node)
 
-            if ( this->GetGeometry()[i].HasDofFor( DISPLACEMENT_X ) == false ||
-                 this->GetGeometry()[i].HasDofFor( DISPLACEMENT_Y ) == false ||
-                 this->GetGeometry()[i].HasDofFor( DISPLACEMENT_Z ) == false )
-            {
-                KRATOS_ERROR << "missing one of the dofs for the variable DISPLACEMENT on node " << GetGeometry()[i].Id() << " of condition " << Id() << std::endl;
-            }
+            KRATOS_CHECK_DOF_IN_NODE(DISPLACEMENT_X, r_node)
+            KRATOS_CHECK_DOF_IN_NODE(DISPLACEMENT_Y, r_node)
+            KRATOS_CHECK_DOF_IN_NODE(DISPLACEMENT_Z, r_node)
         }
 
         return 0;
@@ -294,14 +286,14 @@ namespace Kratos
 
     void MPMGridBaseLoadCondition::AddExplicitContribution(const VectorType& rRHS,
         const Variable<VectorType>& rRHSVariable,
-        Variable<array_1d<double,3> >& rDestinationVariable,
+        const Variable<array_1d<double,3> >& rDestinationVariable,
         const ProcessInfo& rCurrentProcessInfo)
     {
         KRATOS_TRY
 
-        GeometryType& rGeom = GetGeometry();
-        const unsigned int number_of_nodes = rGeom.PointsNumber();
-        const unsigned int dimension       = rGeom.WorkingSpaceDimension();
+        GeometryType& r_geometry = GetGeometry();
+        const unsigned int number_of_nodes = r_geometry.PointsNumber();
+        const unsigned int dimension       = r_geometry.WorkingSpaceDimension();
 
         if( rRHSVariable == RESIDUAL_VECTOR && rDestinationVariable == FORCE_RESIDUAL )
         {
@@ -310,13 +302,13 @@ namespace Kratos
             {
                 SizeType index = dimension * i;
 
-                if (rGeom[i].SolutionStepsDataHas(FORCE_RESIDUAL))
+                if (r_geometry[i].SolutionStepsDataHas(FORCE_RESIDUAL))
                 {
-                    array_1d<double, 3 > &ForceResidual = rGeom[i].FastGetSolutionStepValue(FORCE_RESIDUAL);
+                    array_1d<double, 3 > & r_force_residual = r_geometry[i].FastGetSolutionStepValue(FORCE_RESIDUAL);
                     for(SizeType j=0; j<dimension; j++)
                     {
                         #pragma omp atomic
-                        ForceResidual[j] += rRHS[index + j];
+                        r_force_residual[j] += rRHS[index + j];
                     }
                 }
             }

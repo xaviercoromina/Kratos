@@ -108,7 +108,7 @@ public:
 
       bool BodyIsFixed = CustomParameters["constrained"].GetBool();
 
-      ModelPart& rMainModelPart = *(rModelPart.GetParentModelPart());
+      ModelPart& rMainModelPart = rModelPart.GetParentModelPart();
 
       //std::cout<<rMainModelPart<<std::endl;
 
@@ -285,7 +285,7 @@ public:
         TransferFlags.push_back(KratosComponents<Flags>::Get( CustomParameters["flags_list"][i].GetString() ));
       }
 
-      ModelPart& rMainModelPart = *(rModelPart.GetParentModelPart());
+      ModelPart& rMainModelPart = rModelPart.GetParentModelPart();
 
       unsigned int LastConditionId = 1;
       if( rMainModelPart.Conditions().size() != 0 )
@@ -613,7 +613,7 @@ private:
 
       for(NodeType::DofsContainerType::iterator iii = reference_dofs.begin(); iii != reference_dofs.end(); iii++)
       	{
-      	  NodeType::DofType& rDof = *iii;
+      	  NodeType::DofType& rDof = **iii;
       	  Node->pAddDof( rDof );
       	}
 
@@ -625,7 +625,7 @@ private:
 
     	for(NodeType::DofsContainerType::iterator iii = new_dofs.begin(); iii != new_dofs.end(); iii++)
       	{
-      	  NodeType::DofType& rDof = *iii;
+      	  NodeType::DofType& rDof = **iii;
     	  rDof.FixDof(); // dofs fixed
       	}
 
@@ -637,7 +637,7 @@ private:
 
     	for(NodeType::DofsContainerType::iterator iii = new_dofs.begin(); iii != new_dofs.end(); iii++)
       	{
-      	  NodeType::DofType& rDof = *iii;
+      	  NodeType::DofType& rDof = **iii;
     	  rDof.FreeDof(); // dofs free
       	}
 

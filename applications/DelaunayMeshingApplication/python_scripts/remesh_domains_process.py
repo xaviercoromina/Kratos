@@ -99,13 +99,10 @@ class RemeshDomainsProcess(KratosMultiphysics.Process):
                 domain.Initialize()
                 #domain.Check()
 
-        print(self._class_prefix()+" Ready")
-
-
     def InitializeDomains(self):
 
         print(self._class_prefix()+" Initialize Domains")
-        import domain_utilities
+        from KratosMultiphysics.DelaunayMeshingApplication import domain_utilities
         domain_utils = domain_utilities.DomainUtilities()
         domain_utils.InitializeDomains(self.main_model_part,self.echo_level)
 
@@ -199,7 +196,7 @@ class RemeshDomainsProcess(KratosMultiphysics.Process):
 
     #
     def GetVariables(self):
-        import domain_utilities
+        from KratosMultiphysics.DelaunayMeshingApplication import domain_utilities
         nodal_variables = domain_utilities.DomainUtilities().GetVariables()
         nodal_variables = nodal_variables + ['DETERMINANT_F'] # variables smoothing
         nodal_variables = nodal_variables + ['MEAN_ERROR'] # removing nodes

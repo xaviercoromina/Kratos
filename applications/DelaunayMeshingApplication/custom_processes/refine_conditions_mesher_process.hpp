@@ -235,7 +235,7 @@ public:
 
 	std::vector<double> Value;
 
-	MasterElement.GetValueOnIntegrationPoints(mrRemesh.Refine->GetThresholdVariable(),Value,rCurrentProcessInfo);
+	MasterElement.CalculateOnIntegrationPoints(mrRemesh.Refine->GetThresholdVariable(),Value,rCurrentProcessInfo);
 
 	//calculate threshold value (plastic power)
 	double threshold_value = 0;
@@ -812,7 +812,7 @@ public:
 	      //generating the dofs
 	      for(Node<3>::DofsContainerType::iterator i_dof = ReferenceDofs.begin(); i_dof != ReferenceDofs.end(); ++i_dof)
 		{
-		  NodeType::DofType& rDof = *i_dof;
+		  NodeType::DofType& rDof = **i_dof;
 		  NodeType::DofType::Pointer pNewDof = pNode->pAddDof( rDof );
 
 		  count = 0;

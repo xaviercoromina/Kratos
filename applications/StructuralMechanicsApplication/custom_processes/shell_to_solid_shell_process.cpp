@@ -19,6 +19,7 @@
 #include "structural_mechanics_application_variables.h"
 #include "custom_processes/shell_to_solid_shell_process.h"
 #include "custom_processes/solid_shell_thickness_compute_process.h"
+#include "utilities/atomic_utilities.h"
 
 namespace Kratos
 {
@@ -31,21 +32,7 @@ ShellToSolidShellProcess<TNumNodes>::ShellToSolidShellProcess(
 {
     KRATOS_TRY
 
-    Parameters default_parameters = Parameters(R"(
-    {
-        "element_name"                         : "SolidShellElementSprism3D6N",
-        "new_constitutive_law_name"            : "",
-        "model_part_name"                      : "",
-        "number_of_layers"                     : 1,
-        "export_to_mdpa"                       : false,
-        "output_name"                          : "output",
-        "computing_model_part_name"            : "computing_domain",
-        "create_submodelparts_external_layers" : false,
-        "append_submodelparts_external_layers" : false,
-        "initialize_elements"                  : false,
-        "replace_previous_geometry"            : true,
-        "collapse_geometry"                    : false
-    })" );
+    Parameters default_parameters(GetDefaultParameters());
 
     // Some initial checks
     if (mThisParameters.Has("collapse_geometry")) {
@@ -178,7 +165,7 @@ void ShellToSolidShellProcess<TNumNodes>::ExecuteExtrusion()
 
     // We copy the dof from the first node
     const auto it_node_begin = r_nodes_array.begin();
-    NodeType::DofsContainerType dofs = it_node_begin->GetDofs();
+    NodeType::DofsContainerType& dofs = it_node_begin->GetDofs();
 
     // We initialize the thickness
     #pragma omp parallel for
@@ -212,12 +199,12 @@ void ShellToSolidShellProcess<TNumNodes>::ExecuteExtrusion()
             auto& r_node = r_geometry[i];
 
             double& node_thickness = r_node.GetValue(THICKNESS);
-            #pragma omp atomic
-            node_thickness += thickness;
+
+            AtomicAdd(node_thickness, thickness);
 
             double& nodal_area = r_node.GetValue(NODAL_AREA);
-            #pragma omp atomic
-            nodal_area += 1.0;
+
+            AtomicAdd(nodal_area, 1.0);
         }
     }
 
@@ -243,7 +230,7 @@ void ShellToSolidShellProcess<TNumNodes>::ExecuteExtrusion()
 
         // Set the DOFs in the nodes
         for (auto it_dof = dofs.begin(); it_dof != dofs.end(); ++it_dof)
-            p_node0->pAddDof(*it_dof);
+            p_node0->pAddDof(**it_dof);
 
         // We copy the step data
         CopyVariablesList(p_node0, p_node_begin);
@@ -258,7 +245,7 @@ void ShellToSolidShellProcess<TNumNodes>::ExecuteExtrusion()
 
             // Set the DOFs in the nodes
             for (auto it_dof = dofs.begin(); it_dof != dofs.end(); ++it_dof)
-                p_node1->pAddDof(*it_dof);
+                p_node1->pAddDof(**it_dof);
 
             // We copy the step data
             CopyVariablesList(p_node1, p_node_begin);
@@ -410,7 +397,7 @@ void ShellToSolidShellProcess<TNumNodes>::ExecuteCollapse()
 
     // We copy the dof from the first node
     const auto it_node_begin = r_nodes_array.begin();
-    NodeType::DofsContainerType dofs = it_node_begin->GetDofs();
+    NodeType::DofsContainerType& dofs = it_node_begin->GetDofs();
 
     // Initial check
     const SizeType number_of_layers = mThisParameters["number_of_layers"].GetInt();
@@ -449,7 +436,7 @@ void ShellToSolidShellProcess<TNumNodes>::ExecuteCollapse()
 
             // Set the DOFs in the nodes
             for (auto it_dof = dofs.begin(); it_dof != dofs.end(); ++it_dof)
-                p_node->pAddDof(*it_dof);
+                p_node->pAddDof(**it_dof);
 
             // We copy the step data
             CopyVariablesList(p_node, p_node_begin);
@@ -548,8 +535,9 @@ template<SizeType TNumNodes>
 void ShellToSolidShellProcess<TNumNodes>::InitializeElements()
 {
     ElementsArrayType& element_array = mrThisModelPart.Elements();
+    const auto& r_process_info = mrThisModelPart.GetProcessInfo();
     for(SizeType i = 0; i < element_array.size(); ++i)
-        (element_array.begin() + i)->Initialize();
+        (element_array.begin() + i)->Initialize(r_process_info);
 }
 
 /***********************************************************************************/
@@ -633,11 +621,8 @@ inline void ShellToSolidShellProcess<TNumNodes>::ComputeNodesMeanNormalModelPart
             auto& this_node = this_geometry[i];
             aux_coords = this_geometry.PointLocalCoordinates(aux_coords, this_node.Coordinates());
             const array_1d<double, 3>& r_normal = this_geometry.UnitNormal(aux_coords);
-            auto& aux_normal = this_node.GetValue(NORMAL);
-            for (unsigned int index = 0; index < 3; ++index) {
-                #pragma omp atomic
-                aux_normal[index] += r_normal[index];
-            }
+            array_1d<double, 3>& aux_normal = this_node.GetValue(NORMAL);
+            AtomicAdd(aux_normal, r_normal);
         }
     }
 
@@ -664,6 +649,31 @@ inline void ShellToSolidShellProcess<TNumNodes>::CopyVariablesList(
     auto& node_data = pNodeNew->SolutionStepData();
     auto& node_data_reference = pNodeOld->SolutionStepData();
     node_data.SetVariablesList(node_data_reference.pGetVariablesList());
+}
+
+/***********************************************************************************/
+/***********************************************************************************/
+
+template<SizeType TNumNodes>
+const Parameters ShellToSolidShellProcess<TNumNodes>::GetDefaultParameters() const
+{
+    const Parameters default_parameters = Parameters(R"(
+    {
+        "element_name"                         : "SolidShellElementSprism3D6N",
+        "new_constitutive_law_name"            : "",
+        "model_part_name"                      : "",
+        "number_of_layers"                     : 1,
+        "export_to_mdpa"                       : false,
+        "output_name"                          : "output",
+        "computing_model_part_name"            : "computing_domain",
+        "create_submodelparts_external_layers" : false,
+        "append_submodelparts_external_layers" : false,
+        "initialize_elements"                  : false,
+        "replace_previous_geometry"            : true,
+        "collapse_geometry"                    : false
+    })" );
+
+    return default_parameters;
 }
 
 /***********************************************************************************/

@@ -1,5 +1,7 @@
 import math
 import KratosMultiphysics
+from KratosMultiphysics.assign_scalar_variable_process import AssignScalarVariableProcess
+
 import KratosMultiphysics.FluidDynamicsApplication as KratosFluid
 
 def Factory(settings, Model):
@@ -70,9 +72,8 @@ class ApplyOutletProcess(KratosMultiphysics.Process):
             condition.Set(KratosMultiphysics.OUTLET, True)
 
         # Construct the base process AssignValueProcess
-        import assign_scalar_variable_process
-        self.aux_pressure_process = assign_scalar_variable_process.AssignScalarVariableProcess(Model, pres_settings)
-        self.aux_external_pressure_process = assign_scalar_variable_process.AssignScalarVariableProcess(Model, ext_pres_settings)
+        self.aux_pressure_process = AssignScalarVariableProcess(Model, pres_settings)
+        self.aux_external_pressure_process = AssignScalarVariableProcess(Model, ext_pres_settings)
 
 
     def ExecuteInitializeSolutionStep(self):
@@ -112,7 +113,7 @@ class ApplyOutletProcess(KratosMultiphysics.Process):
         body_force_dir = (1/(body_force_norm+1e-10))*body_force                                                                 # Body force unit director vector
 
         # Compute the minimum body force projection value (reference value)
-        min_proj = 0.0
+        min_proj = 1.0e15
         for node in self.outlet_model_part.Nodes:
             body_force_proj = body_force_dir[0]*node.X + body_force_dir[1]*node.Y + body_force_dir[2]*node.Z    # Iteration node body force projection
             min_proj = min(min_proj, body_force_proj)

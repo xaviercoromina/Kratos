@@ -26,7 +26,7 @@
 #include "custom_python/add_trilinos_processes_to_python.h"
 #include "custom_python/add_trilinos_strategies_to_python.h"
 #include "custom_python/add_custom_utilities_to_python.h"
-#include "custom_python/add_zoltan_processes_to_python.h"
+#include "custom_python/add_trilinos_convergence_accelerators_to_python.h"
 
 // Project includes
 #include "trilinos_application.h"
@@ -53,7 +53,7 @@ PYBIND11_MODULE(KratosTrilinosApplication,m)
     AddProcesses(m);
     AddStrategies(m);
     AddCustomUtilitiesToPython(m);
-    AddZoltanProcessesToPython(m);
+    AddTrilinosConvergenceAcceleratorsToPython(m);
 
     //registering variables in python
 

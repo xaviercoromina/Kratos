@@ -1,10 +1,11 @@
-// KRATOS  ___|  |                   |                   |
-//       \___ \  __|  __| |   |  __| __| |   |  __| _` | |
-//             | |   |    |   | (    |   |   | |   (   | |
-//       _____/ \__|_|   \__,_|\___|\__|\__,_|_|  \__,_|_| MECHANICS
+// KRATOS    ______            __             __  _____ __                  __                   __
+//          / ____/___  ____  / /_____ ______/ /_/ ___// /________  _______/ /___  ___________ _/ /
+//         / /   / __ \/ __ \/ __/ __ `/ ___/ __/\__ \/ __/ ___/ / / / ___/ __/ / / / ___/ __ `/ /
+//        / /___/ /_/ / / / / /_/ /_/ / /__/ /_ ___/ / /_/ /  / /_/ / /__/ /_/ /_/ / /  / /_/ / /
+//        \____/\____/_/ /_/\__/\__,_/\___/\__//____/\__/_/   \__,_/\___/\__/\__,_/_/   \__,_/_/  MECHANICS
 //
 //  License:		 BSD License
-//					 license: StructuralMechanicsApplication/license.txt
+//					 license: ContactStructuralMechanicsApplication/license.txt
 //
 //  Main authors:    Vicente Mataix Ferrandiz
 //
@@ -17,6 +18,7 @@
 #include "testing/testing.h"
 #include "containers/model.h"
 #include "includes/kratos_flags.h"
+#include "utilities/normal_calculation_utils.h"
 // #include "includes/gid_io.h"
 #include "contact_structural_mechanics_application.h"
 #include "custom_processes/contact_search_wrapper_process.h"
@@ -94,7 +96,7 @@ namespace Kratos
             for (std::size_t i = 0; i < NumberOfDivisions; i++) {
                 id_cond++;
                 const std::size_t ref_id = (2 * i)+1;
-                Condition::Pointer pcond = r_contact_model_part.CreateNewCondition("Condition3D4N", id_cond, {{ref_id, ref_id + 1, ref_id + 3, ref_id + 2}}, p_cond_prop);
+                Condition::Pointer pcond = r_contact_model_part.CreateNewCondition("SurfaceCondition3D4N", id_cond, {{ref_id, ref_id + 1, ref_id + 3, ref_id + 2}}, p_cond_prop);
                 pcond->Set(SLAVE, true);
                 pcond->Set(MASTER, false);
                 slave_conds.push_back(pcond);
@@ -125,14 +127,14 @@ namespace Kratos
                 id_cond++;
                 this_set.AddId(id_cond);
                 const std::size_t ref_id = (2 * (i + NumberOfDivisions + 1)+1);
-                Condition::Pointer pcond = r_contact_model_part.CreateNewCondition("Condition3D4N", id_cond, {{ref_id +2, ref_id + 3, ref_id + 1, ref_id}}, p_cond_prop);
+                Condition::Pointer pcond = r_contact_model_part.CreateNewCondition("SurfaceCondition3D4N", id_cond, {{ref_id +2, ref_id + 3, ref_id + 1, ref_id}}, p_cond_prop);
                 pcond->Set(SLAVE, false);
                 pcond->Set(MASTER, true);
                 master_conds.push_back(pcond);
             }
 
             // We compute the normals
-            MortarUtilities::ComputeNodesMeanNormalModelPart(r_contact_model_part);
+            NormalCalculationUtils().CalculateUnitNormals<ModelPart::ConditionsContainerType>(r_contact_model_part, true);
 
             // We move mesh in order to test the dynamic search
             if (MoveMesh) {
@@ -191,6 +193,7 @@ namespace Kratos
             {
                 "simple_search"                        : true,
                 "search_factor"                        : 3.5,
+                "normal_orientation_threshold"         : 0.0,
                 "type_search"                          : "InRadius",
                 "check_gap"                            : "MappingCheck"
             })" );
@@ -336,6 +339,7 @@ namespace Kratos
             {
                 "simple_search"                        : true,
                 "search_factor"                        : 3.5,
+                "normal_orientation_threshold"         : 0.0,
                 "type_search"                          : "InRadiusWithOBB",
                 "check_gap"                            : "MappingCheck",
                 "octree_search_parameters" : {
@@ -474,6 +478,7 @@ namespace Kratos
             {
                 "simple_search"                        : true,
                 "search_factor"                        : 3.5,
+                "normal_orientation_threshold"         : 0.0,
                 "type_search"                          : "OctreeWithOBB",
                 "check_gap"                            : "MappingCheck",
                 "octree_search_parameters" : {

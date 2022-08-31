@@ -42,20 +42,23 @@
 #include "custom_conditions/grid_based_conditions/mpm_grid_surface_load_condition_3d.h"
 #include "custom_conditions/particle_based_conditions/mpm_particle_base_dirichlet_condition.h"
 #include "custom_conditions/particle_based_conditions/mpm_particle_penalty_dirichlet_condition.h"
+#include "custom_conditions/particle_based_conditions/mpm_particle_penalty_coupling_interface_condition.h"
 #include "custom_conditions/particle_based_conditions/mpm_particle_base_load_condition.h"
 #include "custom_conditions/particle_based_conditions/mpm_particle_point_load_condition.h"
 
 //---element
 #include "custom_elements/updated_lagrangian.hpp"
 #include "custom_elements/updated_lagrangian_UP.hpp"
-#include "custom_elements/updated_lagrangian_quadrilateral.hpp"
-#include "custom_elements/updated_lagrangian_axisymmetry.hpp"
+#include "custom_elements/updated_lagrangian_PQ.hpp"
 
 //---constitutive laws
 #include "custom_constitutive/linear_elastic_3D_law.hpp"
 #include "custom_constitutive/linear_elastic_plane_stress_2D_law.hpp"
 #include "custom_constitutive/linear_elastic_plane_strain_2D_law.hpp"
 #include "custom_constitutive/linear_elastic_axisym_2D_law.hpp"
+#include "custom_constitutive/johnson_cook_thermal_plastic_3D_law.hpp"
+#include "custom_constitutive/johnson_cook_thermal_plastic_plane_strain_2D_law.hpp"
+#include "custom_constitutive/johnson_cook_thermal_plastic_axisym_2D_law.hpp"
 #include "custom_constitutive/hyperelastic_3D_law.hpp"
 #include "custom_constitutive/hyperelastic_plane_strain_2D_law.hpp"
 #include "custom_constitutive/hyperelastic_axisym_2D_law.hpp"
@@ -95,7 +98,7 @@ namespace Kratos
  * for particle mechanics problems.
  * Currently developed methods are: (1) Material Point Method
  */
-class KratosParticleMechanicsApplication : public KratosApplication
+class KRATOS_API(PARTICLE_MECHANICS_APPLICATION) KratosParticleMechanicsApplication : public KratosApplication
 {
 public:
     ///@name Type Definitions
@@ -226,13 +229,18 @@ private:
     ///@{
 
     // Elements
+    const UpdatedLagrangian mUpdatedLagrangian;
+    const UpdatedLagrangianUP mUpdatedLagrangianUP;
+    const UpdatedLagrangianPQ mUpdatedLagrangianPQ;
+
+    // Deprecated Elements
     const UpdatedLagrangian mUpdatedLagrangian2D3N;
     const UpdatedLagrangian mUpdatedLagrangian3D4N;
-    const UpdatedLagrangianUP mUpdatedLagrangianUP2D3N;
-    const UpdatedLagrangianQuadrilateral mUpdatedLagrangian2D4N;
-    const UpdatedLagrangianQuadrilateral mUpdatedLagrangian3D8N;
-    const UpdatedLagrangianAxisymmetry mUpdatedLagrangianAxisymmetry2D3N;
-    const UpdatedLagrangianAxisymmetry mUpdatedLagrangianAxisymmetry2D4N;
+    const UpdatedLagrangian mUpdatedLagrangianUP2D3N;
+    const UpdatedLagrangian mUpdatedLagrangian2D4N;
+    const UpdatedLagrangian mUpdatedLagrangian3D8N;
+    const UpdatedLagrangian mUpdatedLagrangianAxisymmetry2D3N;
+    const UpdatedLagrangian mUpdatedLagrangianAxisymmetry2D4N;
 
     // Conditions
     // Grid Conditions:
@@ -244,10 +252,19 @@ private:
     const MPMGridSurfaceLoadCondition3D mMPMGridSurfaceLoadCondition3D3N;
     const MPMGridSurfaceLoadCondition3D mMPMGridSurfaceLoadCondition3D4N;
     // Particle Conditions:
+    const MPMParticlePenaltyDirichletCondition mMPMParticlePenaltyDirichletCondition;
+    const MPMParticlePenaltyCouplingInterfaceCondition mMPMParticlePenaltyCouplingInterfaceCondition;
+    const MPMParticlePointLoadCondition mMPMParticlePointLoadCondition;
+    
+    // Deprecated Conditions
     const MPMParticlePenaltyDirichletCondition mMPMParticlePenaltyDirichletCondition2D3N;
     const MPMParticlePenaltyDirichletCondition mMPMParticlePenaltyDirichletCondition2D4N;
     const MPMParticlePenaltyDirichletCondition mMPMParticlePenaltyDirichletCondition3D4N;
     const MPMParticlePenaltyDirichletCondition mMPMParticlePenaltyDirichletCondition3D8N;
+    const MPMParticlePenaltyCouplingInterfaceCondition mMPMParticlePenaltyCouplingInterfaceCondition2D3N;
+    const MPMParticlePenaltyCouplingInterfaceCondition mMPMParticlePenaltyCouplingInterfaceCondition2D4N;
+    const MPMParticlePenaltyCouplingInterfaceCondition mMPMParticlePenaltyCouplingInterfaceCondition3D4N;
+    const MPMParticlePenaltyCouplingInterfaceCondition mMPMParticlePenaltyCouplingInterfaceCondition3D8N;
     const MPMParticlePointLoadCondition mMPMParticlePointLoadCondition2D3N;
     const MPMParticlePointLoadCondition mMPMParticlePointLoadCondition3D4N;
     const MPMParticlePointLoadCondition mMPMParticlePointLoadCondition2D4N;
@@ -260,6 +277,10 @@ private:
     const LinearElasticPlaneStress2DLaw                     mLinearElasticPlaneStress2DLaw;
     const LinearElasticPlaneStrain2DLaw                     mLinearElasticPlaneStrain2DLaw;
     const LinearElasticAxisym2DLaw                          mLinearElasticAxisym2DLaw;
+    // CL: Johnson Cooker Thermal Plastic laws
+    const JohnsonCookThermalPlastic3DLaw                    mJohnsonCookThermalPlastic3DLaw;
+    const JohnsonCookThermalPlastic2DPlaneStrainLaw         mJohnsonCookThermalPlastic2DPlaneStrainLaw;
+    const JohnsonCookThermalPlastic2DAxisymLaw              mJohnsonCookThermalPlastic2DAxisymLaw;
     // CL: Hyperelastic laws
     const HyperElastic3DLaw                                 mHyperElastic3DLaw;
     const HyperElasticPlaneStrain2DLaw                      mHyperElasticPlaneStrain2DLaw;

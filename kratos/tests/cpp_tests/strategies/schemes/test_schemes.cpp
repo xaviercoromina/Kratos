@@ -38,8 +38,7 @@ namespace Kratos
         typedef UblasSpace<double, Matrix, Vector> LocalSpaceType;
 
         typedef Scheme< SparseSpaceType, LocalSpaceType >  SchemeType;
-        typedef PointerVectorSet<Dof<double>, SetIdentityFunction<Dof<double>>, std::less<SetIdentityFunction<Dof<double>>::result_type>, std::equal_to<SetIdentityFunction<Dof<double>>::result_type>, Dof<double>* > DofsArrayType;
-
+        typedef ModelPart::DofsArrayType DofsArrayType;
         /**
          * @brief Common method to set the displacement scheme
          */
@@ -95,7 +94,7 @@ namespace Kratos
             DofsArrayType Doftemp;
             Doftemp.reserve(rDoF.size());
             for (auto it= rDoF.begin(); it!= rDoF.end(); ++it) {
-                Doftemp.push_back( it->get() );
+                Doftemp.push_back( *it );
             }
             Doftemp.Sort();
 

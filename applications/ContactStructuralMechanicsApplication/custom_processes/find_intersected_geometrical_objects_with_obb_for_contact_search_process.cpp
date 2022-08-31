@@ -1,10 +1,11 @@
-// KRATOS  ___|  |                   |                   |
-//       \___ \  __|  __| |   |  __| __| |   |  __| _` | |
-//             | |   |    |   | (    |   |   | |   (   | |
-//       _____/ \__|_|   \__,_|\___|\__|\__,_|_|  \__,_|_| MECHANICS
+// KRATOS    ______            __             __  _____ __                  __                   __
+//          / ____/___  ____  / /_____ ______/ /_/ ___// /________  _______/ /___  ___________ _/ /
+//         / /   / __ \/ __ \/ __/ __ `/ ___/ __/\__ \/ __/ ___/ / / / ___/ __/ / / / ___/ __ `/ / 
+//        / /___/ /_/ / / / / /_/ /_/ / /__/ /_ ___/ / /_/ /  / /_/ / /__/ /_/ /_/ / /  / /_/ / /  
+//        \____/\____/_/ /_/\__/\__,_/\___/\__//____/\__/_/   \__,_/\___/\__/\__,_/_/   \__,_/_/  MECHANICS
 //
-//  License:             BSD License
-//                                       license: StructuralMechanicsApplication/license.txt
+//  License:		 BSD License
+//					 license: ContactStructuralMechanicsApplication/license.txt
 //
 //  Main authors:    Vicente Mataix Ferrandiz
 //
@@ -53,10 +54,10 @@ FindIntersectedGeometricalObjectsWithOBBContactSearchProcess::FindIntersectedGeo
     const bool intersected_conditions = ThisParameters["intersected_conditions"].GetBool();
     const bool intersected_elements = ThisParameters["intersected_elements"].GetBool();
 
-    BaseProcessType::mOptions.Set(FindIntersectedGeometricalObjectsProcess::INTERSECTING_CONDITIONS, intersecting_conditions);
-    BaseProcessType::mOptions.Set(FindIntersectedGeometricalObjectsProcess::INTERSECTING_ELEMENTS, intersecting_elements);
-    BaseProcessType::mOptions.Set(FindIntersectedGeometricalObjectsProcess::INTERSECTED_CONDITIONS, intersected_conditions);
-    BaseProcessType::mOptions.Set(FindIntersectedGeometricalObjectsProcess::INTERSECTED_ELEMENTS, intersected_elements);
+    BaseProcessType::mOptions.Set(BaseProcessType::INTERSECTING_CONDITIONS, intersecting_conditions);
+    BaseProcessType::mOptions.Set(BaseProcessType::INTERSECTING_ELEMENTS, intersecting_elements);
+    BaseProcessType::mOptions.Set(BaseProcessType::INTERSECTED_CONDITIONS, intersected_conditions);
+    BaseProcessType::mOptions.Set(BaseProcessType::INTERSECTED_ELEMENTS, intersected_elements);
 
     // Setting the bounding box factor
     mBoundingBoxFactor = BaseType::mThisParameters["bounding_box_factor"].GetDouble();
@@ -68,7 +69,10 @@ FindIntersectedGeometricalObjectsWithOBBContactSearchProcess::FindIntersectedGeo
         this->Set(BOUNDARY, false);
 
     // If we debug OBB
-    BaseProcessType::mOptions.Set(FindIntersectedGeometricalObjectsWithOBBProcess::DEBUG_OBB, mThisParameters["debug_obb"].GetBool());
+    BaseProcessType::mOptions.Set(BaseType::DEBUG_OBB, mThisParameters["debug_obb"].GetBool());
+
+    // If we build the OBB from the geometry BB
+    BaseType::mOptions.Set(BaseType::BUILD_OBB_FROM_BB, mThisParameters["build_from_bounding_box"].GetBool());
 
     // The intersection type
     ConvertIntersection(mThisParameters["OBB_intersection_type"].GetString());
@@ -141,9 +145,9 @@ void FindIntersectedGeometricalObjectsWithOBBContactSearchProcess::SetOctreeBoun
 
     // TODO: Octree needs refactoring to work with BoundingBox. Pooyan.
 #ifdef KRATOS_USE_AMATRIX   // This macro definition is for the migration period and to be removed afterward please do not use it
-    BaseType::mOctree.SetBoundingBox(low.data(), high.data());
+    GetOctreePointer()->SetBoundingBox(low.data(), high.data());
 #else
-    BaseType::mOctree.SetBoundingBox(low.data().data(), high.data().data());
+    GetOctreePointer()->SetBoundingBox(low.data().data(), high.data().data());
 #endif // ifdef KRATOS_USE_AMATRIX
 }
 
@@ -193,15 +197,16 @@ void FindIntersectedGeometricalObjectsWithOBBContactSearchProcess::MarkIfInterse
 /***********************************************************************************/
 /***********************************************************************************/
 
-Parameters FindIntersectedGeometricalObjectsWithOBBContactSearchProcess::GetDefaultParameters()
+const Parameters FindIntersectedGeometricalObjectsWithOBBContactSearchProcess::GetDefaultParameters() const
 {
-    Parameters default_parameters = Parameters(R"(
+    const Parameters default_parameters = Parameters(R"(
     {
         "intersected_model_part_name"     : "",
         "intersecting_model_part_name"    : "",
         "bounding_box_factor"             : -1.0,
         "debug_obb"                       : false,
         "OBB_intersection_type"           : "SeparatingAxisTheorem",
+        "build_from_bounding_box"         : true,
         "lower_bounding_box_coefficient"  : 0.0,
         "higher_bounding_box_coefficient" : 1.0,
         "intersecting_conditions"         : true,

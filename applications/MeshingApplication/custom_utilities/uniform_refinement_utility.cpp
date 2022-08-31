@@ -97,11 +97,12 @@ void UniformRefinementUtility::Refine(int& rFinalRefinementLevel)
 {
     if (mrModelPart.Nodes().size() == 0)
         KRATOS_WARNING("UniformRefinementUtility") << "Attempting to refine an empty model part" << std::endl;
-    else
-    {
-        mDofs = mrModelPart.NodesBegin()->GetDofs();
-        for (typename NodeType::DofsContainerType::const_iterator it_dof = mDofs.begin(); it_dof != mDofs.end(); ++it_dof)
-            it_dof->FreeDof();
+    else {
+        const auto& r_old_dofs = mrModelPart.NodesBegin()->GetDofs();
+        for (auto it_dof = r_old_dofs.begin(); it_dof != r_old_dofs.end(); ++it_dof)
+            mDofs.push_back(Kratos::make_unique<NodeType::DofType>(**it_dof));
+        for (auto it_dof = mDofs.begin(); it_dof != mDofs.end(); ++it_dof)
+            (**it_dof).FreeDof();
     }
 
     // Get the lowest refinement level
@@ -249,14 +250,14 @@ void UniformRefinementUtility::ExecuteDivision(
         // Get the geometry
         Geometry<NodeType>& geom = i_element->GetGeometry();
 
-        if (geom.GetGeometryType() == GeometryData::Kratos_Triangle2D3)
+        if (geom.GetGeometryType() == GeometryData::KratosGeometryType::Kratos_Triangle2D3)
         {
             // Initialize the vector of middle nodes
             IndexType i_node = 0;
             std::vector<NodeType::Pointer> middle_nodes(3); // 3 edges
 
             // Loop the edges to get or create the middle nodes
-            for (auto edge : geom.Edges())
+            for (auto edge : geom.GenerateEdges())
                 middle_nodes[i_node++] = GetNodeInEdge(EdgeType{edge}, step_divisions_level, rTagNodes, collection_tag);
 
             // Split the triangle
@@ -267,14 +268,14 @@ void UniformRefinementUtility::ExecuteDivision(
                 CreateElement(i_element, sub_element_nodes, step_divisions_level, rTagElems);
             }
         }
-        else if (geom.GetGeometryType() == GeometryData::Kratos_Quadrilateral2D4)
+        else if (geom.GetGeometryType() == GeometryData::KratosGeometryType::Kratos_Quadrilateral2D4)
         {
             // Initialize the vector of middle nodes
             IndexType i_node = 0;
             std::vector<NodeType::Pointer> middle_nodes(5); // 4 edges and the quadrilateral itself
 
             // Loop the edges to get or create the middle nodes
-            for (auto edge : geom.Edges())
+            for (auto edge : geom.GenerateEdges())
                 middle_nodes[i_node++] = GetNodeInEdge(EdgeType{edge}, step_divisions_level, rTagNodes, collection_tag);
             middle_nodes[i_node++] = GetNodeInFace(FaceType{geom}, step_divisions_level, rTagNodes, collection_tag);
 
@@ -286,14 +287,14 @@ void UniformRefinementUtility::ExecuteDivision(
                 CreateElement(i_element, sub_element_nodes, step_divisions_level, rTagElems);
             }
         }
-        else if (geom.GetGeometryType() == GeometryData::Kratos_Tetrahedra3D4)
+        else if (geom.GetGeometryType() == GeometryData::KratosGeometryType::Kratos_Tetrahedra3D4)
         {
             // Initialize the vector of middle nodes
             IndexType i_node = 0;
             std::vector<NodeType::Pointer> middle_nodes(6); // 6 edges
 
             // Loop the edges to get or create the middle nodes
-            for (auto edge : geom.Edges())
+            for (auto edge : geom.GenerateEdges())
                 middle_nodes[i_node++] = GetNodeInEdge(EdgeType{edge}, step_divisions_level, rTagNodes, collection_tag);
 
             // Split the tetrahedra
@@ -304,16 +305,16 @@ void UniformRefinementUtility::ExecuteDivision(
                 CreateElement(i_element, sub_element_nodes, step_divisions_level, rTagElems);
             }
         }
-        else if (geom.GetGeometryType() == GeometryData::Kratos_Hexahedra3D8)
+        else if (geom.GetGeometryType() == GeometryData::KratosGeometryType::Kratos_Hexahedra3D8)
         {
             // Initialize the vector of middle nodes
             IndexType i_node = 0;
             std::vector<NodeType::Pointer> middle_nodes(19); // 12 edges, 6 faces and the hexahedra itself
 
             // Loop the edges to get or create the middle nodes
-            for (auto edge : geom.Edges())
+            for (auto edge : geom.GenerateEdges())
                 middle_nodes[i_node++] = GetNodeInEdge(EdgeType{edge}, step_divisions_level, rTagNodes, collection_tag);
-            for (auto face : geom.Faces())
+            for (auto face : geom.GenerateFaces())
                 middle_nodes[i_node++] = GetNodeInFace(FaceType{face}, step_divisions_level, rTagNodes, collection_tag);
             middle_nodes[i_node++] = GetNodeInBody(BodyType{geom}, step_divisions_level, rTagNodes,collection_tag);
 
@@ -327,7 +328,7 @@ void UniformRefinementUtility::ExecuteDivision(
         }
         else
         {
-            KRATOS_ERROR << "Your geometry contains " << geom.GetGeometryType() << " which cannot be refined" << std::endl;
+            KRATOS_ERROR << "Your geometry contains " << static_cast<int>(geom.GetGeometryType()) << " which cannot be refined" << std::endl;
         }
 
         // Once we have created all the sub elements, the origin element must be deleted
@@ -350,7 +351,7 @@ void UniformRefinementUtility::ExecuteDivision(
         // Get the geometry
         Geometry<NodeType>& geom = i_condition->GetGeometry();
 
-        if (geom.GetGeometryType() == GeometryData::Kratos_Line2D2)
+        if (geom.GetGeometryType() == GeometryData::KratosGeometryType::Kratos_Line2D2)
         {
             NodeType::Pointer middle_node = GetNodeInEdge(EdgeType{geom}, step_divisions_level, rTagNodes, collection_tag);
 
@@ -362,13 +363,13 @@ void UniformRefinementUtility::ExecuteDivision(
                 CreateCondition(i_condition, sub_condition_nodes, step_divisions_level, rTagConds);
             }
         }
-        else if (geom.GetGeometryType() == GeometryData::Kratos_Triangle3D3)
+        else if (geom.GetGeometryType() == GeometryData::KratosGeometryType::Kratos_Triangle3D3)
         {
             // Initialize the middle nodes vector
             IndexType i_node = 0;
             std::vector<NodeType::Pointer> middle_nodes(3);
             // Loop the edges to get or create the middle nodes
-            for (auto edge : geom.Edges())
+            for (auto edge : geom.GenerateEdges())
                 middle_nodes[i_node++] = GetNodeInEdge(EdgeType{edge}, step_divisions_level, rTagNodes, collection_tag);
 
             PointerVector<NodeType> sub_condition_nodes(3);    // a triangle is defined by 3 nodes
@@ -378,13 +379,13 @@ void UniformRefinementUtility::ExecuteDivision(
                 CreateCondition(i_condition, sub_condition_nodes, step_divisions_level, rTagConds);
             }
         }
-        else if (geom.GetGeometryType() == GeometryData::Kratos_Quadrilateral3D4)
+        else if (geom.GetGeometryType() == GeometryData::KratosGeometryType::Kratos_Quadrilateral3D4)
         {
             // Initialize the middle nodes vector
             IndexType i_node = 0;
             std::vector<NodeType::Pointer> middle_nodes(5);
             // Loop the edges to get or create the middle nodes
-            for (auto edge : geom.Edges())
+            for (auto edge : geom.GenerateEdges())
                 middle_nodes[i_node++] = GetNodeInEdge(EdgeType{edge}, step_divisions_level, rTagNodes, collection_tag);
             middle_nodes[i_node++] = GetNodeInFace(FaceType{geom}, step_divisions_level, rTagNodes, collection_tag);
 
@@ -397,7 +398,7 @@ void UniformRefinementUtility::ExecuteDivision(
         }
         else
         {
-            KRATOS_ERROR << "Your geometry contains " << geom.GetGeometryType() << " which cannot be refined" << std::endl;
+            KRATOS_ERROR << "Your geometry contains " << static_cast<int>(geom.GetGeometryType()) << " which cannot be refined" << std::endl;
         }
 
         // Once we have created all the sub conditions, the origin conditions must be deleted
@@ -476,8 +477,8 @@ typename NodeType::Pointer UniformRefinementUtility::CreateNodeInEdge(
     middle_node->Set(NEW_ENTITY, true);
 
     // Set the DoF's
-    for (typename NodeType::DofsContainerType::const_iterator it_dof = mDofs.begin(); it_dof != mDofs.end(); ++it_dof)
-        middle_node->pAddDof(*it_dof);
+    for (auto it_dof = mDofs.begin(); it_dof != mDofs.end(); ++it_dof)
+        middle_node->pAddDof(**it_dof);
 
     return middle_node;
 }
@@ -550,8 +551,8 @@ typename NodeType::Pointer UniformRefinementUtility::CreateNodeInFace(
     middle_node->Set(NEW_ENTITY, true);
 
     // Set the DoF's
-    for (typename NodeType::DofsContainerType::const_iterator it_dof = mDofs.begin(); it_dof != mDofs.end(); ++it_dof)
-        middle_node->pAddDof(*it_dof);
+    for (auto it_dof = mDofs.begin(); it_dof != mDofs.end(); ++it_dof)
+        middle_node->pAddDof(**it_dof);
 
     return middle_node;
 }
@@ -588,8 +589,8 @@ typename NodeType::Pointer UniformRefinementUtility::GetNodeInBody(
     middle_node->Set(NEW_ENTITY, true);
 
     // Set the DoF's
-    for (typename NodeType::DofsContainerType::const_iterator it_dof = mDofs.begin(); it_dof != mDofs.end(); ++it_dof)
-        middle_node->pAddDof(*it_dof);
+    for (auto it_dof = mDofs.begin(); it_dof != mDofs.end(); ++it_dof)
+        middle_node->pAddDof(**it_dof);
 
     // Store the created node on the tags map in order to later add it to the sub model parts
     // IndexType tag = mNodesTags[rBody(0)->Id()];
@@ -827,22 +828,22 @@ PointerVector<NodeType> UniformRefinementUtility::GetSubTriangleNodes(
     {
         // First sub triangle
         sub_triangle_nodes(0) = rGeom.pGetPoint(0);
-        sub_triangle_nodes(1) = rMiddleNodes[0];
-        sub_triangle_nodes(2) = rMiddleNodes[2];
+        sub_triangle_nodes(1) = rMiddleNodes[2];
+        sub_triangle_nodes(2) = rMiddleNodes[1];
     }
     else if (Position == 1)
     {
         // Second sub triangle
         sub_triangle_nodes(0) = rGeom.pGetPoint(1);
-        sub_triangle_nodes(1) = rMiddleNodes[1];
-        sub_triangle_nodes(2) = rMiddleNodes[0];
+        sub_triangle_nodes(1) = rMiddleNodes[0];
+        sub_triangle_nodes(2) = rMiddleNodes[2];
     }
     else if (Position == 2)
     {
         // Third sub triangle
         sub_triangle_nodes(0) = rGeom.pGetPoint(2);
-        sub_triangle_nodes(1) = rMiddleNodes[2];
-        sub_triangle_nodes(2) = rMiddleNodes[1];
+        sub_triangle_nodes(1) = rMiddleNodes[1];
+        sub_triangle_nodes(2) = rMiddleNodes[0];
     }
     else if (Position == 3)
     {

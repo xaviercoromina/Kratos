@@ -1,10 +1,11 @@
-// KRATOS  ___|  |                   |                   |
-//       \___ \  __|  __| |   |  __| __| |   |  __| _` | |
-//             | |   |    |   | (    |   |   | |   (   | |
-//       _____/ \__|_|   \__,_|\___|\__|\__,_|_|  \__,_|_| MECHANICS
+// KRATOS    ______            __             __  _____ __                  __                   __
+//          / ____/___  ____  / /_____ ______/ /_/ ___// /________  _______/ /___  ___________ _/ /
+//         / /   / __ \/ __ \/ __/ __ `/ ___/ __/\__ \/ __/ ___/ / / / ___/ __/ / / / ___/ __ `/ / 
+//        / /___/ /_/ / / / / /_/ /_/ / /__/ /_ ___/ / /_/ /  / /_/ / /__/ /_/ /_/ / /  / /_/ / /  
+//        \____/\____/_/ /_/\__/\__,_/\___/\__//____/\__/_/   \__,_/\___/\__/\__,_/_/   \__,_/_/  MECHANICS
 //
 //  License:		 BSD License
-//					 license: StructuralMechanicsApplication/license.txt
+//					 license: ContactStructuralMechanicsApplication/license.txt
 //
 //  Main authors:    Vicente Mataix Ferrandiz
 //
@@ -17,9 +18,9 @@
 // External includes
 
 // Project includes
-#include "processes/simple_mortar_mapper_process.h"
 #include "includes/model_part.h"
 #include "includes/kratos_parameters.h"
+#include "custom_processes/normal_gap_process.h"
 
 /* Custom includes*/
 #include "custom_includes/point_item.h"
@@ -94,7 +95,7 @@ public:
     typedef Tree< KDTreePartition<BucketType> > KDTree;
 
     /// The type of mapper considered
-    typedef SimpleMortarMapperProcess<TDim, TNumNodes, Variable<array_1d<double, 3>>, TNumNodesMaster> MapperType;
+    typedef NormalGapProcess<TDim, TNumNodes, TNumNodesMaster> NormalGapProcessType;
 
     /// The definition of zero tolerance
     static constexpr double GapThreshold = 2.0e-3;
@@ -138,6 +139,7 @@ public:
      *                       - The size of the bucket
      *                       - The proportion increased of the Radius/Bounding-box volume for the search
      *                       - TypeSearch: 0 means search in radius, 1 means search in box
+     * @param pPairedProperties Properties of the pair
      * @todo Add more types of bounding boxes, as kdops, look bounding_volume_tree.h
      * @note Use an InterfacePreprocess object to create such a model part from a regular one:
      *          -# InterfaceMapper = InterfacePreprocess()
@@ -145,7 +147,8 @@ public:
      */
     BaseContactSearchProcess(
         ModelPart& rMainModelPart,
-        Parameters ThisParameters =  Parameters(R"({})")
+        Parameters ThisParameters =  Parameters(R"({})"),
+        Properties::Pointer pPairedProperties = nullptr
         );
 
     /// Destructor.
@@ -229,6 +232,11 @@ public:
      */
      virtual void ResetContactOperators();
 
+    /**
+     * @brief This method provides the defaults parameters to avoid conflicts between the different constructors
+     */
+    const Parameters GetDefaultParameters() const override;
+
     ///@}
     ///@name Access
     ///@{
@@ -272,14 +280,14 @@ protected:
     ///@name Protected member Variables
     ///@{
 
-    ModelPart& mrMainModelPart;        /// The main model part
-    Parameters mThisParameters;        /// The configuration parameters
-    CheckGap mCheckGap;                /// If the gap is checked during the search
-    TypeSolution mTypeSolution;        /// The solution type
-    std::string mConditionName;        /// The name of the condition to be created
-    PointVector mPointListDestination; /// A list that contents the all the points (from nodes) from the modelpart
+    ModelPart& mrMainModelPart;                       /// The main model part
+    Parameters mThisParameters;                       /// The configuration parameters
+    CheckGap mCheckGap;                               /// If the gap is checked during the search
+    TypeSolution mTypeSolution;                       /// The solution type
+    std::string mConditionName;                       /// The name of the condition to be created
+    PointVector mPointListDestination;                /// A list that contents the all the points (from nodes) from the modelpart
 
-    Flags mOptions;                    /// Local flags
+    Properties::Pointer mpPairedProperties = nullptr; /// This is the paired properties (unique for the given potential pair)
 
     ///@}
     ///@name Protected Operators
@@ -312,21 +320,21 @@ protected:
 
     /**
      * @brief This method sets as active a node and it sets to an explicit approximation its LM
-     * @param ItNode The node iterator to set
+     * @param rNode The node reference to set
      * @param CommonEpsilon The penalty value
      * @param ScaleFactor The scale factor
      */
     virtual void SetActiveNode(
-        NodesArrayType::iterator ItNode,
+        NodeType& rNode,
         const double CommonEpsilon,
         const double ScaleFactor = 1.0
         );
 
     /**
      * @brief This method sets as inactive a node and it sets to zero its LM
-     * @param ItNode The node iterator to set
+     * @param ItNode The node reference to set
      */
-    virtual void SetInactiveNode(NodesArrayType::iterator ItNode);
+    virtual void SetInactiveNode(NodeType& rNode);
 
     /**
      * @brief This method add a new pair to the computing model part
@@ -358,14 +366,45 @@ protected:
      */
     CheckGap ConvertCheckGap(const std::string& str);
 
-    /**
-     * @brief This method provides the defaults parameters to avoid conflicts between the different constructors
-     */
-    Parameters GetDefaultParameters();
-
     ///@}
     ///@name Protected  Access
     ///@{
+
+    /**
+     * @brief This returns if we consider pure slip
+     * @return True if we consider pure slip
+     */
+    bool IsPureSlip();
+
+    /**
+     * @brief This returns if we do not consider pure slip
+     * @return True if we do not consider pure slip
+     */
+    bool IsNotPureSlip();
+
+    /**
+     * @brief This returns if we consider multiple searchs
+     * @return True if we consider multiple searchs
+     */
+    bool IsMultipleSearchs();
+
+    /**
+     * @brief This returns if we do not consider multiple searchs
+     * @return True if we do not consider multiple searchs
+     */
+    bool IsNotMultipleSearchs();
+
+    /**
+     * @brief This returns if we consider inverted search
+     * @return True if we consider inverted search
+     */
+    bool IsInvertedSearch();
+
+    /**
+     * @brief This returns if we do not consider inverted search
+     * @return True if we do not consider inverted search
+     */
+    bool IsNotInvertedSearch();
 
     ///@}
     ///@name Protected Inquiry
@@ -469,10 +508,35 @@ private:
         );
 
     /**
-     * @brief This method is used in case of not predefined master/slave we assign the master/slave nodes and conditions
-     * @param rModelPart The model part to assign the flags
+     * @brief This method fills mPointListDestination
      */
-    static inline void NotPredefinedMasterSlave(ModelPart& rModelPart);
+    void FillPointListDestination();
+
+    /**
+     * @brief This method clears the destination list and
+     * @param rSubContactModelPart The submodel part studied
+     */
+    void ClearDestinationListAndAssignFlags(ModelPart& rSubContactModelPart);
+
+    /**
+     * @brief This method computes search with KDTree
+     * @param rTreePoints The tree points for search
+     * @param rPointsFound The points found
+     * @param rGeometry The geometry of the condition
+     * @param TypeSearch The search type
+     * @param SearchFactor The searh factor applied
+     * @param AllocationSize The allocation size
+     * @param Dynamic if the dynamic search is considered
+     */
+    inline IndexType PerformKDTreeSearch(
+        KDTree& rTreePoints,
+        PointVector& rPointsFound,
+        GeometryType& rGeometry,
+        const SearchTreeType TypeSearch = SearchTreeType::KdtreeInBox,
+        const double SearchFactor = 3.5,
+        const IndexType AllocationSize = 1000,
+        const bool Dynamic = false
+        );
 
     /**
      * @brief This method gets the maximum the ID of the conditions
@@ -515,20 +579,6 @@ private:
      * @brief This method sets as inactive a node and it sets to zero its LM
      */
     inline void ComputeWeightedReaction();
-
-    /**
-     * @brief This method switchs the flag of an array of nodes
-     * @param rNodes The set of nodes where the flags are reset
-     */
-    static inline void SwitchFlagNodes(NodesArrayType& rNodes)
-    {
-        #pragma omp parallel for
-        for(int i = 0; i < static_cast<int>(rNodes.size()); ++i) {
-            auto it_node = rNodes.begin() + i;
-            it_node->Flip(SLAVE);
-            it_node->Flip(MASTER);
-        }
-    }
 
     /**
      * @brief This method creates the auxiliar the pairing

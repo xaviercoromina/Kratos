@@ -1,10 +1,11 @@
-// KRATOS  ___|  |       |       |
-//       \___ \  __|  __| |   |  __| __| |   |  __| _` | |
-//           | |   |    |   | (    |   |   | |   (   | |
-//       _____/ \__|_|   \__,_|\___|\__|\__,_|_|  \__,_|_| MECHANICS
+// KRATOS    ______            __             __  _____ __                  __                   __
+//          / ____/___  ____  / /_____ ______/ /_/ ___// /________  _______/ /___  ___________ _/ /
+//         / /   / __ \/ __ \/ __/ __ `/ ___/ __/\__ \/ __/ ___/ / / / ___/ __/ / / / ___/ __ `/ / 
+//        / /___/ /_/ / / / / /_/ /_/ / /__/ /_ ___/ / /_/ /  / /_/ / /__/ /_/ /_/ / /  / /_/ / /  
+//        \____/\____/_/ /_/\__/\__,_/\___/\__//____/\__/_/   \__,_/\___/\__/\__,_/_/   \__,_/_/  MECHANICS
 //
-//  License: BSD License
-//   license: StructuralMechanicsApplication/license.txt
+//  License:		 BSD License
+//					 license: ContactStructuralMechanicsApplication/license.txt
 //
 //  Main authors:  Vicente Mataix Ferrandiz
 //
@@ -98,7 +99,7 @@ public:
 
     typedef Line2D2<Point>                                                                                             DecompositionType;
 
-    typedef DerivativeData<2, TNumNodes, TNormalVariation>                                                            DerivativeDataType;
+    typedef DerivativeData<2, TNumNodes>                                                                              DerivativeDataType;
 
     static constexpr IndexType MatrixSize = 2 * (TNumNodes + TNumNodes) + TNumNodes;
 
@@ -112,12 +113,29 @@ public:
     }
 
     // Constructor 1
-    AugmentedLagrangianMethodFrictionlessMortarContactAxisymCondition(IndexType NewId, GeometryPointerType pGeometry):BaseType(NewId, pGeometry)
+    AugmentedLagrangianMethodFrictionlessMortarContactAxisymCondition(
+        IndexType NewId,
+        GeometryPointerType pGeometry
+        ):BaseType(NewId, pGeometry)
     {
     }
 
     // Constructor 2
-    AugmentedLagrangianMethodFrictionlessMortarContactAxisymCondition(IndexType NewId, GeometryPointerType pGeometry, PropertiesPointerType pProperties):BaseType( NewId, pGeometry, pProperties )
+    AugmentedLagrangianMethodFrictionlessMortarContactAxisymCondition(
+        IndexType NewId,
+        GeometryPointerType pGeometry,
+        PropertiesPointerType pProperties
+        ):BaseType( NewId, pGeometry, pProperties )
+    {
+    }
+
+    // Constructor 3
+    AugmentedLagrangianMethodFrictionlessMortarContactAxisymCondition(
+        IndexType NewId,
+        GeometryPointerType pGeometry,
+        PropertiesPointerType pProperties,
+        GeometryType::Pointer pMasterGeometry
+        ):BaseType( NewId, pGeometry, pProperties, pMasterGeometry )
     {
     }
 
@@ -139,13 +157,12 @@ public:
     ///@{
 
     /**
-     * Creates a new element pointer from an arry of nodes
+     * @brief Creates a new element pointer from an arry of nodes
      * @param NewId The ID of the new element
      * @param ThisNodes tThe nodes of the new element
      * @param pProperties The properties assigned to the new element
      * @return a Pointer to the new element
      */
-
     Condition::Pointer Create(
         IndexType NewId,
         NodesArrayType const& rThisNodes,
@@ -153,17 +170,31 @@ public:
         ) const override;
 
     /**
-     * Creates a new element pointer from an existing geometry
+     * @brief Creates a new element pointer from an existing geometry
      * @param NewId the ID of the new element
      * @param pGeom the  geometry taken to create the condition
      * @param pProperties the properties assigned to the new element
      * @return a Pointer to the new element
      */
-
     Condition::Pointer Create(
         IndexType NewId,
         GeometryPointerType pGeom,
         PropertiesPointerType pProperties
+        ) const override;
+
+    /**
+     * @brief Creates a new element pointer from an existing geometry
+     * @param NewId the ID of the new element
+     * @param pGeom the  geometry taken to create the condition
+     * @param pProperties the properties assigned to the new element
+     * @param pMasterGeom the paired geometry
+     * @return a Pointer to the new element
+     */
+    Condition::Pointer Create(
+        IndexType NewId,
+        GeometryPointerType pGeom,
+        PropertiesPointerType pProperties,
+        GeometryPointerType pMasterGeom
         ) const override;
 
     /******************************************************************/
@@ -220,7 +251,7 @@ public:
     void PrintData(std::ostream& rOStream) const override
     {
         PrintInfo(rOStream);
-        this->GetGeometry().PrintData(rOStream);
+        this->GetParentGeometry().PrintData(rOStream);
         this->GetPairedGeometry().PrintData(rOStream);
     }
 

@@ -117,30 +117,9 @@ public:
      */
     void Execute() override
     {
-        // Read nodal graph from input
-
-        IO::ConnectivitiesContainerType KratosFormatNodeConnectivities;
-
-        SizeType NumNodes = BaseType::mrIO.ReadNodalGraph(KratosFormatNodeConnectivities);
-
-        SizeType NumNodesInMesh = BaseType::mrIO.ReadNodesNumber();
-        if (NumNodes != NumNodesInMesh)
-            KRATOS_ERROR << "Invalid mesh: number of connected nodes = " << NumNodes
-                         << ", number of mesh nodes = " << NumNodesInMesh << "."
-                         << std::endl;
-
-        // Write connectivity data in CSR format
-        idxtype* NodeIndices = 0;
-        idxtype* NodeConnectivities = 0;
-
-        ConvertKratosToCSRFormat(KratosFormatNodeConnectivities, &NodeIndices, &NodeConnectivities);
-
+        SizeType NumNodes;
         std::vector<idxtype> NodePartition;
-        PartitionNodes(NumNodes,NodeIndices,NodeConnectivities,NodePartition);
-
-        // Free some memory we no longer need
-        delete [] NodeIndices;
-        delete [] NodeConnectivities;
+        GetNodesPartitions(NodePartition, NumNodes);
 
         // Partition elements
         IO::ConnectivitiesContainerType ElementConnectivities;
@@ -239,6 +218,33 @@ public:
                                      nodes_all_partitions, elements_all_partitions, conditions_all_partitions);
     }
 
+
+    virtual void GetNodesPartitions(std::vector<idxtype> &rNodePartition, SizeType &rNumNodes)
+    {
+        // Read nodal graph from input
+        IO::ConnectivitiesContainerType kratos_format_node_connectivities;
+
+        rNumNodes = BaseType::mrIO.ReadNodalGraph(kratos_format_node_connectivities);
+
+        SizeType num_nodes_in_mesh = BaseType::mrIO.ReadNodesNumber();
+        if (rNumNodes != num_nodes_in_mesh)
+            KRATOS_ERROR << "Invalid mesh: number of connected nodes = " << rNumNodes
+                         << ", number of mesh nodes = " << num_nodes_in_mesh << "."
+                         << std::endl;
+
+        // Write connectivity data in CSR format
+        idxtype* node_indices = 0;
+        idxtype* node_connectivities = 0;
+
+        ConvertKratosToCSRFormat(kratos_format_node_connectivities, &node_indices, &node_connectivities);
+
+        PartitionNodes(rNumNodes, node_indices, node_connectivities, rNodePartition);
+
+        // Free some memory we no longer need
+        delete [] node_indices;
+        delete [] node_connectivities;
+    }
+
     ///@}
     ///@name Access
     ///@{
@@ -327,6 +333,9 @@ protected:
     bool mSynchronizeConditions;
 
     int mVerbosity;
+    int mNumNodes;
+
+    std::vector<std::unordered_set<std::size_t>> mNodeConnectivities;
 
     ///@}
     ///@name Private Operators
@@ -350,6 +359,7 @@ protected:
                        idxtype* NodeConnectivities,
                        std::vector<idxtype>& rNodePartition)
     {
+        mNumNodes = NumNodes;
         idxtype n = static_cast<idxtype>(NumNodes);
 
         idxtype nparts = static_cast<idxtype>(BaseType::mNumberOfPartitions);
@@ -514,10 +524,17 @@ protected:
                        std::vector<idxtype>& rElemPartition)
     {
         SizeType NumElements = rElemConnectivities.size();
-        std::vector<int> PartitionWeights(BaseType::mNumberOfPartitions,0);
 
         // initialize ElementPartition
+        mNodeConnectivities = std::vector<std::unordered_set<std::size_t>>(mNumNodes,std::unordered_set<std::size_t>());
         rElemPartition.resize(NumElements,-1);
+
+        // Fill the node Connectivities
+        for(std::size_t i = 0; i < NumElements; i++) {
+            for (std::vector<SizeType>::const_iterator itNode = rElemConnectivities[i].begin(); itNode != rElemConnectivities[i].end(); ++itNode) {
+               mNodeConnectivities[*itNode-1].insert(i);
+            }
+        }
 
         // Elements where all nodes belong to the same partition always go to that partition
         IO::ConnectivitiesContainerType::const_iterator itElem = rElemConnectivities.begin();
@@ -536,7 +553,6 @@ protected:
             if ( NeighbourNodes == itElem->size() )
             {
                 *itPart = MyPartition;
-                PartitionWeights[MyPartition]++;
             }
 
             // Advance to next element in connectivities array
@@ -582,7 +598,6 @@ protected:
                 int MajorityPartition = NeighbourPartitions[ FindMax(FoundNeighbours,NeighbourWeights) ];
                 {
                     *itPart = MajorityPartition;
-                    PartitionWeights[MajorityPartition]++;
                 }
             }
 
@@ -603,7 +618,6 @@ protected:
     {
       SizeType NumElements = rElemConnectivities.size();
       SizeType NumConditions = rCondConnectivities.size();
-      std::vector<int> PartitionWeights(BaseType::mNumberOfPartitions,0);
 
       // initialize CondPartition
       rCondPartition.resize(NumConditions,-1);
@@ -630,12 +644,12 @@ protected:
           if ( NeighbourNodes == itCond->size() )
           {
               *itPart = MyPartition;
-              PartitionWeights[MyPartition]++;
           }
 
           // Advance to next condition in connectivities array
           itCond++;
       }
+
       // Now distribute boundary conditions
       itCond = rCondConnectivities.begin();
       //int MaxWeight = 1.03 * NumConditions / BaseType::mNumberOfPartitions;
@@ -674,20 +688,21 @@ protected:
               int MajorityPartition = NeighbourPartitions[ FindMax(FoundNeighbours,NeighbourWeights) ];
               {
                   *itPart = MajorityPartition;
-                  PartitionWeights[MajorityPartition]++;
               }
 
               // ensure conditions sharing nodes with an element have same partition as the element
               IO::ConnectivitiesContainerType::value_type tmp(*itCond);
               std::sort(tmp.begin(), tmp.end());
 
-              for (SizeType i=0; i<NumElements; i++)
-              {
-                  if ( std::includes(ElementsSorted[i].begin(), ElementsSorted[i].end(), tmp.begin(), tmp.end()) )
-                  {
-                      *itPart = rElemPartition[i];
-                      break;
+              for (std::vector<SizeType>::const_iterator itNode = itCond->begin(); itNode != itCond->end(); ++itNode) {
+                for(auto shared_element : mNodeConnectivities[*itNode - 1]) {
+                  // Would it be faster to sort the element here as well?
+                  // Should be as far as "numConditions * conPerNode >> numElements", but not otherwise
+                  if ( std::includes(ElementsSorted[shared_element].begin(), ElementsSorted[shared_element].end(), tmp.begin(), tmp.end()) ) {
+                    *itPart = rElemPartition[shared_element];
+                    break;
                   }
+                }
               }
           }
 
@@ -791,7 +806,7 @@ protected:
     void PrintDebugData(const std::string& rLabel,
                         const std::vector<idxtype>& rPartitionData)
     {
-        if (mVerbosity > 0)
+        if (mVerbosity > 1)
         {
             std::cout << rLabel << std::endl;
             for (int p = 0; p < static_cast<int>(mNumberOfPartitions); p++)
@@ -803,7 +818,7 @@ protected:
                     if(rPartitionData[i] == p)
                     {
                         count++;
-                        if (mVerbosity > 1)
+                        if (mVerbosity > 2)
                             std::cout << i+1 << ",";
                     }
                 }

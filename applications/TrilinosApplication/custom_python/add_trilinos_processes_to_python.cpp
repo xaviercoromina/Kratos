@@ -15,11 +15,7 @@
 #include "spaces/ublas_space.h"
 
 #include "custom_processes/trilinos_levelset_convection_process.h"
-#include "custom_processes/trilinos_spalart_allmaras_turbulence_model.h"
-#include "custom_processes/trilinos_stokes_initialization_process.h"
 #include "custom_strategies/builder_and_solvers/trilinos_block_builder_and_solver.h"
-#include "../FluidDynamicsApplication/custom_processes/spalart_allmaras_turbulence_model.h"
-#include "../FluidDynamicsApplication/custom_processes/stokes_initialization_process.h"
 
 namespace Kratos
 {
@@ -54,35 +50,28 @@ template< class TBinder, unsigned int TDim > void DistanceCalculatorConstruction
                 rComm, RowSizeGuess, pLinearSolver);
             return Kratos::make_shared<TrilinosVariationalDistanceCalculation<TDim>>(rModelPart, pLinearSolver, p_builder_solver, MaxIter, TheFlags, rAuxName);
         }));
+    rBinder.def(py::init([](
+        Epetra_MpiComm& rComm,ModelPart& rModelPart,TrilinosLinearSolverType::Pointer pLinearSolver,
+        unsigned int MaxIter,Flags TheFlags,std::string& rAuxName, double Coefficient1)
+        {
+            constexpr int RowSizeGuess = (TDim == 2 ? 15 : 40);
+            auto p_builder_solver = Kratos::make_shared<TrilinosBlockBuilderAndSolver<TrilinosSparseSpaceType, TrilinosLocalSpaceType, TrilinosLinearSolverType > >(
+                rComm, RowSizeGuess, pLinearSolver);
+            return Kratos::make_shared<TrilinosVariationalDistanceCalculation<TDim>>(rModelPart, pLinearSolver, p_builder_solver, MaxIter, TheFlags, rAuxName, Coefficient1);
+        }));
+    rBinder.def(py::init([](
+        Epetra_MpiComm& rComm,ModelPart& rModelPart,TrilinosLinearSolverType::Pointer pLinearSolver,
+        unsigned int MaxIter,Flags TheFlags,std::string& rAuxName, double Coefficient1, double Coefficient2)
+        {
+            constexpr int RowSizeGuess = (TDim == 2 ? 15 : 40);
+            auto p_builder_solver = Kratos::make_shared<TrilinosBlockBuilderAndSolver<TrilinosSparseSpaceType, TrilinosLocalSpaceType, TrilinosLinearSolverType > >(
+                rComm, RowSizeGuess, pLinearSolver);
+            return Kratos::make_shared<TrilinosVariationalDistanceCalculation<TDim>>(rModelPart, pLinearSolver, p_builder_solver, MaxIter, TheFlags, rAuxName, Coefficient1, Coefficient2);
+        }));
 }
 
 void AddProcesses(pybind11::module& m)
 {
-    // Turbulence models
-    typedef SpalartAllmarasTurbulenceModel<TrilinosSparseSpaceType, TrilinosLocalSpaceType, TrilinosLinearSolverType> BaseSpAlModelType;
-
-    py::class_<BaseSpAlModelType, BaseSpAlModelType::Pointer, Process>(m, "TrilinosBaseSpAlModel");
-
-    typedef TrilinosSpalartAllmarasTurbulenceModel<TrilinosSparseSpaceType, TrilinosLocalSpaceType, TrilinosLinearSolverType> TrilinosSpAlModelType;
-    py::class_<TrilinosSpAlModelType, TrilinosSpAlModelType::Pointer, BaseSpAlModelType >(m,"TrilinosSpalartAllmarasTurbulenceModel")
-        .def(py::init < Epetra_MpiComm&, ModelPart&, TrilinosLinearSolverType::Pointer, unsigned int, double, unsigned int, bool, unsigned int>())
-        .def("ActivateDES", &SpalartAllmarasTurbulenceModel< TrilinosSparseSpaceType, TrilinosLocalSpaceType, TrilinosLinearSolverType >::ActivateDES)
-        .def("AdaptForFractionalStep", &SpalartAllmarasTurbulenceModel< TrilinosSparseSpaceType, TrilinosLocalSpaceType, TrilinosLinearSolverType >::AdaptForFractionalStep)
-        ;
-
-    // Stokes initialization processes
-    typedef StokesInitializationProcess<TrilinosSparseSpaceType, TrilinosLocalSpaceType, TrilinosLinearSolverType> BaseStokesInitializationType;
-
-    py::class_<BaseStokesInitializationType, BaseStokesInitializationType::Pointer, Process>(m, "TrilinosBaseStokesInitialization")
-        .def("SetConditions",&BaseStokesInitializationType::SetConditions)
-        ;
-
-    typedef TrilinosStokesInitializationProcess<TrilinosSparseSpaceType, TrilinosLocalSpaceType, TrilinosLinearSolverType> TrilinosStokesInitializationType;
-    py::class_<TrilinosStokesInitializationType, TrilinosStokesInitializationType::Pointer, BaseStokesInitializationType >
-        (m,"TrilinosStokesInitializationProcess")
-        .def(py::init<Epetra_MpiComm&, ModelPart&,TrilinosLinearSolverType::Pointer, unsigned int, const Kratos::Variable<int>& >())
-        ;
-
     // Variational distance calculation processes
     using DistanceCalculator2DBinderType = py::class_<TrilinosVariationalDistanceCalculation<2>, typename TrilinosVariationalDistanceCalculation<2>::Pointer, Process >;
     using DistanceCalculator3DBinderType = py::class_<TrilinosVariationalDistanceCalculation<3>, typename TrilinosVariationalDistanceCalculation<3>::Pointer, Process >;
@@ -102,18 +91,14 @@ void AddProcesses(pybind11::module& m)
 
     typedef TrilinosLevelSetConvectionProcess<2, TrilinosSparseSpaceType, TrilinosLocalSpaceType, TrilinosLinearSolverType> TrilinosLevelSetConvectionProcess2D;
     py::class_<TrilinosLevelSetConvectionProcess2D, TrilinosLevelSetConvectionProcess2D::Pointer, BaseLevelSetConvectionProcess2D>(m, "TrilinosLevelSetConvectionProcess2D")
-        .def(py::init<Epetra_MpiComm&, Variable<double>&, ModelPart&, TrilinosLinearSolverType::Pointer>())
-        .def(py::init<Epetra_MpiComm&, Variable<double>&, ModelPart&, TrilinosLinearSolverType::Pointer, const double>())
-        .def(py::init<Epetra_MpiComm&, Variable<double>&, ModelPart&, TrilinosLinearSolverType::Pointer, const double, const double>())
-        .def(py::init<Epetra_MpiComm&, Variable<double>&, ModelPart&, TrilinosLinearSolverType::Pointer, const double, const double, const unsigned int>())
+        .def(py::init<Epetra_MpiComm&, Model&, TrilinosLinearSolverType::Pointer, Parameters>())
+        .def(py::init<Epetra_MpiComm&, ModelPart&, TrilinosLinearSolverType::Pointer, Parameters>())
         ;
 
     typedef TrilinosLevelSetConvectionProcess<3, TrilinosSparseSpaceType, TrilinosLocalSpaceType, TrilinosLinearSolverType> TrilinosLevelSetConvectionProcess3D;
     py::class_<TrilinosLevelSetConvectionProcess3D, TrilinosLevelSetConvectionProcess3D::Pointer, BaseLevelSetConvectionProcess3D>(m, "TrilinosLevelSetConvectionProcess3D")
-        .def(py::init<Epetra_MpiComm&, Variable<double>&, ModelPart&, TrilinosLinearSolverType::Pointer>())
-        .def(py::init<Epetra_MpiComm&, Variable<double>&, ModelPart&, TrilinosLinearSolverType::Pointer, const double>())
-        .def(py::init<Epetra_MpiComm&, Variable<double>&, ModelPart&, TrilinosLinearSolverType::Pointer, const double, const double>())
-        .def(py::init<Epetra_MpiComm&, Variable<double>&, ModelPart&, TrilinosLinearSolverType::Pointer, const double, const double, const unsigned int>())
+        .def(py::init<Epetra_MpiComm&, Model&, TrilinosLinearSolverType::Pointer, Parameters>())
+        .def(py::init<Epetra_MpiComm&, ModelPart&, TrilinosLinearSolverType::Pointer, Parameters>())
         ;
 
 }

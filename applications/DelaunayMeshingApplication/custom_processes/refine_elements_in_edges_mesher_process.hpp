@@ -333,7 +333,7 @@ class RefineElementsInEdgesMesherProcess
 
     std::vector<double> ShapeFunctionsN;
 
-    unsigned int id = MesherUtilities::GetMaxNodeId(*(rModelPart.GetParentModelPart())) + 1;
+    unsigned int id = MesherUtilities::GetMaxNodeId(rModelPart.GetParentModelPart()) + 1;
 
     unsigned int size  = 0;
     //unsigned int count = 0;
@@ -368,7 +368,7 @@ class RefineElementsInEdgesMesherProcess
       //generating the dofs
       for(auto& i_dof : ReferenceDofs)
       {
-        Node<3>::DofType& rDof = i_dof;
+        Node<3>::DofType& rDof = *i_dof;
         Node<3>::DofType::Pointer pNewDof = pNode->pAddDof( rDof );
 
         // in rigid edges set it fix has no sense:
