@@ -173,15 +173,20 @@ namespace Kratos
     // noalias( rRightHandSideVector ) += -prod(MassMatrix,AccelerationValues);
     // noalias( rLeftHandSideMatrix ) +=  MassMatrix/TimeStep;
 
-    //2nd order
+    // 2nd order
     this->GetAccelerationValues(AccelerationValues, 0);
     this->GetVelocityValues(VelocityValues, 0);
     noalias(AccelerationValues) += -2.0 * VelocityValues / TimeStep;
     this->GetVelocityValues(VelocityValues, 1);
-    noalias(AccelerationValues) += 2.0 * VelocityValues / TimeStep; //these are negative accelerations
+    noalias(AccelerationValues) += 2.0 * VelocityValues / TimeStep; // these are negative accelerations
     noalias(rRightHandSideVector) += prod(MassMatrix, AccelerationValues);
     noalias(rLeftHandSideMatrix) += StiffnessMatrix + MassMatrix * 2 / TimeStep;
 
+    Vector rRHSVector_inertial(LocalSize);
+    noalias(rRHSVector_inertial) = ZeroVector(LocalSize);
+    noalias(rRHSVector_inertial) = prod(MassMatrix, AccelerationValues);
+    double norm_inertial = norm_2(rRHSVector_inertial);
+    this->SetValue(INERTIAL_FORCES_NORM, norm_inertial);
     // // Add residual of previous iteration to RHS
     // VectorType VelocityValues = ZeroVector(LocalSize);
     // VectorType UpdatedAccelerations = ZeroVector(LocalSize);
@@ -212,8 +217,8 @@ namespace Kratos
 
   template <unsigned int TDim>
   void TwoStepUpdatedLagrangianVPImplicitElement<TDim>::CalculateOnIntegrationPoints(const Variable<bool> &rVariable,
-                                                                                    std::vector<bool> &rOutput,
-                                                                                    const ProcessInfo &rCurrentProcessInfo)
+                                                                                     std::vector<bool> &rOutput,
+                                                                                     const ProcessInfo &rCurrentProcessInfo)
   {
     if (rVariable == YIELDED)
     {
@@ -223,8 +228,8 @@ namespace Kratos
 
   template <unsigned int TDim>
   void TwoStepUpdatedLagrangianVPImplicitElement<TDim>::CalculateOnIntegrationPoints(const Variable<double> &rVariable,
-                                                                                    std::vector<double> &rOutput,
-                                                                                    const ProcessInfo &rCurrentProcessInfo)
+                                                                                     std::vector<double> &rOutput,
+                                                                                     const ProcessInfo &rCurrentProcessInfo)
   {
     if (rVariable == EQ_STRAIN_RATE)
     {
@@ -234,8 +239,8 @@ namespace Kratos
 
   template <unsigned int TDim>
   void TwoStepUpdatedLagrangianVPImplicitElement<TDim>::CalculateOnIntegrationPoints(const Variable<Vector> &rVariable,
-                                                                                    std::vector<Vector> &rOutput,
-                                                                                    const ProcessInfo &rCurrentProcessInfo)
+                                                                                     std::vector<Vector> &rOutput,
+                                                                                     const ProcessInfo &rCurrentProcessInfo)
   {
     if (rVariable == CAUCHY_STRESS_VECTOR)
     {

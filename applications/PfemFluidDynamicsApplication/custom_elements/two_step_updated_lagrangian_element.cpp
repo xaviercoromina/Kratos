@@ -181,6 +181,10 @@ namespace Kratos
 
     this->EvaluateInPoint(VolumeAcceleration, VOLUME_ACCELERATION, rN);
 
+    const unsigned int LocalSize = TDim * NumNodes;
+    Vector rRHSVector_external(LocalSize);
+    noalias(rRHSVector_external) = ZeroVector(LocalSize);
+
     for (SizeType i = 0; i < NumNodes; ++i)
     {
       if (this->GetGeometry()[i].SolutionStepsDataHas(VOLUME_ACCELERATION))
@@ -219,10 +223,13 @@ namespace Kratos
         {
           // Volume Acceleration
           rRHSVector[FirstRow + d] += Weight * Density * rN[i] * VolumeAcceleration[d];
+          rRHSVector_external[FirstRow + d] += Weight * Density * rN[i] * VolumeAcceleration[d];
         }
       }
       FirstRow += TDim;
     }
+    double norm_external = norm_2(rRHSVector_external);
+    this->SetValue(VISCOUS_FORCES_NORM, norm_external);
   }
 
   template <>
@@ -237,6 +244,8 @@ namespace Kratos
 
     Vector rRHSVector_viscous(6);
     noalias(rRHSVector_viscous) = ZeroVector(6);
+    Vector rRHSVector_volumetric(6);
+    noalias(rRHSVector_volumetric) = ZeroVector(6);
     for (SizeType i = 0; i < NumNodes; ++i)
     {
       const double lagDNXi = rDN_DX(i, 0) * rElementalVariables.InvFgrad(0, 0) + rDN_DX(i, 1) * rElementalVariables.InvFgrad(1, 0);
@@ -250,10 +259,22 @@ namespace Kratos
       rRHSVector[FirstRow + 1] += -Weight * (lagDNYi * rElementalVariables.UpdatedTotalCauchyStress[1] +
                                              lagDNXi * rElementalVariables.UpdatedTotalCauchyStress[2]);
 
+      rRHSVector_viscous[FirstRow] += -Weight * (lagDNXi * rElementalVariables.UpdatedDeviatoricCauchyStress[0] +
+                                                 lagDNYi * rElementalVariables.UpdatedDeviatoricCauchyStress[2]);
+
+      rRHSVector_viscous[FirstRow + 1] += -Weight * (lagDNYi * rElementalVariables.UpdatedDeviatoricCauchyStress[1] +
+                                                     lagDNXi * rElementalVariables.UpdatedDeviatoricCauchyStress[2]);
+
+      rRHSVector_volumetric[FirstRow] += -Weight * lagDNXi * rElementalVariables.MeanPressure;
+
+      rRHSVector_volumetric[FirstRow + 1] += -Weight * lagDNYi * rElementalVariables.MeanPressure;
+
       FirstRow += 2;
     }
     double norm_viscous = norm_2(rRHSVector_viscous);
     this->SetValue(VISCOUS_FORCES_NORM, norm_viscous);
+    double norm_volumetric = norm_2(rRHSVector_volumetric);
+    this->SetValue(VOLUMETRIC_FORCES_NORM, norm_volumetric);
   }
 
   template <>
@@ -266,6 +287,11 @@ namespace Kratos
     const SizeType NumNodes = this->GetGeometry().PointsNumber();
 
     SizeType FirstRow = 0;
+
+    Vector rRHSVector_viscous(12);
+    noalias(rRHSVector_viscous) = ZeroVector(12);
+    Vector rRHSVector_volumetric(12);
+    noalias(rRHSVector_volumetric) = ZeroVector(12);
 
     for (SizeType i = 0; i < NumNodes; ++i)
     {
@@ -288,8 +314,30 @@ namespace Kratos
                                              lagDNXi * rElementalVariables.UpdatedTotalCauchyStress[4] +
                                              lagDNYi * rElementalVariables.UpdatedTotalCauchyStress[5]);
 
+      rRHSVector_viscous[FirstRow] += -Weight * (lagDNXi * rElementalVariables.UpdatedDeviatoricCauchyStress[0] +
+                                                 lagDNYi * rElementalVariables.UpdatedDeviatoricCauchyStress[3] +
+                                                 lagDNZi * rElementalVariables.UpdatedDeviatoricCauchyStress[4]);
+
+      rRHSVector_viscous[FirstRow + 1] += -Weight * (lagDNYi * rElementalVariables.UpdatedDeviatoricCauchyStress[1] +
+                                                     lagDNXi * rElementalVariables.UpdatedDeviatoricCauchyStress[3] +
+                                                     lagDNZi * rElementalVariables.UpdatedDeviatoricCauchyStress[5]);
+
+      rRHSVector_viscous[FirstRow + 2] += -Weight * (lagDNZi * rElementalVariables.UpdatedDeviatoricCauchyStress[2] +
+                                                     lagDNXi * rElementalVariables.UpdatedDeviatoricCauchyStress[4] +
+                                                     lagDNYi * rElementalVariables.UpdatedDeviatoricCauchyStress[5]);
+
+      rRHSVector_volumetric[FirstRow] += -Weight * (lagDNXi * rElementalVariables.MeanPressure);
+
+      rRHSVector_volumetric[FirstRow + 1] += -Weight * (lagDNYi * rElementalVariables.MeanPressure);
+
+      rRHSVector_volumetric[FirstRow + 2] += -Weight * (lagDNZi * rElementalVariables.MeanPressure);
+
       FirstRow += 3;
     }
+    double norm_viscous = norm_2(rRHSVector_viscous);
+    this->SetValue(VISCOUS_FORCES_NORM, norm_viscous);
+    double norm_volumetric = norm_2(rRHSVector_volumetric);
+    this->SetValue(VOLUMETRIC_FORCES_NORM, norm_volumetric);
   }
 
   template <unsigned int TDim>
