@@ -75,25 +75,26 @@ namespace Kratos
       const double time = mrModelPart.GetProcessInfo()[TIME];
       const int step = mrModelPart.GetProcessInfo()[STEP];
       const std::string file_name = mOutputFileName + ".txt";
+      const int number_of_elem = static_cast<int>(mrModelPart.Elements().size());
 
       // Initialize values to be printed
       double inertial_forces = 0.0;
-      double viscous_forces = 0.0;
-      double vol_forces = 0.0;
-      double ext_forces = 0.0;
+      double viscous_forces  = 0.0;
+      double vol_forces      = 0.0;
+      double ext_forces      = 0.0;
 
       if (time - mPreviousPlotTime > mTimeInterval || step == 1) {
         // We loop over the elements...
         const auto it_elem_begin = mrModelPart.ElementsBegin();
 
         //#pragma omp parallel for
-        for (int i = 0; i < static_cast<int>(mrModelPart.Elements().size()); ++i) {
+        for (int i = 0; i < number_of_elem; ++i) {
           auto it_elem = it_elem_begin + i;
 
           inertial_forces += it_elem->GetValue(INERTIAL_FORCES_NORM);
-          viscous_forces += it_elem->GetValue(VISCOUS_FORCES_NORM);
-          vol_forces += it_elem->GetValue(VOLUMETRIC_FORCES_NORM);
-          ext_forces += it_elem->GetValue(EXTERNAL_FORCES_NORM);
+          viscous_forces  += it_elem->GetValue(VISCOUS_FORCES_NORM);
+          vol_forces      += it_elem->GetValue(VOLUMETRIC_FORCES_NORM);
+          ext_forces      += it_elem->GetValue(EXTERNAL_FORCES_NORM);
         }
 
         // We open the file where we print the wave height values
