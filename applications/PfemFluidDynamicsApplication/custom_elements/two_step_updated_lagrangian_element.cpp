@@ -235,6 +235,8 @@ namespace Kratos
 
     SizeType FirstRow = 0;
 
+    Vector rRHSVector_viscous(6);
+    noalias(rRHSVector_viscous) = ZeroVector(6);
     for (SizeType i = 0; i < NumNodes; ++i)
     {
       const double lagDNXi = rDN_DX(i, 0) * rElementalVariables.InvFgrad(0, 0) + rDN_DX(i, 1) * rElementalVariables.InvFgrad(1, 0);
@@ -250,6 +252,8 @@ namespace Kratos
 
       FirstRow += 2;
     }
+    double norm_viscous = norm_2(rRHSVector_viscous);
+    this->SetValue(VISCOUS_FORCES_NORM, norm_viscous);
   }
 
   template <>
