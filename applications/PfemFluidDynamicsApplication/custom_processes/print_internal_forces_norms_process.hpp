@@ -118,7 +118,7 @@ namespace Kratos
         // We open the file where we print the wave height values
         std::ofstream my_file;
         my_file.open(file_name, std::ios_base::app);
-        my_file << "  " + std::to_string(time) + "    " + std::to_string(inertial_forces)+ "    " + std::to_string(viscous_forces)+ "    " + std::to_string(vol_forces)+ "    " + std::to_string(ext_forces) << std::endl;
+        my_file << "  " + std::to_string(time) + "        " + std::to_string(inertial_forces)+ "                 " + std::to_string(viscous_forces)+ "                  " + std::to_string(vol_forces)+ "                 " + std::to_string(ext_forces) << std::endl;
         mPreviousPlotTime = time;
 
       }
