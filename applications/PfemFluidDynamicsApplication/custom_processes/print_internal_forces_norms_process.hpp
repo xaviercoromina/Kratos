@@ -52,6 +52,24 @@ namespace Kratos
       my_file.close();
     }
 
+    PrintInternalForcesNormProcess(ModelPart &rModelPart, Parameters ThisParameters) : mrModelPart(rModelPart)
+    {
+      Parameters default_parameters(R"({
+          "output_file_name"       : "trial",
+          "print_interval"         : 0.0
+      })");
+      ThisParameters.ValidateAndAssignDefaults(default_parameters);
+      std::ofstream my_file;
+
+      mOutputFileName = ThisParameters["output_file_name"].GetString();
+      mTimeInterval = ThisParameters["print_interval"].GetDouble();
+
+      const std::string file_name = mOutputFileName + ".txt";
+      my_file.open(file_name, std::ios_base::trunc);
+      my_file << "    TIME     INERTIAL_FORCES_NORM     VISCOUS_FORCES_NORM     VOLUMETRIC_FORCES_NORM      EXTERNAL_FORCES_NORM" << std::endl;
+      my_file.close();
+    }
+
     /// Destructor.
     virtual ~PrintInternalForcesNormProcess() {}
 
