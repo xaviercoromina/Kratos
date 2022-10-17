@@ -229,7 +229,9 @@ namespace Kratos
       FirstRow += TDim;
     }
     double norm_external = norm_2(rRHSVector_external);
-    this->SetValue(VISCOUS_FORCES_NORM, norm_external);
+    this->SetValue(EXTERNAL_FORCES_NORM, norm_external);
+
+    // std::cout << "the norm_external forces is " << norm_external << std::endl;
   }
 
   template <>
