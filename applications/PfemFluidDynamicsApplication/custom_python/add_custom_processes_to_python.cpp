@@ -100,7 +100,8 @@ void AddCustomProcessesToPython(pybind11::module &m)
         .def(py::init<ModelPart&, const int, const int, const double, const double, const double, const std::string, const double>());
 
     py::class_<PrintInternalForcesNormProcess, PrintInternalForcesNormProcess::Pointer, ProcessBaseType>(m, "PrintInternalForcesNormProcess")
-        .def(py::init<ModelPart&,  const std::string, const double>());
+        .def(py::init<ModelPart&,  const std::string, const double>())
+        .def(py::init<ModelPart&,  Parameters>());
 
     py::class_<SetInletProcess, SetInletProcess::Pointer, ProcessBaseType>(m, "SetInlet")
         .def(py::init<ModelPart &, int>());

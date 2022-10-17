@@ -52,6 +52,24 @@ namespace Kratos
       my_file.close();
     }
 
+    PrintInternalForcesNormProcess(ModelPart &rModelPart, Parameters ThisParameters) : mrModelPart(rModelPart)
+    {
+      Parameters default_parameters(R"({
+          "output_file_name"       : "trial",
+          "print_interval"         : 0.0
+      })");
+      ThisParameters.ValidateAndAssignDefaults(default_parameters);
+      std::ofstream my_file;
+
+      mOutputFileName = ThisParameters["output_file_name"].GetString();
+      mTimeInterval = ThisParameters["print_interval"].GetDouble();
+
+      const std::string file_name = mOutputFileName + ".txt";
+      my_file.open(file_name, std::ios_base::trunc);
+      my_file << "    TIME     INERTIAL_FORCES_NORM     VISCOUS_FORCES_NORM     VOLUMETRIC_FORCES_NORM      EXTERNAL_FORCES_NORM" << std::endl;
+      my_file.close();
+    }
+
     /// Destructor.
     virtual ~PrintInternalForcesNormProcess() {}
 
@@ -100,7 +118,7 @@ namespace Kratos
         // We open the file where we print the wave height values
         std::ofstream my_file;
         my_file.open(file_name, std::ios_base::app);
-        my_file << "  " + std::to_string(time) + "    " + std::to_string(inertial_forces)+ "    " + std::to_string(viscous_forces)+ "    " + std::to_string(vol_forces)+ "    " + std::to_string(ext_forces) << std::endl;
+        my_file << "  " + std::to_string(time) + "        " + std::to_string(inertial_forces)+ "                 " + std::to_string(viscous_forces)+ "                  " + std::to_string(vol_forces)+ "                 " + std::to_string(ext_forces) << std::endl;
         mPreviousPlotTime = time;
 
       }
