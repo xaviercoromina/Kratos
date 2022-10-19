@@ -48,7 +48,7 @@ namespace Kratos
       std::ofstream my_file;
       const std::string file_name = mOutputFileName + ".txt";
       my_file.open(file_name, std::ios_base::trunc);
-      my_file << "    TIME     INERTIAL_FORCES_NORM     VISCOUS_FORCES_NORM     VOLUMETRIC_FORCES_NORM      EXTERNAL_FORCES_NORM" << std::endl;
+      my_file << "    TIME     INERTIAL_FORCES_NORM     VISCOUS_FORCES_NORM     VOLUMETRIC_FORCES_NORM      EXTERNAL_FORCES_NORM      RHS_ELEMENTAL_NORM" << std::endl;
       my_file.close();
     }
 
@@ -66,7 +66,7 @@ namespace Kratos
 
       const std::string file_name = mOutputFileName + ".txt";
       my_file.open(file_name, std::ios_base::trunc);
-      my_file << "    TIME     INERTIAL_FORCES_NORM     VISCOUS_FORCES_NORM     VOLUMETRIC_FORCES_NORM      EXTERNAL_FORCES_NORM" << std::endl;
+      my_file << "    TIME     INERTIAL_FORCES_NORM     VISCOUS_FORCES_NORM     VOLUMETRIC_FORCES_NORM      EXTERNAL_FORCES_NORM      RHS_ELEMENTAL_NORM" << std::endl;
       my_file.close();
     }
 
@@ -100,6 +100,7 @@ namespace Kratos
       double viscous_forces  = 0.0;
       double vol_forces      = 0.0;
       double ext_forces      = 0.0;
+      double rhs_forces      = 0.0;
 
       if (time - mPreviousPlotTime > mTimeInterval || step == 1) {
         // We loop over the elements...
@@ -113,12 +114,13 @@ namespace Kratos
           viscous_forces  += it_elem->GetValue(VISCOUS_FORCES_NORM);
           vol_forces      += it_elem->GetValue(VOLUMETRIC_FORCES_NORM);
           ext_forces      += it_elem->GetValue(EXTERNAL_FORCES_NORM);
+          rhs_forces      += it_elem->GetValue(RHS_ELEMENTAL_NORM);
         }
 
         // We open the file where we print the wave height values
         std::ofstream my_file;
         my_file.open(file_name, std::ios_base::app);
-        my_file << "  " + std::to_string(time) + "        " + std::to_string(inertial_forces)+ "                 " + std::to_string(viscous_forces)+ "                  " + std::to_string(vol_forces)+ "                 " + std::to_string(ext_forces) << std::endl;
+        my_file << "  " + std::to_string(time) + "        " + std::to_string(inertial_forces)+ "                 " + std::to_string(viscous_forces)+ "                  " + std::to_string(vol_forces)+ "                 " + std::to_string(ext_forces)+ "                 " + std::to_string(rhs_forces) << std::endl;
         mPreviousPlotTime = time;
 
       }

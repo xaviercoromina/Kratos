@@ -187,6 +187,10 @@ namespace Kratos
     noalias(rRHSVector_inertial) = prod(MassMatrix, AccelerationValues);
     double norm_inertial = norm_2(rRHSVector_inertial);
     this->SetValue(INERTIAL_FORCES_NORM, norm_inertial);
+    // std::cout<<"the norm_inertial forces is "<<norm_inertial <<std::endl; 
+    double norm_rhs = norm_2(rRightHandSideVector);
+    this->SetValue(RHS_ELEMENTAL_NORM, norm_rhs);
+    // std::cout<<"                                      the norm_rhs is "<<norm_rhs <<std::endl; 
     // // Add residual of previous iteration to RHS
     // VectorType VelocityValues = ZeroVector(LocalSize);
     // VectorType UpdatedAccelerations = ZeroVector(LocalSize);

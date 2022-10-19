@@ -230,7 +230,6 @@ namespace Kratos
     }
     double norm_external = norm_2(rRHSVector_external);
     this->SetValue(EXTERNAL_FORCES_NORM, norm_external);
-
     // std::cout << "the norm_external forces is " << norm_external << std::endl;
   }
 
@@ -277,6 +276,8 @@ namespace Kratos
     this->SetValue(VISCOUS_FORCES_NORM, norm_viscous);
     double norm_volumetric = norm_2(rRHSVector_volumetric);
     this->SetValue(VOLUMETRIC_FORCES_NORM, norm_volumetric);
+    // std::cout << "the norm_viscous forces is " << norm_viscous << std::endl;
+    // std::cout << "the norm_volumetric forces is " << norm_volumetric << std::endl;
   }
 
   template <>
