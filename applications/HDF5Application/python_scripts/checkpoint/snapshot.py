@@ -4,9 +4,10 @@ import KratosMultiphysics
 # HDF5 imports
 import KratosMultiphysics.HDF5Application as HDF5Application
 from KratosMultiphysics.HDF5Application.core.utils import ParametersWrapper
-from KratosMultiphysics.HDF5Application.utils import OpenHDF5File
+from KratosMultiphysics.HDF5Application.core.file_io import OpenHDF5File
 import KratosMultiphysics.HDF5Application.core.operations.model_part as Operations
 from KratosMultiphysics.HDF5Application import CheckpointPattern
+from .mpi_utilities import MPIUnion
 
 # Core imports
 import abc
@@ -116,14 +117,14 @@ class SnapshotIOBase(abc.ABC):
 
     def __call__(self, model_part: KratosMultiphysics.ModelPart) -> None:
         """@brief Execute all defined IO operations."""
-        with OpenHDF5File(self.__parameters["io_settings"], model_part.IsDistributed()) as file:
+        with OpenHDF5File(self.__parameters["io_settings"], model_part) as file:
             for operation in self._GetOperations(model_part):
                 operation(model_part, file)
 
     def ReadStepAndPathID(self) -> "tuple[int,int]":
         model = KratosMultiphysics.Model()
         model_part = model.CreateModelPart("temporary")
-        with OpenHDF5File(self.__GetInputParameters(), KratosMultiphysics.IsDistributedRun()) as file:
+        with OpenHDF5File(self.__GetInputParameters(), model_part) as file:
             Operations.ReadProcessInfo(self.__parameters["operation_settings"])(model_part, file)
         step = model_part.ProcessInfo[KratosMultiphysics.STEP]
         path_id = model_part.ProcessInfo[HDF5Application.ANALYSIS_PATH]
@@ -139,33 +140,35 @@ class SnapshotIOBase(abc.ABC):
 
     @staticmethod
     def _ExtractNodalDataNames(model_part: KratosMultiphysics.ModelPart, check_mesh_consistency: bool = False) -> "list[str]":
-        return list(model_part.GetNonHistoricalVariablesNames(model_part.Nodes,
-                                                              check_mesh_consistency))
+        data_communicator = model_part.GetCommunicator().GetDataCommunicator()
+        local_names = model_part.GetNonHistoricalVariablesNames(model_part.Nodes, check_mesh_consistency)
+        output =  list(MPIUnion(list(local_names), data_communicator))
+        print(f"ExtractNodalDataNames: {output} on rank {data_communicator.Rank()}")
+        return output
 
     @staticmethod
     def _ExtractNodalFlagNames(model_part: KratosMultiphysics.ModelPart) -> "list[str]":
-        ##! @todo
-        return []
+        return KratosMultiphysics.KratosGlobals.Kernel.GetFlagNames()
 
     @staticmethod
     def _ExtractElementDataNames(model_part: KratosMultiphysics.ModelPart, check_mesh_consistency: bool = False) -> "list[str]":
-        return list(model_part.GetNonHistoricalVariablesNames(model_part.Elements,
-                                                              check_mesh_consistency))
+        data_communicator = model_part.GetCommunicator().GetDataCommunicator()
+        local_names = model_part.GetNonHistoricalVariablesNames(model_part.Elements, check_mesh_consistency)
+        return list(MPIUnion(list(local_names), data_communicator))
 
     @staticmethod
     def _ExtractElementFlagNames(model_part: KratosMultiphysics.ModelPart) -> "list[str]":
-        ##! @todo
-        return []
+        return KratosMultiphysics.KratosGlobals.Kernel.GetFlagNames()
 
     @staticmethod
     def _ExtractConditionDataNames(model_part: KratosMultiphysics.ModelPart, check_mesh_consistency: bool = False) -> "list[str]":
-        return list(model_part.GetNonHistoricalVariablesNames(model_part.Conditions,
-                                                              check_mesh_consistency))
+        data_communicator = model_part.GetCommunicator().GetDataCommunicator()
+        local_names = model_part.GetNonHistoricalVariablesNames(model_part.Conditions, check_mesh_consistency)
+        return list(MPIUnion(list(local_names), data_communicator))
 
     @staticmethod
     def _ExtractConditionFlagNames(model_part: KratosMultiphysics.ModelPart) -> "list[str]":
-        ##! @todo
-        return []
+        return KratosMultiphysics.KratosGlobals.Kernel.GetFlagNames()
 
     @classmethod
     def GetDefaultParameters(cls) -> KratosMultiphysics.Parameters:
@@ -225,9 +228,9 @@ class DefaultSnapshotOutput(SnapshotIOBase):
         for operation, variable_names in ((Operations.NodalSolutionStepDataOutput, self._ExtractNodalSolutionStepDataNames(model_part)),
                                           (Operations.NodalDataValueOutput, self._ExtractNodalDataNames(model_part)),
                                           (Operations.NodalFlagValueOutput, self._ExtractNodalFlagNames(model_part)),
-                                          (Operations.ElementDataValueOutput, self._ExtractElementDataNames(model_part)),
+                                          #(Operations.ElementDataValueOutput, self._ExtractElementDataNames(model_part)),
                                           (Operations.ElementFlagValueOutput, self._ExtractElementFlagNames(model_part)),
-                                          (Operations.ConditionDataValueOutput, self._ExtractConditionDataNames(model_part)),
+                                          #(Operations.ConditionDataValueOutput, self._ExtractConditionDataNames(model_part)),
                                           (Operations.ConditionFlagValueOutput, self._ExtractConditionFlagNames(model_part))):
             parameters = self.parameters["operation_settings"]
             parameters.AddStringArray("list_of_variables", variable_names)
@@ -251,7 +254,7 @@ class DefaultSnapshotInput(SnapshotIOBase):
     def GetDefaultIOParameters() -> KratosMultiphysics.Parameters:
         return KratosMultiphysics.Parameters("""
         {
-            "file_name" : "checkpoints/<model_part_name>_snapshot_<path_id>_<step>.h5",
+            "file_name" : "",
             "file_access_mode" : "read_only",
             "echo_level" : 0
         }

@@ -13,12 +13,8 @@
 #ifndef KRATOS_PATTERN_UTILITY_H_INCLUDED
 #define KRATOS_PATTERN_UTILITY_H_INCLUDED
 
-// External includes
-#include "ghc/filesystem.hpp" // TODO change to std::filesystem when migrating to C++17
-
 // Core includes
 #include "includes/kratos_export_api.h"
-#include "includes/shared_pointers.h"
 #include "includes/model_part.h"
 
 // STL includes
@@ -142,7 +138,7 @@ public:
 
     using MatchType = std::map<std::string,std::vector<std::string>>;
 
-    using PathType = ghc::filesystem::path;
+    using PathType = std::filesystem::path;
 
     KRATOS_CLASS_POINTER_DEFINITION(PlaceholderPattern);
 

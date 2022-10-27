@@ -162,7 +162,7 @@ class OpenHDF5File(object):
     def __enter__(self) -> KratosHDF5.HDF5File:
         distributed = "parallel_hdf5_file_io" if self.__model_part.IsDistributed() else "serial_hdf5_file_io"
         if self.__parameters.Has("io_type"):
-            self.__parameters["io_type"].SetString(distributed)
+            self.__parameters["io_type"] = distributed
         else:
             self.__parameters.AddString("io_type", distributed)
         self.__file = Create(self.__parameters, self.__model_part.GetCommunicator().GetDataCommunicator()).Get(self.__model_part)

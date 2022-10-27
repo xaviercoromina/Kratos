@@ -28,5 +28,6 @@ KratosHDF5Application::KratosHDF5Application() : KratosApplication("HDF5Applicat
 
 void KratosHDF5Application::Register() {
  	KRATOS_INFO("") << "Initializing KratosHDF5Application..." << std::endl;
+    KRATOS_REGISTER_VARIABLE(ANALYSIS_PATH)
 }
 }  // namespace Kratos.

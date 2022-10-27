@@ -11,12 +11,16 @@
 //
 
 // External includes
+#include "pybind11/detail/common.h"
 #include "pybind11/stl.h"
+#include "pybind11/functional.h"
+#include "pybind11/stl/filesystem.h"
 
 // HDF5 includes
 #include "custom_utilities/vertex.h"
 #include "custom_utilities/vertex_utilities.h"
 #include "custom_utilities/pattern_utility.h"
+#include "custom_utilities/registry_file.h"
 
 // Internal includes
 #include "add_custom_utilities_to_python.h"
@@ -144,6 +148,17 @@ void AddCustomUtilitiesToPython(pybind11::module& rModule)
         .def("Apply",
              static_cast<std::string(CheckpointPattern::*)(const ModelPart&,std::size_t)const>(&CheckpointPattern::Apply),
              "Substitute values from the provided model part and path ID into the stored pattern.")
+        ;
+
+    pybind11::class_<RegistryFile, RegistryFile::Pointer>(rModule, "RegistryFile")
+        .def(pybind11::init<const std::filesystem::path&>())
+        .def(pybind11::init<const std::filesystem::path&,const RegistryFile::Extractor&>())
+        .def("GetFilePath", &RegistryFile::GetFilePath, "Get the path to the underlying file.")
+        .def("SetExtractor", pybind11::overload_cast<const RegistryFile::Extractor&>(&RegistryFile::SetExtractor))
+        .def("Push", &RegistryFile::Push, "Insert a new entry at the end, extracted from the input model.")
+        .def("Clear", &RegistryFile::Clear, "Delete the registry file")
+        .def("__len__", &RegistryFile::size)
+        .def("__iter__", [](const RegistryFile& rRegistryFile){return pybind11::make_iterator(rRegistryFile.begin(), rRegistryFile.end());})
         ;
 }
 

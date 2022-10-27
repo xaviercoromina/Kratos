@@ -28,6 +28,7 @@ set( KRATOS_HDF5_APPLICATION_CORE
   ${CMAKE_CURRENT_SOURCE_DIR}/custom_utilities/pattern_utility.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/custom_utilities/vertex.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/custom_utilities/vertex_utilities.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/custom_utilities/registry_file.cpp
 )
 
 ## HDF5Application python interface sources
