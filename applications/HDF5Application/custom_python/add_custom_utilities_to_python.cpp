@@ -11,12 +11,17 @@
 //
 
 // External includes
+#include "pybind11/detail/common.h"
 #include "pybind11/stl.h"
+#include "pybind11/functional.h"
+#include "pybind11/stl/filesystem.h"
 
 // HDF5 includes
 #include "custom_utilities/vertex.h"
 #include "custom_utilities/vertex_utilities.h"
 #include "custom_utilities/pattern_utility.h"
+#include "custom_utilities/journal.h"
+#include "custom_utilities/testing_utilities.h"
 
 // Internal includes
 #include "add_custom_utilities_to_python.h"
@@ -145,6 +150,37 @@ void AddCustomUtilitiesToPython(pybind11::module& rModule)
              static_cast<std::string(CheckpointPattern::*)(const ModelPart&,std::size_t)const>(&CheckpointPattern::Apply),
              "Substitute values from the provided model part and path ID into the stored pattern.")
         ;
+    #undef KRATOS_DEFINE_VERTEX_GETVALUE_OVERLOAD_BINDING
+
+    pybind11::class_<JournalBase, JournalBase::Pointer>(rModule, "JournalBase")
+        .def(pybind11::init<const std::filesystem::path&>())
+        .def(pybind11::init<const std::filesystem::path&,const JournalBase::Extractor&>())
+        .def("GetFilePath", &JournalBase::GetFilePath, "Get the path to the underlying file.")
+        .def("SetExtractor", pybind11::overload_cast<const JournalBase::Extractor&>(&JournalBase::SetExtractor))
+        .def("Push", pybind11::overload_cast<const Model&>(&JournalBase::Push), "Insert a new entry at the end, extracted from the input model.")
+        .def("EraseIf", &JournalBase::EraseIf, "Erase all lines from the associated file matching the provided predicate.")
+        .def("Clear", &JournalBase::Clear, "Delete the registry file")
+        .def("__len__", &JournalBase::size)
+        .def("__iter__", [](const JournalBase& rJournal){return pybind11::make_iterator(rJournal.begin(), rJournal.end());})
+        ;
+
+    pybind11::class_<Journal, Journal::Pointer>(rModule, "Journal")
+        .def(pybind11::init<const std::filesystem::path&>())
+        .def(pybind11::init<const std::filesystem::path&,const Journal::Extractor&>())
+        .def("GetFilePath", &Journal::GetFilePath, "Get the path to the underlying file.")
+        .def("SetExtractor", pybind11::overload_cast<const Journal::Extractor&>(&Journal::SetExtractor))
+        .def("Push", &Journal::Push, "Insert a new entry at the end, extracted from the input model.")
+        .def("EraseIf", &Journal::EraseIf, "Erase all lines from the associated file matching the provided predicate.")
+        .def("Clear", &Journal::Clear, "Delete the registry file")
+        .def("__len__", &Journal::size)
+        .def("__iter__", [](const Journal& rJournal){return pybind11::make_iterator(rJournal.begin(), rJournal.end());})
+        ;
+
+    #ifdef KRATOS_BUILD_TESTING // <== defined through CMake if cpp test sources are built
+    pybind11::class_<Testing::TestingUtilities, std::shared_ptr<Testing::TestingUtilities>>(rModule, "TestingUtilities")
+        .def_static("TestJournal", &Testing::TestingUtilities::TestJournal)
+        ;
+    #endif
 }
 
 

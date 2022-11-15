@@ -11,7 +11,6 @@
 //
 
 // Core includes
-#include "ghc/filesystem.hpp"
 #include "includes/define.h"
 #include "includes/exception.h"
 
@@ -22,6 +21,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <sstream>
+#include <filesystem>
 
 
 namespace Kratos
@@ -353,7 +353,7 @@ std::vector<ModelPartPattern::PathType> ModelPartPattern::Glob() const
         paths.emplace_back(pattern.root_path());
         ++it_pattern_part;
     } else { // the pattern is relative => begin globbing at the current working directory
-        paths.emplace_back(ghc::filesystem::current_path());
+        paths.emplace_back(std::filesystem::current_path());
     }
 
     // Compare the pattern parts to the globbed files'/directories' parts
@@ -364,8 +364,8 @@ std::vector<ModelPartPattern::PathType> ModelPartPattern::Glob() const
         std::vector<PathType> tmp_paths;
 
         for (const auto& r_path : paths) {
-            if (ghc::filesystem::is_directory(r_path)) {
-                for (auto item : ghc::filesystem::directory_iterator(r_path)) {
+            if (std::filesystem::is_directory(r_path)) {
+                for (auto item : std::filesystem::directory_iterator(r_path)) {
                     if (std::regex_match(item.path().filename().string(), pattern_part_regex)) {
                         tmp_paths.emplace_back(item);
                     }
