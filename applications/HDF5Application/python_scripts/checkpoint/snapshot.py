@@ -207,19 +207,21 @@ class DefaultSnapshotOutput(SnapshotIOBase):
     """@brief Output class for writing most data in the model part to an HDF5 snapshot.
        @details Data written: - nodal solution step data
                               - nodal data value
+                              - nodal flag
+                              - element data value
+                              - element flag
                               - condition data value
+                              - condition flag
                               - process info
     """
 
     @staticmethod
     def GetDefaultIOParameters() -> KratosMultiphysics.Parameters:
-        return KratosMultiphysics.Parameters("""
-        {
+        return KratosMultiphysics.Parameters("""{
             "file_name" : "checkpoints/<model_part_name>_snapshot_<path_id>_<step>.h5",
             "file_access_mode" : "truncate",
             "echo_level" : 0
-        }
-        """)
+        }""")
 
     def _GetOperations(self, model_part: KratosMultiphysics.ModelPart) -> list:
         operations = []
@@ -228,9 +230,9 @@ class DefaultSnapshotOutput(SnapshotIOBase):
         for operation, variable_names in ((Operations.NodalSolutionStepDataOutput, self._ExtractNodalSolutionStepDataNames(model_part)),
                                           (Operations.NodalDataValueOutput, self._ExtractNodalDataNames(model_part)),
                                           (Operations.NodalFlagValueOutput, self._ExtractNodalFlagNames(model_part)),
-                                          #(Operations.ElementDataValueOutput, self._ExtractElementDataNames(model_part)),
+                                          (Operations.ElementDataValueOutput, self._ExtractElementDataNames(model_part)),
                                           (Operations.ElementFlagValueOutput, self._ExtractElementFlagNames(model_part)),
-                                          #(Operations.ConditionDataValueOutput, self._ExtractConditionDataNames(model_part)),
+                                          (Operations.ConditionDataValueOutput, self._ExtractConditionDataNames(model_part)),
                                           (Operations.ConditionFlagValueOutput, self._ExtractConditionFlagNames(model_part))):
             parameters = self.parameters["operation_settings"]
             parameters.AddStringArray("list_of_variables", variable_names)
@@ -246,20 +248,21 @@ class DefaultSnapshotInput(SnapshotIOBase):
     """@brief Input class for reading most data from an HDF5 snapshot to a model part.
        @details Data read: - nodal solution step data
                            - nodal data value
+                           - nodal flag
+                           - element data value
+                           - element flag
                            - condition data value
+                           - condition flag
                            - process info
     """
 
     @staticmethod
     def GetDefaultIOParameters() -> KratosMultiphysics.Parameters:
-        return KratosMultiphysics.Parameters("""
-        {
+        return KratosMultiphysics.Parameters("""{
             "file_name" : "",
             "file_access_mode" : "read_only",
             "echo_level" : 0
-        }
-
-        """)
+        }""")
 
     def _GetOperations(self, model_part: KratosMultiphysics.ModelPart) -> list:
         operations = []
