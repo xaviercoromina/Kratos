@@ -22,6 +22,7 @@
 #include "custom_utilities/pattern_utility.h"
 #include "custom_utilities/journal.h"
 #include "custom_utilities/testing_utilities.h"
+#include "custom_utilities/mpi_utilities.h"
 
 // Internal includes
 #include "add_custom_utilities_to_python.h"
@@ -72,6 +73,8 @@ std::vector<std::string> Glob (const ModelPartPattern& rInstance) {
 
 void AddCustomUtilitiesToPython(pybind11::module& rModule)
 {
+    rModule.def("MPIAllGatherVStrings", &MPIAllGatherVStrings);
+
     pybind11::class_<HDF5::PointLocatorAdaptor, HDF5::PointLocatorAdaptor::Pointer, PointLocatorAdaptorTrampoline>(rModule, "PointLocatorAdaptor")
         .def(pybind11::init<>())
         .def("FindElement", &HDF5::PointLocatorAdaptor::FindElement)
