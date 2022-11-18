@@ -31,6 +31,7 @@ set( KRATOS_HDF5_APPLICATION_CORE
   ${CMAKE_CURRENT_SOURCE_DIR}/custom_utilities/file_content_iterator.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/custom_utilities/journal.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/custom_utilities/testing_utilities.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/custom_utilities/mpi_utilities.cpp
 )
 
 ## HDF5Application python interface sources
