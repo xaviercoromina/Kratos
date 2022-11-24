@@ -1507,6 +1507,7 @@ namespace Kratos {
 
                     // Use estimated nodal mass array scaled so that the Dt is similar to the original one
                     // TODO. Ignasi: check which stiffness is better (the locally estimated or the globally estimated)
+                    // TODO. Ignasi: the next four lines are used to test constant stiffness
                     // nodal_mass_array[i] = estimated_nodal_mass_array_old[i]*mass_array_scale_factor;
                     // particle_moment_intertia_array[i] = estimated_particle_moment_intertia_array_old[i]*mass_array_scale_factor;
                     // nodal_mass_array[i] = globally_estimated_nodal_mass_array_old[i]*gmass_array_scale_factor;
