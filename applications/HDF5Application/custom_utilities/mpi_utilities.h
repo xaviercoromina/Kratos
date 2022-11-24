@@ -41,9 +41,9 @@ struct MPIUtilities
         //    std::cout << *it << " ";
         //}
         //std::cout << std::endl;
-        KRATOS_LINE_WATCH(rCommunicator.Rank() << ": ");
+        KRATOS_WATCH_LINE(rCommunicator.Rank() << ": ");
         rCommunicator.Barrier();
-        KRATOS_LINE_WATCH(rCommunicator.Rank() << ": ");
+        KRATOS_WATCH_LINE(rCommunicator.Rank() << ": ");
 
         using Value = typename std::iterator_traits<TInputIterator>::value_type;
         std::vector<Value> output_buffer;
@@ -63,9 +63,9 @@ struct MPIUtilities
 
             for (int i_rank=1; i_rank<number_of_ranks; ++i_rank) {
                 // Receive objects from a rank
-        KRATOS_LINE_WATCH(rCommunicator.Rank() << ": ");
+        KRATOS_WATCH_LINE(rCommunicator.Rank() << ": recv from " << i_rank);
                 rCommunicator.Recv(receive_buffer, i_rank, i_rank);
-        KRATOS_LINE_WATCH(rCommunicator.Rank() << ": ");
+        KRATOS_WATCH_LINE(rCommunicator.Rank() << ": received from " << i_rank);
 
                 // Move received objects from the buffer to the output
                 output_buffer.reserve(output_buffer.size() + receive_buffer.back().size());
@@ -78,14 +78,14 @@ struct MPIUtilities
             // DataCommunicator operates on objects, or vectors of objects,
             // so that's what we need to pack the input data into
             std::vector<Value> local_objects(itBegin, itEnd);
-        KRATOS_LINE_WATCH(rCommunicator.Rank() << ": ");
+        KRATOS_WATCH_LINE(rCommunicator.Rank() << ": ");
             rCommunicator.Send(local_objects, master_rank, this_rank);
-        KRATOS_LINE_WATCH(rCommunicator.Rank() << ": ");
+        KRATOS_WATCH_LINE(rCommunicator.Rank() << ": ");
         }
 
-        KRATOS_LINE_WATCH(rCommunicator.Rank() << ": ");
+        KRATOS_WATCH_LINE(rCommunicator.Rank() << ": ");
         rCommunicator.Broadcast(output_buffer, master_rank);
-        KRATOS_LINE_WATCH(rCommunicator.Rank() << ": ");
+        KRATOS_WATCH_LINE(rCommunicator.Rank() << ": ");
         for (Value& r_item : output_buffer) {
             *itOutput++ = std::move(r_item);
         }
