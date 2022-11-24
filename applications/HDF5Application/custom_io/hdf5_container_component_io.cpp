@@ -623,11 +623,13 @@ void ContainerComponentIO<TContainerType, TContainerItemType, TComponents...>::R
 {
     KRATOS_TRY;
 
+    std::cout << "R" << rCommunicator.GetDataCommunicator().Rank() << " [ContainerComponentIO::ReadContainerComponents] begin" << std::endl;
     if (mComponentNames.size() == 0)
         return;
 
     std::vector<std::string> current_components_list(mComponentNames.size());
     std::copy(mComponentNames.begin(), mComponentNames.end(), current_components_list.begin());
+    std::cout << "R" << rCommunicator.GetDataCommunicator().Rank() << " [ContainerComponentIO::ReadContainerComponents] end" << std::endl;
 
     if (mComponentNames.size() == 1 && mComponentNames[0] == "ALL_VARIABLES_FROM_FILE") {
         if (mpFile->HasPath(mComponentPath)) {
@@ -640,17 +642,29 @@ void ContainerComponentIO<TContainerType, TContainerItemType, TComponents...>::R
             return;
         }
     }
+    int i = 0;
+    std::cout << "Suneth" << i++ << std::endl;
+
 
     std::vector<TContainerItemType*> local_items;
     GetContainerItemReferences(local_items, rContainer);
+
+    std::cout << "Suneth" << i++ << std::endl;
+
     std::size_t start_index, block_size;
+
+    std::cout << "Suneth" << i++ << std::endl;
     std::tie(start_index, block_size) = StartIndexAndBlockSize(*mpFile, mComponentPath);
 
+
+    std::cout << "Suneth" << i++ << std::endl;
+
     // Read local data for each variable.
+    std::cout << "R" << rCommunicator.GetDataCommunicator().Rank() << " [ContainerComponentIO::ReadRegisteredComponent] begin" << std::endl;
     for (const std::string& r_component_name : current_components_list)
         ReadRegisteredComponent(r_component_name, local_items, rCommunicator, *mpFile,
                                 mComponentPath, start_index, block_size, r_component_name);
-
+    std::cout << "R" << rCommunicator.GetDataCommunicator().Rank() << " [ContainerComponentIO::ReadRegisteredComponent] end" << std::endl;
     KRATOS_CATCH("");
 }
 

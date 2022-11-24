@@ -15,12 +15,81 @@
 // --- Core Includes ---
 #include "includes/data_communicator.h"
 
-
-namespace Kratos {
-
-
-std::vector<std::string> KRATOS_API(HDF5Application) MPIAllGatherVStrings(const std::vector<std::string>& rLocalStrings,
-                                                                          DataCommunicator& rCommunicator);
+// --- STL Includes ---
+#include <vector>
 
 
-} // namespace Kratos
+namespace Kratos::HDF5 {
+
+
+struct MPIUtilities
+{
+    /**
+     *  @brief Synchronize a union of all items on every rank.
+     *  @warning This function is only meant to be used for trivially serializable
+     *           value types.
+     */
+    template <class TInputIterator, class TOutputIterator>
+    static void AllGatherV(TInputIterator itBegin,
+                           TInputIterator itEnd,
+                           TOutputIterator itOutput,
+                           DataCommunicator& rCommunicator)
+    {
+        //std::cout << "Data on " << rCommunicator.Rank() << ": ";
+        //for (auto it=itBegin; it!=itEnd; ++it) {
+        //    std::cout << *it << " ";
+        //}
+        //std::cout << std::endl;
+        rCommunicator.Barrier();
+
+        using Value = typename std::iterator_traits<TInputIterator>::value_type;
+        std::vector<Value> output_buffer;
+
+        const int master_rank = 0;
+        const int this_rank = rCommunicator.Rank();
+        const int number_of_ranks = rCommunicator.Size();
+
+        if (this_rank == master_rank) {
+            // Don't bother sendind data to ourselves, and just
+            // copy the input to the output buffer
+            output_buffer.reserve(std::distance(itBegin, itEnd));
+            std::copy(itBegin, itEnd, std::back_inserter(output_buffer));
+
+            std::vector<Value> receive_buffer;
+            receive_buffer.reserve(1); // <== we're only ever going to store one received vector here
+
+            for (int i_rank=1; i_rank<number_of_ranks; ++i_rank) {
+                // Receive objects from a rank
+                //std::cout << "Receive from " << i_rank << " on " << this_rank << std::endl;
+                rCommunicator.Recv(receive_buffer, i_rank, i_rank);
+                //std::cout << "Received from " << i_rank << " on " << this_rank << std::endl;
+
+                // Move received objects from the buffer to the output
+                output_buffer.reserve(output_buffer.size() + receive_buffer.back().size());
+                for (Value& r_item : receive_buffer) {
+                    output_buffer.emplace_back(std::move(r_item));
+                }
+                receive_buffer.clear();
+            }
+        } else {
+            // DataCommunicator operates on objects, or vectors of objects,
+            // so that's what we need to pack the input data into
+            std::vector<Value> local_objects(itBegin, itEnd);
+            //std::cout << "Send to " << master_rank << " from " << this_rank << std::endl;
+            rCommunicator.Send(local_objects, master_rank, this_rank);
+            //std::cout << "Sent to " << master_rank << " from " << this_rank << std::endl;
+        }
+
+        //std::cout << "Broadcast from " << master_rank << " on " << this_rank << std::endl;
+        rCommunicator.Broadcast(output_buffer, master_rank);
+        //std::cout << "Finished broadcast from " << master_rank << " on " << this_rank << std::endl;
+        for (Value& r_item : output_buffer) {
+            *itOutput++ = std::move(r_item);
+        }
+
+        rCommunicator.Barrier();
+    }
+}; // struct MPIUtilities
+
+
+} // namespace Kratos::HDF5

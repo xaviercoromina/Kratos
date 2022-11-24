@@ -14,6 +14,21 @@ import abc
 import typing
 
 
+from KratosMultiphysics import Testing
+def DebugPrint(*args):
+    print(f"R{Testing.GetDefaultDataCommunicator().Rank()}: ", *args)
+
+
+def DebugWrapper(function):
+    def wrapper(this, *args, **kwargs):
+        messageBase = f"[{type(this).__name__}::{function.__name__}]"
+        DebugPrint(f"{messageBase}::begin")
+        output = function(this, *args, **kwargs)
+        DebugPrint(f"{messageBase}::end")
+        return output
+    return wrapper
+
+
 class Snapshot(abc.ABC):
     """@brief Class representing a snapshot of a @ref ModelPart state.
        @details A snapshot is uniquely defined by its path ID and step index
@@ -24,15 +39,18 @@ class Snapshot(abc.ABC):
        @note Specialized for keeping data in memory or on disk.
     """
 
+    @DebugWrapper
     def __init__(self, path_id: int, step: int):
         self.__path_id = path_id
         self.__step = step
 
+    @DebugWrapper
     @abc.abstractmethod
     def Load(self, model_part: KratosMultiphysics.ModelPart) -> None:
         """@brief Load data from this snapshot to the specified model part."""
         pass
 
+    @DebugWrapper
     @abc.abstractmethod
     def Write(self, model_part: KratosMultiphysics.ModelPart) -> None:
         """@brief Write data from the current state of the specified model part to the snapshot."""
@@ -115,12 +133,17 @@ class SnapshotIOBase(abc.ABC):
         self.__parameters = parameters
         self.__parameters.RecursivelyValidateAndAssignDefaults(self.GetDefaultParameters())
 
+    @DebugWrapper
     def __call__(self, model_part: KratosMultiphysics.ModelPart) -> None:
         """@brief Execute all defined IO operations."""
         with OpenHDF5File(self.__parameters["io_settings"], model_part) as file:
             for operation in self._GetOperations(model_part):
+                messageBase = f"operation {type(operation).__name__}"
+                DebugPrint(f"{messageBase} begin")
                 operation(model_part, file)
+                DebugPrint(f"{messageBase} end")
 
+    @DebugWrapper
     def ReadStepAndPathID(self) -> "tuple[int,int]":
         model = KratosMultiphysics.Model()
         model_part = model.CreateModelPart("temporary")
@@ -143,7 +166,6 @@ class SnapshotIOBase(abc.ABC):
         data_communicator = model_part.GetCommunicator().GetDataCommunicator()
         local_names = model_part.GetNonHistoricalVariablesNames(model_part.Nodes, check_mesh_consistency)
         output =  list(MPIUnion(list(local_names), data_communicator))
-        print(f"ExtractNodalDataNames: {output} on rank {data_communicator.Rank()}")
         return output
 
     @staticmethod
@@ -154,7 +176,8 @@ class SnapshotIOBase(abc.ABC):
     def _ExtractElementDataNames(model_part: KratosMultiphysics.ModelPart, check_mesh_consistency: bool = False) -> "list[str]":
         data_communicator = model_part.GetCommunicator().GetDataCommunicator()
         local_names = model_part.GetNonHistoricalVariablesNames(model_part.Elements, check_mesh_consistency)
-        return list(MPIUnion(list(local_names), data_communicator))
+        output =  list(MPIUnion(list(local_names), data_communicator))
+        return output
 
     @staticmethod
     def _ExtractElementFlagNames(model_part: KratosMultiphysics.ModelPart) -> "list[str]":
@@ -164,7 +187,8 @@ class SnapshotIOBase(abc.ABC):
     def _ExtractConditionDataNames(model_part: KratosMultiphysics.ModelPart, check_mesh_consistency: bool = False) -> "list[str]":
         data_communicator = model_part.GetCommunicator().GetDataCommunicator()
         local_names = model_part.GetNonHistoricalVariablesNames(model_part.Conditions, check_mesh_consistency)
-        return list(MPIUnion(list(local_names), data_communicator))
+        output =  list(MPIUnion(list(local_names), data_communicator))
+        return output
 
     @staticmethod
     def _ExtractConditionFlagNames(model_part: KratosMultiphysics.ModelPart) -> "list[str]":
@@ -223,17 +247,20 @@ class DefaultSnapshotOutput(SnapshotIOBase):
             "echo_level" : 0
         }""")
 
+    @DebugWrapper
     def _GetOperations(self, model_part: KratosMultiphysics.ModelPart) -> list:
         operations = []
 
         # Variables
-        for operation, variable_names in ((Operations.NodalSolutionStepDataOutput, self._ExtractNodalSolutionStepDataNames(model_part)),
-                                          (Operations.NodalDataValueOutput, self._ExtractNodalDataNames(model_part)),
-                                          (Operations.NodalFlagValueOutput, self._ExtractNodalFlagNames(model_part)),
-                                          (Operations.ElementDataValueOutput, self._ExtractElementDataNames(model_part)),
-                                          (Operations.ElementFlagValueOutput, self._ExtractElementFlagNames(model_part)),
-                                          (Operations.ConditionDataValueOutput, self._ExtractConditionDataNames(model_part)),
-                                          (Operations.ConditionFlagValueOutput, self._ExtractConditionFlagNames(model_part))):
+        for operation, variable_names in (
+                                          (Operations.NodalSolutionStepDataOutput, self._ExtractNodalSolutionStepDataNames(model_part)),
+                                          #(Operations.NodalDataValueOutput, self._ExtractNodalDataNames(model_part)),
+                                          #(Operations.NodalFlagValueOutput, self._ExtractNodalFlagNames(model_part)),
+                                          #(Operations.ElementDataValueOutput, self._ExtractElementDataNames(model_part)),
+                                          #(Operations.ElementFlagValueOutput, self._ExtractElementFlagNames(model_part)),
+                                          #(Operations.ConditionDataValueOutput, self._ExtractConditionDataNames(model_part)),
+                                          #(Operations.ConditionFlagValueOutput, self._ExtractConditionFlagNames(model_part))
+                                          ):
             parameters = self.parameters["operation_settings"]
             parameters.AddStringArray("list_of_variables", variable_names)
             operations.append(operation(ParametersWrapper(parameters)))
@@ -264,17 +291,20 @@ class DefaultSnapshotInput(SnapshotIOBase):
             "echo_level" : 0
         }""")
 
+    @DebugWrapper
     def _GetOperations(self, model_part: KratosMultiphysics.ModelPart) -> list:
         operations = []
 
         # Variables
-        for operation, variable_names in ((Operations.NodalSolutionStepDataInput, self._ExtractNodalSolutionStepDataNames(model_part)),
-                                          (Operations.NodalDataValueInput, self._ExtractNodalDataNames(model_part)),
-                                          (Operations.NodalFlagValueInput, self._ExtractNodalFlagNames(model_part)),
-                                          (Operations.ElementDataValueInput, self._ExtractElementDataNames(model_part)),
-                                          (Operations.ElementFlagValueInput, self._ExtractElementFlagNames(model_part)),
-                                          (Operations.ConditionDataValueInput, self._ExtractConditionDataNames(model_part)),
-                                          (Operations.ConditionFlagValueInput, self._ExtractConditionFlagNames(model_part))):
+        for operation, variable_names in (
+                                          (Operations.NodalSolutionStepDataInput, self._ExtractNodalSolutionStepDataNames(model_part)),
+                                          #(Operations.NodalDataValueInput, self._ExtractNodalDataNames(model_part)),
+                                          #(Operations.NodalFlagValueInput, self._ExtractNodalFlagNames(model_part)),
+                                          #(Operations.ElementDataValueInput, self._ExtractElementDataNames(model_part)),
+                                          #(Operations.ElementFlagValueInput, self._ExtractElementFlagNames(model_part)),
+                                          #(Operations.ConditionDataValueInput, self._ExtractConditionDataNames(model_part)),
+                                          #(Operations.ConditionFlagValueInput, self._ExtractConditionFlagNames(model_part))
+                                          ):
             parameters = self.parameters["operation_settings"]
             parameters.AddStringArray("list_of_variables", variable_names)
             operations.append(operation(ParametersWrapper(parameters)))

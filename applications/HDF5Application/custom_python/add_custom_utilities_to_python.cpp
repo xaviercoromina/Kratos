@@ -73,7 +73,14 @@ std::vector<std::string> Glob (const ModelPartPattern& rInstance) {
 
 void AddCustomUtilitiesToPython(pybind11::module& rModule)
 {
-    rModule.def("MPIAllGatherVStrings", &MPIAllGatherVStrings);
+    rModule.def("MPIAllGatherVStrings", [](const std::vector<std::string>& rStrings, DataCommunicator& rCommunicator) -> std::vector<std::string> {
+        std::vector<std::string> output;
+        HDF5::MPIUtilities::AllGatherV(rStrings.begin(),
+                                       rStrings.end(),
+                                       std::back_inserter(output),
+                                       rCommunicator);
+        return output;
+    });
 
     pybind11::class_<HDF5::PointLocatorAdaptor, HDF5::PointLocatorAdaptor::Pointer, PointLocatorAdaptorTrampoline>(rModule, "PointLocatorAdaptor")
         .def(pybind11::init<>())

@@ -73,8 +73,16 @@ public:
 
     void ReadNodalFlags(NodesContainerType& rNodes, Communicator& rComm)
     {
+        std::cout << "[NodalFlagValueIO::ReadNodalFlags] begin" << std::endl;
+        std::cout << "Component names to read from " << rNodes.size() << " nodes:";
+        for (const auto& r_name : mComponentNames)
+            std::cout << ' ' << r_name;
+        std::cout << std::endl;
         this->ReadContainerComponents(rNodes, rComm);
+        std::cout << "[NodalFlagValueIO::ReadNodalFlags] end" << std::endl;
+        std::cout << "[Communicator::SynchronizeNodalFlags] begin" << std::endl;
         rComm.SynchronizeNodalFlags();
+        std::cout << "[Communicator::SynchronizeNodalFlags] end" << std::endl;
     }
 
     ///@}
