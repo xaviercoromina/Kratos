@@ -7,6 +7,7 @@ from KratosMultiphysics.testing.utilities import ReadModelPart
 # HDF5 imports
 import KratosMultiphysics.HDF5Application as HDF5Application
 import KratosMultiphysics.HDF5Application.checkpoint.snapshot as Snapshots
+from KratosMultiphysics.HDF5Application.core.file_io import OpenHDF5File
 
 # STD imports
 import pathlib
@@ -59,51 +60,55 @@ def CompareModelParts(source_model_part: KratosMultiphysics.ModelPart,
                       target_model_part: KratosMultiphysics.ModelPart,
                       test_case: KratosUnittest.TestCase) -> None:
     # Compare nodes
-    # test_case.assertEqual(len(source_model_part.Nodes), len(target_model_part.Nodes))
+    test_case.assertEqual(len(source_model_part.Nodes), len(target_model_part.Nodes))
     for source_node, target_node in zip(source_model_part.Nodes, target_model_part.Nodes):
         # Check non-historical variable
-        # test_case.assertAlmostEqual(source_node[KratosMultiphysics.NODAL_H], target_node[KratosMultiphysics.NODAL_H])
+        test_case.assertAlmostEqual(source_node[KratosMultiphysics.NODAL_H], target_node[KratosMultiphysics.NODAL_H])
 
         # Check historical variable
-        # test_case.assertAlmostEqual(source_node.GetSolutionStepValue(KratosMultiphysics.PRESSURE), target_node.GetSolutionStepValue(KratosMultiphysics.PRESSURE))
+        test_case.assertAlmostEqual(source_node.GetSolutionStepValue(KratosMultiphysics.PRESSURE), target_node.GetSolutionStepValue(KratosMultiphysics.PRESSURE))
 
         # Check properties
         for property_name in ["X", "Y", "Z", "X0", "Y0", "Z0", "Id"]:
-            # test_case.assertAlmostEqual(getattr(source_node, property_name), getattr(target_node, property_name))
+            test_case.assertAlmostEqual(getattr(source_node, property_name), getattr(target_node, property_name))
             pass
 
         # Check flags
-        # test_case.assertTrue(source_node.Is(target_node))
+        test_case.assertTrue(source_node.Is(target_node))
 
 
     # Compare elements
-    # test_case.assertEqual(len(source_model_part.Elements), len(target_model_part.Elements))
+    test_case.assertEqual(len(source_model_part.Elements), len(target_model_part.Elements))
     for source_element, target_element in zip(source_model_part.Elements, target_model_part.Elements):
         # Check nodes
         for source_node, target_node in zip(source_element.GetNodes(), target_element.GetNodes()):
-            # test_case.assertTrue(source_node.Id, target_node.Id)
+            test_case.assertTrue(source_node.Id, target_node.Id)
             pass
 
         # Check flags
-        # test_case.assertTrue(source_element.Is(target_element))
+        test_case.assertTrue(source_element.Is(target_element))
 
         ##! @todo Compare element variables (@matekelemen)
 
     # Compare conditions
-    # test_case.assertEqual(len(source_model_part.Conditions), len(target_model_part.Conditions))
+    test_case.assertEqual(len(source_model_part.Conditions), len(target_model_part.Conditions))
     for source_condition, target_condition in zip(source_model_part.Conditions, target_model_part.Conditions):
         # Check nodes
         for source_node, target_node in zip(source_condition.GetNodes(), target_condition.GetNodes()):
-            # test_case.assertTrue(source_node.Id, target_node.Id)
+            test_case.assertTrue(source_node.Id, target_node.Id)
             pass
 
         # Check flags
-        # test_case.assertTrue(source_condition.Is(target_condition))
+        test_case.assertTrue(source_condition.Is(target_condition))
 
         ##! @todo Compare condition variables (@matekelemen)
 
 
 class TestSnapshotOnDisk(KratosUnittest.TestCase):
+
+    @property
+    def test_directory(self) -> pathlib.Path:
+        return pathlib.Path("test_snapshot_on_disk")
 
     @property
     def file_path(self) -> pathlib.Path:
@@ -125,15 +130,17 @@ class TestSnapshotOnDisk(KratosUnittest.TestCase):
         input_parameters["io_settings"]["file_name"].SetString(str(self.file_path))
         output_parameters["io_settings"]["file_name"].SetString(str(self.file_path))
         for parameters in (input_parameters, output_parameters):
-            parameters["io_settings"]["file_name"].SetString(str(self.test_directory / parameters["io_settings"]["file_name"].GetString()))
+            parameters["io_settings"]["file_name"].SetString(str(parameters["io_settings"]["file_name"].GetString()))
 
         model, source_model_part = MakeModel()
+        # KratosMultiphysics.VariableUtils().SetFlag(KratosMultiphysics.TO_ERASE, True, source_model_part.Nodes)
+        # source_model_part.RemoveNodesFromAllLevels(KratosMultiphysics.TO_ERASE)
         SetModelPartData(source_model_part, step = 2, path = 3, time = 1.5)
 
         # Check initialized source model part ProcessInfo
-        # self.assertEqual(source_model_part.ProcessInfo[KratosMultiphysics.STEP], 2)
-        # self.assertEqual(source_model_part.ProcessInfo[HDF5Application.ANALYSIS_PATH], 3)
-        # self.assertEqual(source_model_part.ProcessInfo[KratosMultiphysics.TIME], 1.5)
+        self.assertEqual(source_model_part.ProcessInfo[KratosMultiphysics.STEP], 2)
+        self.assertEqual(source_model_part.ProcessInfo[HDF5Application.ANALYSIS_PATH], 3)
+        self.assertEqual(source_model_part.ProcessInfo[KratosMultiphysics.TIME], 1.5)
 
         snapshot = Snapshots.SnapshotOnDisk(
             source_model_part.ProcessInfo[KratosMultiphysics.STEP],
@@ -144,9 +151,9 @@ class TestSnapshotOnDisk(KratosUnittest.TestCase):
         KratosMultiphysics.Testing.GetDefaultDataCommunicator().Barrier()
 
         # Check initialized source model part ProcessInfo (unchanged)
-        # self.assertEqual(source_model_part.ProcessInfo[KratosMultiphysics.STEP], 2)
-        # self.assertEqual(source_model_part.ProcessInfo[HDF5Application.ANALYSIS_PATH], 3)
-        # self.assertEqual(source_model_part.ProcessInfo[KratosMultiphysics.TIME], 1.5)
+        self.assertEqual(source_model_part.ProcessInfo[KratosMultiphysics.STEP], 2)
+        self.assertEqual(source_model_part.ProcessInfo[HDF5Application.ANALYSIS_PATH], 3)
+        self.assertEqual(source_model_part.ProcessInfo[KratosMultiphysics.TIME], 1.5)
 
         # Create target model part with different data
         target_model_part = MakeModelPart(model, "read")
@@ -157,24 +164,36 @@ class TestSnapshotOnDisk(KratosUnittest.TestCase):
         ##! @todo Modify element and condition variables in target_model_part
 
         # Check initialized target model part ProcessInfo
-        # self.assertEqual(target_model_part.ProcessInfo[KratosMultiphysics.STEP], 10)
-        # self.assertEqual(target_model_part.ProcessInfo[HDF5Application.ANALYSIS_PATH], 2)
-        # self.assertEqual(target_model_part.ProcessInfo[KratosMultiphysics.TIME], 3.5)
+        self.assertEqual(target_model_part.ProcessInfo[KratosMultiphysics.STEP], 10)
+        self.assertEqual(target_model_part.ProcessInfo[HDF5Application.ANALYSIS_PATH], 2)
+        self.assertEqual(target_model_part.ProcessInfo[KratosMultiphysics.TIME], 3.5)
 
         print("Load")
         snapshot.Load(target_model_part)
         print("Finished loading")
 
         # Check loaded target model part ProcessInfo
-        # self.assertEqual(target_model_part.ProcessInfo[KratosMultiphysics.STEP], 2)
-        # self.assertEqual(target_model_part.ProcessInfo[HDF5Application.ANALYSIS_PATH], 3)
-        # self.assertEqual(target_model_part.ProcessInfo[KratosMultiphysics.TIME], 1.5)
+        self.assertEqual(target_model_part.ProcessInfo[KratosMultiphysics.STEP], 2)
+        self.assertEqual(target_model_part.ProcessInfo[HDF5Application.ANALYSIS_PATH], 3)
+        self.assertEqual(target_model_part.ProcessInfo[KratosMultiphysics.TIME], 1.5)
 
         CompareModelParts(source_model_part, target_model_part, self)
 
-    @property
-    def test_directory(self) -> pathlib.Path:
-        return pathlib.Path("test_snapshot_on_disk")
+        KratosMultiphysics.Testing.GetDefaultDataCommunicator().Barrier()
+        #while not self.file_path.is_file():
+        #    print("waiting for file to be written ...")
+        print(self.file_path.absolute())
+        with open(self.file_path.parent / "random.log", 'w') as file:
+            file.write("11")
+            pass
+        for it in self.file_path.parent.iterdir():
+            print(it)
+        # self.assertTrue(self.file_path.is_file())
+        import h5py
+        with h5py.File(self.file_path, 'r') as file:
+            directory = file["NodalSolutionStepData"]
+            # self.assertIn("PRESSURE", directory)
+            # self.assertIn("PARTITION_INDEX", directory)
 
 if __name__ == "__main__":
     KratosUnittest.main()

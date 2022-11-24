@@ -16,7 +16,8 @@ import typing
 
 from KratosMultiphysics import Testing
 def DebugPrint(*args):
-    print(f"R{Testing.GetDefaultDataCommunicator().Rank()}: ", *args)
+    #print(f"R{Testing.GetDefaultDataCommunicator().Rank()}: ", *args)
+    pass
 
 
 def DebugWrapper(function):
@@ -254,12 +255,12 @@ class DefaultSnapshotOutput(SnapshotIOBase):
         # Variables
         for operation, variable_names in (
                                           (Operations.NodalSolutionStepDataOutput, self._ExtractNodalSolutionStepDataNames(model_part)),
-                                          #(Operations.NodalDataValueOutput, self._ExtractNodalDataNames(model_part)),
-                                          #(Operations.NodalFlagValueOutput, self._ExtractNodalFlagNames(model_part)),
-                                          #(Operations.ElementDataValueOutput, self._ExtractElementDataNames(model_part)),
-                                          #(Operations.ElementFlagValueOutput, self._ExtractElementFlagNames(model_part)),
-                                          #(Operations.ConditionDataValueOutput, self._ExtractConditionDataNames(model_part)),
-                                          #(Operations.ConditionFlagValueOutput, self._ExtractConditionFlagNames(model_part))
+                                          (Operations.NodalDataValueOutput, self._ExtractNodalDataNames(model_part)),
+                                          (Operations.NodalFlagValueOutput, self._ExtractNodalFlagNames(model_part)),
+                                          (Operations.ElementDataValueOutput, self._ExtractElementDataNames(model_part)),
+                                          (Operations.ElementFlagValueOutput, self._ExtractElementFlagNames(model_part)),
+                                          (Operations.ConditionDataValueOutput, self._ExtractConditionDataNames(model_part)),
+                                          (Operations.ConditionFlagValueOutput, self._ExtractConditionFlagNames(model_part))
                                           ):
             parameters = self.parameters["operation_settings"]
             parameters.AddStringArray("list_of_variables", variable_names)
@@ -298,12 +299,12 @@ class DefaultSnapshotInput(SnapshotIOBase):
         # Variables
         for operation, variable_names in (
                                           (Operations.NodalSolutionStepDataInput, self._ExtractNodalSolutionStepDataNames(model_part)),
-                                          #(Operations.NodalDataValueInput, self._ExtractNodalDataNames(model_part)),
-                                          #(Operations.NodalFlagValueInput, self._ExtractNodalFlagNames(model_part)),
-                                          #(Operations.ElementDataValueInput, self._ExtractElementDataNames(model_part)),
-                                          #(Operations.ElementFlagValueInput, self._ExtractElementFlagNames(model_part)),
-                                          #(Operations.ConditionDataValueInput, self._ExtractConditionDataNames(model_part)),
-                                          #(Operations.ConditionFlagValueInput, self._ExtractConditionFlagNames(model_part))
+                                          (Operations.NodalDataValueInput, self._ExtractNodalDataNames(model_part)),
+                                          (Operations.NodalFlagValueInput, self._ExtractNodalFlagNames(model_part)),
+                                          (Operations.ElementDataValueInput, self._ExtractElementDataNames(model_part)),
+                                          (Operations.ElementFlagValueInput, self._ExtractElementFlagNames(model_part)),
+                                          (Operations.ConditionDataValueInput, self._ExtractConditionDataNames(model_part)),
+                                          (Operations.ConditionFlagValueInput, self._ExtractConditionFlagNames(model_part))
                                           ):
             parameters = self.parameters["operation_settings"]
             parameters.AddStringArray("list_of_variables", variable_names)
