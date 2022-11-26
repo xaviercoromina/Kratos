@@ -7,7 +7,6 @@ from KratosMultiphysics.testing.utilities import ReadModelPart
 # HDF5 imports
 import KratosMultiphysics.HDF5Application as HDF5Application
 import KratosMultiphysics.HDF5Application.checkpoint.snapshot as Snapshots
-from KratosMultiphysics.HDF5Application.core.file_io import OpenHDF5File
 
 # STD imports
 import pathlib
@@ -133,8 +132,6 @@ class TestSnapshotOnDisk(KratosUnittest.TestCase):
             parameters["io_settings"]["file_name"].SetString(str(parameters["io_settings"]["file_name"].GetString()))
 
         model, source_model_part = MakeModel()
-        # KratosMultiphysics.VariableUtils().SetFlag(KratosMultiphysics.TO_ERASE, True, source_model_part.Nodes)
-        # source_model_part.RemoveNodesFromAllLevels(KratosMultiphysics.TO_ERASE)
         SetModelPartData(source_model_part, step = 2, path = 3, time = 1.5)
 
         # Check initialized source model part ProcessInfo
@@ -168,9 +165,7 @@ class TestSnapshotOnDisk(KratosUnittest.TestCase):
         self.assertEqual(target_model_part.ProcessInfo[HDF5Application.ANALYSIS_PATH], 2)
         self.assertEqual(target_model_part.ProcessInfo[KratosMultiphysics.TIME], 3.5)
 
-        print("Load")
         snapshot.Load(target_model_part)
-        print("Finished loading")
 
         # Check loaded target model part ProcessInfo
         self.assertEqual(target_model_part.ProcessInfo[KratosMultiphysics.STEP], 2)
@@ -179,21 +174,6 @@ class TestSnapshotOnDisk(KratosUnittest.TestCase):
 
         CompareModelParts(source_model_part, target_model_part, self)
 
-        KratosMultiphysics.Testing.GetDefaultDataCommunicator().Barrier()
-        #while not self.file_path.is_file():
-        #    print("waiting for file to be written ...")
-        print(self.file_path.absolute())
-        with open(self.file_path.parent / "random.log", 'w') as file:
-            file.write("11")
-            pass
-        for it in self.file_path.parent.iterdir():
-            print(it)
-        # self.assertTrue(self.file_path.is_file())
-        import h5py
-        with h5py.File(self.file_path, 'r') as file:
-            directory = file["NodalSolutionStepData"]
-            # self.assertIn("PRESSURE", directory)
-            # self.assertIn("PARTITION_INDEX", directory)
 
 if __name__ == "__main__":
     KratosUnittest.main()

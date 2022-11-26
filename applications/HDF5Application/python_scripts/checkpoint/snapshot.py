@@ -16,7 +16,7 @@ import typing
 
 from KratosMultiphysics import Testing
 def DebugPrint(*args):
-    #print(f"R{Testing.GetDefaultDataCommunicator().Rank()}: ", *args)
+    print(f"{Testing.GetDefaultDataCommunicator().Rank()}: ", *args)
     pass
 
 
@@ -45,13 +45,11 @@ class Snapshot(abc.ABC):
         self.__path_id = path_id
         self.__step = step
 
-    @DebugWrapper
     @abc.abstractmethod
     def Load(self, model_part: KratosMultiphysics.ModelPart) -> None:
         """@brief Load data from this snapshot to the specified model part."""
         pass
 
-    @DebugWrapper
     @abc.abstractmethod
     def Write(self, model_part: KratosMultiphysics.ModelPart) -> None:
         """@brief Write data from the current state of the specified model part to the snapshot."""
@@ -160,7 +158,10 @@ class SnapshotIOBase(abc.ABC):
 
     @staticmethod
     def _ExtractNodalSolutionStepDataNames(model_part: KratosMultiphysics.ModelPart) -> "list[str]":
-        return list(model_part.GetHistoricalVariablesNames())
+        data_communicator = model_part.GetCommunicator().GetDataCommunicator()
+        local_names = model_part.GetHistoricalVariablesNames()
+        output =  list(MPIUnion(list(local_names), data_communicator))
+        return output
 
     @staticmethod
     def _ExtractNodalDataNames(model_part: KratosMultiphysics.ModelPart, check_mesh_consistency: bool = False) -> "list[str]":
@@ -189,6 +190,7 @@ class SnapshotIOBase(abc.ABC):
         data_communicator = model_part.GetCommunicator().GetDataCommunicator()
         local_names = model_part.GetNonHistoricalVariablesNames(model_part.Conditions, check_mesh_consistency)
         output =  list(MPIUnion(list(local_names), data_communicator))
+        DebugPrint(f"Condition names: {output}")
         return output
 
     @staticmethod
@@ -334,9 +336,11 @@ class SnapshotOnDisk(Snapshot):
         self.__input = self.GetInputType()(input_parameters)
         self.__output = self.GetOutputType()(output_parameters)
 
+    @DebugWrapper
     def Write(self, model_part: KratosMultiphysics.ModelPart) -> None:
         self.__output(model_part)
 
+    @DebugWrapper
     def Load(self, model_part: KratosMultiphysics.ModelPart) -> None:
         self.__input(model_part)
 
