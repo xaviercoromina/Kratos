@@ -450,6 +450,8 @@ bool VtkOutput::IsCompatibleVariable(const std::string& rVariableName) const
         return true;
     } else if (KratosComponents<Variable<array_1d<double, 9>>>::Has(rVariableName)){
         return true;
+    } else if (KratosComponents<Variable<Matrix>>::Has(rVariableName)){
+        return true;
     } else {
         return false;
     }
@@ -684,6 +686,9 @@ void VtkOutput::WriteNodalContainerResults(
     } else if (KratosComponents<Variable<array_1d<double, 9>>>::Has(rVariableName)){
         const auto& var_to_write = KratosComponents<Variable<array_1d<double, 9>>>::Get(rVariableName);
         WriteNodalVectorValues(rNodes, var_to_write, IsHistoricalValue, rFileStream);
+    } else if (KratosComponents<Variable<Matrix>>::Has(rVariableName)){
+        const auto& var_to_write = KratosComponents<Variable<Matrix>>::Get(rVariableName);
+        WriteNodalMatrixValues(rNodes, var_to_write, IsHistoricalValue, rFileStream);
     } else {
         KRATOS_WARNING_ONCE(rVariableName) << mrModelPart.GetCommunicator().GetDataCommunicator() << "Variable \"" << rVariableName << "\" is "
             << "not suitable for VtkOutput, skipping it" << std::endl;
@@ -726,6 +731,9 @@ void VtkOutput::WriteGeometricalContainerResults(
     } else if (KratosComponents<Variable<array_1d<double, 9>>>::Has(rVariableName)){
         const auto& var_to_write = KratosComponents<Variable<array_1d<double, 9>>>::Get(rVariableName);
         WriteVectorContainerVariable(rContainer, var_to_write, rFileStream);
+    } else if (KratosComponents<Variable<Matrix>>::Has(rVariableName)){
+        const auto& var_to_write = KratosComponents<Variable<Matrix>>::Get(rVariableName);
+        WriteMatrixContainerVariable(rContainer, var_to_write, rFileStream);
     } else {
         KRATOS_WARNING_ONCE(rVariableName) << mrModelPart.GetCommunicator().GetDataCommunicator() << "Variable \"" << rVariableName << "\" is "
             << "not suitable for VtkOutput, skipping it" << std::endl;
@@ -759,6 +767,12 @@ void VtkOutput::WriteGeometricalContainerIntegrationResults(
     } else if (KratosComponents<Variable<array_1d<double, 6>>>::Has(rVariableName)){
         const auto& var_to_write = KratosComponents<Variable<array_1d<double, 6>>>::Get(rVariableName);
         WriteIntegrationVectorContainerVariable(rContainer, var_to_write, rFileStream);
+    // } else if (KratosComponents<Variable<array_1d<double, 9>>>::Has(rVariableName)){ // TODO: Add this when the Constitutive Law is updated
+    //     const auto& var_to_write = KratosComponents<Variable<array_1d<double, 9>>>::Get(rVariableName);
+    //     WriteIntegrationVectorContainerVariable(rContainer, var_to_write, rFileStream);
+    } else if (KratosComponents<Variable<Matrix>>::Has(rVariableName)){
+        const auto& var_to_write = KratosComponents<Variable<Matrix>>::Get(rVariableName);
+        WriteIntegrationMatrixContainerVariable(rContainer, var_to_write, rFileStream);
     } else {
         KRATOS_WARNING_ONCE(rVariableName) << mrModelPart.GetCommunicator().GetDataCommunicator() << "Variable \"" << rVariableName << "\" is "
             << "not suitable for VtkOutput, skipping it" << std::endl;
@@ -806,6 +820,25 @@ void VtkOutput::WriteNodalVectorValues(
 /***********************************************************************************/
 /***********************************************************************************/
 
+template<class TVarType>
+void VtkOutput::WriteNodalMatrixValues(
+    const ModelPart::NodesContainerType& rNodes,
+    const TVarType& rVariable,
+    const bool IsHistoricalValue,
+    std::ofstream& rFileStream) const
+{
+    if (IsHistoricalValue) {
+        mrModelPart.GetCommunicator().SynchronizeVariable(rVariable);
+        WriteMatrixSolutionStepVariable(rNodes, rVariable, rFileStream);
+    } else {
+        mrModelPart.GetCommunicator().SynchronizeNonHistoricalVariable(rVariable);
+        WriteMatrixContainerVariable(rNodes, rVariable, rFileStream);
+    }
+}
+
+/***********************************************************************************/
+/***********************************************************************************/
+
 template<typename TContainerType, class TVarType>
 void VtkOutput::WriteScalarSolutionStepVariable(
     const TContainerType& rContainer,
@@ -837,12 +870,39 @@ void VtkOutput::WriteVectorSolutionStepVariable(
 
     const int res_size = static_cast<int>((rContainer.begin()->FastGetSolutionStepValue(rVariable)).size());
 
-    rFileStream << rVariable.Name() << " " << res_size
-                << " " << rContainer.size() << "  float\n";
+    rFileStream << rVariable.Name() << " " << res_size << " " << rContainer.size() << "  float\n";
 
     for (const auto& r_entity : rContainer) {
         const auto& r_result = r_entity.FastGetSolutionStepValue(rVariable);
         WriteVectorDataToFile(r_result, rFileStream);
+        if (mFileFormat == VtkOutput::FileFormat::VTK_ASCII) rFileStream <<"\n";
+    }
+}
+
+/***********************************************************************************/
+/***********************************************************************************/
+
+template<typename TContainerType, class TVarType>
+void VtkOutput::WriteMatrixSolutionStepVariable(
+    const TContainerType& rContainer,
+    const TVarType& rVariable,
+    std::ofstream& rFileStream) const
+{
+    if (rContainer.size() == 0) {
+        return;
+    }
+
+    const auto& r_result = rContainer.begin()->FastGetSolutionStepValue(rVariable);
+    const int res_size1 = static_cast<int>(r_result.size1());
+    const int res_size2 = static_cast<int>(r_result.size2());
+
+    KRATOS_ERROR_IF(res_size1 != 3 && res_size2 != 3) << "TENSORS is only compatible with 3x3 matrices" << std::endl;
+
+    rFileStream << "TENSORS " << rVariable.Name() << "  float\n";
+
+    for (const auto& r_entity : rContainer) {
+        const auto& r_result = r_entity.FastGetSolutionStepValue(rVariable);
+        WriteMatrixDataToFile(r_result, rFileStream);
         if (mFileFormat == VtkOutput::FileFormat::VTK_ASCII) rFileStream <<"\n";
     }
 }
@@ -980,6 +1040,78 @@ void VtkOutput::WriteIntegrationVectorContainerVariable(
         }
         aux_value /= static_cast<double>(integration_points_number);
         WriteVectorDataToFile(aux_value, rFileStream);
+        if (mFileFormat == VtkOutput::FileFormat::VTK_ASCII) rFileStream <<"\n";
+    }
+}
+
+/***********************************************************************************/
+/***********************************************************************************/
+
+template<typename TContainerType, class TVarType>
+void VtkOutput::WriteMatrixContainerVariable(
+    const TContainerType& rContainer,
+    const TVarType& rVariable,
+    std::ofstream& rFileStream) const
+{
+    if (rContainer.size() == 0) {
+        return;
+    }
+
+    const auto& r_result = rContainer.begin()->GetValue(rVariable);
+    const int res_size1 = static_cast<int>(r_result.size1());
+    const int res_size2 = static_cast<int>(r_result.size2());
+
+    KRATOS_ERROR_IF(res_size1 != 3 && res_size2 != 3) << "TENSORS is only compatible with 3x3 matrices" << std::endl;
+
+    rFileStream << "TENSORS " << rVariable.Name() << "  float\n";
+
+    for (const auto& r_entity : rContainer) {
+        const auto& r_result = r_entity.GetValue(rVariable);
+        WriteMatrixDataToFile(r_result, rFileStream);
+        if (mFileFormat == VtkOutput::FileFormat::VTK_ASCII) rFileStream <<"\n";
+    }
+}
+
+/***********************************************************************************/
+/***********************************************************************************/
+
+template<typename TContainerType, class TVarType>
+void VtkOutput::WriteIntegrationMatrixContainerVariable(
+    const TContainerType& rContainer,
+    const Variable<TVarType>& rVariable,
+    std::ofstream& rFileStream) const
+{
+    if (rContainer.size() == 0) {
+        return;
+    }
+
+    // determining size of results
+    const auto& r_process_info = mrModelPart.GetProcessInfo();
+    std::vector<TVarType> tmp_result;
+    rContainer.begin()->CalculateOnIntegrationPoints(rVariable, tmp_result, r_process_info);
+    const int res_size1 = tmp_result[0].size1();
+    const int res_size2 = tmp_result[0].size2();
+
+    KRATOS_ERROR_IF(res_size1 != 3 && res_size2 != 3) << "TENSORS is only compatible with 3x3 matrices" << std::endl;
+
+    rFileStream << "TENSORS " << rVariable.Name() << "  float\n";
+
+    // Auxiliar values
+    auto& r_this_geometry_begin = (rContainer.begin())->GetGeometry();
+    const GeometryData::IntegrationMethod this_integration_method = (rContainer.begin())->GetIntegrationMethod();
+    const auto& r_integration_points = r_this_geometry_begin.IntegrationPoints(this_integration_method);
+    const SizeType integration_points_number = r_integration_points.size();
+
+    TVarType aux_value;
+    for (auto& r_entity : rContainer) { // TODO: CalculateOnIntegrationPoints should be const methods
+        aux_value = ZeroMatrix(res_size1, res_size2);
+        std::vector<TVarType> aux_result(integration_points_number);
+        r_entity.CalculateOnIntegrationPoints(rVariable, aux_result, r_process_info);
+        for (const TVarType& r_value : aux_result) {
+            noalias(aux_value) += r_value;
+        }
+        aux_value /= static_cast<double>(integration_points_number);
+        WriteMatrixDataToFile(aux_value, rFileStream);
         if (mFileFormat == VtkOutput::FileFormat::VTK_ASCII) rFileStream <<"\n";
     }
 }

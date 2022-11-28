@@ -12,8 +12,7 @@
 //
 //
 
-#if !defined( KRATOS_VTK_OUTPUT_H_INCLUDED )
-#define KRATOS_VTK_OUTPUT_H_INCLUDED
+#pragma once
 
 // System includes
 #include <unordered_map>
@@ -27,9 +26,10 @@
 
 namespace Kratos
 {
-/** \brief VtkOutput
-* A simple class that has functionality to write vtk output
+/** @class VtkOutput
+* @brief A simple class that has functionality to write vtk output
 * @see : https://www.vtk.org/wp-content/uploads/2015/04/file-formats.pdf
+* @see : https://kitware.github.io/vtk-examples/site/VTKFileFormats/
 */
 class KRATOS_API(KRATOS_CORE) VtkOutput : public IO
 {
@@ -304,6 +304,20 @@ protected:
         std::ofstream& rFileStream) const;
 
     /**
+     * @brief Writes matrix results of rNodes. Wraps the necessary synchronization-calls
+     * @param rNodes the nodes which is beging output
+     * @param rVariable Variable of the result to be written.
+     * @param IsHistoricalValue whether the values are historical or not
+     * @param rFileStream the file stream to which data is to be written.
+     */
+    template<class TVarType>
+    void WriteNodalMatrixValues(
+        const ModelPart::NodesContainerType& rNodes,
+        const TVarType& rVariable,
+        const bool IsHistoricalValue,
+        std::ofstream& rFileStream) const;
+
+    /**
      * @brief Write the scalar-historical variable results of rContainer.
      * @tparam TContainerType The type of container of the entity on which the results are to be written
      * @tparam TVarType The type of Variable of the entity on which the results are to be written
@@ -327,6 +341,20 @@ protected:
      */
     template<typename TContainerType, class TVarType>
     void WriteVectorSolutionStepVariable(
+        const TContainerType& rContainer,
+        const TVarType& rVariable,
+        std::ofstream& rFileStream) const;
+
+    /**
+     * @brief Write the matrix-historical variable results of rContainer.
+     * @tparam TContainerType The type of container of the entity on which the results are to be written
+     * @tparam TVarType The type of Variable of the entity on which the results are to be written
+     * @param rContainer the container which is beging output
+     * @param rVariable Variable of the result to be written.
+     * @param rFileStream the file stream to which data is to be written.
+     */
+    template<typename TContainerType, class TVarType>
+    void WriteMatrixSolutionStepVariable(
         const TContainerType& rContainer,
         const TVarType& rVariable,
         std::ofstream& rFileStream) const;
@@ -405,6 +433,36 @@ protected:
         std::ofstream& rFileStream) const;
 
     /**
+     * @brief Write the matrix-nonhistorical variable results of rContainer.
+     * @tparam TContainerType The type of container of the entity on which the results are to be written
+     * @tparam TVarType The type of Variable of the entity on which the results are to be written
+     * @param rContainer the container which is beging output
+     * @param rVariable Variable of the result to be written.
+     * @param VtkDataType type of vtk data
+     * @param rFileStream the file stream to which data is to be written.
+     */
+    template<typename TContainerType, class TVarType>
+    void WriteMatrixContainerVariable(
+        const TContainerType& rContainer,
+        const TVarType& rVariable,
+        std::ofstream& rFileStream) const;
+
+    /**
+     * @brief Write the matrix-GP variable results of rContainer.
+     * @tparam TContainerType The type of container of the entity on which the results are to be written
+     * @tparam TVarType The type of Variable of the entity on which the results are to be written
+     * @param rContainer the container which is beging output
+     * @param rVariable Variable of the result to be written.
+     * @param VtkDataType type of vtk data
+     * @param rFileStream the file stream to which data is to be written.
+     */
+    template<typename TContainerType, class TVarType>
+    void WriteIntegrationMatrixContainerVariable(
+        const TContainerType& rContainer,
+        const Variable<TVarType>& rVariable,
+        std::ofstream& rFileStream) const;
+
+    /**
      * @brief Write the scalar value to the file provided, takes care of binary and ascii formats
      * @tparam TData The type of data to be written to the file stream rFileStream
      * @param rData data to be written
@@ -441,6 +499,27 @@ protected:
                 ForceBigEndian(reinterpret_cast<unsigned char *>(&data_comp_local));
                 rFileStream.write(reinterpret_cast<char *>(&data_comp_local), sizeof(float));
             }
+        }
+    }
+
+    /**
+     * @brief Write the matrix values to the file provided, takes care of binary and ascii formats
+     * @tparam TData The type of data to be written to the file stream rFileStream
+     * @param rData data to be written
+     * @param rFileStream the file stream to which data is to be written.
+     */
+    template <typename TData>
+    void WriteMatrixDataToFile(const TData& rData, std::ofstream& rFileStream) const
+    {
+        if (mFileFormat == VtkOutput::FileFormat::VTK_ASCII) {
+            for (unsigned int i = 0; i < rData.size1(); ++i) {
+                for (unsigned int j = 0; j < rData.size2(); ++j) {
+                    rFileStream << float(rData(i, j)) << " ";
+                }
+                rFileStream << "\n";
+            }
+        } else if (mFileFormat == VtkOutput::FileFormat::VTK_BINARY) {
+            KRATOS_ERROR << "VTK binary output is not supported for matrices yet." << std::endl;
         }
     }
 
@@ -492,5 +571,3 @@ private:
 };
 
 } // namespace Kratos
-
-#endif // KRATOS_VTK_OUTPUT_H_INCLUDED
