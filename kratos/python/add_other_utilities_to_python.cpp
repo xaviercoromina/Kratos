@@ -65,6 +65,7 @@
 #include "utilities/rve_periodicity_utility.h"
 #include "utilities/communication_coloring_utilities.h"
 #include "utilities/model_part_graph_utilities.h"
+#include "utilities/shifted_boundary_meshless_interface_utility.h"
 #include "utilities/particles_utilities.h"
 
 namespace Kratos {
@@ -738,6 +739,18 @@ void AddOtherUtilitiesToPython(pybind11::module &m)
         .def_static("CountParticlesInNodesHistorical", &ParticlesUtilities::CountParticlesInNodes<3,true>)
         .def_static("CountParticlesInNodesNonHistorical", &ParticlesUtilities::CountParticlesInNodes<2,false>)
         .def_static("CountParticlesInNodesNonHistorical", &ParticlesUtilities::CountParticlesInNodes<3,false>)
+        .def_static("ClassifyParticlesInElementsHistorical", &ParticlesUtilities::ClassifyParticlesInElements<2,double,true>)
+        .def_static("ClassifyParticlesInElementsHistorical", &ParticlesUtilities::ClassifyParticlesInElements<3,double,true>)
+        .def_static("ClassifyParticlesInElementsNonHistorical", &ParticlesUtilities::ClassifyParticlesInElements<2,double,false>)
+        .def_static("ClassifyParticlesInElementsNonHistorical", &ParticlesUtilities::ClassifyParticlesInElements<3,double,false>)
+        .def_static("ClassifyParticlesInElementsHistorical", &ParticlesUtilities::ClassifyParticlesInElements<2,int,true>)
+        .def_static("ClassifyParticlesInElementsHistorical", &ParticlesUtilities::ClassifyParticlesInElements<3,int,true>)
+        .def_static("ClassifyParticlesInElementsNonHistorical", &ParticlesUtilities::ClassifyParticlesInElements<2,int,false>)
+        .def_static("ClassifyParticlesInElementsNonHistorical", &ParticlesUtilities::ClassifyParticlesInElements<3,int,false>)
+        .def_static("ClassifyParticlesInElementsHistorical", &ParticlesUtilities::ClassifyParticlesInElements<2,unsigned int,true>)
+        .def_static("ClassifyParticlesInElementsHistorical", &ParticlesUtilities::ClassifyParticlesInElements<3,unsigned int,true>)
+        .def_static("ClassifyParticlesInElementsNonHistorical", &ParticlesUtilities::ClassifyParticlesInElements<2,unsigned int,false>)
+        .def_static("ClassifyParticlesInElementsNonHistorical", &ParticlesUtilities::ClassifyParticlesInElements<3,unsigned int,false>)
         .def_static("InterpolateValuesAtCoordinatesHistorical", &ParticlesUtilities::InterpolateValuesAtCoordinates<2,double,true>)
         .def_static("InterpolateValuesAtCoordinatesHistorical", &ParticlesUtilities::InterpolateValuesAtCoordinates<3,double,true>)
         .def_static("InterpolateValuesAtCoordinatesHistorical", &ParticlesUtilities::InterpolateValuesAtCoordinates<2,std::size_t,true>)
@@ -770,6 +783,11 @@ void AddOtherUtilitiesToPython(pybind11::module &m)
 
     auto fs_extensions = m.def_submodule("FilesystemExtensions");
     fs_extensions.def("MPISafeCreateDirectories", &FilesystemExtensions::MPISafeCreateDirectories );
+
+    py::class_<ShiftedBoundaryMeshlessInterfaceUtility, ShiftedBoundaryMeshlessInterfaceUtility::Pointer>(m,"ShiftedBoundaryMeshlessInterfaceUtility")
+        .def(py::init<Model&, Parameters>())
+        .def("CalculateExtensionOperator", &ShiftedBoundaryMeshlessInterfaceUtility::CalculateExtensionOperator)
+    ;
 }
 
 } // namespace Python.
