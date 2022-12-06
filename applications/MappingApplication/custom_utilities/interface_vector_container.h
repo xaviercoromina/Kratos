@@ -13,20 +13,16 @@
 // "Development and Implementation of a Parallel
 //  Framework for Non-Matching Grid Mapping"
 
-#if !defined(KRATOS_INTERFACE_VECTOR_CONTAINER_H_INCLUDED )
-#define  KRATOS_INTERFACE_VECTOR_CONTAINER_H_INCLUDED
+#pragma once
 
 // System includes
 
-
 // External includes
-
 
 // Project includes
 #include "includes/define.h"
 #include "includes/model_part.h"
 #include "mapper_utilities.h"
-
 
 namespace Kratos
 {
@@ -126,5 +122,3 @@ private:
 ///@} addtogroup block
 
 }  // namespace Kratos.
-
-#endif // KRATOS_INTERFACE_VECTOR_CONTAINER_H_INCLUDED  defined

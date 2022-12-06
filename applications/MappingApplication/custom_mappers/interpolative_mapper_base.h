@@ -13,8 +13,7 @@
 // "Development and Implementation of a Parallel
 //  Framework for Non-Matching Grid Mapping"
 
-#if !defined(KRATOS_INTERPOLATIVE_MAPPER_BASE_H_INCLUDED )
-#define  KRATOS_INTERPOLATIVE_MAPPER_BASE_H_INCLUDED
+#pragma once
 
 // System includes
 
@@ -149,6 +148,38 @@ public:
         KRATOS_CATCH("");
     }
 
+    void Map(
+        const Variable<Vector>& rOriginVariable,
+        const Variable<Vector>& rDestinationVariable,
+        Kratos::Flags MappingOptions) override
+    {
+        KRATOS_TRY;
+
+        // if (MappingOptions.Is(MapperFlags::USE_TRANSPOSE)) {
+        //     GetInverseMapper().MapInternalTranspose(rDestinationVariable, rOriginVariable, MappingOptions);
+        // } else {
+        //     MapInternal(rOriginVariable, rDestinationVariable, MappingOptions);
+        // }
+
+        KRATOS_CATCH("");
+    }
+
+    void Map(
+        const Variable<Matrix>& rOriginVariable,
+        const Variable<Matrix>& rDestinationVariable,
+        Kratos::Flags MappingOptions) override
+    {
+        KRATOS_TRY;
+
+        // if (MappingOptions.Is(MapperFlags::USE_TRANSPOSE)) {
+        //     GetInverseMapper().MapInternalTranspose(rDestinationVariable, rOriginVariable, MappingOptions);
+        // } else {
+        //     MapInternal(rOriginVariable, rDestinationVariable, MappingOptions);
+        // }
+
+        KRATOS_CATCH("");
+    }
+
     void InverseMap(
         const Variable<double>& rOriginVariable,
         const Variable<double>& rDestinationVariable,
@@ -180,6 +211,39 @@ public:
 
         KRATOS_CATCH("");
     }
+
+    void InverseMap(
+        const Variable<Vector>& rOriginVariable,
+        const Variable<Vector>& rDestinationVariable,
+        Kratos::Flags MappingOptions) override
+    {
+        KRATOS_TRY;
+
+        // if (MappingOptions.Is(MapperFlags::USE_TRANSPOSE)) {
+        //     MapInternalTranspose(rOriginVariable, rDestinationVariable, MappingOptions);
+        // } else {
+        //     GetInverseMapper().Map(rDestinationVariable, rOriginVariable, MappingOptions);
+        // }
+
+        KRATOS_CATCH("");
+    }
+
+    void InverseMap(
+        const Variable<Matrix>& rOriginVariable,
+        const Variable<Matrix>& rDestinationVariable,
+        Kratos::Flags MappingOptions) override
+    {
+        KRATOS_TRY;
+
+        // if (MappingOptions.Is(MapperFlags::USE_TRANSPOSE)) {
+        //     MapInternalTranspose(rOriginVariable, rDestinationVariable, MappingOptions);
+        // } else {
+        //     GetInverseMapper().Map(rDestinationVariable, rOriginVariable, MappingOptions);
+        // }
+
+        KRATOS_CATCH("");
+    }
+
 
     ///@}
     ///@name Access
@@ -427,6 +491,46 @@ private:
         KRATOS_CATCH("");
     }
 
+    void MapInternal(const Variable<Vector>& rOriginVariable,
+                     const Variable<Vector>& rDestinationVariable,
+                     Kratos::Flags MappingOptions)
+    {
+        KRATOS_TRY;
+
+
+        KRATOS_CATCH("");
+    }
+
+    void MapInternalTranspose(const Variable<Vector>& rOriginVariable,
+                              const Variable<Vector>& rDestinationVariable,
+                              Kratos::Flags MappingOptions)
+    {
+        KRATOS_TRY;
+
+
+        KRATOS_CATCH("");
+    }
+
+    void MapInternal(const Variable<Matrix>& rOriginVariable,
+                     const Variable<Matrix>& rDestinationVariable,
+                     Kratos::Flags MappingOptions)
+    {
+        KRATOS_TRY;
+
+
+        KRATOS_CATCH("");
+    }
+
+    void MapInternalTranspose(const Variable<Matrix>& rOriginVariable,
+                              const Variable<Matrix>& rDestinationVariable,
+                              Kratos::Flags MappingOptions)
+    {
+        KRATOS_TRY;
+
+
+        KRATOS_CATCH("");
+    }
+
     void PrintPairingInfo(const int EchoLevel)
     {
         KRATOS_TRY;
@@ -547,5 +651,3 @@ private:
 }; // Class InterpolativeMapperBase
 
 }  // namespace Kratos.
-
-#endif // KRATOS_INTERPOLATIVE_MAPPER_BASE_H_INCLUDED  defined
