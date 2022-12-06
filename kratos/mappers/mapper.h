@@ -13,8 +13,7 @@
 // "Development and Implementation of a Parallel
 //  Framework for Non-Matching Grid Mapping"
 
-#if !defined(KRATOS_MAPPER_H_INCLUDED)
-#define  KRATOS_MAPPER_H_INCLUDED
+#pragma once
 
 // System includes
 
@@ -25,7 +24,6 @@
 #include "includes/model_part.h"
 #include "includes/kratos_parameters.h"
 #include "containers/flags.h"
-
 
 namespace Kratos
 {
@@ -111,6 +109,36 @@ public:
         Kratos::Flags MappingOptions) = 0;
 
     /**
+    * @brief Mapping from Origin to Destination, vector Variable
+    * Data is exchanged on the Interface, from the Origin-Modelpart
+    * to the Destination-ModelPart (the modelparts were specified in the
+    * construction Phase of the Mapper)
+    * @param rOriginVariable Variable on the Origin-ModelPart
+    * @param rDestinationVariable Variable on the Destination-ModelPart
+    * @param MappingOptions flags used to specify options for the mapping
+    * @see InverseMap
+    */
+    virtual void Map(
+        const Variable<Vector>& rOriginVariable,
+        const Variable<Vector>& rDestinationVariable,
+        Kratos::Flags MappingOptions) = 0;
+
+    /**
+    * @brief Mapping from Origin to Destination, matrix Variable
+    * Data is exchanged on the Interface, from the Origin-Modelpart
+    * to the Destination-ModelPart (the modelparts were specified in the
+    * construction Phase of the Mapper)
+    * @param rOriginVariable Variable on the Origin-ModelPart
+    * @param rDestinationVariable Variable on the Destination-ModelPart
+    * @param MappingOptions flags used to specify options for the mapping
+    * @see InverseMap
+    */
+    virtual void Map(
+        const Variable<Matrix>& rOriginVariable,
+        const Variable<Matrix>& rDestinationVariable,
+        Kratos::Flags MappingOptions) = 0;
+
+    /**
     * @brief Mapping from Destination to Origin, Scalar Variable
     * Data is exchanged on the Interface, from the Destination-Modelpart
     * to the Origin-ModelPart (the modelparts were specified in the
@@ -134,6 +162,38 @@ public:
     virtual void InverseMap(
         const Variable< array_1d<double, 3> >& rOriginVariable,
         const Variable< array_1d<double, 3> >& rDestinationVariable,
+        Kratos::Flags MappingOptions) = 0;
+
+    /**
+    * @brief Mapping from Destination to Origin, vector Variable
+    * Data is exchanged on the Interface, from the Destination-Modelpart
+    * to the Origin-ModelPart (the modelparts were specified in the
+    * construction Phase of the Mapper)
+    * It does the opposite of Map
+    * @param rOriginVariable Variable on the Origin-ModelPart
+    * @param rDestinationVariable Variable on the Destination-ModelPart
+    * @param MappingOptions flags used to specify options for the mapping
+    * @see Map
+    */
+    virtual void InverseMap(
+        const Variable<Vector>& rOriginVariable,
+        const Variable<Vector>& rDestinationVariable,
+        Kratos::Flags MappingOptions) = 0;
+
+    /**
+    * @brief Mapping from Destination to Origin, matrix Variable
+    * Data is exchanged on the Interface, from the Destination-Modelpart
+    * to the Origin-ModelPart (the modelparts were specified in the
+    * construction Phase of the Mapper)
+    * It does the opposite of Map
+    * @param rOriginVariable Variable on the Origin-ModelPart
+    * @param rDestinationVariable Variable on the Destination-ModelPart
+    * @param MappingOptions flags used to specify options for the mapping
+    * @see Map
+    */
+    virtual void InverseMap(
+        const Variable<Matrix>& rOriginVariable,
+        const Variable<Matrix>& rDestinationVariable,
         Kratos::Flags MappingOptions) = 0;
 
     /**
@@ -227,5 +287,3 @@ inline std::ostream & operator << (
 }
 
 }  // namespace Kratos.
-
-#endif // KRATOS_MAPPER_H_INCLUDED  defined
