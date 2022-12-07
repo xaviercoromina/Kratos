@@ -62,10 +62,7 @@ std::tuple<unsigned, unsigned> StartIndexAndBlockSize(File& rFile, std::string c
     const std::string partition_path = rPath + PartitionSuffix;
     const unsigned my_pid = rFile.GetPID();
     Vector<int> my_partition;
-    int i = 0;
-    std::cout << "R" << my_pid  << " Mate " << i++ << std::endl;
     rFile.ReadDataSet(partition_path, my_partition, my_pid, 2);
-    std::cout << "R" << my_pid  << " Mate " << i++ << std::endl;
     const unsigned start_index = my_partition[0];
     const unsigned block_size = my_partition[1] - my_partition[0];
     return std::make_tuple(start_index, block_size);

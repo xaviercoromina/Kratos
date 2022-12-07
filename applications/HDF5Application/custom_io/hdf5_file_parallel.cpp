@@ -404,17 +404,13 @@ void FileParallel::ReadDataSetVectorImpl(const std::string& rPath,
 {
     KRATOS_TRY;
     BuiltinTimer timer;
-    const auto rank_id = this->GetPID();
-    KRATOS_WATCH_LINE(rank_id);
     // Check that full path exists.
     KRATOS_ERROR_IF_NOT(IsDataSet(rPath))
         << "Path is not a data set: " << rPath << std::endl;
-    KRATOS_WATCH_LINE(rank_id);
     constexpr bool is_int_type = std::is_same<int, T>::value;
     constexpr bool is_double_type = std::is_same<double, T>::value;
     constexpr bool is_array_1d_type = std::is_same<array_1d<double, 3>, T>::value;
     constexpr unsigned ndims = (!is_array_1d_type) ? 1 : 2;
-    KRATOS_WATCH_LINE(rank_id);
     // Check consistency of file's data set dimensions.
     std::vector<unsigned> file_space_dims = GetDataDimensions(rPath);
     KRATOS_ERROR_IF(file_space_dims.size() != ndims)
@@ -430,81 +426,67 @@ void FileParallel::ReadDataSetVectorImpl(const std::string& rPath,
     if (is_array_1d_type)
         KRATOS_ERROR_IF(file_space_dims[1] != 3)
             << "Invalid data set dimension." << std::endl;
-    KRATOS_WATCH_LINE(rank_id);
     if (rData.size() != BlockSize)
         rData.resize(BlockSize, false);
-    KRATOS_WATCH_LINE(rank_id);
     // Set global position where local data set starts.
     hsize_t local_start[ndims];
     local_start[0] = StartIndex;
     if (is_array_1d_type)
         local_start[1] = 0;
-    KRATOS_WATCH_LINE(rank_id);
     // Set the data type.
     hid_t dtype_id;
     if (is_int_type)
     {
-            KRATOS_WATCH_LINE(rank_id);
         KRATOS_ERROR_IF_NOT(HasIntDataType(rPath))
             << "Data type is not int: " << rPath << std::endl;
         dtype_id = H5T_NATIVE_INT;
     }
     else if (is_double_type)
     {
-            KRATOS_WATCH_LINE(rank_id);
         KRATOS_ERROR_IF_NOT(HasFloatDataType(rPath))
             << "Data type is not float: " << rPath << std::endl;
         dtype_id = H5T_NATIVE_DOUBLE;
     }
     else if (is_array_1d_type)
     {
-            KRATOS_WATCH_LINE(rank_id);
         KRATOS_ERROR_IF_NOT(HasFloatDataType(rPath))
             << "Data type is not float: " << rPath << std::endl;
         dtype_id = H5T_NATIVE_DOUBLE;
     }
     else {
-            KRATOS_WATCH_LINE(rank_id);
         static_assert(is_int_type || is_double_type || is_array_1d_type,
                       "Unsupported data type.");
     }
 
-            KRATOS_WATCH_LINE(rank_id);
     hid_t file_id = GetFileId();
     hid_t dxpl_id = H5Pcreate(H5P_DATASET_XFER);
     if (Mode == DataTransferMode::collective)
         H5Pset_dxpl_mpio(dxpl_id, H5FD_MPIO_COLLECTIVE);
     else
         H5Pset_dxpl_mpio(dxpl_id, H5FD_MPIO_INDEPENDENT);
-            KRATOS_WATCH_LINE(rank_id);
     hid_t dset_id = H5Dopen(file_id, rPath.c_str(), H5P_DEFAULT);
     KRATOS_ERROR_IF(dset_id < 0) << "H5Dopen failed." << std::endl;
     hid_t file_space_id = H5Dget_space(dset_id);
     hid_t mem_space_id = H5Screate_simple(ndims, local_mem_dims, nullptr);
-            KRATOS_WATCH_LINE(rank_id);
     KRATOS_ERROR_IF(H5Sselect_hyperslab(file_space_id, H5S_SELECT_SET, local_start,
                                         nullptr, local_mem_dims, nullptr) < 0)
         << "H5Sselect_hyperslab failed." << std::endl;
     if (local_mem_dims[0] > 0)
     {
-            KRATOS_WATCH_LINE(rank_id);
         KRATOS_ERROR_IF(H5Dread(dset_id, dtype_id, mem_space_id, file_space_id, dxpl_id, &rData[0]) < 0)
             << "H5Dread failed." << std::endl;
     }
     else
     {
-            KRATOS_WATCH_LINE(rank_id);
         KRATOS_ERROR_IF(H5Dread(dset_id, dtype_id, mem_space_id, file_space_id, dxpl_id, nullptr) < 0)
             << "H5Dread failed." << std::endl;
     }
-            KRATOS_WATCH_LINE(rank_id);
     KRATOS_ERROR_IF(H5Pclose(dxpl_id) < 0) << "H5Pclose failed." << std::endl;
     KRATOS_ERROR_IF(H5Dclose(dset_id) < 0) << "H5Dclose failed." << std::endl;
     KRATOS_ERROR_IF(H5Sclose(file_space_id) < 0) << "H5Sclose failed." << std::endl;
     KRATOS_ERROR_IF(H5Sclose(mem_space_id) < 0) << "H5Sclose failed." << std::endl;
     KRATOS_INFO_IF("HDF5Application", GetEchoLevel() == 2)
         << "Read time \"" << rPath << "\": " << timer.ElapsedSeconds() << std::endl;
-            KRATOS_WATCH_LINE(rank_id);
     KRATOS_CATCH("Path: \"" + rPath + "\".");
 }
 
