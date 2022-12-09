@@ -386,8 +386,6 @@ ContainerComponentIO<TContainerType, TContainerItemType, TComponents...>::Contai
     // a deadlock), hence the sorting.
     std::sort(mComponentNames.begin(), mComponentNames.end());
 
-    std::sort(mComponentNames.begin(), mComponentNames.end());
-
     KRATOS_CATCH("");
 }
 
@@ -642,21 +640,17 @@ void ContainerComponentIO<TContainerType, TContainerItemType, TComponents...>::R
             return;
         }
     }
-    int i = 0;
-
 
     std::vector<TContainerItemType*> local_items;
     GetContainerItemReferences(local_items, rContainer);
-
     std::size_t start_index, block_size;
-
     std::tie(start_index, block_size) = StartIndexAndBlockSize(*mpFile, mComponentPath);
-
 
     // Read local data for each variable.
     for (const std::string& r_component_name : current_components_list)
         ReadRegisteredComponent(r_component_name, local_items, rCommunicator, *mpFile,
                                 mComponentPath, start_index, block_size, r_component_name);
+
     KRATOS_CATCH("");
 }
 

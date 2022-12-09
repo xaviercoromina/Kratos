@@ -6,7 +6,6 @@
 #include "includes/communicator.h"
 #include "custom_utilities/registered_component_lookup.h"
 #include "custom_utilities/local_ghost_splitting_utility.h"
-#include "includes/debug_helpers.h"
 
 namespace Kratos
 {
@@ -96,8 +95,6 @@ NodalSolutionStepDataIO::NodalSolutionStepDataIO(Parameters Settings, File::Poin
     // rank, but they may not be in the same order (which would lead to ranks
     // trying to write different variables at the same time, resulting in
     // a deadlock), hence the sorting.
-    std::sort(mVariableNames.begin(), mVariableNames.end());
-
     std::sort(mVariableNames.begin(), mVariableNames.end());
 
     KRATOS_CATCH("");

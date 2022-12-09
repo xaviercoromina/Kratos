@@ -3,7 +3,6 @@
 #include "includes/kratos_parameters.h"
 #include "utilities/builtin_timer.h"
 #include "input_output/logger.h"
-#include "includes/debug_helpers.h"
 
 namespace Kratos
 {
@@ -407,10 +406,12 @@ void FileParallel::ReadDataSetVectorImpl(const std::string& rPath,
     // Check that full path exists.
     KRATOS_ERROR_IF_NOT(IsDataSet(rPath))
         << "Path is not a data set: " << rPath << std::endl;
+
     constexpr bool is_int_type = std::is_same<int, T>::value;
     constexpr bool is_double_type = std::is_same<double, T>::value;
     constexpr bool is_array_1d_type = std::is_same<array_1d<double, 3>, T>::value;
     constexpr unsigned ndims = (!is_array_1d_type) ? 1 : 2;
+
     // Check consistency of file's data set dimensions.
     std::vector<unsigned> file_space_dims = GetDataDimensions(rPath);
     KRATOS_ERROR_IF(file_space_dims.size() != ndims)
@@ -426,13 +427,16 @@ void FileParallel::ReadDataSetVectorImpl(const std::string& rPath,
     if (is_array_1d_type)
         KRATOS_ERROR_IF(file_space_dims[1] != 3)
             << "Invalid data set dimension." << std::endl;
+
     if (rData.size() != BlockSize)
         rData.resize(BlockSize, false);
+
     // Set global position where local data set starts.
     hsize_t local_start[ndims];
     local_start[0] = StartIndex;
     if (is_array_1d_type)
         local_start[1] = 0;
+
     // Set the data type.
     hid_t dtype_id;
     if (is_int_type)
@@ -453,10 +457,9 @@ void FileParallel::ReadDataSetVectorImpl(const std::string& rPath,
             << "Data type is not float: " << rPath << std::endl;
         dtype_id = H5T_NATIVE_DOUBLE;
     }
-    else {
+    else
         static_assert(is_int_type || is_double_type || is_array_1d_type,
                       "Unsupported data type.");
-    }
 
     hid_t file_id = GetFileId();
     hid_t dxpl_id = H5Pcreate(H5P_DATASET_XFER);
