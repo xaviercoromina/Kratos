@@ -22,6 +22,7 @@
 #include "custom_utilities/pattern_utility.h"
 #include "custom_utilities/journal.h"
 #include "custom_utilities/testing_utilities.h"
+#include "custom_utilities/mpi_utilities.h"
 
 // Internal includes
 #include "add_custom_utilities_to_python.h"
@@ -72,6 +73,15 @@ std::vector<std::string> Glob (const ModelPartPattern& rInstance) {
 
 void AddCustomUtilitiesToPython(pybind11::module& rModule)
 {
+    rModule.def("MPIAllGatherVStrings", [](const std::vector<std::string>& rStrings, DataCommunicator& rCommunicator) -> std::vector<std::string> {
+        std::vector<std::string> output;
+        HDF5::MPIUtilities::AllGatherV(rStrings.begin(),
+                                       rStrings.end(),
+                                       std::back_inserter(output),
+                                       rCommunicator);
+        return output;
+    });
+
     pybind11::class_<HDF5::PointLocatorAdaptor, HDF5::PointLocatorAdaptor::Pointer, PointLocatorAdaptorTrampoline>(rModule, "PointLocatorAdaptor")
         .def(pybind11::init<>())
         .def("FindElement", &HDF5::PointLocatorAdaptor::FindElement)
@@ -150,7 +160,6 @@ void AddCustomUtilitiesToPython(pybind11::module& rModule)
              static_cast<std::string(CheckpointPattern::*)(const ModelPart&,std::size_t)const>(&CheckpointPattern::Apply),
              "Substitute values from the provided model part and path ID into the stored pattern.")
         ;
-
     #undef KRATOS_DEFINE_VERTEX_GETVALUE_OVERLOAD_BINDING
 
     pybind11::class_<JournalBase, JournalBase::Pointer>(rModule, "JournalBase")
@@ -159,6 +168,7 @@ void AddCustomUtilitiesToPython(pybind11::module& rModule)
         .def("GetFilePath", &JournalBase::GetFilePath, "Get the path to the underlying file.")
         .def("SetExtractor", pybind11::overload_cast<const JournalBase::Extractor&>(&JournalBase::SetExtractor))
         .def("Push", pybind11::overload_cast<const Model&>(&JournalBase::Push), "Insert a new entry at the end, extracted from the input model.")
+        .def("EraseIf", &JournalBase::EraseIf, "Erase all lines from the associated file matching the provided predicate.")
         .def("Clear", &JournalBase::Clear, "Delete the registry file")
         .def("__len__", &JournalBase::size)
         .def("__iter__", [](const JournalBase& rJournal){return pybind11::make_iterator(rJournal.begin(), rJournal.end());})
@@ -170,6 +180,7 @@ void AddCustomUtilitiesToPython(pybind11::module& rModule)
         .def("GetFilePath", &Journal::GetFilePath, "Get the path to the underlying file.")
         .def("SetExtractor", pybind11::overload_cast<const Journal::Extractor&>(&Journal::SetExtractor))
         .def("Push", &Journal::Push, "Insert a new entry at the end, extracted from the input model.")
+        .def("EraseIf", &Journal::EraseIf, "Erase all lines from the associated file matching the provided predicate.")
         .def("Clear", &Journal::Clear, "Delete the registry file")
         .def("__len__", &Journal::size)
         .def("__iter__", [](const Journal& rJournal){return pybind11::make_iterator(rJournal.begin(), rJournal.end());})

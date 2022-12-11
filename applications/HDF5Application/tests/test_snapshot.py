@@ -70,9 +70,11 @@ def CompareModelParts(source_model_part: KratosMultiphysics.ModelPart,
         # Check properties
         for property_name in ["X", "Y", "Z", "X0", "Y0", "Z0", "Id"]:
             test_case.assertAlmostEqual(getattr(source_node, property_name), getattr(target_node, property_name))
+            pass
 
         # Check flags
         test_case.assertTrue(source_node.Is(target_node))
+
 
     # Compare elements
     test_case.assertEqual(len(source_model_part.Elements), len(target_model_part.Elements))
@@ -80,6 +82,7 @@ def CompareModelParts(source_model_part: KratosMultiphysics.ModelPart,
         # Check nodes
         for source_node, target_node in zip(source_element.GetNodes(), target_element.GetNodes()):
             test_case.assertTrue(source_node.Id, target_node.Id)
+            pass
 
         # Check flags
         test_case.assertTrue(source_element.Is(target_element))
@@ -92,6 +95,7 @@ def CompareModelParts(source_model_part: KratosMultiphysics.ModelPart,
         # Check nodes
         for source_node, target_node in zip(source_condition.GetNodes(), target_condition.GetNodes()):
             test_case.assertTrue(source_node.Id, target_node.Id)
+            pass
 
         # Check flags
         test_case.assertTrue(source_condition.Is(target_condition))
@@ -100,6 +104,10 @@ def CompareModelParts(source_model_part: KratosMultiphysics.ModelPart,
 
 
 class TestSnapshotOnDisk(KratosUnittest.TestCase):
+
+    @property
+    def test_directory(self) -> pathlib.Path:
+        return pathlib.Path("test_snapshot_on_disk")
 
     @property
     def file_path(self) -> pathlib.Path:
@@ -121,7 +129,7 @@ class TestSnapshotOnDisk(KratosUnittest.TestCase):
         input_parameters["io_settings"]["file_name"].SetString(str(self.file_path))
         output_parameters["io_settings"]["file_name"].SetString(str(self.file_path))
         for parameters in (input_parameters, output_parameters):
-            parameters["io_settings"]["file_name"].SetString(str(self.test_directory / parameters["io_settings"]["file_name"].GetString()))
+            parameters["io_settings"]["file_name"].SetString(str(parameters["io_settings"]["file_name"].GetString()))
 
         model, source_model_part = MakeModel()
         SetModelPartData(source_model_part, step = 2, path = 3, time = 1.5)
@@ -136,12 +144,8 @@ class TestSnapshotOnDisk(KratosUnittest.TestCase):
             source_model_part.ProcessInfo[HDF5Application.ANALYSIS_PATH],
             input_parameters,
             output_parameters)
-        print("Write")
         snapshot.Write(source_model_part)
-        print("Finished writing")
         KratosMultiphysics.Testing.GetDefaultDataCommunicator().Barrier()
-        print("Barrier end")
-        return
 
         # Check initialized source model part ProcessInfo (unchanged)
         self.assertEqual(source_model_part.ProcessInfo[KratosMultiphysics.STEP], 2)
@@ -161,9 +165,7 @@ class TestSnapshotOnDisk(KratosUnittest.TestCase):
         self.assertEqual(target_model_part.ProcessInfo[HDF5Application.ANALYSIS_PATH], 2)
         self.assertEqual(target_model_part.ProcessInfo[KratosMultiphysics.TIME], 3.5)
 
-        print("Load")
         snapshot.Load(target_model_part)
-        print("Finished loading")
 
         # Check loaded target model part ProcessInfo
         self.assertEqual(target_model_part.ProcessInfo[KratosMultiphysics.STEP], 2)
@@ -172,9 +174,6 @@ class TestSnapshotOnDisk(KratosUnittest.TestCase):
 
         CompareModelParts(source_model_part, target_model_part, self)
 
-    @property
-    def test_directory(self) -> pathlib.Path:
-        return pathlib.Path("test_snapshot_on_disk")
 
 if __name__ == "__main__":
     KratosUnittest.main()

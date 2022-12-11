@@ -25,6 +25,7 @@
 // STL includes
 #include <filesystem>
 #include <sstream>
+#include <cstdio>
 
 
 namespace Kratos
@@ -109,13 +110,100 @@ void JournalBase::Push(const Model& rModel)
 
     auto p_access = this->Open(std::ios::app | std::ios::out);
 
-    const auto output = this->mExtractor.first(rModel);
+    value_type output;
+
+    // If an exception is thrown here, it means that the extractor
+    // invocation failed. If the extractor is a python object, finding
+    // where the error came from may be tricky, but here are some tips
+    // to get you started:
+    //  - if the extractor was set from python and your exception passes
+    //    through here, you can be sure that the error either originated
+    //    from python, or passed through a python object.
+    //  - if you see a C++ traceback, no python traceback, and no error
+    //    message, the problem may still be on the python side => it's
+    //    most likely a missing return statement.
+    KRATOS_TRY;
+    output = this->mExtractor.first(rModel);
+    KRATOS_CATCH("Extractor call failed in JournalBase");
+
     KRATOS_ERROR_IF_NOT(this->IsValidEntry(output))
     << "Extractor returned invalid output: " << output;
 
     p_access->value().first << output << std::endl;
 
     KRATOS_CATCH("");
+}
+
+
+void JournalBase::Erase(const_iterator Begin, const_iterator End)
+{
+    std::set<const_iterator> lines_to_be_erased;
+    for (; Begin!=End; ++Begin) {
+        lines_to_be_erased.insert(Begin);
+    }
+    this->Erase(lines_to_be_erased);
+}
+
+
+void JournalBase::Erase(const_iterator itEntry)
+{
+    auto it_end = itEntry;
+    ++itEntry;
+    this->Erase(itEntry, it_end);
+}
+
+
+void JournalBase::Erase(const std::set<const_iterator>& rLines)
+{
+    KRATOS_TRY;
+
+    // Create a temporary file to write to.
+    // TODO: Apparently, std::tmpnam is considered dangerous (not for our use cases though)
+    //       because there's a slight delay between getting the temporary file name and
+    //       actually creating a file on that path, and that delay can be exploited by
+    //       another process. That said, I found no safe and portable alternative, apart from
+    //       solutions involving randomly generated numbers. Those are not desirable because
+    //       of reproducability issues. ==> you're welcome to change this to a better solution
+    //       if you happen to find one.
+    char buffer[L_tmpnam];
+    std::filesystem::path temp_file_path(std::tmpnam(buffer));
+
+    // Write everything except the lines to be erased.
+    {
+        std::ofstream temp_file(temp_file_path);
+        const auto it_end = this->end();
+        for (auto it=this->begin(); it!=it_end; ++it) {
+            if (rLines.find(it) == rLines.end()) {
+                temp_file << (*it) << '\n';
+            }
+        }
+    }
+
+    // Overwrite the old journal file.
+    // Note: copy + delete is used instead of renaming because
+    // renaming throws an exception if the source and destination
+    // paths are on different file systems.
+    std::filesystem::remove(mJournalPath);
+    std::filesystem::copy(temp_file_path, mJournalPath);
+    std::filesystem::remove(temp_file_path);
+
+    KRATOS_CATCH("");
+}
+
+
+void JournalBase::EraseIf(const std::function<bool(const value_type&)>& rPredicate)
+{
+    // Collect items to be erased.
+    std::set<const_iterator> items_to_erase;
+    const auto it_end = this->end();
+    for (auto it=this->begin(); it!=it_end; ++it) {
+        if (rPredicate(*it)) {
+            items_to_erase.insert(it);
+        }
+    }
+
+    // Erase collected items.
+    this->Erase(items_to_erase);
 }
 
 
@@ -308,6 +396,27 @@ void Journal::SetExtractor(const Extractor& rExtractor)
 void Journal::Push(const Model& rModel)
 {
     this->mBase.Push(rModel);
+}
+
+
+void Journal::Erase(const_iterator itEntry)
+{
+    mBase.Erase(itEntry.GetBase());
+}
+
+
+void Journal::Erase(const_iterator Begin, const_iterator End)
+{
+    mBase.Erase(Begin.GetBase(), End.GetBase());
+}
+
+
+void Journal::EraseIf(const std::function<bool(const value_type&)>& rPredicate)
+{
+    const auto wrapped_predicate = [&rPredicate](const JournalBase::value_type& rLine) {
+        return rPredicate(Journal::value_type(rLine));
+    };
+    mBase.EraseIf(wrapped_predicate);
 }
 
 

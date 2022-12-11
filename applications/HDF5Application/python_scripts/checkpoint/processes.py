@@ -3,7 +3,6 @@ import KratosMultiphysics
 
 # HDF5 imports
 import KratosMultiphysics.HDF5Application
-from KratosMultiphysics.HDF5Application.checkpoint.import_utility import ImportUtility
 from KratosMultiphysics.HDF5Application.checkpoint.snapshot import Snapshot
 
 # STD imports

@@ -20,6 +20,7 @@
 /* External includes */
 
 /* Project includes */
+#include "includes/code_location.h"
 
 // Print vector values with precision
 #define KRATOS_WATCH_VECTOR_WITH_PRECISION(variable, precision)                           \
@@ -50,5 +51,9 @@
         std::cout << #variable << " : " << std::endl                    \
                   << values.str() << std::endl;                         \
     }
+
+// Cout a message with appended line and function information.
+#define KRATOS_WATCH_LINE(...) std::cout << __VA_ARGS__ << KRATOS_CODE_LOCATION << std::endl
+
 
 #endif /* KRATOS_DEBUG_HELPERS_H_INCLUDED  defined */

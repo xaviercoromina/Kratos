@@ -136,14 +136,16 @@ class SnapshotIOBase(abc.ABC):
 
     @staticmethod
     def _ExtractNodalSolutionStepDataNames(model_part: KratosMultiphysics.ModelPart) -> "list[str]":
-        return list(model_part.GetHistoricalVariablesNames())
+        data_communicator = model_part.GetCommunicator().GetDataCommunicator()
+        local_names = model_part.GetHistoricalVariablesNames()
+        output =  list(MPIUnion(list(local_names), data_communicator))
+        return output
 
     @staticmethod
     def _ExtractNodalDataNames(model_part: KratosMultiphysics.ModelPart, check_mesh_consistency: bool = False) -> "list[str]":
         data_communicator = model_part.GetCommunicator().GetDataCommunicator()
         local_names = model_part.GetNonHistoricalVariablesNames(model_part.Nodes, check_mesh_consistency)
         output =  list(MPIUnion(list(local_names), data_communicator))
-        print(f"ExtractNodalDataNames: {output} on rank {data_communicator.Rank()}")
         return output
 
     @staticmethod
@@ -154,7 +156,8 @@ class SnapshotIOBase(abc.ABC):
     def _ExtractElementDataNames(model_part: KratosMultiphysics.ModelPart, check_mesh_consistency: bool = False) -> "list[str]":
         data_communicator = model_part.GetCommunicator().GetDataCommunicator()
         local_names = model_part.GetNonHistoricalVariablesNames(model_part.Elements, check_mesh_consistency)
-        return list(MPIUnion(list(local_names), data_communicator))
+        output =  list(MPIUnion(list(local_names), data_communicator))
+        return output
 
     @staticmethod
     def _ExtractElementFlagNames(model_part: KratosMultiphysics.ModelPart) -> "list[str]":
@@ -164,7 +167,8 @@ class SnapshotIOBase(abc.ABC):
     def _ExtractConditionDataNames(model_part: KratosMultiphysics.ModelPart, check_mesh_consistency: bool = False) -> "list[str]":
         data_communicator = model_part.GetCommunicator().GetDataCommunicator()
         local_names = model_part.GetNonHistoricalVariablesNames(model_part.Conditions, check_mesh_consistency)
-        return list(MPIUnion(list(local_names), data_communicator))
+        output =  list(MPIUnion(list(local_names), data_communicator))
+        return output
 
     @staticmethod
     def _ExtractConditionFlagNames(model_part: KratosMultiphysics.ModelPart) -> "list[str]":
@@ -207,19 +211,21 @@ class DefaultSnapshotOutput(SnapshotIOBase):
     """@brief Output class for writing most data in the model part to an HDF5 snapshot.
        @details Data written: - nodal solution step data
                               - nodal data value
+                              - nodal flag
+                              - element data value
+                              - element flag
                               - condition data value
+                              - condition flag
                               - process info
     """
 
     @staticmethod
     def GetDefaultIOParameters() -> KratosMultiphysics.Parameters:
-        return KratosMultiphysics.Parameters("""
-        {
+        return KratosMultiphysics.Parameters("""{
             "file_name" : "checkpoints/<model_part_name>_snapshot_<path_id>_<step>.h5",
             "file_access_mode" : "truncate",
             "echo_level" : 0
-        }
-        """)
+        }""")
 
     def _GetOperations(self, model_part: KratosMultiphysics.ModelPart) -> list:
         operations = []
@@ -228,9 +234,9 @@ class DefaultSnapshotOutput(SnapshotIOBase):
         for operation, variable_names in ((Operations.NodalSolutionStepDataOutput, self._ExtractNodalSolutionStepDataNames(model_part)),
                                           (Operations.NodalDataValueOutput, self._ExtractNodalDataNames(model_part)),
                                           (Operations.NodalFlagValueOutput, self._ExtractNodalFlagNames(model_part)),
-                                          #(Operations.ElementDataValueOutput, self._ExtractElementDataNames(model_part)),
+                                          (Operations.ElementDataValueOutput, self._ExtractElementDataNames(model_part)),
                                           (Operations.ElementFlagValueOutput, self._ExtractElementFlagNames(model_part)),
-                                          #(Operations.ConditionDataValueOutput, self._ExtractConditionDataNames(model_part)),
+                                          (Operations.ConditionDataValueOutput, self._ExtractConditionDataNames(model_part)),
                                           (Operations.ConditionFlagValueOutput, self._ExtractConditionFlagNames(model_part))):
             parameters = self.parameters["operation_settings"]
             parameters.AddStringArray("list_of_variables", variable_names)
@@ -246,32 +252,35 @@ class DefaultSnapshotInput(SnapshotIOBase):
     """@brief Input class for reading most data from an HDF5 snapshot to a model part.
        @details Data read: - nodal solution step data
                            - nodal data value
+                           - nodal flag
+                           - element data value
+                           - element flag
                            - condition data value
+                           - condition flag
                            - process info
     """
 
     @staticmethod
     def GetDefaultIOParameters() -> KratosMultiphysics.Parameters:
-        return KratosMultiphysics.Parameters("""
-        {
+        return KratosMultiphysics.Parameters("""{
             "file_name" : "",
             "file_access_mode" : "read_only",
             "echo_level" : 0
-        }
-
-        """)
+        }""")
 
     def _GetOperations(self, model_part: KratosMultiphysics.ModelPart) -> list:
         operations = []
 
         # Variables
-        for operation, variable_names in ((Operations.NodalSolutionStepDataInput, self._ExtractNodalSolutionStepDataNames(model_part)),
+        for operation, variable_names in (
+                                          (Operations.NodalSolutionStepDataInput, self._ExtractNodalSolutionStepDataNames(model_part)),
                                           (Operations.NodalDataValueInput, self._ExtractNodalDataNames(model_part)),
                                           (Operations.NodalFlagValueInput, self._ExtractNodalFlagNames(model_part)),
                                           (Operations.ElementDataValueInput, self._ExtractElementDataNames(model_part)),
                                           (Operations.ElementFlagValueInput, self._ExtractElementFlagNames(model_part)),
                                           (Operations.ConditionDataValueInput, self._ExtractConditionDataNames(model_part)),
-                                          (Operations.ConditionFlagValueInput, self._ExtractConditionFlagNames(model_part))):
+                                          (Operations.ConditionFlagValueInput, self._ExtractConditionFlagNames(model_part))
+                                          ):
             parameters = self.parameters["operation_settings"]
             parameters.AddStringArray("list_of_variables", variable_names)
             operations.append(operation(ParametersWrapper(parameters)))

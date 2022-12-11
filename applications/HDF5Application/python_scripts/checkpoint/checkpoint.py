@@ -5,13 +5,12 @@ import KratosMultiphysics
 from KratosMultiphysics.HDF5Application.checkpoint.snapshot import Snapshot
 
 
-
 class Checkpoint:
-    """@brief Class representing a checkpoint, consisting of one or more consecutive @ref Snapshot."""
+    """@brief Class representing a checkpoint, consisting of one or more consecutive @ref Snapshot s."""
 
     def __init__(self, snapshots: list):
         """@brief Construct a Checkpoint from a list of @ref Snapshot.
-           @param snapshots: list of @ref Snapshot that make up the checkpoint. The number of snapshots must
+           @param snapshots: list of @ref Snapshot s that make up the checkpoint. The number of snapshots must
                              match the buffer size of the model part the checkpoint will be loaded into."""
         self.__snapshots = sorted(snapshots)
         if not self.IsValid():

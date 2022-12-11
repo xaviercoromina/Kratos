@@ -27,6 +27,11 @@ FileContentIterator::FileContentIterator(std::shared_ptr<FileAccess>&& rpFileAcc
       mDelimiter(delimiter),
       mPosition(0)
 {
+    // Set file pointer to EOF if the file is empty
+    this->RestoreState();
+    if (mpFileAccess->value().first.peek() == std::ifstream::traits_type::eof()) {
+        this->SeekEOF();
+    }
 }
 
 
@@ -36,6 +41,11 @@ FileContentIterator::FileContentIterator(const std::shared_ptr<FileAccess>& rpFi
       mDelimiter(delimiter),
       mPosition(0)
 {
+    // Set file pointer to EOF if the file is empty
+    this->RestoreState();
+    if (mpFileAccess->value().first.peek() == std::ifstream::traits_type::eof()) {
+        this->SeekEOF();
+    }
 }
 
 
@@ -90,6 +100,11 @@ std::string FileContentIterator::value() const
             r_stream.get(c);
             output.push_back(c);
         }
+    }
+
+    // Pop the delimiter.
+    if (!output.empty()) {
+        output.pop_back();
     }
 
     return output;
@@ -161,6 +176,15 @@ bool operator!=(const FileContentIterator& rLeft, const FileContentIterator& rRi
 }
 
 
+
+bool operator<(const FileContentIterator& rLeft, const FileContentIterator& rRight)
+{
+    KRATOS_ERROR_IF_NOT(&rLeft.mpFileAccess->value().first == &rRight.mpFileAccess->value().first)
+    << "Comparison of incompatible iterators pointing to different files.";
+    return rLeft.mPosition < rRight.mPosition;
+}
+
+
 FileStringIterator::FileStringIterator(std::shared_ptr<FileAccess>&& rpFileAccess, char delimiter)
     : mWrapped(std::move(rpFileAccess), delimiter)
 {
@@ -209,6 +233,12 @@ bool operator==(const FileStringIterator& rLeft, const FileStringIterator& rRigh
 bool operator!=(const FileStringIterator& rLeft, const FileStringIterator& rRight)
 {
     return rLeft.mWrapped != rRight.mWrapped;
+}
+
+
+bool operator<(const FileStringIterator& rLeft, const FileStringIterator& rRight)
+{
+    return rLeft.mWrapped < rRight.mWrapped;
 }
 
 
