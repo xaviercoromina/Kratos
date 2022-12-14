@@ -34,7 +34,7 @@ def CreateControllerWithFileIO(settings, model):
         settings['controller_settings'])
 
 
-def AssignOperationsToController(settings, controller):
+def AssignOperationsToController(settings: KratosMultiphysics.Parameters, controller: controllers.Controller):
     if not settings.IsArray():
         raise ValueError('Expected settings as an array')
     for i in settings:
