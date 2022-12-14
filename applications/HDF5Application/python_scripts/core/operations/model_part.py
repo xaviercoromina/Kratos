@@ -4,12 +4,16 @@ license: HDF5Application/license.txt
 '''
 
 
-from importlib import import_module
-
-
+# --- Code Imports ---
 import KratosMultiphysics
+
+# --- HDF5 Imports ---
 import KratosMultiphysics.HDF5Application as KratosHDF5
 from ..utils import ParametersWrapper
+
+# --- STD Imports ---
+from importlib import import_module
+import abc
 
 
 def Prefix(pattern, model_part, time_format=''):
@@ -28,7 +32,12 @@ def Prefix(pattern, model_part, time_format=''):
     return prefix
 
 
-class ModelPartInput:
+class IOBase(metaclass = abc.ABCMeta):
+    """Dummy base class for enumerating subclasses."""
+    pass
+
+
+class ModelPartInput(IOBase):
     '''Reads a model part from a file.'''
 
     def __init__(self, settings):
@@ -47,7 +56,7 @@ class ModelPartInput:
             hdf5_file, prefix).ReadModelPart(model_part)
 
 
-class ModelPartOutput:
+class ModelPartOutput(IOBase):
     '''Writes a model part to a file.'''
 
     def __init__(self, settings):
@@ -66,7 +75,7 @@ class ModelPartOutput:
             hdf5_file, prefix).WriteModelPart(model_part)
 
 
-class PartitionedModelPartOutput:
+class PartitionedModelPartOutput(IOBase):
     '''Writes a partitioned model part to a file.'''
 
     def __init__(self, settings):
@@ -85,7 +94,7 @@ class PartitionedModelPartOutput:
             hdf5_file, prefix).WriteModelPart(model_part)
 
 
-class ProcessInfoOutput:
+class ProcessInfoOutput(IOBase):
     '''Writes a model part to a file.'''
 
     def __init__(self, settings):
@@ -103,7 +112,7 @@ class ProcessInfoOutput:
         KratosHDF5.WriteDataValueContainer(hdf5_file, prefix, model_part.ProcessInfo)
 
 
-class ProcessInfoInput:
+class ProcessInfoInput(IOBase):
     '''Reads a model part from a file.'''
 
     def __init__(self, settings):
@@ -121,7 +130,7 @@ class ProcessInfoInput:
         KratosHDF5.ReadDataValueContainer(hdf5_file, prefix, model_part.ProcessInfo)
 
 
-class VariableIO:
+class VariableIO(IOBase):
     '''Generates json settings for variable data IO.'''
 
     def __init__(self, settings):
@@ -363,7 +372,7 @@ class PrimalBossakInput(VariableIO):
             model_part)
 
 
-class MoveMesh:
+class MoveMesh(IOBase):
     '''Perform a mesh move operation on a model part.
 
     The primary use case is to set the mesh to the current configuration after
@@ -376,8 +385,12 @@ class MoveMesh:
         KratosMultiphysics.ImplicitSolvingStrategy(model_part, True).MoveMesh()
 
 
-# Collect objects defined in this script
-local_objects = locals().copy()
+def GetSubclasses(base_class: type) -> "list[type]":
+    """Recursively find all subclasses of a base class"""
+    subclasses = base_class.__subclasses__()
+    for subclass in base_class.__subclasses__():
+        subclasses += GetSubclasses(subclass)
+    return subclasses
 
 
 def Create(settings):
@@ -393,15 +406,19 @@ def Create(settings):
 
     # Find operation in the local definitions
     snake_to_camel = lambda string: "".join(part.title() for part in string.split('_'))
-    operation = local_objects.get(snake_to_camel(operation_type), None)
+    operation_type_camel = snake_to_camel(operation_type)
+    operation = next((io for io in GetSubclasses(IOBase) if io.__name__ == operation_type_camel), None)
 
     if operation == None: # the requested operation was not defined in this script
         if settings.Has('module_name'):
             module_name = settings['module_name']
             module = import_module(
                 'KratosMultiphysics.HDF5Application.core.' + module_name)
-            operation =  module.Create(settings)
-        raise ValueError(
-            '"operation_type" has invalid value "' + operation_type + '"')
+            instance =  module.Create(settings)
+        else:
+            raise ValueError(
+                '"operation_type" has invalid value "' + operation_type + '"')
     else:
-        return operation(settings)
+        instance = operation(settings)
+
+    return instance
