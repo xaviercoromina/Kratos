@@ -218,11 +218,15 @@ class VariableIOOperation(IOOperation):
     def __init__(self,
                  model_part: KratosMultiphysics.ModelPart,
                  file: KratosHDF5.HDF5File,
-                 io_parameters: KratosMultiphysics.Parameters):
+                 io_parameters: ParametersWrapper):
         super().__init__()
         self.__model_part = model_part
         self.__file = file
-        self.__io_parameters = io_parameters
+        self.__io_parameters = io_parameters.Get()
+        self.__io_parameters["prefix"].SetString(Prefix(
+            self.__io_parameters["prefix"].GetString(),
+            self.__model_part,
+            self.__io_parameters["time_format"].GetString()))
 
     @staticmethod
     def GetDefaultParameters() -> KratosMultiphysics.Parameters:
@@ -305,7 +309,7 @@ class ElementFlagValueOutput(VariableIOOperation):
 class ElementFlagValueInput(VariableIOOperation):
     '''Reads non-historical element flag values from a file.'''
 
-    def Excute(self) -> None:
+    def Execute(self) -> None:
         KratosHDF5.HDF5ElementFlagValueIO(
             self.io_parameters,
             self.file).ReadElementFlags(self.model_part.Elements,
@@ -319,7 +323,7 @@ class ElementFlagValueInput(VariableIOOperation):
 class ElementGaussPointOutput(VariableIOOperation):
     '''Write element integration point values to a file.'''
 
-    def Excecute(self) -> None:
+    def Execute(self) -> None:
         KratosHDF5.HDF5ElementGaussPointOutput(
             self.io_parameters,
             self.file).WriteElementGaussPointValues(self.model_part.Elements,
@@ -527,6 +531,7 @@ class PrimalBossakOutput(VariableIOOperation):
         def GetDefaultParameters() -> KratosMultiphysics.Parameters:
             return PrimalBossakOutput.GetDefaultParameters()
 
+        @property
         def parameters(self) -> KratosMultiphysics.Parameters:
             return self.__parameters
 
