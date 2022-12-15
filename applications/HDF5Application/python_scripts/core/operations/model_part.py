@@ -9,6 +9,7 @@ import KratosMultiphysics
 
 # --- HDF5 Imports ---
 import KratosMultiphysics.HDF5Application as KratosHDF5
+from ..utils import ParametersWrapper
 
 # --- STD Imports ---
 from importlib import import_module
@@ -31,10 +32,10 @@ def Prefix(pattern, model_part, time_format=''):
     return prefix
 
 
-class IOOperation(KratosMultiphysics.Operation, metaclass = abc.ABCMeta):
+class IOOperation(KratosMultiphysics.Operation): # IOOperation(KratosMultiphysics.Operation, metaclass = abc.ABCMeta) # <== conflicting metaclasses
     """ @brief Base class for HDF5 IO operations."""
 
-    @abc.abstractmethod
+    # @abc.abstractmethod # <== missing the ABCMeta metaclass
     def Execute(self) -> None:
         pass
 
@@ -50,7 +51,12 @@ class IOFactory(metaclass = abc.ABCMeta):
 
     def __init__(self, parameters: KratosMultiphysics.Parameters):
         parameters.AddMissingParameters(self.GetDefaultParameters())
-        self.__prefix_pattern = parameters["prefix"].GetString()
+        if isinstance(parameters, KratosMultiphysics.Parameters):
+            self.__prefix_pattern = parameters["prefix"].GetString()
+        elif isinstance(parameters, ParametersWrapper):
+            self.__prefix_pattern = parameters["prefix"]
+        else:
+            raise TypeError(f"Expecting KratosMultiphysics::Parameters as input parameters, but got {type(parameters)}")
 
     @abc.abstractmethod
     def __call__(self, model_part: KratosMultiphysics.ModelPart, file: KratosHDF5.HDF5File) -> IOOperation:
@@ -73,7 +79,7 @@ class ModelPartIOOperation(IOOperation):
                  file: KratosHDF5.HDF5File,
                  prefix_pattern: str,
                  time_format: str):
-        super().__init__(self)
+        super().__init__()
         self.__model_part = model_part
         self.__file = file
         self.__prefix = Prefix(prefix_pattern, model_part, time_format)
@@ -100,7 +106,7 @@ class ModelPartInput(ModelPartIOOperation):
     class Factory(IOFactory):
 
         def __init__(self, parameters: KratosMultiphysics.Parameters):
-            super().__init__(self, parameters)
+            super().__init__(parameters)
             self.__time_format = parameters["time_format"]
 
         def __call__(self, model_part: KratosMultiphysics.ModelPart, file: KratosHDF5.HDF5File) -> "ModelPartInput":
@@ -123,7 +129,7 @@ class ModelPartOutput(ModelPartIOOperation):
     class Factory(IOFactory):
 
         def __init__(self, parameters: KratosMultiphysics.Parameters):
-            super().__init__(self, parameters)
+            super().__init__(parameters)
             self.__time_format = parameters["time_format"]
 
         def __call__(self, model_part: KratosMultiphysics.ModelPart, file: KratosHDF5.HDF5File) -> "ModelPartOutput":
@@ -146,7 +152,7 @@ class PartitionedModelPartOutput(ModelPartIOOperation):
     class Factory(IOFactory):
 
         def __init__(self, parameters: KratosMultiphysics.Parameters):
-            super().__init__(self, parameters)
+            super().__init__(parameters)
             self.__time_format = parameters["time_format"]
 
         def __call__(self, model_part: KratosMultiphysics.ModelPart, file: KratosHDF5.HDF5File) -> "PartitionedModelPartOutput":
@@ -169,7 +175,7 @@ class ProcessInfoOutput(ModelPartIOOperation):
     class Factory(IOFactory):
 
         def __init__(self, parameters: KratosMultiphysics.Parameters):
-            super().__init__(self, parameters)
+            super().__init__(parameters)
             self.__time_format = parameters["time_format"]
 
         def __call__(self, model_part: KratosMultiphysics.ModelPart, file: KratosHDF5.HDF5File) -> "ProcessInfoOutput":
@@ -192,7 +198,7 @@ class ProcessInfoInput(ModelPartIOOperation):
     class Factory(IOFactory):
 
         def __init__(self, parameters: KratosMultiphysics.Parameters):
-            super().__init__(self, parameters)
+            super().__init__(parameters)
             self.__time_format = parameters["time_format"]
 
         def __call__(self, model_part: KratosMultiphysics.ModelPart, file: KratosHDF5.HDF5File) -> "ProcessInfoInput":
@@ -213,7 +219,7 @@ class VariableIOOperation(IOOperation):
                  model_part: KratosMultiphysics.ModelPart,
                  file: KratosHDF5.HDF5File,
                  io_parameters: KratosMultiphysics.Parameters):
-        super().__init__(self)
+        super().__init__()
         self.__model_part = model_part
         self.__file = file
         self.__io_parameters = io_parameters
@@ -241,7 +247,7 @@ class VariableIOOperation(IOOperation):
     class Factory(IOFactory):
 
         def __init__(self, parameters: KratosMultiphysics.Parameters):
-            super().__init__(self, parameters)
+            super().__init__(parameters)
             parameters.AddMissingParameters(self.GetDefaultParameters())
             self.__parameters = parameters
 
@@ -262,6 +268,11 @@ class ElementDataValueOutput(VariableIOOperation):
             self.io_parameters,
             self.file).WriteElementResults(self.model_part.Elements)
 
+    class Factory(VariableIOOperation.Factory):
+
+        def __call__(self, model_part: KratosMultiphysics.ModelPart, file: KratosHDF5.HDF5File) -> VariableIOOperation:
+            return ElementDataValueOutput(model_part, file, self.parameters)
+
 
 class ElementDataValueInput(VariableIOOperation):
     '''Reads non-historical element data values from a file.'''
@@ -272,6 +283,11 @@ class ElementDataValueInput(VariableIOOperation):
             self.file).ReadElementResults(self.model_part.Elements,
                                           self.model_part.GetCommunicator())
 
+    class Factory(VariableIOOperation.Factory):
+
+        def __call__(self, model_part: KratosMultiphysics.ModelPart, file: KratosHDF5.HDF5File) -> VariableIOOperation:
+            return ElementDataValueInput(model_part, file, self.parameters)
+
 class ElementFlagValueOutput(VariableIOOperation):
     '''Writes non-historical element flag values to a file.'''
 
@@ -279,6 +295,11 @@ class ElementFlagValueOutput(VariableIOOperation):
         KratosHDF5.HDF5ElementFlagValueIO(
             self.io_parameters,
             self.file).WriteElementFlags(self.model_part.Elements)
+
+    class Factory(VariableIOOperation.Factory):
+
+        def __call__(self, model_part: KratosMultiphysics.ModelPart, file: KratosHDF5.HDF5File) -> VariableIOOperation:
+            return ElementFlagValueOutput(model_part, file, self.parameters)
 
 
 class ElementFlagValueInput(VariableIOOperation):
@@ -290,6 +311,11 @@ class ElementFlagValueInput(VariableIOOperation):
             self.file).ReadElementFlags(self.model_part.Elements,
                                         self.model_part.GetCommunicator())
 
+    class Factory(VariableIOOperation.Factory):
+
+        def __call__(self, model_part: KratosMultiphysics.ModelPart, file: KratosHDF5.HDF5File) -> VariableIOOperation:
+            return ElementFlagValueInput(model_part, file, self.parameters)
+
 class ElementGaussPointOutput(VariableIOOperation):
     '''Write element integration point values to a file.'''
 
@@ -300,6 +326,11 @@ class ElementGaussPointOutput(VariableIOOperation):
                                                     self.model_part.GetCommunicator().GetDataCommunicator(),
                                                     self.model_part.ProcessInfo)
 
+    class Factory(VariableIOOperation.Factory):
+
+        def __call__(self, model_part: KratosMultiphysics.ModelPart, file: KratosHDF5.HDF5File) -> VariableIOOperation:
+            return ElementGaussPointOutput(model_part, file, self.parameters)
+
 class ConditionDataValueOutput(VariableIOOperation):
     '''Writes non-historical element data values to a file.'''
 
@@ -307,6 +338,11 @@ class ConditionDataValueOutput(VariableIOOperation):
         KratosHDF5.HDF5ConditionDataValueIO(
             self.io_parameters,
             self.file).WriteConditionResults(self.model_part.Conditions)
+
+    class Factory(VariableIOOperation.Factory):
+
+        def __call__(self, model_part: KratosMultiphysics.ModelPart, file: KratosHDF5.HDF5File) -> VariableIOOperation:
+            return ConditionDataValueOutput(model_part, file, self.parameters)
 
 
 class ConditionDataValueInput(VariableIOOperation):
@@ -318,6 +354,11 @@ class ConditionDataValueInput(VariableIOOperation):
             self.file).ReadConditionResults(self.model_part.Conditions,
                                             self.model_part.GetCommunicator())
 
+    class Factory(VariableIOOperation.Factory):
+
+        def __call__(self, model_part: KratosMultiphysics.ModelPart, file: KratosHDF5.HDF5File) -> VariableIOOperation:
+            return ConditionDataValueInput(model_part, file, self.parameters)
+
 class ConditionFlagValueOutput(VariableIOOperation):
     '''Writes non-historical element flag values to a file.'''
 
@@ -325,6 +366,11 @@ class ConditionFlagValueOutput(VariableIOOperation):
         KratosHDF5.HDF5ConditionFlagValueIO(
             self.io_parameters,
             self.file).WriteConditionFlags(self.model_part.Conditions)
+
+    class Factory(VariableIOOperation.Factory):
+
+        def __call__(self, model_part: KratosMultiphysics.ModelPart, file: KratosHDF5.HDF5File) -> VariableIOOperation:
+            return ConditionFlagValueOutput(model_part, file, self.parameters)
 
 
 class ConditionFlagValueInput(VariableIOOperation):
@@ -336,6 +382,11 @@ class ConditionFlagValueInput(VariableIOOperation):
             self.file).ReadConditionFlags(self.model_part.Conditions,
                                           self.model_part.GetCommunicator())
 
+    class Factory(VariableIOOperation.Factory):
+
+        def __call__(self, model_part: KratosMultiphysics.ModelPart, file: KratosHDF5.HDF5File) -> VariableIOOperation:
+            return ConditionFlagValueInput(model_part, file, self.parameters)
+
 class ConditionGaussPointOutput(VariableIOOperation):
     '''Write condition integration point values to a file.'''
 
@@ -346,6 +397,11 @@ class ConditionGaussPointOutput(VariableIOOperation):
                                                       self.model_part.GetCommunicator().GetDataCommunicator(),
                                                       self.model_part.ProcessInfo)
 
+    class Factory(VariableIOOperation.Factory):
+
+        def __call__(self, model_part: KratosMultiphysics.ModelPart, file: KratosHDF5.HDF5File) -> VariableIOOperation:
+            return ConditionGaussPointOutput(model_part, file, self.parameters)
+
 
 class NodalSolutionStepDataOutput(VariableIOOperation):
     '''Writes nodal solution step data to a file.'''
@@ -354,6 +410,11 @@ class NodalSolutionStepDataOutput(VariableIOOperation):
         KratosHDF5.HDF5NodalSolutionStepDataIO(
             self.io_parameters,
             self.file).WriteNodalResults(self.model_part, 0)
+
+    class Factory(VariableIOOperation.Factory):
+
+        def __call__(self, model_part: KratosMultiphysics.ModelPart, file: KratosHDF5.HDF5File) -> VariableIOOperation:
+            return NodalSolutionStepDataOutput(model_part, file, self.parameters)
 
 
 class NodalSolutionStepDataInput(VariableIOOperation):
@@ -364,6 +425,11 @@ class NodalSolutionStepDataInput(VariableIOOperation):
             self.io_parameters,
             self.file).ReadNodalResults(self.model_part, 0)
 
+    class Factory(VariableIOOperation.Factory):
+
+        def __call__(self, model_part: KratosMultiphysics.ModelPart, file: KratosHDF5.HDF5File) -> VariableIOOperation:
+            return NodalSolutionStepDataInput(model_part, file, self.parameters)
+
 
 class NodalDataValueOutput(VariableIOOperation):
     '''Writes non-historical nodal data values to a file.'''
@@ -372,6 +438,11 @@ class NodalDataValueOutput(VariableIOOperation):
         KratosHDF5.HDF5NodalDataValueIO(
             self.io_parameters,
             self.file).WriteNodalResults(self.model_part.Nodes)
+
+    class Factory(VariableIOOperation.Factory):
+
+        def __call__(self, model_part: KratosMultiphysics.ModelPart, file: KratosHDF5.HDF5File) -> VariableIOOperation:
+            return NodalDataValueOutput(model_part, file, self.parameters)
 
 
 class NodalDataValueInput(VariableIOOperation):
@@ -383,6 +454,11 @@ class NodalDataValueInput(VariableIOOperation):
             self.file).ReadNodalResults(self.model_part.Nodes,
                                         self.model_part.GetCommunicator())
 
+    class Factory(VariableIOOperation.Factory):
+
+        def __call__(self, model_part: KratosMultiphysics.ModelPart, file: KratosHDF5.HDF5File) -> VariableIOOperation:
+            return NodalDataValueInput(model_part, file, self.parameters)
+
 class NodalFlagValueOutput(VariableIOOperation):
     '''Writes non-historical nodal flag values to a file.'''
 
@@ -390,6 +466,11 @@ class NodalFlagValueOutput(VariableIOOperation):
         KratosHDF5.HDF5NodalFlagValueIO(
             self.io_parameters,
             self.file).WriteNodalFlags(self.model_part.Nodes)
+
+    class Factory(VariableIOOperation.Factory):
+
+        def __call__(self, model_part: KratosMultiphysics.ModelPart, file: KratosHDF5.HDF5File) -> VariableIOOperation:
+            return NodalFlagValueOutput(model_part, file, self.parameters)
 
 
 class NodalFlagValueInput(VariableIOOperation):
@@ -400,6 +481,11 @@ class NodalFlagValueInput(VariableIOOperation):
             self.io_parameters,
             self.file).ReadNodalFlags(self.model_part.Nodes,
                                       self.model_part.GetCommunicator())
+
+    class Factory(VariableIOOperation.Factory):
+
+        def __call__(self, model_part: KratosMultiphysics.ModelPart, file: KratosHDF5.HDF5File) -> VariableIOOperation:
+            return NodalFlagValueInput(model_part, file, self.parameters)
 
 
 class PrimalBossakOutput(VariableIOOperation):
@@ -431,11 +517,18 @@ class PrimalBossakOutput(VariableIOOperation):
 
         def __init__(self, parameters: KratosMultiphysics.Parameters):
             parameters.AddMissingParameters(self.GetDefaultParameters())
-            super().__init__(self, parameters)
+            super().__init__(parameters)
+            self.__parameters = parameters
+
+        def __call__(self, model_part: KratosMultiphysics.ModelPart, file: KratosHDF5.HDF5File) -> VariableIOOperation:
+            return PrimalBossakOutput(model_part, file, self.parameters)
 
         @staticmethod
         def GetDefaultParameters() -> KratosMultiphysics.Parameters:
             return PrimalBossakOutput.GetDefaultParameters()
+
+        def parameters(self) -> KratosMultiphysics.Parameters:
+            return self.__parameters
 
 
 class PrimalBossakInput(VariableIOOperation):
@@ -449,6 +542,11 @@ class PrimalBossakInput(VariableIOOperation):
             self.io_parameters,
             self.file).ReadNodalResults(self.model_part)
 
+    class Factory(VariableIOOperation.Factory):
+
+        def __call__(self, model_part: KratosMultiphysics.ModelPart, file: KratosHDF5.HDF5File) -> VariableIOOperation:
+            return PrimalBossakInput(model_part, file, self.parameters)
+
 
 class MoveMesh(ModelPartIOOperation):
     '''Perform a mesh move operation on a model part.
@@ -459,6 +557,11 @@ class MoveMesh(ModelPartIOOperation):
 
     def Execute(self) -> None:
         KratosMultiphysics.ImplicitSolvingStrategy(self.model_part, True).MoveMesh()
+
+    class Factory(IOFactory):
+
+        def __call__(self, model_part: KratosMultiphysics.ModelPart, file: KratosHDF5.HDF5File) -> "ProcessInfoInput":
+            return MoveMesh(model_part, file, self.prefix_pattern)
 
 
 def GetSubclasses(base_class: type) -> "list[type]":
@@ -497,4 +600,6 @@ def Create(settings):
     else:
         instance = factory(settings)
 
+    if instance == None:
+        raise RuntimeError(f"no instance created for operation: {operation_type_camel}")
     return instance
