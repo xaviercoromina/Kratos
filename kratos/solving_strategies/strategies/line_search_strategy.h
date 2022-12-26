@@ -308,12 +308,12 @@ public:
         Parameters default_parameters = Parameters(R"(
         {
             "name"                       : "line_search_strategy",
-            "max_line_search_iterations" : 25,
+            "max_line_search_iterations" : 50,
             "first_alpha_value"          : 0.5,
             "second_alpha_value"         : 1.0,
             "min_alpha"                  : 0.1,
             "max_alpha"                  : 2.0,
-            "line_search_tolerance"      : 0.01
+            "line_search_tolerance"      : 1e-3
         })");
 
         // Getting base class default parameters
@@ -497,7 +497,7 @@ protected:
             xprevious = x;
             BaseType::UpdateDatabase(A,aux,b,MoveMesh);
             if(rmin < mLineSearchTolerance*rmax) {
-                KRATOS_INFO("LineSearchStrategy") << "LINE SEARCH it " << it << " coeff = " << x <<  " r1 = " << r1 << " r2 = " << r2 << std::endl;
+                //KRATOS_INFO("LineSearchStrategy") << "LINE SEARCH it " << it << " coeff = " << x <<  " r1 = " << r1 << " r2 = " << r2 << std::endl;
                 converged = true;
                 TSparseSpace::Assign(aux,x, Dx);
                 break;
@@ -508,7 +508,7 @@ protected:
             pBuilderAndSolver->BuildRHS(pScheme, BaseType::GetModelPart(), b );
             double rf = TSparseSpace::Dot(aux,b);
 
-            KRATOS_INFO("LineSearchStrategy") << "LINE SEARCH it " << it << " coeff = " << x << " rf = " << rf << " r1 = " << r1 << " r2 = " << r2 << std::endl;
+            //KRATOS_INFO("LineSearchStrategy") << "LINE SEARCH it " << it << " coeff = " << x << " rf = " << rf << " r1 = " << r1 << " r2 = " << r2 << std::endl;
 
 
             if(std::abs(rf) < rmax*mLineSearchTolerance) {

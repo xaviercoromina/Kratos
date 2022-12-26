@@ -188,9 +188,9 @@ public:
             const TDataType float_size_residual = static_cast<TDataType>(size_residual);
             const TDataType absolute_norm = (mCurrentResidualNorm/float_size_residual);
 
-            KRATOS_INFO_IF("RESIDUAL CRITERION", this->GetEchoLevel() > 1 && rModelPart.GetCommunicator().MyPID() == 0) << " :: [ Initial residual norm = " << mInitialResidualNorm << "; Current residual norm =  " << mCurrentResidualNorm << "]" << std::endl;
-            KRATOS_INFO_IF("RESIDUAL CRITERION", this->GetEchoLevel() > 0 && rModelPart.GetCommunicator().MyPID() == 0) << " :: [ Obtained ratio = " << ratio << "; Expected ratio = " << mRatioTolerance << "; Absolute norm = " << absolute_norm << "; Expected norm =  " << mAlwaysConvergedNorm << "]" << std::endl;
-
+            KRATOS_INFO_IF("RESIDUAL CRITERION", this->GetEchoLevel() > 1 && rModelPart.GetCommunicator().MyPID() == 0) <<  " :: [ Initial residual norm = " << std::setprecision(4) << std::scientific << mInitialResidualNorm << "; Current residual norm =  " << mCurrentResidualNorm << "]" << std::endl;
+            // KRATOS_INFO_IF("RESIDUAL CRITERION", this->GetEchoLevel() > 0 && rModelPart.GetCommunicator().MyPID() == 0) <<  " :: [ Obtained ratio = " << std::setprecision(4) << std::scientific << ratio << "; Expected ratio = " << mRatioTolerance << "; Absolute norm = " << std::setprecision(4) << std::scientific << absolute_norm << "; Expected norm =  " << mAlwaysConvergedNorm << "]" << std::endl;
+            std::cout << std::setprecision(4) << std::scientific << "[ Obtained ratio = " << ratio << "; Absolute norm = " <<  absolute_norm << "]" << std::endl;
             rModelPart.GetProcessInfo()[CONVERGENCE_RATIO] = ratio;
             rModelPart.GetProcessInfo()[RESIDUAL_NORM] = absolute_norm;
 
