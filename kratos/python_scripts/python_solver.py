@@ -2,8 +2,6 @@
 import KratosMultiphysics
 from KratosMultiphysics.restart_utility import RestartUtility
 
-# Other imports
-import os
 
 class PythonSolver:
     """The base class for the Python Solvers in the applications
@@ -39,7 +37,10 @@ class PythonSolver:
         """This function returns the default-settings used by this class
         """
         return KratosMultiphysics.Parameters("""{
-            "echo_level" : 0
+            "echo_level" : 0,
+            "model_import_settings" : {
+                "input_type" : "use_input_model_part"
+            }
         }""")
 
     def ValidateSettings(self):
