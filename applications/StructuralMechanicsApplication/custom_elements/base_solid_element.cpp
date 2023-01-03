@@ -1800,7 +1800,7 @@ array_1d<double, 3> BaseSolidElement::GetBodyForce(
 
 void BaseSolidElement::CalculateAndAddKm(
     MatrixType& rLeftHandSideMatrix,
-    const Matrix& rB,
+    const BoundedMatrix<double, 6, 24>& rB,
     const ConstitutiveLaw::VoigtSizeMatrixType& rD,
     const double IntegrationWeight
     ) const

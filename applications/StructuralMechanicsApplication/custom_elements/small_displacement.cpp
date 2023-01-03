@@ -257,7 +257,7 @@ void SmallDisplacement::SetConstitutiveVariables(
 /***********************************************************************************/
 
 void SmallDisplacement::CalculateB(
-    Matrix& rB,
+    BoundedMatrix<double, 6, 24>& rB,
     const Matrix& rDN_DX,
     const GeometryType::IntegrationPointsArrayType& IntegrationPoints,
     const IndexType PointNumber

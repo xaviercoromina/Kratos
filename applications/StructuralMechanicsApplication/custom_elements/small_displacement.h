@@ -245,7 +245,7 @@ protected:
      * @param PointNumber The integration point considered
      */
     virtual void CalculateB(
-        Matrix& rB,
+        BoundedMatrix<double, 6, 24>& rB,
         const Matrix& rDN_DX,
         const GeometryType::IntegrationPointsArrayType& IntegrationPoints,
         const IndexType PointNumber

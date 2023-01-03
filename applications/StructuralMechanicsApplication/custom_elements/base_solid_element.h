@@ -72,7 +72,7 @@ protected:
     struct KinematicVariables
     {
         Vector  N;
-        Matrix  B;
+        BoundedMatrix<double, 6, 24>  B;
         double  detF;
         ConstitutiveLaw::DeformationGradientMatrixType  F;
         double  detJ0;
@@ -97,7 +97,7 @@ protected:
             detJ0 = 1.0;
 
             N.resize(NumberOfNodes, false);
-            B.resize(StrainSize, Dimension * NumberOfNodes, false);
+            // B.resize(StrainSize, Dimension * NumberOfNodes, false);
             F.resize(Dimension, Dimension, false);
             DN_DX.resize(Dimension, Dimension, false);
             J0.resize(Dimension, Dimension, false);
@@ -837,7 +837,7 @@ protected:
      */
     virtual void CalculateAndAddKm(
         MatrixType& rLeftHandSideMatrix,
-        const Matrix& B,
+        const BoundedMatrix<double, 6, 24>& B,
         const ConstitutiveLaw::VoigtSizeMatrixType& D,
         const double IntegrationWeight
         ) const;
