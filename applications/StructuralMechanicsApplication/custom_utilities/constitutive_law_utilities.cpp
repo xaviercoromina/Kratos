@@ -336,7 +336,7 @@ void ConstitutiveLawUtilities<TVoigtSize>::CalculateElasticMatrixPlaneStrain(Mat
 /***********************************************************************************/
 /***********************************************************************************/
 template<SizeType TVoigtSize>
-void ConstitutiveLawUtilities<TVoigtSize>::CalculateElasticMatrix(MatrixType& rC, ConstitutiveLaw::Parameters& rValues)
+void ConstitutiveLawUtilities<TVoigtSize>::CalculateElasticMatrix(BoundedMatrixVoigtType& rC, ConstitutiveLaw::Parameters& rValues)
 {
     const Properties& r_material_properties = rValues.GetMaterialProperties();
     const double E  = r_material_properties[YOUNG_MODULUS];
