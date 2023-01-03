@@ -125,7 +125,8 @@ void SmallDisplacement::CalculateAll(
         if ( rLeftHandSideMatrix.size1() != mat_size )
             rLeftHandSideMatrix.resize( mat_size, mat_size, false );
 
-        noalias( rLeftHandSideMatrix ) = ZeroMatrix( mat_size, mat_size ); //resetting LHS
+        // noalias( rLeftHandSideMatrix ) = ZeroMatrix( mat_size, mat_size ); //resetting LHS
+        rLeftHandSideMatrix.clear();
     }
 
     // Resizing as needed the RHS
@@ -133,7 +134,8 @@ void SmallDisplacement::CalculateAll(
         if ( rRightHandSideVector.size() != mat_size )
             rRightHandSideVector.resize( mat_size, false );
 
-        noalias(rRightHandSideVector) = ZeroVector( mat_size ); //resetting RHS
+        // noalias(rRightHandSideVector) = ZeroVector( mat_size ); //resetting RHS
+        rRightHandSideVector.clear();
     }
 
     // Reading integration points and local gradients
@@ -177,7 +179,7 @@ void SmallDisplacement::CalculateAll(
 
         if ( CalculateStiffnessMatrixFlag ) { // Calculation of the matrix is required
             // Contributions to stiffness matrix calculated on the reference config
-            this->CalculateAndAddKm( rLeftHandSideMatrix, this_kinematic_variables.B, this_constitutive_variables.D, int_to_reference_weight );
+            this->CalculateAndAddKm( rLeftHandSideMatrix, this_kinematic_variables.B, int_to_reference_weight*this_constitutive_variables.D, int_to_reference_weight );
         }
 
         if ( CalculateResidualVectorFlag ) { // Calculation of the matrix is required

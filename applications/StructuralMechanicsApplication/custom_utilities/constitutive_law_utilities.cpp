@@ -344,12 +344,14 @@ void ConstitutiveLawUtilities<TVoigtSize>::CalculateElasticMatrix(BoundedMatrixV
 
     if (rC.size1() != VoigtSize)
         rC.resize(VoigtSize, VoigtSize, false);
-    noalias(rC) = ZeroMatrix(VoigtSize, VoigtSize);
+    // noalias(rC) = ZeroMatrix(VoigtSize, VoigtSize);
+    rC.clear();
 
-    const double c1 = E / ((1.0 + NU) * (1.0 - 2.0 * NU));
+    const double aux = (1.0 - 2.0 * NU);
+    const double c1 = E / ((1.0 + NU) * aux);
     const double c2 = c1 * (1.0 - NU);
     const double c3 = c1 * NU;
-    const double c4 = c1 * 0.5 * (1.0 - 2.0 * NU);
+    const double c4 = c1 * 0.5 * aux;
 
     rC(0, 0) = c2;
     rC(0, 1) = c3;
