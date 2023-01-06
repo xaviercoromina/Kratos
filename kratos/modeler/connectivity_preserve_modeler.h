@@ -11,10 +11,7 @@
 //
 //
 
-#if !defined( KRATOS_CONNECTIVITY_PRESERVE_MODELER_H )
-#define  KRATOS_CONNECTIVITY_PRESERVE_MODELER_H
-
-
+#pragma once
 
 // System includes
 #include <string>
@@ -190,5 +187,3 @@ private:
 ///@}
 
 } // namespace Kratos.
-
-#endif //KRATOS_GENERATE_MODEL_PART_MODELER_INCLUDED  defined
