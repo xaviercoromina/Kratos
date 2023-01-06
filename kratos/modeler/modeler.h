@@ -11,10 +11,7 @@
 //
 //
 
-
-#if !defined(KRATOS_MODELER_H_INCLUDED )
-#define  KRATOS_MODELER_H_INCLUDED
-
+#pragma once
 
 // System includes
 
@@ -147,7 +144,6 @@ public:
     }
 
     ///@}
-
 protected:
     ///@name Protected members
     ///@{
@@ -185,7 +181,5 @@ KRATOS_API_EXTERN template class KRATOS_API(KRATOS_CORE) KratosComponents<Modele
 void KRATOS_API(KRATOS_CORE) AddKratosComponent(std::string const& Name, Modeler const& ThisComponent);
 
 }  // namespace Kratos.
-
-#endif // KRATOS_MODELER_H_INCLUDED  defined
 
 
