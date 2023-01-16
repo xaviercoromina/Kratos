@@ -45,6 +45,7 @@
 #include "custom_elements/fic.h"
 #include "custom_elements/symbolic_stokes.h"
 #include "custom_elements/weakly_compressible_navier_stokes.h"
+#include "custom_elements/weakly_compressible_navier_stokes_volumetric_strain.h"
 #include "custom_elements/embedded_fluid_element.h"
 #include "custom_elements/embedded_fluid_element_discontinuous.h"
 //#include "custom_elements/dynamic_vms.h"
@@ -86,6 +87,7 @@
 #include "custom_utilities/two_fluid_navier_stokes_data.h"
 #include "custom_utilities/two_fluid_navier_stokes_alpha_method_data.h"
 #include "custom_utilities/weakly_compressible_navier_stokes_data.h"
+#include "custom_elements/data_containers/weakly_compressible/weakly_compressible_navier_stokes_volumetric_strain_data.h"
 
 #include "custom_constitutive/bingham_3d_law.h"
 #include "custom_constitutive/euler_2d_law.h"
@@ -310,6 +312,8 @@ private:
     const SymbolicStokes< SymbolicStokesData<3,8> > mSymbolicStokes3D8N;
     const WeaklyCompressibleNavierStokes< WeaklyCompressibleNavierStokesData<2,3> > mWeaklyCompressibleNavierStokes2D3N;
     const WeaklyCompressibleNavierStokes< WeaklyCompressibleNavierStokesData<3,4> > mWeaklyCompressibleNavierStokes3D4N;
+    const WeaklyCompressibleNavierStokesVolumetricStrain< WeaklyCompressibleNavierStokesVolumetricStrainData<2,3> > mWeaklyCompressibleNavierStokesVolumetricStrain2D3N;
+    const WeaklyCompressibleNavierStokesVolumetricStrain< WeaklyCompressibleNavierStokesVolumetricStrainData<3,4> > mWeaklyCompressibleNavierStokesVolumetricStrain3D4N;
     const EmbeddedFluidElement< WeaklyCompressibleNavierStokes< WeaklyCompressibleNavierStokesData<2,3> > > mEmbeddedWeaklyCompressibleNavierStokes2D3N;
     const EmbeddedFluidElement< WeaklyCompressibleNavierStokes< WeaklyCompressibleNavierStokesData<3,4> > > mEmbeddedWeaklyCompressibleNavierStokes3D4N;
     const EmbeddedFluidElementDiscontinuous< WeaklyCompressibleNavierStokes< WeaklyCompressibleNavierStokesData<2,3> > > mEmbeddedWeaklyCompressibleNavierStokesDiscontinuous2D3N;

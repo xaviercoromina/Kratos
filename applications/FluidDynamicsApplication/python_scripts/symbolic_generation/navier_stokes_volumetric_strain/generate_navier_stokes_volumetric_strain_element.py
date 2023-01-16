@@ -95,9 +95,13 @@ for dim, nnodes in zip(dim_vector, nnodes_vector):
     c_nodes = DefineVector('c',nnodes)     # Nodal sound speed
     rho_nodes = DefineVector('rho',nnodes) # Nodal density
 
-    k = (k_nodes.transpose()*N)[0]     # Bulk modulus Gauss pt. interpolation
-    c = (c_nodes.transpose()*N)[0]     # Sound speed Gauss pt. interpolation
-    rho = (rho_nodes.transpose()*N)[0] # Density Gauss pt. interpolation
+    k = sympy.Symbol('k', positive = True) # Gauss pt. bulk modulus
+    mu = sympy.Symbol('mu', positive = True) # Gauss pt. dynamic viscosity
+    rho =sympy.Symbol('rho', positive = True) # Gauss pt. density
+
+    # k = (k_nodes.transpose()*N)[0]     # Bulk modulus Gauss pt. interpolation
+    # c = (c_nodes.transpose()*N)[0]     # Sound speed Gauss pt. interpolation
+    # rho = (rho_nodes.transpose()*N)[0] # Density Gauss pt. interpolation
 
     ## Test functions definition
     w = DefineMatrix('w',nnodes,dim)            # Velocity field test function
@@ -157,8 +161,6 @@ for dim, nnodes in zip(dim_vector, nnodes_vector):
     grad_w = DfjDxi(DN,w)
     grad_q = DfjDxi(DN,q)
     grad_v = DfjDxi(DN,v)
-    grad_k = DfjDxi(DN,k_nodes)
-    grad_rho = DfjDxi(DN,rho_nodes)
     grad_eps_vol = DfjDxi(DN,eps_vol)
 
     div_w = div(DN,w)
@@ -171,7 +173,6 @@ for dim, nnodes in zip(dim_vector, nnodes_vector):
 
     # Convective term definition
     convective_term_gauss = vconv_gauss.transpose()*grad_v
-    rho_convective_term_gauss = vconv_gauss.transpose()*grad_rho
 
     ## Compute galerkin functional
     # Navier-Stokes functional
@@ -180,9 +181,8 @@ for dim, nnodes in zip(dim_vector, nnodes_vector):
     rv_galerkin -= rho*w_gauss.transpose()*convective_term_gauss.transpose()
     rv_galerkin -= grad_w_voigt.transpose()*stress 
     rv_galerkin += div_w*k*eps_vol_gauss
-    rv_galerkin -= rho*q_gauss*div_v
-    rv_galerkin -= (k/(c*c))*q_gauss*accel_eps_vol_gauss
-    rv_galerkin -= q_gauss*rho_convective_term_gauss
+    rv_galerkin += q_gauss*accel_eps_vol_gauss
+    rv_galerkin -= q_gauss*div_v
 
     ##  Stabilization functional terms
     # Momentum conservation residual
@@ -190,21 +190,20 @@ for dim, nnodes in zip(dim_vector, nnodes_vector):
     mom_residual = rho*f_gauss
     mom_residual -= rho*accel_gauss 
     mom_residual -= rho*convective_term_gauss.transpose()
-    mom_residual -= grad_k*eps_vol_gauss + k*grad_eps_vol
+    mom_residual += k*grad_eps_vol 
 
     # Mass conservation residual
-    mass_residual = -rho*div_v
-    mass_residual -= (k/(c*c))*accel_eps_vol_gauss
-    mass_residual -= rho_convective_term_gauss
+    mass_residual = accel_eps_vol_gauss
+    mass_residual -= div_v
 
     vel_subscale = tau1*mom_residual
     eps_subscale = tau2*mass_residual
 
     # Compute the ASGS stabilization terms using the momentum and mass conservation residuals above
-    rv_stab = rho*grad_q.transpose()*vel_subscale
-    rv_stab += rho*div_vconv*w_gauss.transpose()*vel_subscale
+    rv_stab = rho*div_vconv*w_gauss.transpose()*vel_subscale
     rv_stab += rho*vconv_gauss.transpose()*grad_w*vel_subscale
     rv_stab += div_w*k*eps_subscale
+    rv_stab += grad_q.transpose()*vel_subscale
 
     ## Add the stabilization terms to the original residual terms
     if (ASGS_stabilization):

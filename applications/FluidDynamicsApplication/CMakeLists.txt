@@ -60,6 +60,7 @@ set( KRATOS_FLUID_DYNAMICS_APPLICATION_CORE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/custom_elements/data_containers/qs_vms/qs_vms_derivative_utilities.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/custom_elements/data_containers/qs_vms/qs_vms_residual_derivatives.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/custom_elements/weakly_compressible_navier_stokes.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/custom_elements/weakly_compressible_navier_stokes_volumetric_strain.cpp
 
   # conditions
   ${CMAKE_CURRENT_SOURCE_DIR}/custom_conditions/wall_condition.cpp

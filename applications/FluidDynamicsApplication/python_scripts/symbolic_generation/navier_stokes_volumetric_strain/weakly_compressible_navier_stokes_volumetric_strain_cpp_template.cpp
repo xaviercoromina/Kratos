@@ -18,7 +18,7 @@
 
 // Application includes
 #include "weakly_compressible_navier_stokes_volumetric_strain.h"
-#include "custom_utilities/weakly_compressible_navier_stokes_volumetric_strain_data.h"
+#include "data_containers/weakly_compressible/weakly_compressible_navier_stokes_volumetric_strain_data.h"
 
 namespace Kratos
 {
@@ -237,14 +237,13 @@ void WeaklyCompressibleNavierStokesVolumetricStrain< WeaklyCompressibleNavierSto
     WeaklyCompressibleNavierStokesVolumetricStrainData<2,3>& rData,
     MatrixType& rLHS)
 {
-    const array_1d<double,3>& rho = rData.Density;
+    const double rho = rData.Density;
+    const double k = rData.BulkModulus;
     const double mu = rData.EffectiveViscosity;
 
-    const double h = rData.ElementSize;
-    const array_1d<double,3>& c = rData.SoundVelocity;
-
-    const double dt = rData.DeltaTime;
     const double bdf0 = rData.bdf0;
+    const double dt = rData.DeltaTime;
+    const double h = rData.ElementSize;
 
     const double dyn_tau = rData.DynamicTau;
 
@@ -275,14 +274,13 @@ void WeaklyCompressibleNavierStokesVolumetricStrain<WeaklyCompressibleNavierStok
     WeaklyCompressibleNavierStokesVolumetricStrainData<3,4>& rData,
     MatrixType& rLHS)
 {
-    const array_1d<double,4>& rho = rData.Density;
+    const double rho = rData.Density;
+    const double k = rData.BulkModulus;
     const double mu = rData.EffectiveViscosity;
 
-    const double h = rData.ElementSize;
-    const array_1d<double,4>& c = rData.SoundVelocity;
-
-    const double dt = rData.DeltaTime;
     const double bdf0 = rData.bdf0;
+    const double dt = rData.DeltaTime;
+    const double h = rData.ElementSize;
 
     const double dyn_tau = rData.DynamicTau;
 
@@ -313,17 +311,15 @@ void WeaklyCompressibleNavierStokesVolumetricStrain<WeaklyCompressibleNavierStok
     WeaklyCompressibleNavierStokesVolumetricStrainData<2,3>& rData,
     VectorType& rRHS)
 {
-    const array_1d<double,3>& rho = rData.Density;
+    const double rho = rData.Density;
+    const double k = rData.BulkModulus;
     const double mu = rData.EffectiveViscosity;
 
-    const double h = rData.ElementSize;
-    const array_1d<double,3>& k = rData.BulkModulus;
-    const array_1d<double,3>& c = rData.SoundVelocity;
-
-    const double dt = rData.DeltaTime;
     const double bdf0 = rData.bdf0;
     const double bdf1 = rData.bdf1;
     const double bdf2 = rData.bdf2;
+    const double dt = rData.DeltaTime;
+    const double h = rData.ElementSize;
 
     const double dyn_tau = rData.DynamicTau;
 
@@ -333,9 +329,9 @@ void WeaklyCompressibleNavierStokesVolumetricStrain<WeaklyCompressibleNavierStok
     const BoundedMatrix<double,2,3>& vmesh = rData.MeshVelocity;
     const BoundedMatrix<double,2,3> vconv = v - vmesh;
     const BoundedMatrix<double,2,3>& f = rData.BodyForce;
-    const array_1d<double,3>& eps_vol = rData.VolumetricStrain;
-    const array_1d<double,3>& eps_vol_n = rData.VolumetricStrain_OldStep1;
-    const array_1d<double,3>& eps_vol_nn = rData.VolumetricStrain_OldStep2;
+    const array_1d<double,3>& eps_vol = rData.Pressure;
+    const array_1d<double,3>& eps_vol_n = rData.Pressure_OldStep1;
+    const array_1d<double,3>& eps_vol_nn = rData.Pressure_OldStep2;
     const array_1d<double,3>& stress = rData.ShearStress;
 
     // Get shape function values
@@ -359,17 +355,15 @@ void WeaklyCompressibleNavierStokesVolumetricStrain<WeaklyCompressibleNavierStok
     WeaklyCompressibleNavierStokesVolumetricStrainData<3,4>& rData,
     VectorType& rRHS)
 {
-    const array_1d<double,4>& rho = rData.Density;
+    const double rho = rData.Density;
+    const double k = rData.BulkModulus;
     const double mu = rData.EffectiveViscosity;
 
-    const double h = rData.ElementSize;
-    const array_1d<double,4>& k = rData.BulkModulus;
-    const array_1d<double,4>& c = rData.SoundVelocity;
-
-    const double dt = rData.DeltaTime;
     const double bdf0 = rData.bdf0;
     const double bdf1 = rData.bdf1;
     const double bdf2 = rData.bdf2;
+    const double dt = rData.DeltaTime;
+    const double h = rData.ElementSize;
 
     const double dyn_tau = rData.DynamicTau;
 
@@ -379,9 +373,9 @@ void WeaklyCompressibleNavierStokesVolumetricStrain<WeaklyCompressibleNavierStok
     const BoundedMatrix<double,3,4>& vmesh = rData.MeshVelocity;
     const BoundedMatrix<double,3,4> vconv = v - vmesh;
     const BoundedMatrix<double,3,4>& f = rData.BodyForce;
-    const array_1d<double,4>& eps_vol = rData.VolumetricStrain;
-    const array_1d<double,4>& eps_vol_n = rData.VolumetricStrain_OldStep1;
-    const array_1d<double,4>& eps_vol_nn = rData.VolumetricStrain_OldStep2;
+    const array_1d<double,4>& eps_vol = rData.Pressure;
+    const array_1d<double,4>& eps_vol_n = rData.Pressure_OldStep1;
+    const array_1d<double,4>& eps_vol_nn = rData.Pressure_OldStep2;
     const array_1d<double,6>& stress = rData.ShearStress;
 
     // Get shape function values

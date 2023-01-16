@@ -71,6 +71,8 @@ KratosFluidDynamicsApplication::KratosFluidDynamicsApplication():
     mSymbolicStokes3D8N(0, Element::GeometryType::Pointer(new Hexahedra3D8<Node<3> >(Element::GeometryType::PointsArrayType(8)))),
     mWeaklyCompressibleNavierStokes2D3N(0, Element::GeometryType::Pointer(new Triangle2D3<Node<3> >(Element::GeometryType::PointsArrayType(3)))),
     mWeaklyCompressibleNavierStokes3D4N(0, Element::GeometryType::Pointer(new Tetrahedra3D4<Node<3> >(Element::GeometryType::PointsArrayType(4)))),
+    mWeaklyCompressibleNavierStokesVolumetricStrain2D3N(0, Element::GeometryType::Pointer(new Triangle2D3<Node<3> >(Element::GeometryType::PointsArrayType(3)))),
+    mWeaklyCompressibleNavierStokesVolumetricStrain3D4N(0, Element::GeometryType::Pointer(new Tetrahedra3D4<Node<3> >(Element::GeometryType::PointsArrayType(4)))),
     mEmbeddedWeaklyCompressibleNavierStokes2D3N(0, Element::GeometryType::Pointer(new Triangle2D3<Node<3> >(Element::GeometryType::PointsArrayType(3)))),
     mEmbeddedWeaklyCompressibleNavierStokes3D4N(0, Element::GeometryType::Pointer(new Tetrahedra3D4<Node<3> >(Element::GeometryType::PointsArrayType(4)))),
     mEmbeddedWeaklyCompressibleNavierStokesDiscontinuous2D3N(0, Element::GeometryType::Pointer(new Triangle2D3<Node<3> >(Element::GeometryType::PointsArrayType(3)))),
@@ -303,6 +305,8 @@ void KratosFluidDynamicsApplication::Register() {
     KRATOS_REGISTER_ELEMENT("SymbolicStokes3D8N",mSymbolicStokes3D8N);
     KRATOS_REGISTER_ELEMENT("WeaklyCompressibleNavierStokes2D3N",mWeaklyCompressibleNavierStokes2D3N);
     KRATOS_REGISTER_ELEMENT("WeaklyCompressibleNavierStokes3D4N",mWeaklyCompressibleNavierStokes3D4N);
+    KRATOS_REGISTER_ELEMENT("WeaklyCompressibleNavierStokesVolumetricStrain2D3N",mWeaklyCompressibleNavierStokesVolumetricStrain2D3N);
+    KRATOS_REGISTER_ELEMENT("WeaklyCompressibleNavierStokesVolumetricStrain3D4N",mWeaklyCompressibleNavierStokesVolumetricStrain3D4N);
     KRATOS_REGISTER_ELEMENT("EmbeddedWeaklyCompressibleNavierStokes2D3N",mEmbeddedWeaklyCompressibleNavierStokes2D3N);
     KRATOS_REGISTER_ELEMENT("EmbeddedWeaklyCompressibleNavierStokes3D4N",mEmbeddedWeaklyCompressibleNavierStokes3D4N);
     KRATOS_REGISTER_ELEMENT("EmbeddedWeaklyCompressibleNavierStokesDiscontinuous2D3N",mEmbeddedWeaklyCompressibleNavierStokesDiscontinuous2D3N);
