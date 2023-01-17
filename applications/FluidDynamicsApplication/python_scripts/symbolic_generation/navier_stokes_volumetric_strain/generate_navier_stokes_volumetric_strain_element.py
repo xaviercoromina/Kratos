@@ -23,7 +23,6 @@ from KratosMultiphysics.sympy_fe_utilities import *
 mode = "c"
 do_simplifications = False
 dim_to_compute = "Both"             # Spatial dimensions to compute. Options:  "2D","3D","Both"
-divide_by_rho = True                # Divide the mass conservation equation by rho
 ASGS_stabilization = True           # Consider ASGS stabilization terms
 formulation = "WeaklyCompressibleNavierStokes" # Element type. Options: "WeaklyCompressibleNavierStokes", "Stokes"
 
@@ -40,7 +39,6 @@ info_msg += "Element generator settings:\n"
 info_msg += "\t - Element type: " + formulation + "\n"
 info_msg += "\t - Dimension: " + dim_to_compute + "\n"
 info_msg += "\t - ASGS stabilization: " + str(ASGS_stabilization) + "\n"
-info_msg += "\t - Divide mass conservation by rho: " + str(divide_by_rho) + "\n"
 print(info_msg)
 
 #TODO: DO ALL ELEMENT TYPES FOR N-S TOO
@@ -99,10 +97,6 @@ for dim, nnodes in zip(dim_vector, nnodes_vector):
     mu = sympy.Symbol('mu', positive = True) # Gauss pt. dynamic viscosity
     rho =sympy.Symbol('rho', positive = True) # Gauss pt. density
 
-    # k = (k_nodes.transpose()*N)[0]     # Bulk modulus Gauss pt. interpolation
-    # c = (c_nodes.transpose()*N)[0]     # Sound speed Gauss pt. interpolation
-    # rho = (rho_nodes.transpose()*N)[0] # Density Gauss pt. interpolation
-
     ## Test functions definition
     w = DefineMatrix('w',nnodes,dim)            # Velocity field test function
     q = DefineVector('q',nnodes)                # Pressure field test function
@@ -116,10 +110,10 @@ for dim, nnodes in zip(dim_vector, nnodes_vector):
     ## Stress vector definition
     stress = DefineVector('stress',strain_size)
 
-    ## Other simbols definition 
+    ## Other simbols definition
     h = sympy.Symbol('h', positive = True)             # Element size
     dt  = sympy.Symbol('dt', positive = True)          # Time increment
-    dyn_tau = sympy.Symbol('dyn_tau', positive = True) # Stabilization dynamic tau constant 
+    dyn_tau = sympy.Symbol('dyn_tau', positive = True) # Stabilization dynamic tau constant
     stab_c1 = sympy.Symbol('stab_c1', positive = True) # Stabilization constant 1
     stab_c2 = sympy.Symbol('stab_c2', positive = True) # Stabilization constant 2
 
@@ -151,7 +145,8 @@ for dim, nnodes in zip(dim_vector, nnodes_vector):
         stab_norm_a += vconv_gauss[i]**2
     stab_norm_a = sympy.sqrt(stab_norm_a)
     tau1 = 1.0/((rho*dyn_tau)/dt + (stab_c2*rho*stab_norm_a)/h + (stab_c1*mu)/(h*h)) # Stabilization parameter 1
-    tau2 = mu + (stab_c2*rho*stab_norm_a*h)/stab_c1                                  # Stabilization parameter 2
+    # tau2 = (mu + (stab_c2*rho*stab_norm_a*h)/stab_c1)                                # Stabilization parameter 2
+    tau2 = 0.0 #FIXME: Design a tau for the volumetric strain
 
     ## Compute the accelerations at Gauss points
     accel_gauss = (bdf0*v + bdf1*vn + bdf2*vnn).transpose()*N
@@ -176,24 +171,24 @@ for dim, nnodes in zip(dim_vector, nnodes_vector):
 
     ## Compute galerkin functional
     # Navier-Stokes functional
-    rv_galerkin = rho*w_gauss.transpose()*f_gauss 
-    rv_galerkin -= rho*w_gauss.transpose()*accel_gauss 
+    rv_galerkin = rho*w_gauss.transpose()*f_gauss
+    rv_galerkin -= rho*w_gauss.transpose()*accel_gauss
     rv_galerkin -= rho*w_gauss.transpose()*convective_term_gauss.transpose()
-    rv_galerkin -= grad_w_voigt.transpose()*stress 
-    rv_galerkin += div_w*k*eps_vol_gauss
+    rv_galerkin -= grad_w_voigt.transpose()*stress
+    rv_galerkin -= div_w*k*eps_vol_gauss
     rv_galerkin -= q_gauss*accel_eps_vol_gauss
-    rv_galerkin -= q_gauss*div_v
+    rv_galerkin += q_gauss*div_v
 
     ##  Stabilization functional terms
     # Momentum conservation residual
     # Note that the viscous stress term is dropped since linear elements are used
     mom_residual = rho*f_gauss
-    mom_residual -= rho*accel_gauss 
+    mom_residual -= rho*accel_gauss
     mom_residual -= rho*convective_term_gauss.transpose()
-    mom_residual += k*grad_eps_vol 
+    mom_residual += k*grad_eps_vol
 
     # Mass conservation residual
-    mass_residual = -accel_eps_vol_gauss
+    mass_residual = accel_eps_vol_gauss
     mass_residual -= div_v
 
     vel_subscale = tau1*mom_residual
@@ -202,11 +197,11 @@ for dim, nnodes in zip(dim_vector, nnodes_vector):
     # Compute the ASGS stabilization terms using the momentum and mass conservation residuals above
     rv_stab = rho*div_vconv*w_gauss.transpose()*vel_subscale
     rv_stab += rho*vconv_gauss.transpose()*grad_w*vel_subscale
-    rv_stab += div_w*k*eps_subscale
-    rv_stab += grad_q.transpose()*vel_subscale
+    rv_stab -= div_w*k*eps_subscale
+    rv_stab -= grad_q.transpose()*vel_subscale
 
     ## Add the stabilization terms to the original residual terms
-    if (ASGS_stabilization):
+    if ASGS_stabilization:
         rv = rv_galerkin + rv_stab
     else:
         rv = rv_galerkin
