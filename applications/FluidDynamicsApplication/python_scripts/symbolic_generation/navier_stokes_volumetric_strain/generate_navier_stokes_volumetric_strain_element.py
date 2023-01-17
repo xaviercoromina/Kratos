@@ -181,7 +181,7 @@ for dim, nnodes in zip(dim_vector, nnodes_vector):
     rv_galerkin -= rho*w_gauss.transpose()*convective_term_gauss.transpose()
     rv_galerkin -= grad_w_voigt.transpose()*stress 
     rv_galerkin += div_w*k*eps_vol_gauss
-    rv_galerkin += q_gauss*accel_eps_vol_gauss
+    rv_galerkin -= q_gauss*accel_eps_vol_gauss
     rv_galerkin -= q_gauss*div_v
 
     ##  Stabilization functional terms
@@ -193,7 +193,7 @@ for dim, nnodes in zip(dim_vector, nnodes_vector):
     mom_residual += k*grad_eps_vol 
 
     # Mass conservation residual
-    mass_residual = accel_eps_vol_gauss
+    mass_residual = -accel_eps_vol_gauss
     mass_residual -= div_v
 
     vel_subscale = tau1*mom_residual

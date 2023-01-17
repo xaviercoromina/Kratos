@@ -36,6 +36,8 @@ class StabilizedFormulation(object):
                 self._SetUpWeaklyCompressible(settings)
             elif formulation == "weakly_compressible":
                 self._SetUpWeaklyCompressible(settings)
+            elif formulation == "weakly_compressible_volumetric_strain":
+                self._SetUpWeaklyCompressibleVolumetricStrain(settings)
         else:
             print(settings)
             raise RuntimeError("Argument \'element_type\' not found in stabilization settings.")
@@ -166,6 +168,24 @@ class StabilizedFormulation(object):
         self.process_data[KratosMultiphysics.DYNAMIC_TAU] = settings["dynamic_tau"].GetDouble()
         #TODO: Remove SOUND_VELOCITY from ProcessInfo. Should be obtained from the properties.
         self.process_data[KratosMultiphysics.SOUND_VELOCITY] = settings["sound_velocity"].GetDouble()
+
+    def _SetUpWeaklyCompressibleVolumetricStrain(self,settings):
+        default_settings = KratosMultiphysics.Parameters(r"""{
+            "element_type": "weakly_compressible_volumetric_strain",
+            "dynamic_tau": 1.0
+        }""")
+        settings.ValidateAndAssignDefaults(default_settings)
+
+        self.element_name = "WeaklyCompressibleNavierStokesVolumetricStrain"
+        self.condition_name = "NavierStokesWallCondition"
+        self.element_integrates_in_time = True
+
+        # set the nodal material properties flag
+        self.element_has_nodal_properties = True
+        self.historical_nodal_properties_variables_list = []
+        self.non_historical_nodal_properties_variables_list = []
+
+        self.process_data[KratosMultiphysics.DYNAMIC_TAU] = settings["dynamic_tau"].GetDouble()
 
 def CreateSolver(model, custom_settings):
     return NavierStokesSolverMonolithic(model, custom_settings)

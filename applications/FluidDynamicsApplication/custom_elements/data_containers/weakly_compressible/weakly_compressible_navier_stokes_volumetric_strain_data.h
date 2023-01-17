@@ -85,9 +85,12 @@ void Initialize(const Element& rElement, const ProcessInfo& rProcessInfo) overri
     this->FillFromHistoricalNodalData(Velocity_OldStep2,VELOCITY,r_geometry,2);
     this->FillFromHistoricalNodalData(MeshVelocity,MESH_VELOCITY,r_geometry);
     this->FillFromHistoricalNodalData(BodyForce,BODY_FORCE,r_geometry);
-    this->FillFromHistoricalNodalData(Pressure, VOLUMETRIC_STRAIN, r_geometry);
-    this->FillFromHistoricalNodalData(Pressure_OldStep1,VOLUMETRIC_STRAIN,r_geometry,1);
-    this->FillFromHistoricalNodalData(Pressure_OldStep2,VOLUMETRIC_STRAIN,r_geometry,2);
+    this->FillFromHistoricalNodalData(Pressure, PRESSURE, r_geometry);
+    this->FillFromHistoricalNodalData(Pressure_OldStep1,PRESSURE,r_geometry,1);
+    this->FillFromHistoricalNodalData(Pressure_OldStep2,PRESSURE,r_geometry,2);
+    // this->FillFromHistoricalNodalData(Pressure, VOLUMETRIC_STRAIN, r_geometry);
+    // this->FillFromHistoricalNodalData(Pressure_OldStep1,VOLUMETRIC_STRAIN,r_geometry,1);
+    // this->FillFromHistoricalNodalData(Pressure_OldStep2,VOLUMETRIC_STRAIN,r_geometry,2);
     this->FillFromProperties(Density, DENSITY, r_properties);    // TODO: This needs to be retrieved from the EffectiveViscosity of the constitutive law
     this->FillFromProperties(BulkModulus, BULK_MODULUS, r_properties);    // TODO: This needs to be retrieved from the EffectiveViscosity of the constitutive law
     this->FillFromProperties(DynamicViscosity,DYNAMIC_VISCOSITY,r_properties); //TODO: This needs to be retrieved from the EffectiveViscosity of the constitutive law
@@ -123,7 +126,8 @@ static int Check(const Element& rElement, const ProcessInfo& rProcessInfo)
         KRATOS_CHECK_VARIABLE_IN_NODAL_DATA(VELOCITY,r_geometry[i]);
         KRATOS_CHECK_VARIABLE_IN_NODAL_DATA(MESH_VELOCITY,r_geometry[i]);
         KRATOS_CHECK_VARIABLE_IN_NODAL_DATA(BODY_FORCE,r_geometry[i]);
-        KRATOS_CHECK_VARIABLE_IN_NODAL_DATA(VOLUMETRIC_STRAIN,r_geometry[i]);
+        KRATOS_CHECK_VARIABLE_IN_NODAL_DATA(PRESSURE,r_geometry[i]);
+        // KRATOS_CHECK_VARIABLE_IN_NODAL_DATA(VOLUMETRIC_STRAIN,r_geometry[i]);
     }
 
     return 0;
