@@ -6,6 +6,7 @@ else(${USE_TRIANGLE_NONFREE_TPL} MATCHES ON )
     include_directories(${KRATOS_SOURCE_DIR}/external_libraries/delaunator-cpp/include)
 endif(${USE_TRIANGLE_NONFREE_TPL} MATCHES ON )
 include_directories( ${KRATOS_SOURCE_DIR}/external_libraries/tinyexpr )
+include_directories( ${KRATOS_SOURCE_DIR}/external_libraries/CppBenchmark )
 
 SET(ListFolders sources conditions constraints containers elements factories geometries includes integration linear_solvers mappers modeler modified_shape_functions operations processes response_functions solving_strategies spaces spatial_containers utilities)
 
@@ -78,8 +79,8 @@ target_compile_definitions(KratosVersion PRIVATE
 ## Define library KratosCore to be included in all of the others
 add_library(KratosCore SHARED ${KRATOS_CORE_SOURCES} ${KRATOS_CORE_TESTING_ENGINE_SOURCES} ${KRATOS_CORE_INPUT_OUTPUT_SOURCES} ${KRATOS_TEST_SOURCES} ${KRATOS_TPL_SOURCES} $<TARGET_OBJECTS:KratosVersion>)
 
-# Set the shared external libraries for kratos (gidpost, tyniexpr, json, etc...)
-set(KRATOS_EXTERNAL_LIBRARIES gidpost tinyexpr clipper)
+# Set the shared external libraries for kratos (gidpost, tinyexpr, clipper, CppBenchmark, etc...)
+set(KRATOS_EXTERNAL_LIBRARIES gidpost tinyexpr clipper CppBenchmark)
 
 # Set the TPL libraries if enabled (triangle, tetgen, etc...)
 if(${USE_TRIANGLE_NONFREE_TPL} MATCHES ON )
