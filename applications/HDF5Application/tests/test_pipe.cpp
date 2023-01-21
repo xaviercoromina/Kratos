@@ -157,7 +157,7 @@ KRATOS_TEST_CASE_IN_SUITE(PipeFactory, KratosHDF5TestSuite)
             {"factor" : 2},
             {"negate" : true}
         ])");
-        const auto pipe = Pipes::Factory<Pipeline>::Make(parameters);
+        const auto pipe = Pipeline(parameters);
         KRATOS_CHECK_EQUAL(pipe(false), true);
         KRATOS_CHECK_EQUAL(pipe(true), false);
     }
@@ -170,7 +170,7 @@ KRATOS_TEST_CASE_IN_SUITE(PipeFactory, KratosHDF5TestSuite)
             {"factor" : 2},
             {"negate" : true}
         ])");
-        const auto pipe = Pipes::Factory<Pipeline>::Make(parameters);
+        const auto pipe = Pipeline(parameters);
         KRATOS_CHECK_EQUAL(pipe(false), false);
         KRATOS_CHECK_EQUAL(pipe(true), true);
     }
