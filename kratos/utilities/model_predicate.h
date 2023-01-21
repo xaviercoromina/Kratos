@@ -14,6 +14,7 @@
 
 // Core includes
 #include "containers/model.h"
+#include "includes/define.h"
 
 
 namespace Kratos
@@ -21,8 +22,10 @@ namespace Kratos
 
 
 /// @brief Base class for functors that take a @ref Model and return a bool.
-struct ModelPredicate
+struct KRATOS_API(KratosCore) ModelPredicate
 {
+    KRATOS_CLASS_POINTER_DEFINITION(ModelPredicate);
+
     virtual ~ModelPredicate() {}
 
     virtual bool operator()(const Model& rModel) const = 0;
