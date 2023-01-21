@@ -40,25 +40,6 @@ CompoundPipe<TInputPipe,TOutputPipe>::CompoundPipe()
 namespace Detail {
 
 
-//template <class TPipe, class Enable = std::enable_if_t<IsCompoundPipe<TPipe>::value,int>>
-//struct Factory
-//{
-//    static TPipe Make(const Parameters& rParameters, std::size_t& rSubParamOffset)
-//    {
-//        return TPipe(rParameters, rSubParamOffset);
-//    }
-//}; // struct Factory (for compound pipes)
-//
-//
-//template <class TPipe>
-//struct Factory<TPipe,void>
-//{
-//    static TPipe Make(const Parameters& rParameters, std::size_t& rSubParamOffset)
-//    {
-//        return TPipe(rParameters[rSubParamOffset++]);
-//    }
-//}; // struct Factory (for simple pipes)
-
 /**
  *  @brief Class for constructing compound and simple pipes.
  *  @details A lot of heavy machinery is required to make the compile-time choice
