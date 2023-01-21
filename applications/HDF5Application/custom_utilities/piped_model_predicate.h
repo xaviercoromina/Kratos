@@ -16,6 +16,7 @@
 #include "basic_pipes.h"
 
 // --- Core Includes ---
+#include "includes/smart_pointers.h"
 #include "utilities/model_predicate.h"
 #include "includes/model_part.h"
 #include "includes/kratos_parameters.h"
@@ -26,9 +27,11 @@ namespace Kratos::HDF5 {
 
 
 template <class TPipe>
-class PipedModelPredicate : public ModelPredicate, public Pipes::Traits<const Model&, bool>
+class KRATOS_API(HDF5_APPLICATION) PipedModelPredicate : public ModelPredicate, public Pipes::Traits<const Model&, bool>
 {
 public:
+    KRATOS_CLASS_POINTER_DEFINITION(PipedModelPredicate);
+
     PipedModelPredicate()
         : mPipe()
     {}

@@ -26,6 +26,7 @@
 // STL includes
 #include <optional>
 #include <functional> // std::reference_wrapper
+#include <cmath> // std::fmod
 
 
 namespace Kratos::Pipes {
@@ -83,7 +84,7 @@ public:
     VariableFromProcessInfo() = default;
 
     VariableFromProcessInfo(const TVariable& rVariable)
-        : mVariable(rVariable)
+        : mVariable({rVariable})
     {}
 
     VariableFromProcessInfo(const Parameters& rParameters);
@@ -95,7 +96,7 @@ public:
     typename TVariable::Type operator()(const ProcessInfo& rProcessInfo) const
     {
         KRATOS_ERROR_IF_NOT(bool(mVariable)) << "uninitialized variable in VariableFromProcessInfo";
-        return rProcessInfo[mVariable.value()];
+        return rProcessInfo[mVariable.value().get()];
     }
 
 private:
@@ -151,7 +152,7 @@ public:
     {return mInterval.IsInInterval(Value);}
 
 private:
-    Detail::IntervalUtility<TValue> mInterval;
+    ::Kratos::Detail::IntervalUtility<TValue> mInterval;
 }; // class IntervalPredicate
 
 
@@ -172,7 +173,13 @@ public:
     Modulo(const Modulo& rOther) = default;
 
     TValue operator()(TValue Value) const
-    {return Value % mModulo;}
+    {
+        if constexpr (std::is_integral_v<TValue>) {
+            return Value % mModulo;
+        } else {
+            return std::fmod(Value, mModulo);
+        }
+    }
 
 private:
     TValue mModulo;

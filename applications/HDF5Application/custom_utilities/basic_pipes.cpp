@@ -32,6 +32,7 @@ ModelPartFromModel::ModelPartFromModel(const std::string& rModelPartName)
 ModelPartFromModel::ModelPartFromModel(const Parameters& rParameters)
     : mModelPartName()
 {
+    KRATOS_TRY
     KRATOS_ERROR_IF_NOT(rParameters.Has("model_part_name"))
         << "ModelPartFromModel requires a \"model_part_name\" entry in the input parameters but found none in:\n"
         << rParameters;
@@ -41,6 +42,7 @@ ModelPartFromModel::ModelPartFromModel(const Parameters& rParameters)
         << model_part_name;
 
     mModelPartName = model_part_name.GetString();
+    KRATOS_CATCH("");
 }
 
 

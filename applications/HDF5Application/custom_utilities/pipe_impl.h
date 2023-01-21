@@ -80,6 +80,7 @@ private:
     template <class TCompoundPipe, typename Dummy<decltype(TCompoundPipe::mInputPipe)>::Type = 0>
     void Make(TCompoundPipe* pPipe, const Parameters& rParameters, std::size_t& rSubParamOffset, Compound)
     {
+        static_assert(std::is_same_v<TPipe, TCompoundPipe>);
         // Construct with placement new at the specified location.
         // This avoids move/copy assigning the pipe.
         new(pPipe) TCompoundPipe(
@@ -101,9 +102,26 @@ private:
     template <class TSimplePipe>
     void Make(TSimplePipe* pPipe, const Parameters& rParameters, std::size_t& rSubParamOffset, Simple)
     {
+        static_assert(std::is_same_v<TPipe, TSimplePipe>);
+        KRATOS_ERROR_IF_NOT(rSubParamOffset < rParameters.size())
+            << "No subparameter found for constructing "
+            << typeid(TSimplePipe).name()
+            << " pipe at index "
+            << rSubParamOffset
+            << " from parameters: "
+            << rParameters;
+
         // Construct with placement new at the specified location.
         // This avoids move/copy assigning the pipe.
-        new(pPipe) TSimplePipe(rParameters[rSubParamOffset++]);
+        KRATOS_TRY
+        new(pPipe) TSimplePipe(rParameters[rSubParamOffset]);
+        KRATOS_CATCH(
+            "Failed to construct a "
+            << typeid(TSimplePipe).name()
+            << " pipe segment at index "
+            << rSubParamOffset << " with parameters: "
+            << rParameters);
+        ++rSubParamOffset;
     }
 
     /**
@@ -128,7 +146,7 @@ private:
             rSubParamOffset,
             Compound() // assume a compound pipe, the compiler will cast it up to Simple if that's not the case
         );
-        return *reinterpret_cast<TPipe*>(pipe);
+        return *reinterpret_cast<TPipe*>(p_pipe);
     }
 
 public:
