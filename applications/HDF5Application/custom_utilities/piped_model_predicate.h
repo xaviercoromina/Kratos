@@ -10,42 +10,31 @@
 //  Main author:     Máté Kelemen
 //
 
-#ifndef KRATOS_HDF5_MODEL_PREDICATE_H
-#define KRATOS_HDF5_MODEL_PREDICATE_H
+#pragma once
 
-// Internal includes
+// --- HDF5 Includes ---
 #include "basic_pipes.h"
 
-// Core includes
+// --- Core Includes ---
+#include "utilities/model_predicate.h"
 #include "includes/model_part.h"
 #include "includes/kratos_parameters.h"
 #include "utilities/interval_utility.h"
-
-// STL includes
 
 
 namespace Kratos::HDF5 {
 
 
-/// @brief Base class for functors that take a @ref Model and return a bool.
-struct ModelPredicate : Pipes::Traits<const Model&, bool>
-{
-    virtual ~ModelPredicate() {}
-
-    virtual bool operator()(const Model& rModel) const = 0;
-}; // struct ModelPredicate
-
-
-template <class TPipe, class TPipeFactory = Pipes::Factory<TPipe>>
-class PipedModelPredicate : public ModelPredicate
+template <class TPipe>
+class PipedModelPredicate : public ModelPredicate, public Pipes::Traits<const Model&, bool>
 {
 public:
     PipedModelPredicate()
-        : mPipe(TPipeFactory::Make(Parameters()))
+        : mPipe()
     {}
 
     PipedModelPredicate(const Parameters& rParameters)
-        : mPipe(TPipeFactory::Make(rParameters))
+        : mPipe(rParameters)
     {}
 
     PipedModelPredicate(PipedModelPredicate&& rOther) noexcept = default;
@@ -165,5 +154,3 @@ using StepIntervalPredicate = PipedModelPredicate<Pipes::Pipeline<
 
 
 } // namespace Kratos::HDF5
-
-#endif
