@@ -14,6 +14,7 @@
 
 // Core includes
 #include "includes/kratos_parameters.h"
+#include "includes/define.h" // KRATOS_TRY, KRATOS_CATCH
 
 // STL includes
 #include <type_traits> // std::true_type, std::false_type
@@ -149,18 +150,6 @@ public:
           mOutputPipe(std::move(rOutputPipe))
     {}
 
-    /// @brief Move construct the input pipe, copy construct the output pipe.
-    CompoundPipe(TInputPipe&& rInputPipe, const TOutputPipe& rOutputPipe) noexcept
-        : mInputPipe(std::move(rInputPipe)),
-          mOutputPipe(rOutputPipe)
-    {}
-
-    /// @brief Copy construct the input pipe, move construct the output pipe.
-    CompoundPipe(const TInputPipe& rInputPipe, TOutputPipe&& rOutputPipe) noexcept
-        : mInputPipe(rInputPipe),
-          mOutputPipe(std::move(rOutputPipe))
-    {}
-
     /// @brief Copy construct the input- and output pipes.
     CompoundPipe(const TInputPipe& rInputPipe, const TOutputPipe& rOutputPipe)
         : mInputPipe(rInputPipe),
@@ -192,32 +181,6 @@ template <class TInputPipe,
 CompoundPipe<TInputPipe,TOutputPipe> operator|(TInputPipe&& rInputPipe, TOutputPipe&& rOutputPipe)
 {
     return CompoundPipe<TInputPipe,TOutputPipe>(std::move(rInputPipe), std::move(rOutputPipe));
-}
-
-
-/// @brief Construct a pipe that takes the output of an input pipe and feeds it into an output pipe.
-template <class TInputPipe,
-          class TOutputPipe,
-          std::enable_if_t<
-            IsPipe<TInputPipe>::value && IsPipe<TOutputPipe>::value,
-            bool> = true
-          >
-CompoundPipe<TInputPipe,TOutputPipe> operator|(const TInputPipe& rInputPipe, TOutputPipe&& rOutputPipe)
-{
-    return CompoundPipe<TInputPipe,TOutputPipe>(rInputPipe, std::move(rOutputPipe));
-}
-
-
-/// @brief Construct a pipe that takes the output of an input pipe and feeds it into an output pipe.
-template <class TInputPipe,
-          class TOutputPipe,
-          std::enable_if_t<
-            IsPipe<TInputPipe>::value && IsPipe<TOutputPipe>::value,
-            bool> = true
-          >
-CompoundPipe<TInputPipe,TOutputPipe> operator|(TInputPipe&& rInputPipe, const TOutputPipe& rOutputPipe)
-{
-    return CompoundPipe<TInputPipe,TOutputPipe>(std::move(rInputPipe), rOutputPipe);
 }
 
 
@@ -260,25 +223,33 @@ private:
     template <class TSimplePipe, class Enable = std::enable_if_t<IsCompoundPipe<TSimplePipe>::value,int>>
     struct Impl
     {
-        static TSimplePipe Make(const Parameters& rParameters)
-        {return TSimplePipe(rParameters);}
+        static std::pair<TSimplePipe,std::size_t> Make(const Parameters& rParameters, std::size_t SubParamIndex)
+        {
+            KRATOS_ERROR_IF_NOT(SubParamIndex < rParameters.size()) << "Missing parameters for pipe segment " << index;
+            KRATOS_TRY
+            return std::make_pair(TSimplePipe(rParameters[SubParamIndex]), SubParamIndex + 1);
+            KRATOS_CATCH("Pipe segment construction failed at index " << index << ". Input parameters: " << rParameters);
+        }
     }; // struct Impl
 
     // Compound pipe factory
     template <class TCompoundPipe>
     struct Impl<TCompoundPipe,void>
     {
-        static TCompoundPipe Make(const Parameters& rParameters)
+        static std::pair<TCompoundPipe,std::size_t> Make(const Parameters& rParameters, std::size_t SubParamIndex)
         {
-            auto input_pipe = Factory<typename TCompoundPipe::InputPipe>::Make(rParameters);
-            auto output_pipe = Factory<typename TCompoundPipe::OutputPipe>::Make(rParameters);
-            return TCompoundPipe(std::move(input_pipe), std::move(output_pipe));
+            auto input_pair = Factory<typename TCompoundPipe::InputPipe>::Make(rParameters, SubParamIndex);
+            auto output_pair = Factory<typename TCompoundPipe::OutputPipe>::Make(rParameters, input_pair.second);
+            return std::make_pair(TCompoundPipe(std::move(input_pair.first), std::move(output_pair.first)), output_pair.second);
         }
     }; // struct Impl
 
 public:
     static TPipe Make(const Parameters& rParameters)
-    {return Impl<TPipe>::Make(rParameters);}
+    {
+        std::size_t pipe_counter = 0;
+        return Impl<TPipe>::Make(rParameters, pipe_counter).first;
+    }
 }; // class Factory
 
 

@@ -11,6 +11,7 @@
 //
 
 // Core includes
+#include "includes/define.h"
 #include "testing/testing.h"
 
 // Internal includes
@@ -152,7 +153,10 @@ KRATOS_TEST_CASE_IN_SUITE(PipeFactory, KratosHDF5TestSuite)
 {
     {
         using Pipeline = decltype(BoolIntTestPipe() | IntBoolTestPipe());
-        Parameters parameters(R"({"factor" : 2, "negate" : true})");
+        Parameters parameters(R"([
+            {"factor" : 2},
+            {"negate" : true}
+        ])");
         const auto pipe = Pipes::Factory<Pipeline>::Make(parameters);
         KRATOS_CHECK_EQUAL(pipe(false), true);
         KRATOS_CHECK_EQUAL(pipe(true), false);
@@ -160,7 +164,12 @@ KRATOS_TEST_CASE_IN_SUITE(PipeFactory, KratosHDF5TestSuite)
 
     {
         using Pipeline = decltype(BoolIntTestPipe() | IntBoolTestPipe() | BoolIntTestPipe() | IntBoolTestPipe());
-        Parameters parameters(R"({"factor" : 2, "negate" : true})");
+        Parameters parameters(R"([
+            {"factor" : 2},
+            {"negate" : true},
+            {"factor" : 2},
+            {"negate" : true}
+        ])");
         const auto pipe = Pipes::Factory<Pipeline>::Make(parameters);
         KRATOS_CHECK_EQUAL(pipe(false), false);
         KRATOS_CHECK_EQUAL(pipe(true), true);
