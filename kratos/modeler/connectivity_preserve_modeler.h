@@ -14,18 +14,15 @@
 #pragma once
 
 // System includes
-#include <string>
-#include <iostream>
-#include <algorithm>
 
 // External includes
 
 
 // Project includes
 #include "includes/define.h"
-#include "includes/model_part.h"
+#include "containers/model.h"
+#include "includes/kratos_parameters.h"
 #include "modeler/modeler.h"
-
 
 namespace Kratos
 {
@@ -34,7 +31,8 @@ namespace Kratos
 ///@{
 
 /// A tool to generate a copy of a ModelPart, sharing the same nodes as the original.
-class KRATOS_API(KRATOS_CORE) ConnectivityPreserveModeler : public Modeler
+class KRATOS_API(KRATOS_CORE) ConnectivityPreserveModeler 
+    : public Modeler
 {
 public:
     ///@name Type Definitions
@@ -47,16 +45,19 @@ public:
     ///@{
 
     /// Default Constructor
-    ConnectivityPreserveModeler() = default;
-
-    /// Constructor with model and parameters
-    ConnectivityPreserveModeler(
-        Model& rModel,
-        Parameters ModelerParameters = Parameters())
-        : Modeler(rModel, ModelerParameters)
-        , mpModel(&rModel)
+    ConnectivityPreserveModeler() : Modeler()
     {
     }
+
+    /**
+     * @brief Constructor using a Model and Parameters
+     * @param rModel Reference of the Model
+     * @param ModelerParameters Parameters of the discretization
+     */
+    ConnectivityPreserveModeler(
+        Model& rModel,
+        Parameters ModelerParameters
+    );
 
     /// Copy constructor.
     ConnectivityPreserveModeler(ConnectivityPreserveModeler const& rOther) = delete;
@@ -82,8 +83,9 @@ public:
     ///@name Operations
     ///@{
 
-    /// Generate a copy of rOriginModelPart in rDestinationModelPart, using the given element and condtion types.
-    /** This function fills rDestinationModelPart using data obtained from rOriginModelPart. The elements
+    /**
+     * @brief Generate a copy of rOriginModelPart in rDestinationModelPart, using the given element and condtion types. 
+     * @details This function fills rDestinationModelPart using data obtained from rOriginModelPart. The elements
      *  and conditions of rDestinationModelPart part use the same connectivity (and id) as in
      *  rOriginModelPart but their type is determined by rReferenceElement and rReferenceBoundaryCondition.
      *  Note that both ModelParts will share the same nodes, as well as ProcessInfo and tables.
@@ -98,7 +100,7 @@ public:
         ModelPart& DestinationModelPart,
         const Element& rReferenceElement,
         const Condition& rReferenceBoundaryCondition
-    ) override;
+        ) override;
 
     /// Generate a copy of rOriginModelPart in rDestinationModelPart, using the given element type.
     /** This function fills rDestinationModelPart using data obtained from
@@ -141,10 +143,12 @@ public:
     ///@}
 
 private:
-    ///@name Private variables
+    ///@name Member Variables
     ///@{
 
-    Model* mpModel = nullptr;
+    Model* mpModel = nullptr; /// The model of the problem
+
+    Parameters mParameters;   /// The configuration parameters
 
     ///@}
     ///@name Private Operations
@@ -185,5 +189,27 @@ private:
 };
 
 ///@}
+///@name Input and output
+///@{
+
+/// input stream function
+inline std::istream& operator>>(std::istream& rIStream,
+    ConnectivityPreserveModeler& rThis)
+{
+    return rIStream;
+}
+
+/// output stream function
+inline std::ostream& operator<<(std::ostream& rOStream, const ConnectivityPreserveModeler& rThis)
+{
+    rThis.PrintInfo(rOStream);
+    rOStream << std::endl;
+    rThis.PrintData(rOStream);
+
+    return rOStream;
+}
+
+///@}
+
 
 } // namespace Kratos.
