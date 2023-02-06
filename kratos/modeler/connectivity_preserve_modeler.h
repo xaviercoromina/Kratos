@@ -17,7 +17,6 @@
 
 // External includes
 
-
 // Project includes
 #include "includes/define.h"
 #include "containers/model.h"
@@ -57,7 +56,7 @@ public:
     ConnectivityPreserveModeler(
         Model& rModel,
         Parameters ModelerParameters
-    );
+        );
 
     /// Copy constructor.
     ConnectivityPreserveModeler(ConnectivityPreserveModeler const& rOther) = delete;
