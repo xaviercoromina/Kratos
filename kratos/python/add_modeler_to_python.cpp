@@ -25,10 +25,7 @@
 #include "modeler/duplicate_mesh_modeler.h"
 #include "modeler/copy_properties_modeler.h"
 
-namespace Kratos
-{
-
-namespace Python
+namespace Kratos::Python
 {
 
 namespace py = pybind11;
@@ -78,6 +75,7 @@ void  AddModelerToPython(pybind11::module& m)
 
     py::class_<ConnectivityPreserveModeler,ConnectivityPreserveModeler::Pointer,Modeler>(m,"ConnectivityPreserveModeler")
     .def(py::init< >())
+    .def(py::init<Model&, Parameters>())
     .def("GenerateModelPart",
         [] (Modeler& rModeler, ModelPart& origin_model_part, ModelPart& destination_model_part, const std::string& rElementName, const std::string& rConditionName)
         {rModeler.GenerateModelPart(origin_model_part, destination_model_part,
@@ -86,26 +84,28 @@ void  AddModelerToPython(pybind11::module& m)
     ;
 
     py::class_< EdgeSwapping2DModeler, EdgeSwapping2DModeler::Pointer, Modeler >(m,"EdgeSwapping2DModeler")
-            .def(py::init< >())
-            .def("ReGenerateMesh",&EdgeSwapping2DModeler::Remesh)
+    .def(py::init< >())
+    .def("ReGenerateMesh",&EdgeSwapping2DModeler::Remesh)
     ;
 
     py::class_< SerialModelPartCombinatorModeler, SerialModelPartCombinatorModeler::Pointer, Modeler >(m,"SerialModelPartCombinatorModeler")
-        .def(py::init< >())
-        .def(py::init<Model&, Parameters>())
+    .def(py::init< >())
+    .def(py::init<Model&, Parameters>())
     ;
 
     py::class_< DuplicateMeshModeler, DuplicateMeshModeler::Pointer, Modeler >(m,"DuplicateMeshModeler")
-        .def(py::init<ModelPart&>())
+    .def(py::init<ModelPart&>())
     ;
 
     py::class_< CopyPropertiesModeler, CopyPropertiesModeler::Pointer, Modeler >(m,"CopyPropertiesModeler")
-        .def(py::init<Model&, Parameters>())
-        .def(py::init<ModelPart&, ModelPart&>())
+    .def(py::init<Model&, Parameters>())
+    .def(py::init<ModelPart&, ModelPart&>())
+    ;
+
+    py::class_< CombineModelPartModeler, CombineModelPartModeler::Pointer, Modeler >(m,"CombineModelPartModeler")
+    .def(py::init<Model&, Parameters>())
     ;
 
 }
 
-}  // namespace Python.
-
-} // Namespace Kratos
+}  // namespace Kratos::Python.
