@@ -8,7 +8,8 @@
 //                   Kratos default license: kratos/license.txt
 //
 //  Main authors:    Riccardo Rossi
-//
+//  Collaborators:   Miguel Maso Sotomayor
+//                   Vicente Mataix Ferrandiz
 //
 
 #pragma once
@@ -37,6 +38,10 @@ public:
     ///@name Type Definitions
     ///@{
 
+    /// The base type definition
+    typedef Modeler BaseType;
+
+    /// Pointer definition of ConnectivityPreserveModeler
     KRATOS_CLASS_POINTER_DEFINITION(ConnectivityPreserveModeler);
 
     ///@}
@@ -101,8 +106,9 @@ public:
         const Condition& rReferenceBoundaryCondition
         ) override;
 
-    /// Generate a copy of rOriginModelPart in rDestinationModelPart, using the given element type.
-    /** This function fills rDestinationModelPart using data obtained from
+    /** 
+     * @brief Generate a copy of rOriginModelPart in rDestinationModelPart, using the given element type.
+     * @details This function fills rDestinationModelPart using data obtained from
      *  rOriginModelPart. The elements of rDestinationModelPart part use the
      *  same connectivity (and id) as in rOriginModelPart but their type is
      *  determined by rReferenceElement. In this variant, conditions are not
@@ -118,10 +124,11 @@ public:
         ModelPart& OriginModelPart,
         ModelPart& DestinationModelPart,
         const Element& rReferenceElement
-    );
+        );
 
-    /// Generate a copy of rOriginModelPart in rDestinationModelPart, using the given condition type.
-    /** This function fills rDestinationModelPart using data obtained from
+    /**
+     * @brief Generate a copy of rOriginModelPart in rDestinationModelPart, using the given condition type. 
+     * @details This function fills rDestinationModelPart using data obtained from
      *  rOriginModelPart. The conditions of rDestinationModelPart part use the
      *  same connectivity (and id) as in rOriginModelPart but their type is
      *  determined by rReferenceCondition. In this variant, elements are not
@@ -137,17 +144,32 @@ public:
         ModelPart& OriginModelPart,
         ModelPart& DestinationModelPart,
         const Condition& rReferenceCondition
-    );
+        );
+
+    /**
+     * @brief This method provides the defaults parameters to avoid conflicts between the different constructors
+     * @return The default parameters
+     */
+    const Parameters GetDefaultParameters() const override;
+
+    /**
+     * @brief Creates the Modeler Pointer and returns a pointer to a new
+     * CombineModelPartModeler, created using the given input
+     * @param rModel Reference of the Model
+     * @param ModelerParameters Parameters of the discretization
+     * @return a Pointer to the new Modeler
+     */
+    Modeler::Pointer Create(
+        Model& rModel,
+        const Parameters ModelParameters
+        ) const override;
 
     ///@}
-
 private:
     ///@name Member Variables
     ///@{
 
     Model* mpModel = nullptr; /// The model of the problem
-
-    Parameters mParameters;   /// The configuration parameters
 
     ///@}
     ///@name Private Operations

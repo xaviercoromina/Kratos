@@ -8,7 +8,8 @@
 //                   Kratos default license: kratos/license.txt
 //
 //  Main authors:    Riccardo Rossi
-//
+//  Collaborators:   Miguel Maso Sotomayor
+//                   Vicente Mataix Ferrandiz
 //
 
 // System includes
@@ -24,11 +25,23 @@ namespace Kratos
 
 // Public methods //////////////////////////////////////////////////////////////
 
+ConnectivityPreserveModeler::ConnectivityPreserveModeler(
+    Model& rModel,
+    Parameters ModelerParameters
+    ) : Modeler(rModel, ModelerParameters),
+        mpModel(&rModel)
+{
+    BaseType::mParameters.ValidateAndAssignDefaults(GetDefaultParameters());
+}
+
+/***********************************************************************************/
+/***********************************************************************************/
+
 void ConnectivityPreserveModeler::SetupModelPart()
 {
     ModelPart& r_origin_model_part = mpModel->GetModelPart(mParameters["origin_model_part_name"].GetString());
     ModelPart& r_destination_model_part = mpModel->CreateModelPart(mParameters["destionation_model_part_name"].GetString());
-    
+
     std::string element_name = mParameters["element_name"].GetString();
     std::string condition_name = mParameters["condition_name"].GetString();
 
@@ -75,6 +88,31 @@ void ConnectivityPreserveModeler::SetupModelPart()
     }
 }
 
+/***********************************************************************************/
+/***********************************************************************************/
+
+Modeler::Pointer ConnectivityPreserveModeler::Create(
+    Model& rModel,
+    const Parameters ModelParameters
+    ) const
+{
+    return Kratos::make_shared<ConnectivityPreserveModeler>(rModel, ModelParameters);
+}
+
+/***********************************************************************************/
+/***********************************************************************************/
+
+const Parameters ConnectivityPreserveModeler::GetDefaultParameters() const 
+{
+    const Parameters default_parameters = Parameters(R"({
+
+    })");
+    return default_parameters;
+}
+
+/***********************************************************************************/
+/***********************************************************************************/
+
 void ConnectivityPreserveModeler::GenerateModelPart(
     ModelPart& rOriginModelPart,
     ModelPart& rDestinationModelPart,
@@ -100,6 +138,9 @@ void ConnectivityPreserveModeler::GenerateModelPart(
     KRATOS_CATCH("");
 }
 
+/***********************************************************************************/
+/***********************************************************************************/
+
 void ConnectivityPreserveModeler::GenerateModelPart(
     ModelPart& rOriginModelPart,
     ModelPart& rDestinationModelPart,
@@ -121,6 +162,9 @@ void ConnectivityPreserveModeler::GenerateModelPart(
 
     KRATOS_CATCH("");
 }
+
+/***********************************************************************************/
+/***********************************************************************************/
 
 void ConnectivityPreserveModeler::GenerateModelPart(
     ModelPart& rOriginModelPart,
@@ -164,6 +208,9 @@ void ConnectivityPreserveModeler::CheckVariableLists(ModelPart& rOriginModelPart
     }
 }
 
+/***********************************************************************************/
+/***********************************************************************************/
+
 void ConnectivityPreserveModeler::ResetModelPart(ModelPart& rDestinationModelPart) const
 {
     VariableUtils().SetFlag(TO_ERASE, true, rDestinationModelPart.Nodes());
@@ -174,6 +221,9 @@ void ConnectivityPreserveModeler::ResetModelPart(ModelPart& rDestinationModelPar
     rDestinationModelPart.RemoveElementsFromAllLevels(TO_ERASE);
     rDestinationModelPart.RemoveConditionsFromAllLevels(TO_ERASE);
 }
+
+/***********************************************************************************/
+/***********************************************************************************/
 
 void ConnectivityPreserveModeler::CopyCommonData(
     ModelPart& rOriginModelPart,
@@ -202,6 +252,9 @@ void ConnectivityPreserveModeler::CopyCommonData(
     rDestinationModelPart.AddNodes(rOriginModelPart.NodesBegin(), rOriginModelPart.NodesEnd());
 }
 
+/***********************************************************************************/
+/***********************************************************************************/
+
 void ConnectivityPreserveModeler::DuplicateElements(
     ModelPart& rOriginModelPart,
     ModelPart& rDestinationModelPart,
@@ -222,6 +275,9 @@ void ConnectivityPreserveModeler::DuplicateElements(
     rDestinationModelPart.AddElements(temp_elements.begin(), temp_elements.end());
 }
 
+/***********************************************************************************/
+/***********************************************************************************/
+
 void ConnectivityPreserveModeler::DuplicateConditions(
     ModelPart& rOriginModelPart,
     ModelPart& rDestinationModelPart,
@@ -241,6 +297,9 @@ void ConnectivityPreserveModeler::DuplicateConditions(
 
     rDestinationModelPart.AddConditions(temp_conditions.begin(), temp_conditions.end());
 }
+
+/***********************************************************************************/
+/***********************************************************************************/
 
 void ConnectivityPreserveModeler::DuplicateCommunicatorData(
     ModelPart& rOriginModelPart,
@@ -286,6 +345,9 @@ void ConnectivityPreserveModeler::DuplicateCommunicatorData(
 
     rDestinationModelPart.SetCommunicator( pDestinationComm );
 }
+
+/***********************************************************************************/
+/***********************************************************************************/
 
 void ConnectivityPreserveModeler::DuplicateSubModelParts(
 ModelPart& rOriginModelPart,
