@@ -24,6 +24,57 @@ namespace Kratos
 
 // Public methods //////////////////////////////////////////////////////////////
 
+void ConnectivityPreserveModeler::SetupModelPart()
+{
+    ModelPart& r_origin_model_part = mpModel->GetModelPart(mParameters["origin_model_part_name"].GetString());
+    ModelPart& r_destination_model_part = mpModel->CreateModelPart(mParameters["destionation_model_part_name"].GetString());
+    
+    std::string element_name = mParameters["element_name"].GetString();
+    std::string condition_name = mParameters["condition_name"].GetString();
+
+    const std::regex re("\\dD\\dN");
+
+    if (element_name.size()) {
+        // Check if needs to add dimension and node number
+        // TODO: Check and add 2D3N, 3D4N...
+        if (true) {
+            int elem_dimension = r_origin_model_part.ElementsBegin()->LocalSpaceDimension();
+            int elem_nodes_num = r_origin_model_part.ElementsBegin()->GetGeometry().size();
+            element_name += elem_dimension + "D" + elem_nodes_num "N";
+        }
+
+        // Check if it's registered
+        KRATOS_ERROR_IF(!KratosComponents<Element>::Has(element_name)) << element_name << " not registered." << std::endl;
+    }
+
+    if (condition_name.size()) {
+        // Check if needs to add dimension and node number
+        // TODO: Check and add 2D3N, 3D4N...
+        if (true) {
+            int cond_dimension = r_origin_model_part.ConditionsBegin()->LocalSpaceDimension();
+            int cond_nodes_num = r_origin_model_part.ConditionsBegin()->GetGeometry().size();
+            element_name += cond_dimension + "D" + cond_nodes_num "N";
+        }
+
+        // Check if it's registered
+        KRATOS_ERROR_IF(!KratosComponents<Element>::Has(condition_name)) << condition_name << " not registered." << std::endl;
+    }
+
+    if (element_name.size() && condition_name.()) {
+        const Element& r_reference_element = KratosComponents<Element>::Get(element_name);
+        const Condition& r_reference_condition = KratosComponents<Condition>::Get(condition_name);
+        GenerateModelPart(r_origin_model_part, r_destination_model_part, r_reference_element, r_reference_condition);
+
+    } else if (element_name.size()) {
+        const Element& r_reference_element = KratosComponents<Element>::Get(element_name);
+        GenerateModelPart(r_origin_model_part, r_destination_model_part, r_reference_element);
+
+    } else if (condition_name.size()) {
+        const Condition& r_reference_condition = KratosComponents<Condition>::Get(condition_name);
+        GenerateModelPart(r_origin_model_part, r_destination_model_part, r_reference_condition);
+    }
+}
+
 void ConnectivityPreserveModeler::GenerateModelPart(
     ModelPart& rOriginModelPart,
     ModelPart& rDestinationModelPart,

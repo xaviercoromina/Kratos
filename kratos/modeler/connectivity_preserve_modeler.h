@@ -52,6 +52,15 @@ public:
     /// Default Constructor
     ConnectivityPreserveModeler() = default;
 
+    /// Constructor with model and parameters
+    ConnectivityPreserveModeler(
+        Model& rModel,
+        Parameters ModelerParameters = Parameters())
+        : Modeler(rModel, ModelerParameters)
+        , mpModel(&rModel)
+    {
+    }
+
     /// Copy constructor.
     ConnectivityPreserveModeler(ConnectivityPreserveModeler const& rOther) = delete;
 
@@ -64,6 +73,13 @@ public:
 
     /// Assignment operator.
     ConnectivityPreserveModeler & operator=(ConnectivityPreserveModeler const& rOther) = delete;
+
+    ///@}
+    ///@name Modeler Stages at Initialize
+    ///@{
+
+    /// Convert the geometry model or import analysis suitable models.
+    void SetupModelPart() override;
 
     ///@}
     ///@name Operations
@@ -128,6 +144,12 @@ public:
     ///@}
 
 private:
+    ///@name Private variables
+    ///@{
+
+    Model* mpModel = nullptr;
+
+    ///@}
     ///@name Private Operations
     ///@{
 
