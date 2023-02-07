@@ -17,6 +17,14 @@ from optimization_test_factory import mat_opt_test
 from optimization_test_factory import shell_shape_opt_test
 from optimization_test_factory import shell_thick_opt_test
 from test_execution_policies import TestExecutionPolicies
+from test_container_data import TestHistoricalContainerVariableDataHolder
+from test_container_data import TestNodalContainerVariableDataHolder
+from test_container_data import TestConditionContainerVariableDataHolder
+from test_container_data import TestElementContainerVariableDataHolder
+from test_container_data import TestConditionPropertiesContainerVariableDataHolder
+from test_container_data import TestElementPropertiesContainerVariableDataHolder
+from test_collective_variable_data_holder import TestCollectiveVariableDataHolder
+
 
 # Nightly tests
 
@@ -42,6 +50,13 @@ def AssembleTestSuites():
     # Adding small tests (tests that take < 1s)
     smallSuite = suites['small']
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([TestExecutionPolicies]))
+    smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([TestHistoricalContainerVariableDataHolder]))
+    smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([TestNodalContainerVariableDataHolder]))
+    smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([TestConditionContainerVariableDataHolder]))
+    smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([TestElementContainerVariableDataHolder]))
+    smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([TestConditionPropertiesContainerVariableDataHolder]))
+    smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([TestElementPropertiesContainerVariableDataHolder]))
+    smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([TestCollectiveVariableDataHolder]))
 
     # Adding nightly tests (tests that take < 10min)
     nightSuite = suites['nightly']
