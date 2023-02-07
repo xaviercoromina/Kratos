@@ -24,6 +24,7 @@ from test_container_data import TestElementContainerVariableDataHolder
 from test_container_data import TestConditionPropertiesContainerVariableDataHolder
 from test_container_data import TestElementPropertiesContainerVariableDataHolder
 from test_collective_variable_data_holder import TestCollectiveVariableDataHolder
+from test_optimization_info import TestOptimizationInfo
 
 
 # Nightly tests
@@ -57,6 +58,7 @@ def AssembleTestSuites():
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([TestConditionPropertiesContainerVariableDataHolder]))
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([TestElementPropertiesContainerVariableDataHolder]))
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([TestCollectiveVariableDataHolder]))
+    smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([TestOptimizationInfo]))
 
     # Adding nightly tests (tests that take < 10min)
     nightSuite = suites['nightly']
