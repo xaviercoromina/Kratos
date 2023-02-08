@@ -26,6 +26,7 @@
 #include "custom_python/add_custom_optimization_algorithm_to_python.h"
 #include "custom_python/add_custom_strategies_to_python.h"
 #include "custom_python/add_custom_utilities_to_python.h"
+#include "custom_python/add_custom_response_utilities_to_python.h"
 
 
 namespace Kratos {
@@ -46,6 +47,7 @@ PYBIND11_MODULE(KratosOptimizationApplication, m)
     AddCustomOptimizationAlgorithmToPython(m);
     AddCustomStrategiesToPython(m);
     AddCustomUtilitiesToPython(m);
+    AddCustomResponseUtilitiesToPython(m);
 
     //registering variables in python
 
