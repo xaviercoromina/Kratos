@@ -1,21 +1,15 @@
-from abc import ABC
-from abc import abstractmethod
-
 import KratosMultiphysics as Kratos
 
-class ResponseFunction(Kratos.Process, ABC):
+class ResponseFunction(Kratos.Process):
     def __init__(self):
         super().__init__()
 
-    @abstractmethod
     def Check(self):
-        pass
+        raise RuntimeError("Calling ResponseFunction::Check. This should be implemented in the derrived class.")
 
-    @abstractmethod
     def CalculateValue(self) -> float:
-        pass
+        raise RuntimeError("Calling ResponseFunction::CalculateValue. This should be implemented in the derrived class.")
 
-    @abstractmethod
     def CalculateSensitivity(self, sensitivity_variable: any, sensitivity_model_part: Kratos.ModelPart):
-        pass
+        raise RuntimeError("Calling ResponseFunction::CalculateSensitivity. This should be implemented in the derrived class.")
 
