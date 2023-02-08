@@ -30,6 +30,7 @@ from test_container_variable_data_holder import TestElementContainerVariableData
 from test_container_variable_data_holder import TestConditionPropertiesContainerVariableDataHolder
 from test_container_variable_data_holder import TestElementPropertiesContainerVariableDataHolder
 from test_collective_variable_data_holder import TestCollectiveVariableDataHolder
+from test_model_part_controllers import TestMdpaModelPartController
 
 # Nightly tests
 
@@ -57,6 +58,7 @@ def AssembleTestSuites():
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([TestExecutionPolicies]))
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([TestOptimizationInfo]))
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([TestOptimizationUtils]))
+
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([TestMassResponseFunctionBeams]))
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([TestMassResponseFunctionShells]))
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([TestMassResponseFunctionSolids]))
@@ -69,6 +71,8 @@ def AssembleTestSuites():
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([TestConditionPropertiesContainerVariableDataHolder]))
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([TestElementPropertiesContainerVariableDataHolder]))
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([TestCollectiveVariableDataHolder]))
+
+    smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([TestMdpaModelPartController]))
 
     # Adding nightly tests (tests that take < 10min)
     nightSuite = suites['nightly']
