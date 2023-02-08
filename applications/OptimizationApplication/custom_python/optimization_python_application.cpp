@@ -1,28 +1,24 @@
-// ==============================================================================
-//  KratosOptimizationApplication
+//    |  /           |
+//    ' /   __| _` | __|  _ \   __|
+//    . \  |   (   | |   (   |\__ `
+//   _|\_\_|  \__,_|\__|\___/ ____/
+//                   Multi-Physics
 //
 //  License:         BSD License
-//                   license: OptimizationApplication/license.txt
+//                   Kratos default license: kratos/license.txt
 //
-//  Main authors:    Reza Najian Asl, https://github.com/RezaNajian
+//  Main authors:    Reza Najian Asl
+//                   Suneth Warnakulasuriya
 //
-// =================================================================================
 
-#if defined(KRATOS_PYTHON)
-
-// ------------------------------------------------------------------------------
 // System includes
-// ------------------------------------------------------------------------------
-#include <pybind11/pybind11.h>
 
-// ------------------------------------------------------------------------------
 // External includes
-// ------------------------------------------------------------------------------
 
-// ------------------------------------------------------------------------------
 // Project includes
-// ------------------------------------------------------------------------------
 #include "includes/define_python.h"
+
+// Application includes
 #include "optimization_application.h"
 #include "optimization_application_variables.h"
 #include "custom_python/add_custom_controls_to_python.h"
@@ -31,7 +27,6 @@
 #include "custom_python/add_custom_strategies_to_python.h"
 #include "custom_python/add_custom_utilities_to_python.h"
 
-// ==============================================================================
 
 namespace Kratos {
 namespace Python {
@@ -167,9 +162,14 @@ PYBIND11_MODULE(KratosOptimizationApplication, m)
     //adjoint RHS
     KRATOS_REGISTER_IN_PYTHON_3D_VARIABLE_WITH_COMPONENTS(m, ADJOINT_RHS);
 
+    KRATOS_REGISTER_IN_PYTHON_VARIABLE(m, CROSS_AREA);
+    KRATOS_REGISTER_IN_PYTHON_VARIABLE(m, DENSITY_SENSITIVITY);
+    KRATOS_REGISTER_IN_PYTHON_VARIABLE(m, THICKNESS_SENSITIVITY);
+    KRATOS_REGISTER_IN_PYTHON_VARIABLE(m, CROSS_AREA_SENSITIVITY);
+    KRATOS_REGISTER_IN_PYTHON_VARIABLE(m, YOUNG_MODULUS_SENSITIVITY);
+    KRATOS_REGISTER_IN_PYTHON_VARIABLE(m, POISSON_RATIO_SENSITIVITY);
+
   }
 
 }  // namespace Python.
 }  // namespace Kratos.
-
-#endif // KRATOS_PYTHON defined
