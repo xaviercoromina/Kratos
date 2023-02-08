@@ -22,6 +22,7 @@
 #include "custom_utilities/optimization_utils.h"
 #include "custom_utilities/container_variable_data_holder/container_variable_data_holder.h"
 #include "custom_utilities/container_variable_data_holder/collective_variable_data_holder.h"
+#include "custom_utilities/container_variable_data_holder_utils.h"
 
 // Include base h
 #include "add_custom_response_utilities_to_python.h"
@@ -133,6 +134,24 @@ void  AddCustomUtilitiesToPython(pybind11::module& m)
         .def("__ipow__", &CollectiveVariableDataHolder::operator^=)
         .def("__neg__", [](CollectiveVariableDataHolder& rSelf) { return rSelf.operator*(-1.0); })
         .def("__str__", &CollectiveVariableDataHolder::Info)
+        ;
+
+    py::class_<ContainerVariableDataHolderUtils>(m, "ContainerVariableDataHolderUtils")
+        .def_static("NormInf", &ContainerVariableDataHolderUtils::NormInf<ModelPart::NodesContainerType>, py::arg("container_data"))
+        .def_static("NormInf", &ContainerVariableDataHolderUtils::NormInf<ModelPart::ConditionsContainerType>, py::arg("container_data"))
+        .def_static("NormInf", &ContainerVariableDataHolderUtils::NormInf<ModelPart::ElementsContainerType>, py::arg("container_data"))
+        .def_static("NormInf", [](const CollectiveVariableDataHolder& rContainer) { return ContainerVariableDataHolderUtils::NormInf(rContainer); }, py::arg("container_data"))
+        .def_static("NormL2", &ContainerVariableDataHolderUtils::NormL2<ModelPart::NodesContainerType>, py::arg("container_data"))
+        .def_static("NormL2", &ContainerVariableDataHolderUtils::NormL2<ModelPart::ConditionsContainerType>, py::arg("container_data"))
+        .def_static("NormL2", &ContainerVariableDataHolderUtils::NormL2<ModelPart::ElementsContainerType>, py::arg("container_data"))
+        .def_static("NormL2", [](const CollectiveVariableDataHolder& rContainer) { return ContainerVariableDataHolderUtils::NormL2(rContainer); }, py::arg("container_data"))
+        .def_static("EntityMaxNormL2", &ContainerVariableDataHolderUtils::EntityMaxNormL2<ModelPart::NodesContainerType>, py::arg("container_data"))
+        .def_static("EntityMaxNormL2", &ContainerVariableDataHolderUtils::EntityMaxNormL2<ModelPart::ConditionsContainerType>, py::arg("container_data"))
+        .def_static("EntityMaxNormL2", &ContainerVariableDataHolderUtils::EntityMaxNormL2<ModelPart::ElementsContainerType>, py::arg("container_data"))
+        .def_static("InnerProduct", &ContainerVariableDataHolderUtils::InnerProduct<ModelPart::NodesContainerType>, py::arg("container_data_1"), py::arg("container_data_2"))
+        .def_static("InnerProduct", &ContainerVariableDataHolderUtils::InnerProduct<ModelPart::ConditionsContainerType>, py::arg("container_data_1"), py::arg("container_data_2"))
+        .def_static("InnerProduct", &ContainerVariableDataHolderUtils::InnerProduct<ModelPart::ElementsContainerType>, py::arg("container_data_1"), py::arg("container_data_2"))
+        .def_static("InnerProduct", [](const CollectiveVariableDataHolder& rV1, const CollectiveVariableDataHolder& rV2) { return ContainerVariableDataHolderUtils::InnerProduct(rV1, rV2); }, py::arg("container_data_1"), py::arg("container_data_2"))
         ;
 }
 
