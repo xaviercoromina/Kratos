@@ -5,7 +5,7 @@
 //                   Multi-Physics
 //
 //  License:         BSD License
-//                   license: HDF5Application/license.txt
+//                   license: OptimizationApplication/license.txt
 //
 //  Main author:     Reza Najian Asl
 //                   Suneth Warnakulasuriya
@@ -161,6 +161,12 @@ PYBIND11_MODULE(KratosOptimizationApplication, m)
     //adjoint RHS
     KRATOS_REGISTER_IN_PYTHON_3D_VARIABLE_WITH_COMPONENTS(m, ADJOINT_RHS);
 
+    KRATOS_REGISTER_IN_PYTHON_VARIABLE(m, CROSS_AREA);
+    KRATOS_REGISTER_IN_PYTHON_VARIABLE(m, DENSITY_SENSITIVITY);
+    KRATOS_REGISTER_IN_PYTHON_VARIABLE(m, THICKNESS_SENSITIVITY);
+    KRATOS_REGISTER_IN_PYTHON_VARIABLE(m, CROSS_AREA_SENSITIVITY);
+    KRATOS_REGISTER_IN_PYTHON_VARIABLE(m, YOUNG_MODULUS_SENSITIVITY);
+    KRATOS_REGISTER_IN_PYTHON_VARIABLE(m, POISSON_RATIO_SENSITIVITY);
   }
 
 }  // namespace Python.

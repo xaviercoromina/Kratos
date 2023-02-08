@@ -5,7 +5,7 @@
 //                   Multi-Physics
 //
 //  License:         BSD License
-//                   license: HDF5Application/license.txt
+//                   license: OptimizationApplication/license.txt
 //
 //  Main author:     Suneth Warnakulasuriya
 //
