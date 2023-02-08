@@ -21,14 +21,13 @@
 #include "includes/data_communicator.h"
 
 // Application includes
-#include "custom_utilities/container_variable_data_holder/container_variable_data_holder_base.h"
-#include "custom_utilities/container_variable_data_holder/container_variable_data_holder.h"
 #include "custom_utilities/container_variable_data_holder/collective_variable_data_holder.h"
+#include "custom_utilities/container_variable_data_holder/container_variable_data_holder.h"
+#include "custom_utilities/container_variable_data_holder/container_variable_data_holder_base.h"
+#include "custom_utilities/optimization_utils.h"
 
 // Include base h
 #include "add_custom_utilities_to_python.h"
-
-#define PYBIND11_DETAILED_ERROR_MESSAGES
 
 namespace Kratos {
 namespace Python {
@@ -122,6 +121,21 @@ void  AddCustomUtilitiesToPython(pybind11::module& m)
         .def("__ipow__", &CollectiveVariableDataHolder::operator^=)
         .def("__neg__", [](CollectiveVariableDataHolder& rSelf) { return rSelf.operator*(-1.0); })
         .def("__str__", &CollectiveVariableDataHolder::Info)
+        ;
+
+    py::class_<OptimizationUtils >(m, "OptimizationUtils")
+        .def_static("IsVariableExistsInAllContainerProperties", &OptimizationUtils::IsVariableExistsInAllContainerProperties<ModelPart::ConditionsContainerType, double>)
+        .def_static("IsVariableExistsInAllContainerProperties", &OptimizationUtils::IsVariableExistsInAllContainerProperties<ModelPart::ElementsContainerType,double>)
+        .def_static("IsVariableExistsInAllContainerProperties", &OptimizationUtils::IsVariableExistsInAllContainerProperties<ModelPart::ConditionsContainerType, array_1d<double, 3>>)
+        .def_static("IsVariableExistsInAllContainerProperties", &OptimizationUtils::IsVariableExistsInAllContainerProperties<ModelPart::ElementsContainerType,array_1d<double, 3>>)
+        .def_static("IsVariableExistsInAtLeastOneContainerProperties", &OptimizationUtils::IsVariableExistsInAtLeastOneContainerProperties<ModelPart::ConditionsContainerType, double>)
+        .def_static("IsVariableExistsInAtLeastOneContainerProperties", &OptimizationUtils::IsVariableExistsInAtLeastOneContainerProperties<ModelPart::ElementsContainerType,double>)
+        .def_static("IsVariableExistsInAtLeastOneContainerProperties", &OptimizationUtils::IsVariableExistsInAtLeastOneContainerProperties<ModelPart::ConditionsContainerType, array_1d<double, 3>>)
+        .def_static("IsVariableExistsInAtLeastOneContainerProperties", &OptimizationUtils::IsVariableExistsInAtLeastOneContainerProperties<ModelPart::ElementsContainerType,array_1d<double, 3>>)
+        .def_static("AreAllEntitiesOfSameGeometryType", [](ModelPart::ConditionsContainerType& rContainer, const DataCommunicator& rDataCommunicator) { return OptimizationUtils::GetContainerEntityGeometryType(rContainer, rDataCommunicator) != GeometryData::KratosGeometryType::Kratos_generic_type; } )
+        .def_static("AreAllEntitiesOfSameGeometryType", [](ModelPart::ElementsContainerType& rContainer, const DataCommunicator& rDataCommunicator) { return OptimizationUtils::GetContainerEntityGeometryType(rContainer, rDataCommunicator) != GeometryData::KratosGeometryType::Kratos_generic_type; } )
+        .def_static("CreateEntitySpecificPropertiesForContainer", &OptimizationUtils::CreateEntitySpecificPropertiesForContainer<ModelPart::ConditionsContainerType>)
+        .def_static("CreateEntitySpecificPropertiesForContainer", &OptimizationUtils::CreateEntitySpecificPropertiesForContainer<ModelPart::ElementsContainerType>)
         ;
 }
 
