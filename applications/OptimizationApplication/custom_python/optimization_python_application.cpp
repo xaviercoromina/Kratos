@@ -28,6 +28,7 @@
 #include "custom_python/add_custom_response_utilities_to_python.h"
 #include "custom_python/add_custom_utilities_to_python.h"
 #include "custom_python/add_custom_processes_to_python.h"
+#include "custom_python/add_custom_mappers_to_python.h"
 
 namespace Kratos {
 namespace Python {
@@ -49,6 +50,8 @@ PYBIND11_MODULE(KratosOptimizationApplication, m)
 
     auto response_utilities = m.def_submodule("ResponseUtilities");
     AddCustomResponseUtilitiesToPython(response_utilities);
+    auto mappers = m.def_submodule("Mappers");
+    AddCustomMappersToPython(mappers);
 
     //registering variables in python
 
