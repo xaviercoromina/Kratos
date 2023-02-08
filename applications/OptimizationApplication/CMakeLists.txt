@@ -19,6 +19,7 @@ file( GLOB_RECURSE KRATOS_OPTIMIZATION_APPLICATION_CORE
     ${CMAKE_CURRENT_SOURCE_DIR}/custom_controls/*.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/custom_responsess/*.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/custom_utilities/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/custom_processes/*.cpp
 )
 
 ## Optimization python interface sources
@@ -30,6 +31,7 @@ set( KRATOS_OPTIMIZATION_APPLICATION_PYTHON_INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/custom_python/add_custom_optimization_algorithm_to_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/custom_python/add_custom_utilities_to_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/custom_python/add_custom_response_utilities_to_python.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/custom_python/add_custom_processes_to_python.cpp
 )
 
 add_library(KratosOptimizationCore SHARED ${KRATOS_OPTIMIZATION_APPLICATION_CORE})
