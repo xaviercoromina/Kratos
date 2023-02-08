@@ -13,6 +13,12 @@ ContainerVariableDataHolderUnion = Union[
         KratosOA.ConditionPropertiesContainerVariableDataHolder,
         KratosOA.ElementPropertiesContainerVariableDataHolder]
 
+ContainerTypes = Union[
+    Kratos.NodesArray,
+    Kratos.ConditionsArray,
+    Kratos.ElementsArray
+]
+
 def OptimizationProcessFactory(
     module_name: str,
     class_name: str,
