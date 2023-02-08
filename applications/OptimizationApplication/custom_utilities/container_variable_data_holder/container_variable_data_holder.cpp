@@ -93,17 +93,7 @@ template <class TContainerType, class TContainerDataIO>
 typename ContainerVariableDataHolder<TContainerType, TContainerDataIO>::Pointer ContainerVariableDataHolder<TContainerType, TContainerDataIO>::CloneWithDataInitializedToZero() const
 {
     std::shared_ptr<ContainerVariableDataHolder<TContainerType, TContainerDataIO>> result(new ContainerVariableDataHolder<TContainerType, TContainerDataIO>(*(this->mpModelPart)));
-    result->mDataDimension = this->mDataDimension;
-
-    auto& r_data = result->mData;
-    const IndexType number_of_entities = this->GetContainer().size();
-
-    r_data.resize(number_of_entities * this->mDataDimension);
-
-    IndexPartition<IndexType>(number_of_entities).for_each([&](const IndexType Index){
-        r_data[Index] = 0.0;
-    });
-
+    result->SetDataToZero(this->mDataDimension);
     return result;
 }
 

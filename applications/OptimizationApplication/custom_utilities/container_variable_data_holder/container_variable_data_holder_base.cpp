@@ -61,6 +61,21 @@ void ContainerVariableDataHolderBase<TContainerType>::CopyDataFrom(
 }
 
 template <class TContainerType>
+void ContainerVariableDataHolderBase<TContainerType>::SetDataToZero(const IndexType DataDimension)
+{
+    this->mDataDimension = DataDimension;
+
+    auto& r_data = this->mData;
+    const IndexType number_of_entities = this->GetContainer().size();
+
+    r_data.resize(number_of_entities * this->mDataDimension);
+
+    IndexPartition<IndexType>(number_of_entities).for_each([&](const IndexType Index){
+        r_data[Index] = 0.0;
+    });
+}
+
+template <class TContainerType>
 IndexType ContainerVariableDataHolderBase<TContainerType>::GetDataDimension() const
 {
     return mDataDimension;

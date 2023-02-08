@@ -126,6 +126,8 @@ public:
 
     void CopyDataFrom(const ContainerVariableDataHolderBase<TContainerType>& rOther);
 
+    void SetDataToZero(const IndexType DataDimension);
+
     ///@}
     ///@name Input and output
     ///@{

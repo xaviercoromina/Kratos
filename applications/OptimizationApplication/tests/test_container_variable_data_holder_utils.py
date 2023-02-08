@@ -100,6 +100,101 @@ class TestContainerVariableDataHolderUtils(kratos_unittest.TestCase):
 
         self.assertEqual(KratosOA.ContainerVariableDataHolderUtils.InnerProduct(collective_1, collective_1), KratosOA.ContainerVariableDataHolderUtils.InnerProduct(a, a) + KratosOA.ContainerVariableDataHolderUtils.InnerProduct(b, b))
 
+    def test_ProductWithEntityMatrix(self):
+        number_of_nodes = self.model_part.NumberOfNodes()
+
+        a = KratosOA.HistoricalContainerVariableDataHolder(self.model_part)
+        a.ReadDataFromContainerVariable(Kratos.PRESSURE)
+
+        m = Kratos.Matrix(number_of_nodes, number_of_nodes)
+        for i in range(number_of_nodes):
+            for j in range(number_of_nodes):
+                m[i, j] = (i + 1) * (j + 1)
+
+        b = KratosOA.HistoricalContainerVariableDataHolder(self.model_part)
+        KratosOA.ContainerVariableDataHolderUtils.ProductWithEntityMatrix(b, m, a)
+        b.AssignDataToContainerVariable(Kratos.DENSITY)
+
+        for i, node_b in enumerate(b.GetContainer()):
+            v = 0
+            for j, node_a in enumerate(a.GetContainer()):
+                v += m[i, j] * node_a.GetSolutionStepValue(Kratos.PRESSURE)
+            self.assertEqual(v, node_b.GetSolutionStepValue(Kratos.DENSITY))
+
+    def test_ProductWithEntityMatrixSparse(self):
+        number_of_nodes = self.model_part.NumberOfNodes()
+
+        a = KratosOA.HistoricalContainerVariableDataHolder(self.model_part)
+        a.ReadDataFromContainerVariable(Kratos.PRESSURE)
+
+        # first build the normal matrix
+        dense_m = Kratos.Matrix(
+            [
+                [5, 0, 0, 2, 0, 0, 0, 0, 0, 2],
+                [0, 0, 3, 2, 3, 0, 0, 0, 0, 0],
+                [0, 2, 0, 2, 0, 2, 0, 6, 0, 0],
+                [0, 0, 0, 2, 0, 4, 0, 5, 0, 0],
+                [0, 0, 2, 0, 0, 2, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 3, 3, 0],
+                [0, 2, 0, 0, 3, 0, 4, 0, 0, 0],
+                [3, 0, 0, 2, 0, 0, 0, 2, 0, 2],
+                [9, 0, 0, 0, 0, 7, 0, 7, 0, 5],
+                [0, 0, 7, 2, 0, 0, 0, 0, 0, 2]
+            ]
+        )
+
+        # now add values to the sparse matrix
+        sparse_m = Kratos.CompressedMatrix(number_of_nodes, number_of_nodes)
+        for i in range(number_of_nodes):
+            for j in range(number_of_nodes):
+                if dense_m[i, j] != 0.0:
+                    sparse_m[i, j] = dense_m[i, j]
+
+        dense_b = KratosOA.HistoricalContainerVariableDataHolder(self.model_part)
+        KratosOA.ContainerVariableDataHolderUtils.ProductWithEntityMatrix(dense_b, dense_m, a)
+
+        sparse_b = KratosOA.HistoricalContainerVariableDataHolder(self.model_part)
+        KratosOA.ContainerVariableDataHolderUtils.ProductWithEntityMatrix(sparse_b, sparse_m, a)
+
+        self.assertEqual(KratosOA.ContainerVariableDataHolderUtils.InnerProduct(dense_b - sparse_b, dense_b - sparse_b), 0)
+
+    def test_Transpose(self):
+        number_of_nodes = self.model_part.NumberOfNodes()
+
+        # first build the normal matrix
+        dense_m = Kratos.Matrix(
+            [
+                [5, 0, 0, 2, 0, 0, 0, 0, 0],
+                [0, 0, 3, 2, 3, 0, 0, 0, 0],
+                [0, 2, 0, 2, 0, 2, 0, 6, 0],
+                [0, 0, 0, 2, 0, 4, 0, 5, 0],
+                [0, 0, 2, 0, 0, 2, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 3, 3],
+                [0, 2, 0, 0, 3, 0, 4, 0, 0],
+                [3, 0, 0, 2, 0, 0, 0, 2, 0],
+                [9, 0, 0, 0, 0, 7, 0, 7, 0],
+                [0, 0, 7, 2, 0, 0, 0, 0, 0]
+            ]
+        )
+        transpose_dense_m = Kratos.Matrix()
+        KratosOA.ContainerVariableDataHolderUtils.Transpose(transpose_dense_m, dense_m)
+        for i in range(dense_m.Size1()):
+            for j in range(dense_m.Size2()):
+                self.assertEqual(transpose_dense_m[j, i], dense_m[i, j])
+
+        # now add values to the sparse matrix
+        sparse_m = Kratos.CompressedMatrix(number_of_nodes, number_of_nodes)
+        for i in range(dense_m.Size1()):
+            for j in range(dense_m.Size2()):
+                if dense_m[i, j] != 0.0:
+                    sparse_m[i, j] = dense_m[i, j]
+
+        transpose_sparse_m = Kratos.CompressedMatrix()
+        KratosOA.ContainerVariableDataHolderUtils.Transpose(transpose_sparse_m, sparse_m)
+        for i in range(dense_m.Size1()):
+            for j in range(dense_m.Size2()):
+                self.assertEqual(transpose_sparse_m[j, i], dense_m[i, j])
+
 if __name__ == "__main__":
     Kratos.Tester.SetVerbosity(Kratos.Tester.Verbosity.PROGRESS)  # TESTS_OUTPUTS
     kratos_unittest.main()

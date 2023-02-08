@@ -16,6 +16,8 @@
 
 // Project includes
 #include "includes/define.h"
+#include "spaces/ublas_space.h"
+#include "spatial_containers/spatial_containers.h"
 
 // Application includes
 #include "custom_utilities/container_variable_data_holder/container_variable_data_holder_base.h"
@@ -34,6 +36,10 @@ public:
     ///@{
 
     using IndexType = std::size_t;
+
+    using SparseSpaceType = UblasSpace<double, CompressedMatrix, Vector>;
+
+    using SparseMatrixType = SparseSpaceType::MatrixType;
 
     ///@}
     ///@name Static operations
@@ -60,6 +66,26 @@ public:
     static double InnerProduct(
         const CollectiveVariableDataHolder& rContainer1,
         const CollectiveVariableDataHolder& rContainer2);
+
+    template<class TContainerType>
+    static void ProductWithEntityMatrix(
+        ContainerVariableDataHolderBase<TContainerType>& rOutput,
+        const SparseMatrixType& rMatrix,
+        const ContainerVariableDataHolderBase<TContainerType>& rInput);
+
+    template<class TContainerType>
+    static void ProductWithEntityMatrix(
+        ContainerVariableDataHolderBase<TContainerType>& rOutput,
+        const Matrix& rMatrix,
+        const ContainerVariableDataHolderBase<TContainerType>& rInput);
+
+    static void Transpose(
+        Matrix& rOutput,
+        const Matrix& rInput);
+
+    static void Transpose(
+        SparseMatrixType& rOutput,
+        const SparseMatrixType& rInput);
 
     ///@}
 };
