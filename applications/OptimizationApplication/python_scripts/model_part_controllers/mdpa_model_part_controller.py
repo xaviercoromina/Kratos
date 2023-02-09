@@ -36,6 +36,6 @@ class MdpaModelPartController(ModelPartController):
     def GetModelPart(self) -> Kratos.ModelPart:
         return self.model_part
 
-    def InitializeSolutionStep(self):
+    def ExecuteInitializeSolutionStep(self):
         self.model_part.ProcessInfo[Kratos.STEP] = self.optimization_info["step"]
         self.model_part.ProcessInfo[Kratos.TIME] = self.optimization_info["step"]
