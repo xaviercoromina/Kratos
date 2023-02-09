@@ -10,7 +10,7 @@ class ContainerVariableDataHolderOutputDecorator(Kratos.OutputProcess):
         super().__init__()
 
         default_parameters = Kratos.Parameters("""{
-            "optimization_info_data_location": "PLEASE.PROVIDE.DATA.LOCATION.SEPERATED.BY.DOTS",
+            "optimization_info_data_location": "PLEASE/PROVIDE/DATA/LOCATION/SEPERATED/BY/BACK/SLASH",
             "output_variable_name"           : "PLEASE_PROVIDE_MATCHING_VARIABLE_NAME_FOR_DATA",
             "output_processes"               : []
         }""")
@@ -56,7 +56,7 @@ class ContainerVariableDataHolderOutputDecorator(Kratos.OutputProcess):
     def PrintOutput(self):
         # obtain the container variable data holder
         current_pos = self.__optimization_info.GetSolutionStepData(0)
-        for location_sub_key in self.__optimization_info_location.split("."):
+        for location_sub_key in self.__optimization_info_location.split("/"):
             try:
                 current_pos = current_pos[location_sub_key]
             except KeyError:

@@ -12,12 +12,12 @@ from KratosMultiphysics.OptimizationApplication.utilities.container_variable_dat
 class OptimizationAnalysis(AnalysisStage):
     def __init__(self, model: Kratos.Model, project_parameters: Kratos.Parameters):
         default_parametetrs = Kratos.Parameters("""{
-            "model_parts"       : [],
-            "analyses"          : [],
-            "responses"         : [],
-            "controls"          : [],
-            "output_processes"  : [],
-            "algorithm_settings": {}
+            "model_parts"                       : [],
+            "analyses"                          : [],
+            "responses"                         : [],
+            "controls"                          : [],
+            "algorithm_settings"                : {},
+            "optimization_info_output_processes": []
         }""")
 
         self.model = model
@@ -72,7 +72,8 @@ class OptimizationAnalysis(AnalysisStage):
         if not hasattr(self, '_modified__list_of_output_processes'):
             self._modified__list_of_output_processes = super()._GetListOfOutputProcesses()
             self._CreateContainerVariableDataHolderOutputDecorators()
-            self._modified__list_of_output_processes.extend(self.optimization_info.GetOptimizationProcesses(ContainerVariableDataHolderOutputDecorator))
+            if self.optimization_info.HasOptimizationProcessType(ContainerVariableDataHolderOutputDecorator):
+                self._modified__list_of_output_processes.extend(self.optimization_info.GetOptimizationProcesses(ContainerVariableDataHolderOutputDecorator))
 
         return self._modified__list_of_output_processes
 
@@ -117,7 +118,7 @@ class OptimizationAnalysis(AnalysisStage):
             self.optimization_info.AddOptimizationProcess(ControlTransformationTechnique, routine.GetName(), routine)
 
     def _CreateContainerVariableDataHolderOutputDecorators(self):
-        for output_process_settings in self.project_parameters["output_processes"]:
+        for output_process_settings in self.project_parameters["optimization_info_output_processes"]:
             self.optimization_info.AddOptimizationProcess(ContainerVariableDataHolderOutputDecorator, ContainerVariableDataHolderOutputDecorator(self.model, output_process_settings, self.optimization_info))
 
     def _GetOptimizationProcessTypesOrder(self):

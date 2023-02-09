@@ -89,6 +89,7 @@
     "processes": {
         "auxiliary_processes": []
     },
+    "optimization_info_output_processes": [],
     "output_processes": {
         "vtk_output_processes": []
     }

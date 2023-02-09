@@ -44,8 +44,22 @@ class Algorithm(PythonSolver, ABC):
     def GetObjectives(self) -> 'list[ObjectiveResponseFunctionImplementor]':
         return self.__list_of_objectives
 
+    def GetObjective(self, objective_name: str) -> ObjectiveResponseFunctionImplementor:
+        for objective in self.GetObjectives():
+            if objective.GetName() == objective_name:
+                return objective
+
+        raise RuntimeError(f"Objective \"{objective_name}\" is not found. Followings are the available objective names: " + "\n\t".join(objective.GetNam() for objective in self.GetObjectives()))
+
     def GetConstraints(self) -> 'list[ConstraintResponseFunctionImplementor]':
         return self.__list_of_constraints
+
+    def GetConstraint(self, constraint_name: str) -> ConstraintResponseFunctionImplementor:
+        for constraint in self.GetConstraints():
+            if constraint.GetName() == constraint_name:
+                return constraint
+
+        raise RuntimeError(f"Constraint \"{constraint_name}\" is not found. Followings are the available constraint names: " + "\n\t".join(constraint.GetName() for constraint in self.GetConstraints()))
 
     def GetControllers(self) -> 'list[ControlTransformationTechnique]':
         return self.__list_of_controllers
