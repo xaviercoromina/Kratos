@@ -39,6 +39,10 @@ class TestOptimizationUtils(kratos_unittest.TestCase):
 
         cls.utils = KratosOA.OptimizationUtils
 
+    def test_GetVariableDimension(self):
+        self.assertEqual(self.utils.GetVariableDimension(Kratos.PRESSURE, 1), 1)
+        self.assertEqual(self.utils.GetVariableDimension(Kratos.VELOCITY, 2), 2)
+
     def test_IsVariableExistsInAllContainerProperties(self):
         self.assertTrue(self.utils.IsVariableExistsInAllContainerProperties(self.model_part.Conditions, Kratos.PRESSURE, self.model_part.GetCommunicator().GetDataCommunicator()))
         for condition in self.model_part.Conditions:
