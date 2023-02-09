@@ -1,0 +1,95 @@
+{
+    "problem_data": {
+        "parallel_type": "OpenMP",
+        "echo_level": 0,
+        "start_time": 0,
+        "end_time": 10
+    },
+    "model_parts": [
+        {
+            "name": "StructuralModelPart",
+            "settings": {
+                "model_part_name": "Structure",
+                "domain_size": 3,
+                "input_filename": "Structure"
+            }
+        }
+    ],
+    "analyses": [
+        {
+            "execution_policy_name": "Structure_static",
+            "execution_policy_type": "SteppingAnalysisExecutionPolicy",
+            "execution_policy_settings": {
+                "model_part_names": [
+                    "Structure"
+                ],
+                "analysis_module": "KratosMultiphysics.StructuralMechanicsApplication",
+                "analysis_type": "StructuralMechanicsAnalysis",
+                "analysis_settings": {
+                    "@include_json": "primal_parameters.json"
+                }
+            }
+        }
+    ],
+    "responses": [
+        {
+            "name": "mass_Structure",
+            "type": "MassResponseFunction",
+            "settings": {
+                "evaluated_model_part_name": "Structure"
+            }
+        },
+        {
+            "name": "strain_energy",
+            "type": "LinearStrainEnergyResponseFunction",
+            "settings": {
+                "evaluated_model_part_name": "Structure",
+                "primal_analysis_name": "Structure_static"
+            }
+        }
+    ],
+    "controls": [
+        {
+            "name": "density",
+            "type": "MaterialPropertiesControl",
+            "settings": {
+                "model_part_names": [
+                    "Structure"
+                ],
+                "control_variable_name": "DENSITY"
+            },
+            "transformation_techniques": []
+        }
+    ],
+    "algorithm_settings": {
+        "type": "GradientProjectionAlgorithm",
+        "settings": {
+            "max_correction_share": 0.75,
+            "relative_tolerance": 1e-3,
+            "step_size": 1e-3,
+            "echo_level": 2
+        },
+        "control_names": [
+            "density"
+        ],
+        "objectives": [
+            {
+                "response_name": "mass_Structure",
+                "type": "minimization"
+            }
+        ],
+        "constraints": [
+            {
+                "response_name": "strain_energy",
+                "type": "<",
+                "ref_type": "initial_value"
+            }
+        ]
+    },
+    "processes": {
+        "auxiliary_processes": []
+    },
+    "output_processes": {
+        "vtk_output_processes": []
+    }
+}
