@@ -106,6 +106,22 @@ void OptimizationUtils::CreateEntitySpecificPropertiesForContainer(
     KRATOS_CATCH("");
 }
 
+template<>
+IndexType OptimizationUtils::GetVariableDimension(
+    const Variable<double>& rVariable,
+    const IndexType DomainSize)
+{
+    return 1;
+}
+
+template<>
+IndexType OptimizationUtils::GetVariableDimension(
+    const Variable<array_1d<double, 3>>& rVariable,
+    const IndexType DomainSize)
+{
+    return DomainSize;
+}
+
 // template instantiations
 template GeometryData::KratosGeometryType OptimizationUtils::GetContainerEntityGeometryType(const ModelPart::ConditionsContainerType&, const DataCommunicator&);
 template GeometryData::KratosGeometryType OptimizationUtils::GetContainerEntityGeometryType(const ModelPart::ElementsContainerType&, const DataCommunicator&);

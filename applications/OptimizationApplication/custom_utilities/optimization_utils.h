@@ -62,6 +62,11 @@ public:
         ModelPart& rModelPart,
         TContainerType& rContainer);
 
+    template<class TDataType>
+    static IndexType GetVariableDimension(
+        const Variable<TDataType>& rVariable,
+        const IndexType DomainSize);
+
     ///@}
 };
 
