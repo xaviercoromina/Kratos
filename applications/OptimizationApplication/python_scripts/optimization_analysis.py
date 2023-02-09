@@ -7,6 +7,7 @@ from KratosMultiphysics.OptimizationApplication.responses.response_function impo
 from KratosMultiphysics.OptimizationApplication.utilities.control_transformation_technique import ControlTransformationTechnique
 from KratosMultiphysics.OptimizationApplication.optimization_info import OptimizationInfo
 from KratosMultiphysics.OptimizationApplication.utilities.helper_utilities import OptimizationProcessFactory
+from KratosMultiphysics.OptimizationApplication.utilities.container_variable_data_holder_output_decorator import ContainerVariableDataHolderOutputDecorator
 
 class OptimizationAnalysis(AnalysisStage):
     def __init__(self, model: Kratos.Model, project_parameters: Kratos.Parameters):
@@ -15,6 +16,7 @@ class OptimizationAnalysis(AnalysisStage):
             "analyses"          : [],
             "responses"         : [],
             "controls"          : [],
+            "output_processes"  : [],
             "algorithm_settings": {}
         }""")
 
@@ -66,6 +68,14 @@ class OptimizationAnalysis(AnalysisStage):
 
         return self._modified_list_of_processes
 
+    def _GetListOfOutputProcesses(self):
+        if not hasattr(self, '_modified__list_of_output_processes'):
+            self._modified__list_of_output_processes = super()._GetListOfOutputProcesses()
+            self._CreateContainerVariableDataHolderOutputDecorators()
+            self._modified__list_of_output_processes.extend(self.optimization_info.GetOptimizationProcesses(ContainerVariableDataHolderOutputDecorator))
+
+        return self._modified__list_of_output_processes
+
     def PrintAnalysisStageProgressInformation(self):
         Kratos.Logger.PrintInfo(self._GetSimulationName(), "STEP: ", self.optimization_info["step"])
 
@@ -105,6 +115,10 @@ class OptimizationAnalysis(AnalysisStage):
         for control_settings in self.project_parameters["controls"]:
             routine = ControlTransformationTechnique(self.model, control_settings, self.optimization_info)
             self.optimization_info.AddOptimizationProcess(ControlTransformationTechnique, routine.GetName(), routine)
+
+    def _CreateContainerVariableDataHolderOutputDecorators(self):
+        for output_process_settings in self.project_parameters["output_processes"]:
+            self.optimization_info.AddOptimizationProcess(ContainerVariableDataHolderOutputDecorator, ContainerVariableDataHolderOutputDecorator(self.model, output_process_settings, self.optimization_info))
 
     def _GetOptimizationProcessTypesOrder(self):
         return [ModelPartController, ExecutionPolicyDecorator, ResponseFunction, ControlTransformationTechnique]
