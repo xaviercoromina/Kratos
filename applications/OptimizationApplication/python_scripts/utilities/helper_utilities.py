@@ -19,6 +19,10 @@ ContainerTypes = Union[
     Kratos.ElementsArray
 ]
 
+def CallOnAll(list_of_objects: 'list[any]', method: any, *args, **kwargs):
+    for obj in list_of_objects:
+        getattr(obj, method.__name__)(*args, **kwargs)
+
 def OptimizationProcessFactory(
     module_name: str,
     class_name: str,
