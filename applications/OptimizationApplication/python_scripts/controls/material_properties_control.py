@@ -37,7 +37,7 @@ class MaterialPropertiesControl(Control):
         self.sensitivity_variable = Kratos.KratosGlobals.GetVariable(sensitivity_variable_name)
         self.control_update_variable = Kratos.KratosGlobals.GetVariable(control_update_variable_name)
 
-    def Initialize(self):
+    def ExecuteInitialize(self):
         # creates element specific properties
         if "model_parts_with_element_specific_properties" not in self.optimization_info.GetSolutionStepData(0).keys():
             self.optimization_info["model_parts_with_element_specific_properties"] = []
