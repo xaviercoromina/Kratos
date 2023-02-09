@@ -40,7 +40,7 @@ class TestMaterialPropertiesControl(kratos_unittest.TestCase):
 
     def test_PropertiesControlInitialize(self):
         # running it twice to check whether the it only does the creation of specific properties once.
-        self.properties_control.Initialize()
+        self.properties_control.ExecuteInitialize()
 
         self.assertEqual(self.optimization_info["model_parts_with_element_specific_properties"], ["Structure.structure.Elements"])
 
@@ -50,7 +50,7 @@ class TestMaterialPropertiesControl(kratos_unittest.TestCase):
                     self.assertNotEqual(element_i.Properties, element_j.Properties)
 
     def test_PropertiesControl(self):
-        self.properties_control.Initialize()
+        self.properties_control.ExecuteInitialize()
 
         for element in self.model_part.GetSubModelPart("structure").Elements:
             element.Properties[Kratos.DENSITY] = element.Id
