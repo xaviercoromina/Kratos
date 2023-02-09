@@ -38,6 +38,7 @@ void AddContainerVariableDataHolderBaseTypeToPython(pybind11::module& m, const s
     using container_variable_data_holder_base = ContainerVariableDataHolderBase<TContainerType>;
     py::class_<container_variable_data_holder_base, typename container_variable_data_holder_base::Pointer>(m, rName.c_str())
         .def("CopyDataFrom", &container_variable_data_holder_base::CopyDataFrom, py::arg("origin_container_data"))
+        .def("GetDataDimension", &container_variable_data_holder_base::GetDataDimension)
         .def("GetModelPart", py::overload_cast<>(&container_variable_data_holder_base::GetModelPart), py::return_value_policy::reference)
         .def("GetContainer", py::overload_cast<>(&container_variable_data_holder_base::GetContainer), py::return_value_policy::reference)
         .def("__str__", &container_variable_data_holder_base::Info)
