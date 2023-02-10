@@ -23,7 +23,7 @@ class ControlTransformationTechnique(Kratos.Process):
         self.__name = parameters["name"].GetString()
         self.__control: Control = OptimizationProcessFactory(parameters["module"].GetString(), parameters["type"].GetString(), model, parameters["settings"], optimization_info, Control)
         self.__transformation_techniques: 'list[TransformationTechnique]' = []
-        self.__control_updates = {}
+        self.__optimization_info = optimization_info
 
         default_transformation_settings = Kratos.Parameters("""{
             "module"  : "KratosMultiphysics.OptimizationApplication.transformation_techniques",
@@ -43,9 +43,6 @@ class ControlTransformationTechnique(Kratos.Process):
     def GetTransformationTechniques(self) -> 'list[TransformationTechnique]':
         return self.__transformation_techniques
 
-    def ExecuteInitializeSolutionStep(self) -> None:
-        self.__control_updates = {}
-
     def TransformSensitivity(self, container_variable_data_holder: ContainerVariableDataHolderUnion):
         CallOnAll(self.__transformation_techniques, TransformationTechnique.TransformSensitivity, container_variable_data_holder)
 
@@ -60,11 +57,13 @@ class ControlTransformationTechnique(Kratos.Process):
         if not isinstance(container_variable_data_holder, self.GetControl().CreateContainerVariableDataHolder(container_variable_data_holder.GetModelPart()).__class__):
             raise RuntimeError(f"The control type {container_variable_data_holder.__class__.__name__} mismatch with the required control type {self.GetControl().CreateContainerVariableDataHolder(container_variable_data_holder.GetModelPart()).__class__.__name__} in \"{self.GetName()}\" control.")
 
-        self.__control_updates[container_variable_data_holder.GetModelPart()] = container_variable_data_holder.Clone()
+        key = f"problem_data/control_data/{self.GetName()}/{container_variable_data_holder.GetModelPart().FullName()}/update"
+        self.__optimization_info.SetValue(key, container_variable_data_holder.Clone())
 
     def ApplyControlUpdate(self):
         for model_part in self.GetControl().GetModelParts():
-            if model_part not in self.__control_updates.keys():
+            key = f"problem_data/control_data/{self.GetName()}/{model_part.FullName()}/update"
+            if self.__optimization_info.HasValue(key):
+                self.GetControl().UpdateControl(self.__optimization_info.GetValue(key))
+            else:
                 raise RuntimeError(f"Control update for {model_part.FullName()} not set in {self.GetName()} controller technique.")
-
-            self.GetControl().UpdateControl(self.__control_updates[model_part])
