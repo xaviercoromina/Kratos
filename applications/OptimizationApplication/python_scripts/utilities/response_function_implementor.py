@@ -11,26 +11,21 @@ class ResponseFunctionImplementor(ABC):
         self.__response_function: ResponseFunction = optimization_info.GetOptimizationProcess(ResponseFunction, response_name)
         self.__name = response_name
 
-        self.__response_value = None
-        self.__response_sensitivities = {}
         self.__initial_response_value = None
-
-    def ResetResponseData(self):
-        self.__response_value = None
-        self.__response_sensitivities = {}
+        self._optimization_info = optimization_info
 
     def GetName(self) -> str:
         return self.__name
 
-    def CalculateValue(self) -> float:
-        if self.__response_value is None:
-            self.__response_value = self.__response_function.CalculateValue()
+    def GetValue(self, solution_step_index: int = 0) -> float:
+        key = f"problem_data/response_data/{self.GetName()}/value"
+        if solution_step_index == 0 and not self._optimization_info.HasValue(key):
+            self._optimization_info.SetValue(key, self.__response_function.CalculateValue())
+        return self._optimization_info.GetValue(key, solution_step_index)
 
-        return self.__response_value
-
-    def CalculateSensitivity(self, sensitivity_variable, sensitivity_data_container: ContainerVariableDataHolderUnion):
-        sensitivity_key = (sensitivity_variable, sensitivity_data_container.GetModelPart())
-        if sensitivity_key not in self.__response_sensitivities.keys():
+    def GetSensitivity(self, sensitivity_variable, sensitivity_data_container: ContainerVariableDataHolderUnion, solution_step_index: int = 0):
+        key = f"problem_data/response_data/{self.GetName()}/sensitivities/{sensitivity_data_container.GetModelPart().FullName()}/{sensitivity_variable.Name()}/raw"
+        if solution_step_index == 0 and not self._optimization_info.HasValue(key):
             # calculate the sensitivities
             self.__response_function.CalculateSensitivity(sensitivity_variable, sensitivity_data_container.GetModelPart())
 
@@ -38,22 +33,26 @@ class ResponseFunctionImplementor(ABC):
             sensitivity_data_container.ReadDataFromContainerVariable(sensitivity_variable)
 
             # store it for future use if required.
-            self.__response_sensitivities[sensitivity_key] = sensitivity_data_container.Clone()
+            self._optimization_info.SetValue(key, sensitivity_data_container.Clone())
         else:
-            sensitivity_data_container.CopyDataFrom(self.__response_sensitivities[sensitivity_key])
+            sensitivity_data_container.CopyDataFrom(self._optimization_info.GetValue(key, solution_step_index))
 
     def _GetInitialResponseValue(self):
         if self.__initial_response_value is None:
-            self.__initial_response_value = self.CalculateValue()
+            self.__initial_response_value = self.GetValue()
 
         return self.__initial_response_value
 
     @abstractmethod
-    def CalculateStandardizedValue(self) -> float:
+    def GetStandardizedValue(self, solution_step_index: int = 0) -> float:
         pass
 
     @abstractmethod
-    def CalculateStandardizedSensitivity(self, sensitivity_variable, sensitivity_data_container: ContainerVariableDataHolderUnion):
+    def GetStandardizedSensitivity(self, sensitivity_variable, sensitivity_data_container: ContainerVariableDataHolderUnion, solution_step_index: int = 0):
+        pass
+
+    @abstractmethod
+    def GetResponseType(self) -> str:
         pass
 
     @abstractmethod
@@ -81,19 +80,26 @@ class ObjectiveResponseFunctionImplementor(ResponseFunctionImplementor):
 
         super().__init__(parameters["response_name"].GetString(), optimization_info)
 
-    def CalculateStandardizedValue(self) -> float:
-        return self.CalculateValue() * self.__scaling
+    def GetStandardizedValue(self, solution_step_index: int = 0) -> float:
+        return self.GetValue(solution_step_index) * self.__scaling
 
-    def CalculateStandardizedSensitivity(self, sensitivity_variable, sensitivity_data_container: ContainerVariableDataHolderUnion):
-        self.CalculateSensitivity(sensitivity_variable, sensitivity_data_container)
+    def GetStandardizedSensitivity(self, sensitivity_variable, sensitivity_data_container: ContainerVariableDataHolderUnion, solution_step_index: int = 0):
+        self.GetSensitivity(sensitivity_variable, sensitivity_data_container, solution_step_index)
         sensitivity_data_container *= self.__scaling
+
+    def GetResponseType(self) -> str:
+        return self.__objective_type
 
     def GetResponseInfo(self) -> str:
         msg = "\tObjective info:"
         msg += f"\n\t\t name          : {self.GetName()}"
         msg += f"\n\t\t type          : {self.__objective_type}"
-        msg += f"\n\t\t value         : {self.CalculateValue()}"
-        msg += f"\n\t\t abs_change [%]: {(self.CalculateValue() / self._GetInitialResponseValue() - 1.0) * 100.0}"
+        msg += f"\n\t\t value         : {self.GetValue()}"
+        if self._optimization_info["step"] > 1:
+            msg += f"\n\t\t rel_change [%]: {(self.GetValue() / self.GetValue(1) - 1.0) * 100.0}"
+        else:
+            msg += f"\n\t\t rel_change [%]: 0.0"
+        msg += f"\n\t\t abs_change [%]: {(self.GetValue() / self._GetInitialResponseValue() - 1.0) * 100.0}"
         return msg
 
 class ConstraintResponseFunctionImplementor(ResponseFunctionImplementor):
@@ -127,22 +133,28 @@ class ConstraintResponseFunctionImplementor(ResponseFunctionImplementor):
 
         super().__init__(parameters["response_name"].GetString(), optimization_info)
 
-    def CalculateStandardizedValue(self) -> float:
+    def GetReferenceValue(self):
         if self.__reference_value is None:
-            self.__reference_value = self.CalculateValue()
-        return self.__standardization_value * (self.CalculateValue() * self.__scaling - self.__reference_value)
+            self.__reference_value = self.GetValue()
+        return self.__reference_value
 
-    def CalculateStandardizedSensitivity(self, sensitivity_variable, sensitivity_data_container: ContainerVariableDataHolderUnion):
-        self.CalculateSensitivity(sensitivity_variable, sensitivity_data_container)
+    def GetStandardizedValue(self, solution_step_index: int = 0) -> float:
+        return self.__standardization_value * (self.GetValue(solution_step_index) * self.__scaling - self.GetReferenceValue())
+
+    def GetStandardizedSensitivity(self, sensitivity_variable, sensitivity_data_container: ContainerVariableDataHolderUnion, solution_step_index: int = 0):
+        self.GetSensitivity(sensitivity_variable, sensitivity_data_container, solution_step_index)
         sensitivity_data_container *= (self.__standardization_value * self.__scaling)
 
-    def IsActive(self) -> bool:
-        return (self.__constraint_type == "=") or self.CalculateStandardizedValue() >= 0.0
+    def IsActive(self, solution_step_index: int = 0) -> bool:
+        return (self.__constraint_type == "=") or self.GetStandardizedValue(solution_step_index) >= 0.0
+
+    def GetResponseType(self) -> str:
+        return self.__constraint_type
 
     def GetResponseInfo(self) -> str:
         msg = "\tConstraint info:"
         msg += f"\n\t\t name     : {self.GetName()}"
-        msg += f"\n\t\t value    : {self.CalculateValue()}"
+        msg += f"\n\t\t value    : {self.GetValue()}"
         msg += f"\n\t\t type     : {self.__constraint_type}"
         msg += f"\n\t\t ref_value: {self.__reference_value}"
         msg += f"\n\t\t is_active: {self.IsActive()}"
