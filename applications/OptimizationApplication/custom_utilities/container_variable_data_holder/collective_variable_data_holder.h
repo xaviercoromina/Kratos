@@ -109,13 +109,25 @@ public:
 
     CollectiveVariableDataHolder& operator-=(const double Value);
 
+    CollectiveVariableDataHolder operator*(const CollectiveVariableDataHolder& rOther) const;
+
+    CollectiveVariableDataHolder& operator*=(const CollectiveVariableDataHolder& rOther);
+
     CollectiveVariableDataHolder operator*(const double Value) const;
 
     CollectiveVariableDataHolder& operator*=(const double Value);
 
+    CollectiveVariableDataHolder operator/(const CollectiveVariableDataHolder& rOther) const;
+
+    CollectiveVariableDataHolder& operator/=(const CollectiveVariableDataHolder& rOther);
+
     CollectiveVariableDataHolder operator/(const double Value) const;
 
     CollectiveVariableDataHolder& operator/=(const double Value);
+
+    CollectiveVariableDataHolder operator^(const CollectiveVariableDataHolder& rOther) const;
+
+    CollectiveVariableDataHolder& operator^=(const CollectiveVariableDataHolder& rOther);
 
     CollectiveVariableDataHolder operator^(const double Value) const;
 

@@ -216,6 +216,39 @@ CollectiveVariableDataHolder& CollectiveVariableDataHolder::operator-=(const dou
     return *this;
 }
 
+CollectiveVariableDataHolder CollectiveVariableDataHolder::operator*(const CollectiveVariableDataHolder& rOther) const
+{
+    KRATOS_ERROR_IF_NOT(IsCompatibleWith(rOther))
+        << "Unsupported collective variable data holders provided for \"-\" operation."
+        << "\nLeft operand : " << *this << "\nRight operand: " << rOther << std::endl;
+
+    CollectiveVariableDataHolder result(*this);
+    for (IndexType i = 0; i < mContainerVariableDataHolderPointersList.size(); ++i) {
+        std::visit([&](auto&& v) {
+            using v_type = std::decay_t<decltype(v)>;
+            v->operator*=(*(std::get<v_type>(rOther.mContainerVariableDataHolderPointersList[i])));
+        }, result.mContainerVariableDataHolderPointersList[i]);
+    }
+
+    return result;
+}
+
+CollectiveVariableDataHolder& CollectiveVariableDataHolder::operator*=(const CollectiveVariableDataHolder& rOther)
+{
+    KRATOS_ERROR_IF_NOT(IsCompatibleWith(rOther))
+        << "Unsupported collective variable data holders provided for \"-=\" operation."
+        << "\nLeft operand : " << *this << "\nRight operand: " << rOther << std::endl;
+
+    for (IndexType i = 0; i < mContainerVariableDataHolderPointersList.size(); ++i) {
+        std::visit([&](auto&& v) {
+            using v_type = std::decay_t<decltype(v)>;
+            v->operator*=(*(std::get<v_type>(rOther.mContainerVariableDataHolderPointersList[i])));
+        }, mContainerVariableDataHolderPointersList[i]);
+    }
+
+    return *this;
+}
+
 CollectiveVariableDataHolder CollectiveVariableDataHolder::operator*(const double rOther) const
 {
     CollectiveVariableDataHolder result(*this);
@@ -239,6 +272,39 @@ CollectiveVariableDataHolder& CollectiveVariableDataHolder::operator*=(const dou
     return *this;
 }
 
+CollectiveVariableDataHolder CollectiveVariableDataHolder::operator/(const CollectiveVariableDataHolder& rOther) const
+{
+    KRATOS_ERROR_IF_NOT(IsCompatibleWith(rOther))
+        << "Unsupported collective variable data holders provided for \"-\" operation."
+        << "\nLeft operand : " << *this << "\nRight operand: " << rOther << std::endl;
+
+    CollectiveVariableDataHolder result(*this);
+    for (IndexType i = 0; i < mContainerVariableDataHolderPointersList.size(); ++i) {
+        std::visit([&](auto&& v) {
+            using v_type = std::decay_t<decltype(v)>;
+            v->operator/=(*(std::get<v_type>(rOther.mContainerVariableDataHolderPointersList[i])));
+        }, result.mContainerVariableDataHolderPointersList[i]);
+    }
+
+    return result;
+}
+
+CollectiveVariableDataHolder& CollectiveVariableDataHolder::operator/=(const CollectiveVariableDataHolder& rOther)
+{
+    KRATOS_ERROR_IF_NOT(IsCompatibleWith(rOther))
+        << "Unsupported collective variable data holders provided for \"-=\" operation."
+        << "\nLeft operand : " << *this << "\nRight operand: " << rOther << std::endl;
+
+    for (IndexType i = 0; i < mContainerVariableDataHolderPointersList.size(); ++i) {
+        std::visit([&](auto&& v) {
+            using v_type = std::decay_t<decltype(v)>;
+            v->operator/=(*(std::get<v_type>(rOther.mContainerVariableDataHolderPointersList[i])));
+        }, mContainerVariableDataHolderPointersList[i]);
+    }
+
+    return *this;
+}
+
 CollectiveVariableDataHolder CollectiveVariableDataHolder::operator/(const double rOther) const
 {
     CollectiveVariableDataHolder result(*this);
@@ -256,6 +322,39 @@ CollectiveVariableDataHolder& CollectiveVariableDataHolder::operator/=(const dou
     for (IndexType i = 0; i < mContainerVariableDataHolderPointersList.size(); ++i) {
         std::visit([&](auto&& v) {
             v->operator/=(rOther);
+        }, mContainerVariableDataHolderPointersList[i]);
+    }
+
+    return *this;
+}
+
+CollectiveVariableDataHolder CollectiveVariableDataHolder::operator^(const CollectiveVariableDataHolder& rOther) const
+{
+    KRATOS_ERROR_IF_NOT(IsCompatibleWith(rOther))
+        << "Unsupported collective variable data holders provided for \"-\" operation."
+        << "\nLeft operand : " << *this << "\nRight operand: " << rOther << std::endl;
+
+    CollectiveVariableDataHolder result(*this);
+    for (IndexType i = 0; i < mContainerVariableDataHolderPointersList.size(); ++i) {
+        std::visit([&](auto&& v) {
+            using v_type = std::decay_t<decltype(v)>;
+            v->operator^=(*(std::get<v_type>(rOther.mContainerVariableDataHolderPointersList[i])));
+        }, result.mContainerVariableDataHolderPointersList[i]);
+    }
+
+    return result;
+}
+
+CollectiveVariableDataHolder& CollectiveVariableDataHolder::operator^=(const CollectiveVariableDataHolder& rOther)
+{
+    KRATOS_ERROR_IF_NOT(IsCompatibleWith(rOther))
+        << "Unsupported collective variable data holders provided for \"-=\" operation."
+        << "\nLeft operand : " << *this << "\nRight operand: " << rOther << std::endl;
+
+    for (IndexType i = 0; i < mContainerVariableDataHolderPointersList.size(); ++i) {
+        std::visit([&](auto&& v) {
+            using v_type = std::decay_t<decltype(v)>;
+            v->operator^=(*(std::get<v_type>(rOther.mContainerVariableDataHolderPointersList[i])));
         }, mContainerVariableDataHolderPointersList[i]);
     }
 
