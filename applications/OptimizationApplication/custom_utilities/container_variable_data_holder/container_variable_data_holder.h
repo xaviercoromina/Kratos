@@ -109,13 +109,25 @@ public:
 
     ContainerVariableDataHolder& operator-=(const double Value);
 
+    ContainerVariableDataHolder operator*(const ContainerVariableDataHolder& rOther) const;
+
+    ContainerVariableDataHolder& operator*=(const ContainerVariableDataHolder& rOther);
+
     ContainerVariableDataHolder operator*(const double Value) const;
 
     ContainerVariableDataHolder& operator*=(const double Value);
 
+    ContainerVariableDataHolder operator/(const ContainerVariableDataHolder& rOther) const;
+
+    ContainerVariableDataHolder& operator/=(const ContainerVariableDataHolder& rOther);
+
     ContainerVariableDataHolder operator/(const double Value) const;
 
     ContainerVariableDataHolder& operator/=(const double Value);
+
+    ContainerVariableDataHolder operator^(const ContainerVariableDataHolder& rOther) const;
+
+    ContainerVariableDataHolder& operator^=(const ContainerVariableDataHolder& rOther);
 
     ContainerVariableDataHolder operator^(const double Value) const;
 
