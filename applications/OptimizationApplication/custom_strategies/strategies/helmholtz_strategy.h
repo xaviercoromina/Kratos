@@ -4,291 +4,164 @@
 //   _|\_\_|  \__,_|\__|\___/ ____/
 //                   Multi-Physics
 //
-//  License:		 BSD License
-//					 Kratos default license:
-// kratos/license.txt
+//  License:         BSD License
+//                   license: OptimizationApplication/license.txt
 //
-//  Main authors:    Reza Najian Asl
+//  Main author:     Reza Najian Asl
 //
 
-#if !defined(KRATOS_HELMHOLTZ_VEC_STRATEGY)
-#define KRATOS_HELMHOLTZ_VEC_STRATEGY
+#pragma once
 
-/* System includes */
+// System includes
 
-/* External includes */
+// External includes
 
-/* Project includes */
+// Project includes
+#include "includes/define.h"
 #include "containers/model.h"
 #include "solving_strategies/builder_and_solvers/residualbased_block_builder_and_solver.h"
 #include "solving_strategies/schemes/residualbased_incrementalupdate_static_scheme.h"
 #include "solving_strategies/strategies/residualbased_linear_strategy.h"
-#include "utilities/variable_utils.h"
 #include "utilities/condition_number_utility.h"
+#include "utilities/variable_utils.h"
 
 namespace Kratos {
 
-/**@name Kratos Globals */
-/*@{ */
+///@name Kratos Classes
+///@{
 
-/*@} */
-/**@name Type Definitions */
-/*@{ */
-
-/*@} */
-
-/**@name  Enum's */
-/*@{ */
-
-/*@} */
-/**@name  Functions */
-/*@{ */
-
-/*@} */
-/**@name Kratos Classes */
-/*@{ */
-
-/// Short class definition.
-/**   Detail class definition.
- */
 template <class TSparseSpace, class TDenseSpace, class TLinearSolver>
-class HelmholtzStrategy
-    : public ImplicitSolvingStrategy<TSparseSpace, TDenseSpace, TLinearSolver> {
+class HelmholtzStrategy: public ImplicitSolvingStrategy<TSparseSpace, TDenseSpace, TLinearSolver> {
 public:
-  /**@name Type Definitions */
-  /*@{ */
+    ///@name Type definitions
+    ///@{
 
-  /** Counted pointer of ClassName */
-  KRATOS_CLASS_POINTER_DEFINITION(HelmholtzStrategy);
+    /** Counted pointer of ClassName */
+    KRATOS_CLASS_POINTER_DEFINITION(HelmholtzStrategy);
 
-  typedef ImplicitSolvingStrategy<TSparseSpace, TDenseSpace, TLinearSolver> BaseType;
-  typedef typename BaseType::TBuilderAndSolverType TBuilderAndSolverType;  
-  typedef typename BaseType::TSystemMatrixType                          TSystemMatrixType;
-  typedef typename BaseType::TSystemVectorType                          TSystemVectorType;  
-  typedef Scheme<TSparseSpace, TDenseSpace> SchemeType;
+    using BaseType = ImplicitSolvingStrategy<TSparseSpace, TDenseSpace, TLinearSolver>;
 
-  /*@} */
-  /**@name Life Cycle
-   */
-  /*@{ */
+    using TBuilderAndSolverType = typename BaseType::TBuilderAndSolverType;
 
-  /** Constructor.
-   */
-  HelmholtzStrategy(ModelPart &model_part,
-                               typename TLinearSolver::Pointer pNewLinearSolver,
-                               bool ReformDofSetAtEachStep = false,
-                               bool ComputeReactions = false,
-                               int EchoLevel = 0,
-                               const double PoissonRatio = 0.3)
-      : ImplicitSolvingStrategy<TSparseSpace, TDenseSpace, TLinearSolver>(model_part) {
-    KRATOS_TRY
+    using TSystemMatrixType = typename BaseType::TSystemMatrixType;
 
-    mreform_dof_set_at_each_step = ReformDofSetAtEachStep;
-    mcompute_reactions = ComputeReactions;
-    mecho_level = EchoLevel;
-    bool calculate_norm_dx_flag = false;
+    using TSystemVectorType = typename BaseType::TSystemVectorType;
 
-    mpscheme = typename SchemeType::Pointer(
-        new ResidualBasedIncrementalUpdateStaticScheme<TSparseSpace,
-                                                       TDenseSpace>());
+    using SchemeType = Scheme<TSparseSpace, TDenseSpace>;
 
-    mpbulider_and_solver = typename TBuilderAndSolverType::Pointer(
-        new ResidualBasedBlockBuilderAndSolver<TSparseSpace, TDenseSpace,
-                                               TLinearSolver>(
-            pNewLinearSolver));
+    ///@}
+    ///@name Life Cycle
+    ///@{
 
-    mpstrategy = typename BaseType::Pointer(new ResidualBasedLinearStrategy<TSparseSpace, TDenseSpace,TLinearSolver>(
-        BaseType::GetModelPart(),
-        mpscheme,
-        mpbulider_and_solver,
-        mcompute_reactions,
-        mreform_dof_set_at_each_step,
-        calculate_norm_dx_flag));
+    /* This class is not required. */
+    HelmholtzStrategy(
+        ModelPart& rModelPart,
+        typename TLinearSolver::Pointer pNewLinearSolver,
+        const bool ReformDofSetAtEachStep = false,
+        const bool ComputeReactions = false,
+        const int EchoLevel = 0,
+        const double PoissonRatio = 0.3)
+        : ImplicitSolvingStrategy<TSparseSpace, TDenseSpace, TLinearSolver>(rModelPart)
+    {
+        KRATOS_TRY
 
-    mpstrategy->SetEchoLevel(mecho_level);
+        mReformDofSetAtEachStep = ReformDofSetAtEachStep;
+        mComputeReactions = ComputeReactions;
+        mEchoLevel = EchoLevel;
 
-    KRATOS_CATCH("")
-  }
+        bool calculate_norm_dx_flag = false;
 
-  virtual ~HelmholtzStrategy()
-  {
+        // TODO: This needs to be passed from python level to support MPI
+        mpSheme = typename SchemeType::Pointer(new ResidualBasedIncrementalUpdateStaticScheme<TSparseSpace, TDenseSpace>());
 
-  }
+        // TODO: This needs to be passed from python level to support MPI
+        mpBuliderAndSolver = typename TBuilderAndSolverType::Pointer(new ResidualBasedBlockBuilderAndSolver<TSparseSpace, TDenseSpace, TLinearSolver>(pNewLinearSolver));
 
-  void Initialize() override {}
+        // TODO: This needs to be passed from python level to support MPI
+        mpStrategy = typename BaseType::Pointer(new ResidualBasedLinearStrategy<TSparseSpace, TDenseSpace,TLinearSolver>(
+                                                                BaseType::GetModelPart(),
+                                                                mpSheme,
+                                                                mpBuliderAndSolver,
+                                                                mComputeReactions,
+                                                                mReformDofSetAtEachStep,
+                                                                calculate_norm_dx_flag));
 
-  double Solve() override {
-    KRATOS_TRY;
+        mpStrategy->SetEchoLevel(mEchoLevel);
 
-    VariableUtils().UpdateCurrentToInitialConfiguration(
-        BaseType::GetModelPart().GetCommunicator().LocalMesh().Nodes());
+        KRATOS_CATCH("")
+    }
 
-    // Solve for the mesh movement
-    mpstrategy->Solve();
+    HelmholtzStrategy(const HelmholtzStrategy &Other) = delete;
 
-    // Clearing the system if needed
-    if (mreform_dof_set_at_each_step == true)
-      mpstrategy->Clear();
+    ~HelmholtzStrategy() override = default;
 
-    return 0.0;
+    ///@}
+    ///@name Public operations
+    ///@{
 
-    KRATOS_CATCH("");
-  }
+    double Solve() override
+    {
+        KRATOS_TRY;
 
-  /*@} */
-  /**@name Operators
-   */
-  /*@{ */
+        VariableUtils().UpdateCurrentToInitialConfiguration(
+            BaseType::GetModelPart().GetCommunicator().LocalMesh().Nodes());
 
-  /*@} */
-  /**@name Operations */
-  /*@{ */
+        // Solve for the mesh movement
+        mpStrategy->Solve();
 
-  /*@} */
-  /**@name Access */
-  /*@{ */
+        // Clearing the system if needed
+        if (mReformDofSetAtEachStep) {
+            mpStrategy->Clear();
+        }
 
-  /*@} */
-  /**@name Inquiry */
-  /*@{ */
+        return 0.0;
+
+        KRATOS_CATCH("");
+    }
+
+    ///@}
+    ///@name Inquiry
+    ///@{
+
     TSystemMatrixType &GetSystemMatrix() override
     {
-        return mpstrategy->GetSystemMatrix();
+        return mpStrategy->GetSystemMatrix();
     }
 
     TSystemVectorType &GetSystemVector() override
     {
-        return mpstrategy->GetSystemVector();
+        return mpStrategy->GetSystemVector();
     }
 
     TSystemVectorType &GetSolutionVector() override
     {
-        return mpstrategy->GetSolutionVector();
-    }   
+        return mpStrategy->GetSolutionVector();
+    }
 
-    void ExportSystem() 
-    { 
-        mpstrategy->Clear();
-        mpstrategy->Initialize();
-        mpstrategy->InitializeSolutionStep();
-        mpstrategy->Predict();         
-        mpbulider_and_solver->Build(mpscheme,BaseType::GetModelPart(),mpstrategy->GetSystemMatrix(),mpstrategy->GetSystemVector());
-
-        std::stringstream matrix_market_name;
-        matrix_market_name << "A_wo_D_BC.mm";
-        TSparseSpace::WriteMatrixMarketMatrix((char *)(matrix_market_name.str()).c_str(), mpstrategy->GetSystemMatrix(), false);
-
-        std::stringstream matrix_market_vectname;
-        matrix_market_vectname << "b_wo_D_BC.mm";
-        TSparseSpace::WriteMatrixMarketVector((char *)(matrix_market_vectname.str()).c_str(), mpstrategy->GetSystemVector()); 
-
-        mpstrategy->SolveSolutionStep();
-
-        matrix_market_name.str("");
-        matrix_market_name << "A_wi_D_BC.mm";
-        TSparseSpace::WriteMatrixMarketMatrix((char *)(matrix_market_name.str()).c_str(), mpstrategy->GetSystemMatrix(), false);
-
-        matrix_market_vectname.str("");
-        matrix_market_vectname << "b_wi_D_BC.mm";
-        TSparseSpace::WriteMatrixMarketVector((char *)(matrix_market_vectname.str()).c_str(), mpstrategy->GetSystemVector()); 
-
-        mpstrategy->FinalizeSolutionStep();
-
-        mpstrategy->Clear();
-
-    }       
-
-    typename BaseType::Pointer GetStrategy() 
+    typename BaseType::Pointer GetStrategy()
     {
-        return mpstrategy;
-    }     
+        return mpStrategy;
+    }
 
-  /*@} */
-  /**@name Friends */
-  /*@{ */
-
-  /*@} */
-
-protected:
-  /**@name Protected static Member Variables */
-  /*@{ */
-
-  /*@} */
-  /**@name Protected member Variables */
-  /*@{ */
-
-  /*@} */
-  /**@name Protected Operators*/
-  /*@{ */
-
-  /*@} */
-  /**@name Protected Operations*/
-  /*@{ */
-
-  /*@} */
-  /**@name Protected  Access */
-  /*@{ */
-
-  /*@} */
-  /**@name Protected Inquiry */
-  /*@{ */
-
-  /*@} */
-  /**@name Protected LifeCycle */
-  /*@{ */
-
-  /*@} */
-
+    ///@}
 private:
-  /**@name Static Member Variables */
-  /*@{ */
+    ///@name Member Variables
+    ///@{
 
-  /*@} */
-  /**@name Member Variables */
-  /*@{ */
+    typename SchemeType::Pointer mpSheme;
 
-  typename SchemeType::Pointer mpscheme;
-  typename BaseType::Pointer mpstrategy;
-  typename TBuilderAndSolverType::Pointer mpbulider_and_solver;
+    typename BaseType::Pointer mpStrategy;
 
-  int mecho_level;
-  bool mreform_dof_set_at_each_step;
-  bool mcompute_reactions;
+    typename TBuilderAndSolverType::Pointer mpBuliderAndSolver;
 
-  /*@} */
-  /**@name Private Operators*/
-  /*@{ */
+    int mEchoLevel;
 
-  /*@} */
-  /**@name Private Operations*/
-  /*@{ */
-  /*@} */
-  /**@name Private  Access */
-  /*@{ */
+    bool mReformDofSetAtEachStep;
 
-  /*@} */
-  /**@name Private Inquiry */
-  /*@{ */
+    bool mComputeReactions;
 
-  /*@} */
-  /**@name Un accessible methods */
-  /*@{ */
+    ///@}
 
-  /** Copy constructor.
-   */
-  HelmholtzStrategy(const HelmholtzStrategy &Other);
+};
 
-  /*@} */
-
-}; /* Class HelmholtzStrategy */
-
-/*@} */
-
-/**@name Type Definitions */
-/*@{ */
-
-/*@} */
-}
-/* namespace Kratos.*/
-
-#endif /* KRATOS_HELMHOLTZ_VEC_STRATEGY  defined */
+} // namespace Kratos
