@@ -140,6 +140,21 @@ class TestContainerVariableDataHolderBase(ABC):
         for node in c.GetContainer():
             self.assertEqual(self._GetValue(node, Kratos.DENSITY), self._GetValue(node, Kratos.PRESSURE) - 200.0, 12)
 
+        d = c * a
+        d *= b
+        d.AssignDataToContainerVariable(Kratos.DENSITY)
+        for node in c.GetContainer():
+            self.assertEqual(self._GetValue(node, Kratos.DENSITY), (self._GetValue(node, Kratos.PRESSURE) - 200.0) * self._GetValue(node, Kratos.PRESSURE) ** 2, 12)
+
+        a = self._GetContainerVariableDataHolder()
+        a.ReadDataFromContainerVariable(Kratos.VELOCITY)
+
+        a = (a * 2) * (d + 5)
+        a *= d
+        a.AssignDataToContainerVariable(Kratos.ACCELERATION)
+        for node in c.GetContainer():
+            self.assertVectorAlmostEqual(self._GetValue(node, Kratos.ACCELERATION), (self._GetValue(node, Kratos.VELOCITY) * 2 * (5 + (self._GetValue(node, Kratos.PRESSURE) - 200.0) * self._GetValue(node, Kratos.PRESSURE) ** 2)) * ((self._GetValue(node, Kratos.PRESSURE) - 200.0) * self._GetValue(node, Kratos.PRESSURE) ** 2), 12)
+
     def test_ContainerVariableDataHolderDivision(self):
         a = self._GetContainerVariableDataHolder()
         a.ReadDataFromContainerVariable(Kratos.VELOCITY)
@@ -160,6 +175,21 @@ class TestContainerVariableDataHolderBase(ABC):
         c.AssignDataToContainerVariable(Kratos.DENSITY)
         for node in c.GetContainer():
             self.assertEqual(self._GetValue(node, Kratos.DENSITY), self._GetValue(node, Kratos.PRESSURE) / 4, 12)
+
+        d = c / a
+        d /= (a * 2)
+        d.AssignDataToContainerVariable(Kratos.DENSITY)
+        for node in c.GetContainer():
+            self.assertEqual(self._GetValue(node, Kratos.DENSITY), 0.5 * ((self._GetValue(node, Kratos.PRESSURE) / 4) / self._GetValue(node, Kratos.PRESSURE)) / self._GetValue(node, Kratos.PRESSURE) , 12)
+
+        a = self._GetContainerVariableDataHolder()
+        a.ReadDataFromContainerVariable(Kratos.VELOCITY)
+
+        a = (a * 2) / (d + 5)
+        a /= d
+        a.AssignDataToContainerVariable(Kratos.ACCELERATION)
+        for node in c.GetContainer():
+            self.assertVectorAlmostEqual(self._GetValue(node, Kratos.ACCELERATION), (self._GetValue(node, Kratos.VELOCITY) * 2 / (5 + 0.5 * ((self._GetValue(node, Kratos.PRESSURE) / 4) / self._GetValue(node, Kratos.PRESSURE)) / self._GetValue(node, Kratos.PRESSURE))) / (0.5 * ((self._GetValue(node, Kratos.PRESSURE) / 4) / self._GetValue(node, Kratos.PRESSURE)) / self._GetValue(node, Kratos.PRESSURE)), 12)
 
     def test_ContainerVariableDataHolderPow(self):
         a = self._GetContainerVariableDataHolder()
