@@ -87,6 +87,22 @@ public:
         SparseMatrixType& rOutput,
         const SparseMatrixType& rInput);
 
+    template<class TContainerType>
+    static void ComputeNumberOfNeighbourEntities(
+        ContainerVariableDataHolderBase<ModelPart::NodesContainerType>& rOutput,
+        const ContainerVariableDataHolderBase<TContainerType>& rInput);
+
+    template<class TContainerType>
+    static void MapContainerVariableDataHolderToNodalVariableDataHolder(
+        ContainerVariableDataHolderBase<ModelPart::NodesContainerType>& rOutput,
+        const ContainerVariableDataHolderBase<TContainerType>& rInput,
+        const ContainerVariableDataHolderBase<ModelPart::NodesContainerType>& rNeighbourEntities);
+
+    template<class TContainerType>
+    static void MapNodalVariableDataHolderToContainerVariableDataHolder(
+        ContainerVariableDataHolderBase<TContainerType>& rOutput,
+        const ContainerVariableDataHolderBase<ModelPart::NodesContainerType>& rInput);
+
     ///@}
 };
 

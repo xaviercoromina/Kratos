@@ -167,6 +167,16 @@ namespace Kratos
         KRATOS_REGISTER_VARIABLE(SCALAR_CONTROL_UPDATE);
         KRATOS_REGISTER_3D_VARIABLE_WITH_COMPONENTS(ARRAY3_CONTROL_UPDATE);
 
+        // do not expose the following variables to python. They are used
+        // as temporary data holders. They can be changed
+        // at any point of time in an analysis.
+        // Hence, not recommended to be used for calculations
+        // unless existing values on those variables are not of interest
+        KRATOS_CREATE_VARIABLE(double, TEMPORARY_SCALAR_VARIABLE_1);
+        KRATOS_CREATE_VARIABLE(double, TEMPORARY_SCALAR_VARIABLE_2);
+        KRATOS_CREATE_3D_VARIABLE_WITH_COMPONENTS(TEMPORARY_ARRAY3_VARIABLE_1);
+        KRATOS_CREATE_3D_VARIABLE_WITH_COMPONENTS(TEMPORARY_ARRAY3_VARIABLE_2);
+
         // Shape optimization elements
         KRATOS_REGISTER_ELEMENT("HelmholtzSurfShape3D3N", mHelmholtzSurfShape3D3N);
         KRATOS_REGISTER_ELEMENT("HelmholtzBulkShape3D4N", mHelmholtzBulkShape3D4N);

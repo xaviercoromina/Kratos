@@ -356,6 +356,60 @@ ContainerVariableDataHolder<TContainerType, TContainerDataIO>& ContainerVariable
 }
 
 template <class TContainerType, class TContainerDataIO>
+ContainerVariableDataHolder<TContainerType, TContainerDataIO> ContainerVariableDataHolder<TContainerType, TContainerDataIO>::operator*(const ContainerVariableDataHolder<TContainerType, TContainerDataIO>& rOther) const
+{
+    KRATOS_ERROR_IF(&this->GetModelPart() != &rOther.GetModelPart())
+        << "Mismatching model parts found in substraction.\n"
+        << "      Left operand data : " << *this << "\n"
+        << "      Right operand data: " << rOther << "\n";
+
+    KRATOS_ERROR_IF(this->mDataDimension != rOther.mDataDimension && (this->mDataDimension * rOther.mDataDimension == 0 || rOther.mDataDimension != 1))
+        << "Dimension mismatch in operands for *. Right operand data dimension should be 1 or equal to left operand dimension.\n"
+        << "      Left operand data : " << *this << "\n"
+        << "      Right operand data: " << rOther << "\n";
+
+    ContainerVariableDataHolder<TContainerType, TContainerDataIO> result(*(this->mpModelPart));
+    result.mDataDimension = this->mDataDimension;
+    result.mData.resize(this->mData.size(), false);
+    IndexPartition<IndexType>(this->GetContainer().size()).for_each([&](const IndexType Index) {
+        for (IndexType i = 0; i < this->mDataDimension; ++i) {
+            double& v1 = result.mData[Index * this->mDataDimension + i];
+            const double v2 = this->mData[Index * this->mDataDimension + i];
+            for (IndexType j = 0; j < rOther.mDataDimension; ++j) {
+                v1 = v2 * rOther.mData[Index * rOther.mDataDimension + j];
+            }
+        }
+    });
+
+    return result;
+}
+
+template <class TContainerType, class TContainerDataIO>
+ContainerVariableDataHolder<TContainerType, TContainerDataIO>& ContainerVariableDataHolder<TContainerType, TContainerDataIO>::operator*=(const ContainerVariableDataHolder<TContainerType, TContainerDataIO>& rOther)
+{
+    KRATOS_ERROR_IF(&this->GetModelPart() != &rOther.GetModelPart())
+        << "Mismatching model parts found in substraction.\n"
+        << "      Left operand data : " << *this << "\n"
+        << "      Right operand data: " << rOther << "\n";
+
+    KRATOS_ERROR_IF(this->mDataDimension != rOther.mDataDimension && (this->mDataDimension * rOther.mDataDimension == 0 || rOther.mDataDimension != 1))
+        << "Dimension mismatch in operands for *. Right operand data dimension should be 1 or equal to left operand dimension.\n"
+        << "      Left operand data : " << *this << "\n"
+        << "      Right operand data: " << rOther << "\n";
+
+    IndexPartition<IndexType>(this->GetContainer().size()).for_each([&](const IndexType Index) {
+        for (IndexType i = 0; i < this->mDataDimension; ++i) {
+            double& v1 = this->mData[Index * this->mDataDimension + i];
+            for (IndexType j = 0; j < rOther.mDataDimension; ++j) {
+                v1 *= rOther.mData[Index * rOther.mDataDimension + j];
+            }
+        }
+    });
+
+    return *this;
+}
+
+template <class TContainerType, class TContainerDataIO>
 ContainerVariableDataHolder<TContainerType, TContainerDataIO> ContainerVariableDataHolder<TContainerType, TContainerDataIO>::operator*(const double Value) const
 {
     ContainerVariableDataHolder<TContainerType, TContainerDataIO> result(*(this->mpModelPart));
@@ -373,6 +427,60 @@ ContainerVariableDataHolder<TContainerType, TContainerDataIO>& ContainerVariable
 {
     IndexPartition<IndexType>(this->mData.size()).for_each([&](const IndexType Index) {
         this->mData[Index] *= Value;
+    });
+
+    return *this;
+}
+
+template <class TContainerType, class TContainerDataIO>
+ContainerVariableDataHolder<TContainerType, TContainerDataIO> ContainerVariableDataHolder<TContainerType, TContainerDataIO>::operator/(const ContainerVariableDataHolder<TContainerType, TContainerDataIO>& rOther) const
+{
+    KRATOS_ERROR_IF(&this->GetModelPart() != &rOther.GetModelPart())
+        << "Mismatching model parts found in substraction.\n"
+        << "      Left operand data : " << *this << "\n"
+        << "      Right operand data: " << rOther << "\n";
+
+    KRATOS_ERROR_IF(this->mDataDimension != rOther.mDataDimension && (this->mDataDimension * rOther.mDataDimension == 0 || rOther.mDataDimension != 1))
+        << "Dimension mismatch in operands for /. Right operand data dimension should be 1 or equal to left operand dimension.\n"
+        << "      Left operand data : " << *this << "\n"
+        << "      Right operand data: " << rOther << "\n";
+
+    ContainerVariableDataHolder<TContainerType, TContainerDataIO> result(*(this->mpModelPart));
+    result.mDataDimension = this->mDataDimension;
+    result.mData.resize(this->mData.size(), false);
+    IndexPartition<IndexType>(this->GetContainer().size()).for_each([&](const IndexType Index) {
+        for (IndexType i = 0; i < this->mDataDimension; ++i) {
+            double& v1 = result.mData[Index * this->mDataDimension + i];
+            const double v2 = this->mData[Index * this->mDataDimension + i];
+            for (IndexType j = 0; j < rOther.mDataDimension; ++j) {
+                v1 = v2 / rOther.mData[Index * rOther.mDataDimension + j];
+            }
+        }
+    });
+
+    return result;
+}
+
+template <class TContainerType, class TContainerDataIO>
+ContainerVariableDataHolder<TContainerType, TContainerDataIO>& ContainerVariableDataHolder<TContainerType, TContainerDataIO>::operator/=(const ContainerVariableDataHolder<TContainerType, TContainerDataIO>& rOther)
+{
+    KRATOS_ERROR_IF(&this->GetModelPart() != &rOther.GetModelPart())
+        << "Mismatching model parts found in substraction.\n"
+        << "      Left operand data : " << *this << "\n"
+        << "      Right operand data: " << rOther << "\n";
+
+    KRATOS_ERROR_IF(this->mDataDimension != rOther.mDataDimension && (this->mDataDimension * rOther.mDataDimension == 0 || rOther.mDataDimension != 1))
+        << "Dimension mismatch in operands for /. Right operand data dimension should be 1 or equal to left operand dimension.\n"
+        << "      Left operand data : " << *this << "\n"
+        << "      Right operand data: " << rOther << "\n";
+
+    IndexPartition<IndexType>(this->GetContainer().size()).for_each([&](const IndexType Index) {
+        for (IndexType i = 0; i < this->mDataDimension; ++i) {
+            double& v1 = this->mData[Index * this->mDataDimension + i];
+            for (IndexType j = 0; j < rOther.mDataDimension; ++j) {
+                v1 /= rOther.mData[Index * rOther.mDataDimension + j];
+            }
+        }
     });
 
     return *this;
@@ -406,6 +514,49 @@ ContainerVariableDataHolder<TContainerType, TContainerDataIO>& ContainerVariable
 
     IndexPartition<IndexType>(this->mData.size()).for_each([&](const IndexType Index) {
         this->mData[Index] /= Value;
+    });
+
+    return *this;
+}
+
+template <class TContainerType, class TContainerDataIO>
+ContainerVariableDataHolder<TContainerType, TContainerDataIO> ContainerVariableDataHolder<TContainerType, TContainerDataIO>::operator^(const ContainerVariableDataHolder<TContainerType, TContainerDataIO>& rOther) const
+{
+    KRATOS_ERROR_IF(&this->GetModelPart() != &rOther.GetModelPart())
+        << "Mismatching model parts found in substraction.\n"
+        << "      Left operand data : " << *this << "\n"
+        << "      Right operand data: " << rOther << "\n";
+
+    KRATOS_ERROR_IF_NOT(this->mData.size() == rOther.mData.size())
+        << "Data size mismatch in operands for -.\n"
+        << "      Left operand data : " << *this << "\n"
+        << "      Right operand data: " << rOther << "\n";
+
+    ContainerVariableDataHolder<TContainerType, TContainerDataIO> result(*(this->mpModelPart));
+    result.mDataDimension = this->mDataDimension;
+    result.mData.resize(this->mData.size(), false);
+    IndexPartition<IndexType>(this->mData.size()).for_each([&](const IndexType Index) {
+        result.mData[Index] = std::pow(this->mData[Index], rOther.mData[Index]);
+    });
+
+    return result;
+}
+
+template <class TContainerType, class TContainerDataIO>
+ContainerVariableDataHolder<TContainerType, TContainerDataIO>& ContainerVariableDataHolder<TContainerType, TContainerDataIO>::operator^=(const ContainerVariableDataHolder<TContainerType, TContainerDataIO>& rOther)
+{
+    KRATOS_ERROR_IF(&this->GetModelPart() != &rOther.GetModelPart())
+        << "Mismatching model parts found in substraction.\n"
+        << "      Left operand data : " << *this << "\n"
+        << "      Right operand data: " << rOther << "\n";
+
+    KRATOS_ERROR_IF_NOT(this->mData.size() == rOther.mData.size())
+        << "Data size mismatch in operands for -=.\n"
+        << "      Left operand data : " << *this << "\n"
+        << "      Right operand data: " << rOther << "\n";
+
+    IndexPartition<IndexType>(this->mData.size()).for_each([&](const IndexType Index) {
+        this->mData[Index] = std::pow(this->mData[Index], rOther.mData[Index]);
     });
 
     return *this;

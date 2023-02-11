@@ -21,6 +21,16 @@ class TestContainerVariableDataHolderUtils(kratos_unittest.TestCase):
             node.SetSolutionStepValue(Kratos.PRESSURE, id+3)
             node.SetSolutionStepValue(Kratos.DENSITY, id+4)
 
+    @staticmethod
+    def __GetNodeIndex(position, model_part):
+        for node in model_part.Nodes:
+            distance = (position[0] - node.X)**2 + (position[1] - node.Y)**2 + (position[2] - node.Z)**2
+            if distance < 1e-8:
+                return node.Id
+
+        node = model_part.CreateNewNode(model_part.NumberOfNodes(), position[0], position[1], position[2])
+        return node.Id
+
     def test_ContainerVariableDataHolderNormInf(self):
         a = KratosOA.HistoricalContainerVariableDataHolder(self.model_part)
 
@@ -194,6 +204,214 @@ class TestContainerVariableDataHolderUtils(kratos_unittest.TestCase):
         for i in range(dense_m.Size1()):
             for j in range(dense_m.Size2()):
                 self.assertEqual(transpose_sparse_m[j, i], dense_m[i, j])
+
+    def test_ComputeNumberOfNeighbourConditions(self):
+        def __GenerateEntity(center: Kratos.Array3, model_part: Kratos.ModelPart):
+            model_part.CreateNewCondition("SurfaceCondition3D4N", model_part.NumberOfConditions() + 1, [
+                    TestContainerVariableDataHolderUtils.__GetNodeIndex(center + Kratos.Array3([-0.5, -0.5, 0.0]), model_part),
+                    TestContainerVariableDataHolderUtils.__GetNodeIndex(center + Kratos.Array3([0.5, -0.5, 0.0]), model_part),
+                    TestContainerVariableDataHolderUtils.__GetNodeIndex(center + Kratos.Array3([0.5, 0.5, 0.0]), model_part),
+                    TestContainerVariableDataHolderUtils.__GetNodeIndex(center + Kratos.Array3([-0.5, 0.5, 0.0]), model_part)
+            ], model_part.GetProperties()[1])
+
+        model = Kratos.Model()
+        model_part = model.CreateModelPart("test1")
+        model_part.CreateNewProperties(1)
+        model_part.ProcessInfo[Kratos.DOMAIN_SIZE] = 2
+
+        for i in range(9):
+            __GenerateEntity(Kratos.Array3([i // 3, i % 3, 0]), model_part)
+
+        dummy_condition_container = KratosOA.ConditionContainerVariableDataHolder(model_part)
+        neighbour_elements = KratosOA.NodalContainerVariableDataHolder(model_part)
+        KratosOA.ContainerVariableDataHolderUtils.ComputeNumberOfNeighbourEntities(neighbour_elements, dummy_condition_container)
+        neighbour_elements.AssignDataToContainerVariable(Kratos.DENSITY)
+
+        neighbour_map = {
+            1: [1, 8, 13, 16],
+            2: [2, 9, 4, 6, 14, 15, 7, 12],
+            4: [3, 10, 11, 5]
+        }
+        for node in model_part.Nodes:
+            self.assertTrue(node.Id + 1 in neighbour_map[int(node.GetValue(Kratos.DENSITY))])
+
+    def test_ComputeNumberOfNeighbourConditions(self):
+        def __GenerateEntity(center: Kratos.Array3, model_part: Kratos.ModelPart):
+            model_part.CreateNewElement("Element2D4N", model_part.NumberOfElements() + 1, [
+                    TestContainerVariableDataHolderUtils.__GetNodeIndex(center + Kratos.Array3([-0.5, -0.5, 0.0]), model_part),
+                    TestContainerVariableDataHolderUtils.__GetNodeIndex(center + Kratos.Array3([0.5, -0.5, 0.0]), model_part),
+                    TestContainerVariableDataHolderUtils.__GetNodeIndex(center + Kratos.Array3([0.5, 0.5, 0.0]), model_part),
+                    TestContainerVariableDataHolderUtils.__GetNodeIndex(center + Kratos.Array3([-0.5, 0.5, 0.0]), model_part)
+            ], model_part.GetProperties()[1])
+
+        model = Kratos.Model()
+        model_part = model.CreateModelPart("test1")
+        model_part.CreateNewProperties(1)
+        model_part.ProcessInfo[Kratos.DOMAIN_SIZE] = 2
+
+        for i in range(9):
+            __GenerateEntity(Kratos.Array3([i // 3, i % 3, 0]), model_part)
+
+        dummy_condition_container = KratosOA.ElementContainerVariableDataHolder(model_part)
+        neighbour_elements = KratosOA.NodalContainerVariableDataHolder(model_part)
+        KratosOA.ContainerVariableDataHolderUtils.ComputeNumberOfNeighbourEntities(neighbour_elements, dummy_condition_container)
+        neighbour_elements.AssignDataToContainerVariable(Kratos.DENSITY)
+
+        neighbour_map = {
+            1: [1, 8, 13, 16],
+            2: [2, 9, 4, 6, 14, 15, 7, 12],
+            4: [3, 10, 11, 5]
+        }
+        for node in model_part.Nodes:
+            self.assertTrue(node.Id + 1 in neighbour_map[int(node.GetValue(Kratos.DENSITY))])
+
+    def test_MapConditionContainerVariableDataHolderToNodalVariableDataHolder(self):
+        def __GenerateEntity(center: Kratos.Array3, model_part: Kratos.ModelPart):
+            model_part.CreateNewCondition("SurfaceCondition3D4N", model_part.NumberOfConditions() + 1, [
+                    TestContainerVariableDataHolderUtils.__GetNodeIndex(center + Kratos.Array3([-0.5, -0.5, 0.0]), model_part),
+                    TestContainerVariableDataHolderUtils.__GetNodeIndex(center + Kratos.Array3([0.5, -0.5, 0.0]), model_part),
+                    TestContainerVariableDataHolderUtils.__GetNodeIndex(center + Kratos.Array3([0.5, 0.5, 0.0]), model_part),
+                    TestContainerVariableDataHolderUtils.__GetNodeIndex(center + Kratos.Array3([-0.5, 0.5, 0.0]), model_part)
+            ], model_part.GetProperties()[1])
+
+        model = Kratos.Model()
+        model_part = model.CreateModelPart("test1")
+        model_part.CreateNewProperties(1)
+        model_part.ProcessInfo[Kratos.DOMAIN_SIZE] = 3
+
+        for i in range(9):
+            __GenerateEntity(Kratos.Array3([i // 3, i % 3, 0]), model_part)
+
+        for condition in model_part.Conditions:
+            condition.SetValue(Kratos.VELOCITY, Kratos.Array3([condition.Id, condition.Id + 1, condition.Id + 3]))
+            condition.SetValue(Kratos.PRESSURE, condition.Id + 4)
+
+        condition_container = KratosOA.ConditionContainerVariableDataHolder(model_part)
+        neighbour_conditions = KratosOA.NodalContainerVariableDataHolder(model_part)
+        mapped_values = KratosOA.NodalContainerVariableDataHolder(model_part)
+
+        KratosOA.ContainerVariableDataHolderUtils.ComputeNumberOfNeighbourEntities(neighbour_conditions, condition_container)
+        neighbour_conditions.AssignDataToContainerVariable(Kratos.YOUNG_MODULUS)
+
+        condition_container.ReadDataFromContainerVariable(Kratos.VELOCITY)
+        KratosOA.ContainerVariableDataHolderUtils.MapContainerVariableDataHolderToNodalVariableDataHolder(mapped_values, condition_container, neighbour_conditions)
+        mapped_values.AssignDataToContainerVariable(Kratos.VELOCITY)
+
+        Kratos.VariableUtils().SetNonHistoricalVariableToZero(Kratos.ACCELERATION, model_part.Nodes)
+        for condition in model_part.Conditions:
+            for node in condition.GetGeometry():
+                node[Kratos.ACCELERATION] += condition.GetValue(Kratos.VELOCITY) / node.GetValue(Kratos.YOUNG_MODULUS)
+
+        for node in model_part.Nodes:
+            self.assertVectorAlmostEqual(node[Kratos.ACCELERATION], node[Kratos.VELOCITY])
+
+        condition_container.ReadDataFromContainerVariable(Kratos.PRESSURE)
+        KratosOA.ContainerVariableDataHolderUtils.MapContainerVariableDataHolderToNodalVariableDataHolder(mapped_values, condition_container, neighbour_conditions)
+        mapped_values.AssignDataToContainerVariable(Kratos.PRESSURE)
+
+        Kratos.VariableUtils().SetNonHistoricalVariableToZero(Kratos.DENSITY, model_part.Nodes)
+        for condition in model_part.Conditions:
+            for node in condition.GetGeometry():
+                node[Kratos.DENSITY] += condition.GetValue(Kratos.PRESSURE) / node.GetValue(Kratos.YOUNG_MODULUS)
+
+        for node in model_part.Nodes:
+            self.assertEqual(node[Kratos.DENSITY], node[Kratos.PRESSURE])
+
+    def test_MapElementContainerVariableDataHolderToNodalVariableDataHolder(self):
+        def __GenerateEntity(center: Kratos.Array3, model_part: Kratos.ModelPart):
+            model_part.CreateNewElement("Element2D4N", model_part.NumberOfElements() + 1, [
+                    TestContainerVariableDataHolderUtils.__GetNodeIndex(center + Kratos.Array3([-0.5, -0.5, 0.0]), model_part),
+                    TestContainerVariableDataHolderUtils.__GetNodeIndex(center + Kratos.Array3([0.5, -0.5, 0.0]), model_part),
+                    TestContainerVariableDataHolderUtils.__GetNodeIndex(center + Kratos.Array3([0.5, 0.5, 0.0]), model_part),
+                    TestContainerVariableDataHolderUtils.__GetNodeIndex(center + Kratos.Array3([-0.5, 0.5, 0.0]), model_part)
+            ], model_part.GetProperties()[1])
+
+        model = Kratos.Model()
+        model_part = model.CreateModelPart("test1")
+        model_part.CreateNewProperties(1)
+        model_part.ProcessInfo[Kratos.DOMAIN_SIZE] = 3
+
+        for i in range(9):
+            __GenerateEntity(Kratos.Array3([i // 3, i % 3, 0]), model_part)
+
+        for element in model_part.Elements:
+            element.SetValue(Kratos.VELOCITY, Kratos.Array3([element.Id, element.Id + 1, element.Id + 3]))
+            element.SetValue(Kratos.PRESSURE, element.Id + 4)
+
+        element_container = KratosOA.ElementContainerVariableDataHolder(model_part)
+        neighbour_conditions = KratosOA.NodalContainerVariableDataHolder(model_part)
+        mapped_values = KratosOA.NodalContainerVariableDataHolder(model_part)
+
+        KratosOA.ContainerVariableDataHolderUtils.ComputeNumberOfNeighbourEntities(neighbour_conditions, element_container)
+        neighbour_conditions.AssignDataToContainerVariable(Kratos.YOUNG_MODULUS)
+
+        element_container.ReadDataFromContainerVariable(Kratos.VELOCITY)
+        KratosOA.ContainerVariableDataHolderUtils.MapContainerVariableDataHolderToNodalVariableDataHolder(mapped_values, element_container, neighbour_conditions)
+        mapped_values.AssignDataToContainerVariable(Kratos.VELOCITY)
+
+        Kratos.VariableUtils().SetNonHistoricalVariableToZero(Kratos.ACCELERATION, model_part.Nodes)
+        for element in model_part.Elements:
+            for node in element.GetGeometry():
+                node[Kratos.ACCELERATION] += element.GetValue(Kratos.VELOCITY) / node.GetValue(Kratos.YOUNG_MODULUS)
+
+        for node in model_part.Nodes:
+            self.assertVectorAlmostEqual(node[Kratos.ACCELERATION], node[Kratos.VELOCITY])
+
+        element_container.ReadDataFromContainerVariable(Kratos.PRESSURE)
+        KratosOA.ContainerVariableDataHolderUtils.MapContainerVariableDataHolderToNodalVariableDataHolder(mapped_values, element_container, neighbour_conditions)
+        mapped_values.AssignDataToContainerVariable(Kratos.PRESSURE)
+
+        Kratos.VariableUtils().SetNonHistoricalVariableToZero(Kratos.DENSITY, model_part.Nodes)
+        for element in model_part.Elements:
+            for node in element.GetGeometry():
+                node[Kratos.DENSITY] += element.GetValue(Kratos.PRESSURE) / node.GetValue(Kratos.YOUNG_MODULUS)
+
+        for node in model_part.Nodes:
+            self.assertEqual(node[Kratos.DENSITY], node[Kratos.PRESSURE])
+
+    def test_MapNodalVariableDataHolderToConditionContainerVariableDataHolder(self):
+        def __GenerateEntity(center: Kratos.Array3, model_part: Kratos.ModelPart):
+            model_part.CreateNewCondition("SurfaceCondition3D4N", model_part.NumberOfConditions() + 1, [
+                    TestContainerVariableDataHolderUtils.__GetNodeIndex(center + Kratos.Array3([-0.5, -0.5, 0.0]), model_part),
+                    TestContainerVariableDataHolderUtils.__GetNodeIndex(center + Kratos.Array3([0.5, -0.5, 0.0]), model_part),
+                    TestContainerVariableDataHolderUtils.__GetNodeIndex(center + Kratos.Array3([0.5, 0.5, 0.0]), model_part),
+                    TestContainerVariableDataHolderUtils.__GetNodeIndex(center + Kratos.Array3([-0.5, 0.5, 0.0]), model_part)
+            ], model_part.GetProperties()[1])
+
+        model = Kratos.Model()
+        model_part = model.CreateModelPart("test1")
+        model_part.CreateNewProperties(1)
+        model_part.ProcessInfo[Kratos.DOMAIN_SIZE] = 3
+
+        for i in range(9):
+            __GenerateEntity(Kratos.Array3([i // 3, i % 3, 0]), model_part)
+
+        for node in model_part.Nodes:
+            node.SetValue(Kratos.VELOCITY, Kratos.Array3([node.Id, node.Id + 1, node.Id + 3]))
+            node.SetValue(Kratos.PRESSURE, node.Id + 4)
+
+        nodal_container = KratosOA.NodalContainerVariableDataHolder(model_part)
+        mapped_value = KratosOA.ConditionContainerVariableDataHolder(model_part)
+
+        nodal_container.ReadDataFromContainerVariable(Kratos.VELOCITY)
+        KratosOA.ContainerVariableDataHolderUtils.MapNodalVariableDataHolderToContainerVariableDataHolder(mapped_value, nodal_container)
+        mapped_value.AssignDataToContainerVariable(Kratos.ACCELERATION)
+
+        for condition in model_part.Conditions:
+            v = Kratos.Array3([0, 0, 0])
+            for node in condition.GetGeometry():
+                v += node.GetValue(Kratos.VELOCITY)
+            self.assertVectorAlmostEqual(v / 4.0, condition.GetValue(Kratos.ACCELERATION))
+
+        nodal_container.ReadDataFromContainerVariable(Kratos.PRESSURE)
+        KratosOA.ContainerVariableDataHolderUtils.MapNodalVariableDataHolderToContainerVariableDataHolder(mapped_value, nodal_container)
+        mapped_value.AssignDataToContainerVariable(Kratos.DENSITY)
+
+        for condition in model_part.Conditions:
+            v = 0.0
+            for node in condition.GetGeometry():
+                v += node.GetValue(Kratos.PRESSURE)
+            self.assertEqual(v / 4.0, condition.GetValue(Kratos.DENSITY))
 
 if __name__ == "__main__":
     Kratos.Tester.SetVerbosity(Kratos.Tester.Verbosity.PROGRESS)  # TESTS_OUTPUTS
