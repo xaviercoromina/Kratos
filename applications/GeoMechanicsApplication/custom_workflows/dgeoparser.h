@@ -12,13 +12,22 @@
 
 #pragma once
 
+#include <string>
+#include <vector>
+#include <memory>
+
 namespace Kratos
 {
+    // Forward declarations
+    class Model;
+    class ModelPart;
+    class Parameters;
+    class Process;
+
     class KratosGeoParser
     {
     public:
         KratosGeoParser() = delete;
-        ~KratosGeoParser() {};
         static void parseMaterial(Model& model, std::string filepath);
         static void parseMesh(ModelPart& model_part, std::string filepath);
         static Parameters openProjectParamsFile(std::string filepath);

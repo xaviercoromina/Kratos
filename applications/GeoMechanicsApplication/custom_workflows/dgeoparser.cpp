@@ -13,6 +13,11 @@
 #pragma once
 
 #include "dgeoparser.h"
+#include "containers/model.h"
+#include "includes/model_part.h"
+#include "includes/kratos_parameters.h"
+#include "processes/process.h"
+#include "utilities/read_materials_utility.h"
 #include <sstream>
 
 namespace Kratos
@@ -31,7 +36,7 @@ namespace Kratos
     {
         std::string parameters = "{ \"Parameters\" : { \"materials_filename\" :\"" + filepath + "\"}}";
         Parameters material_file{ parameters };
-        ReadMaterialsUtility(material_file, model);
+        ReadMaterialsUtility parser(material_file, model);
     }
 
     void KratosGeoParser::parseMesh(ModelPart& model_part, std::string filepath)
@@ -233,6 +238,8 @@ namespace Kratos
 
         std::vector<std::shared_ptr<Process>> processes;
 
+        // The following block has been commented out just to be able to build the code
+#if 0
         auto constraints_processes = projFile["processes"]["constraints_process_list"];
         for (Parameters process : constraints_processes)
         {
@@ -277,6 +284,7 @@ namespace Kratos
 
         processes.push_back(make_shared<Process>(ApplyConstantScalarValueProcess(part, VOLUME_ACCELERATION_Z, 0.0,
             0, ApplyConstantScalarValueProcess::VARIABLE_IS_FIXED)));
+#endif
 
         return processes;
     }
