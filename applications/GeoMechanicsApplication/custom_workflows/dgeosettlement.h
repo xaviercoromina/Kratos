@@ -24,13 +24,12 @@ namespace Kratos
     class KRATOS_API(GEO_MECHANICS_APPLICATION) KratosGeoSettlement : public KratosGeoApplication
     {
     public:
-        KratosGeoSettlement();
-        ~KratosGeoSettlement(){}
+        ~KratosGeoSettlement() override;
 
         int execute_application(std::string workingDirectory, std::string parameterName,
-            std::function<void(char*)> logCallback,
-            std::function<void(double)> reportProgress,
-            std::function<void(char*)> reportTextualProgress,
-            std::function<bool()> shouldCancel);
+                                std::function<void(char*)> logCallback,
+                                std::function<void(double)> reportProgress,
+                                std::function<void(char*)> reportTextualProgress,
+                                std::function<bool()> shouldCancel);
     };
 }

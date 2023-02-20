@@ -76,10 +76,7 @@ public:
 
 namespace Kratos
 {
-    KratosGeoFlow::KratosGeoFlow()
-	    : KratosGeoApplication()
-    {
-    }
+    KratosGeoFlow::~KratosGeoFlow() = default;
 
     KratosGeoFlow::ConvergenceCriteriaType::Pointer KratosGeoFlow::convergence_criteria()
     {

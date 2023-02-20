@@ -35,7 +35,7 @@ namespace Kratos
 
     public:
         KratosGeoApplication();
-        ~KratosGeoApplication() {};
+        virtual ~KratosGeoApplication();
 
     private:
         Model current_model;
@@ -46,7 +46,7 @@ namespace Kratos
     protected:
         Model& GetModelPointer();
         void ResetModelParts();
-        int GetEchoLevel();
+        int GetEchoLevel() const;
         void SetEchoLevel(int level);
         int execute_kratos_calculation(ModelPart& model_part, const std::vector<std::shared_ptr<Process>>& rProcesses,
                                        ImplicitSolvingStrategy<SparseSpaceType, LocalSpaceType, LinearSolverType>::Pointer p_solving_strategy,

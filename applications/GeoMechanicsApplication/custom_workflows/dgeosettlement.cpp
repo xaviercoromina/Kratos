@@ -16,19 +16,15 @@
 
 namespace Kratos
 {
-    KratosGeoSettlement::KratosGeoSettlement()
-        : KratosGeoApplication()
-    {
-    }
+    KratosGeoSettlement::~KratosGeoSettlement() = default;
 
     int KratosGeoSettlement::execute_application(std::string workingDirectory, std::string parameterName,
-        std::function<void(char*)> logCallback,
-        std::function<void(double)> reportProgress,
-        std::function<void(char*)> reportTextualProgress,
-        std::function<bool()> shouldCancel)
+                                                 std::function<void(char*)> logCallback,
+                                                 std::function<void(double)> reportProgress,
+                                                 std::function<void(char*)> reportTextualProgress,
+                                                 std::function<bool()> shouldCancel)
     {
         // execute_kratos_calculation(model_part, processes, p_solving_strategy);
         return 0;
     }
-
 }

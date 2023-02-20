@@ -47,8 +47,7 @@ namespace Kratos
     class KRATOS_API(GEO_MECHANICS_APPLICATION) KratosGeoFlow: public KratosGeoApplication
     {
     public:
-        KratosGeoFlow();
-        ~KratosGeoFlow(){};
+        ~KratosGeoFlow() override;
 
         int execute_application(std::string workingDirectory, std::string parameterName,
                                 double minCriticalHead, double maxCriticalHead, double stepCriticalHead,

@@ -35,12 +35,14 @@ namespace Kratos
         this->SetEchoLevel(0);
     }
 
+    KratosGeoApplication::~KratosGeoApplication() = default;
+
     Model& KratosGeoApplication::GetModelPointer()
     {
         return current_model;
     }
 
-    int KratosGeoApplication::GetEchoLevel()
+    int KratosGeoApplication::GetEchoLevel() const
     {
         return echoLevel;
     }
@@ -94,9 +96,9 @@ namespace Kratos
             p_solving_strategy->FinalizeSolutionStep();
         }
 
-        for (auto process : rProcesses)
+        for (auto& rProcess : rProcesses)
         {
-            process->ExecuteFinalize();
+            rProcess->ExecuteFinalize();
         }
 
         return 0;
