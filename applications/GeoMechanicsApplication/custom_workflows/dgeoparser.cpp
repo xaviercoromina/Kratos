@@ -23,26 +23,26 @@
 namespace Kratos
 {
 
-    Parameters KratosGeoParser::openProjectParamsFile(std::string filepath)
+    Parameters KratosGeoParser::openProjectParamsFile(const std::string& rFilepath)
     {
-        std::ifstream t(filepath);
+        std::ifstream t(rFilepath);
         std::stringstream buffer;
         buffer << t.rdbuf();
         Parameters projFile{ buffer.str() };
         return projFile;
     }
 
-	void KratosGeoParser::parseMaterial(Model& model, std::string filepath)
+	void KratosGeoParser::parseMaterial(Model& model, const std::string& rFilepath)
     {
-        std::string parameters = "{ \"Parameters\" : { \"materials_filename\" :\"" + filepath + "\"}}";
+        std::string parameters = R"({ "Parameters" : { "materials_filename" :")" + rFilepath + R"("}})";
         Parameters material_file{ parameters };
         ReadMaterialsUtility parser(material_file, model);
     }
 
-    void KratosGeoParser::parseMesh(ModelPart& model_part, std::string filepath)
+    void KratosGeoParser::parseMesh(ModelPart& model_part, const std::string& rFilepath)
     {
         // Parses MDPA file into model_part
-        std::ifstream input(filepath);
+        std::ifstream input(rFilepath);
         bool read_properties = false;
         bool read_nodes = false;
         bool read_elements = false;
@@ -64,7 +64,7 @@ namespace Kratos
             if (line.substr(0, 16) == "Begin Properties")
             {
                 read_properties = true;
-                std::size_t found = line.find_last_of(" ");
+                std::size_t found = line.find_last_of(' ');
                 int property_id = stoi(line.substr(found + 1));
                 model_part.CreateNewProperties(property_id);
                 continue;
@@ -101,10 +101,10 @@ namespace Kratos
             if (line.substr(0, 14) == "Begin Elements")
             {
                 read_elements = true;
-                std::size_t found = line.find_last_of(" ");
+                std::size_t found = line.find_last_of(' ');
                 element_type = line.substr(found + 1);
 
-                std::size_t posD = element_type.find_last_of("D");
+                std::size_t posD = element_type.find_last_of('D');
                 nodeStr = element_type.substr(posD + 1);
 
                 continue;
@@ -145,7 +145,7 @@ namespace Kratos
             if (line.substr(0, 18) == "Begin SubModelPart")
             {
                 read_subparts = true;
-                std::size_t found = line.find_last_of(" ");
+                std::size_t found = line.find_last_of(' ');
                 part_name = line.substr(found + 1);
                 model_part.CreateSubModelPart(part_name);
                 continue;
