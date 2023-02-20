@@ -191,36 +191,7 @@ namespace Kratos
 
             KRATOS_INFO_IF("GeoFlowKernel", this->GetEchoLevel() > 0) << "Setup Solving Strategy" << std::endl;
 
-            model_part.AddNodalSolutionStepVariable(VELOCITY);
-            model_part.AddNodalSolutionStepVariable(ACCELERATION);
-
-            // Displacement
-            model_part.AddNodalSolutionStepVariable(DISPLACEMENT);
-            model_part.AddNodalSolutionStepVariable(TOTAL_DISPLACEMENT);
-            model_part.AddNodalSolutionStepVariable(REACTION);
-            model_part.AddNodalSolutionStepVariable(POINT_LOAD);
-            model_part.AddNodalSolutionStepVariable(LINE_LOAD);
-            model_part.AddNodalSolutionStepVariable(SURFACE_LOAD);
-            model_part.AddNodalSolutionStepVariable(VOLUME_ACCELERATION);
-            model_part.AddNodalSolutionStepVariable(NORMAL_CONTACT_STRESS);
-            model_part.AddNodalSolutionStepVariable(TANGENTIAL_CONTACT_STRESS);
-
-            // Water
-            model_part.AddNodalSolutionStepVariable(WATER_PRESSURE);
-            model_part.AddNodalSolutionStepVariable(REACTION_WATER_PRESSURE);
-            model_part.AddNodalSolutionStepVariable(DT_WATER_PRESSURE);
-            model_part.AddNodalSolutionStepVariable(NORMAL_FLUID_FLUX);
-            model_part.AddNodalSolutionStepVariable(HYDRAULIC_DISCHARGE);
-
-            // Smoothing
-            model_part.AddNodalSolutionStepVariable(NODAL_AREA);
-            model_part.AddNodalSolutionStepVariable(NODAL_CAUCHY_STRESS_TENSOR);
-            model_part.AddNodalSolutionStepVariable(NODAL_DAMAGE_VARIABLE);
-            model_part.AddNodalSolutionStepVariable(NODAL_JOINT_AREA);
-            model_part.AddNodalSolutionStepVariable(NODAL_JOINT_WIDTH);
-            model_part.AddNodalSolutionStepVariable(NODAL_JOINT_DAMAGE);
-
-            KRATOS_INFO_IF("GeoFlowKernel", this->GetEchoLevel() > 0) << "Nodal Solution Variables Added" << std::endl;
+            AddVariablesTo(model_part);
 
             KratosGeoParser::parseMesh(model_part, meshpath);
 
@@ -432,4 +403,37 @@ namespace Kratos
         return RiverBoundary;
     }
 
+    void KratosGeoFlow::AddVariablesTo(ModelPart& rModelPart) const
+    {
+        rModelPart.AddNodalSolutionStepVariable(VELOCITY);
+        rModelPart.AddNodalSolutionStepVariable(ACCELERATION);
+
+        // Displacement
+        rModelPart.AddNodalSolutionStepVariable(DISPLACEMENT);
+        rModelPart.AddNodalSolutionStepVariable(TOTAL_DISPLACEMENT);
+        rModelPart.AddNodalSolutionStepVariable(REACTION);
+        rModelPart.AddNodalSolutionStepVariable(POINT_LOAD);
+        rModelPart.AddNodalSolutionStepVariable(LINE_LOAD);
+        rModelPart.AddNodalSolutionStepVariable(SURFACE_LOAD);
+        rModelPart.AddNodalSolutionStepVariable(VOLUME_ACCELERATION);
+        rModelPart.AddNodalSolutionStepVariable(NORMAL_CONTACT_STRESS);
+        rModelPart.AddNodalSolutionStepVariable(TANGENTIAL_CONTACT_STRESS);
+
+        // Water
+        rModelPart.AddNodalSolutionStepVariable(WATER_PRESSURE);
+        rModelPart.AddNodalSolutionStepVariable(REACTION_WATER_PRESSURE);
+        rModelPart.AddNodalSolutionStepVariable(DT_WATER_PRESSURE);
+        rModelPart.AddNodalSolutionStepVariable(NORMAL_FLUID_FLUX);
+        rModelPart.AddNodalSolutionStepVariable(HYDRAULIC_DISCHARGE);
+
+        // Smoothing
+        rModelPart.AddNodalSolutionStepVariable(NODAL_AREA);
+        rModelPart.AddNodalSolutionStepVariable(NODAL_CAUCHY_STRESS_TENSOR);
+        rModelPart.AddNodalSolutionStepVariable(NODAL_DAMAGE_VARIABLE);
+        rModelPart.AddNodalSolutionStepVariable(NODAL_JOINT_AREA);
+        rModelPart.AddNodalSolutionStepVariable(NODAL_JOINT_WIDTH);
+        rModelPart.AddNodalSolutionStepVariable(NODAL_JOINT_DAMAGE);
+
+        KRATOS_INFO_IF("GeoFlowKernel", GetEchoLevel() > 0) << "Nodal Solution Variables Added" << std::endl;
+    }
 }
