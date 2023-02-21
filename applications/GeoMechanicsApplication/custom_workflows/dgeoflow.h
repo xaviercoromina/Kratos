@@ -106,5 +106,6 @@ namespace Kratos
         void AddVariablesTo(ModelPart& rModelPart) const;
 
         void ReadMaterialsFrom(const std::string& rMaterialsFilePath);
+        void ReadMeshFrom(const std::string& rMeshFilePath, ModelPart& rModelPart);
     };
 }
