@@ -104,5 +104,7 @@ namespace Kratos
         // that it needs access to the echo level to decide whether it needs to
         // print info or not.
         void AddVariablesTo(ModelPart& rModelPart) const;
+
+        void ReadMaterialsFrom(const std::string& rMaterialsFilePath);
     };
 }

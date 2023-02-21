@@ -22,6 +22,20 @@
 #include "dgeooutput.h"
 #include "dgeoparser.h"
 
+namespace
+{
+    using namespace Kratos;
+
+    std::string GetMaterialsFilePath(const std::string& rWorkingDirectory,
+                                     const Parameters&  rProjectParameters)
+    {
+        const auto materials_file_name = rProjectParameters["solver_settings"]
+                                                           ["material_import_settings"]
+                                                           ["materials_filename"].GetString();
+        return rWorkingDirectory + '/' + materials_file_name;
+    }
+}
+
 class GeoFlowApplyConstantScalarValueProcess : public Kratos::ApplyConstantScalarValueProcess
 {
 public:
@@ -170,12 +184,10 @@ namespace Kratos
             std::string projectpath = workingDirectory + "/" + projectName;
             auto projectfile = KratosGeoParser::openProjectParamsFile(projectpath);
 
-            auto materialname = projectfile["solver_settings"]["material_import_settings"]["materials_filename"].GetString();
             auto meshname = projectfile["solver_settings"]["model_import_settings"]["input_filename"].GetString() + "." +
                             projectfile["solver_settings"]["model_import_settings"]["input_type"].GetString();
 
             std::string meshpath = workingDirectory + "/" + meshname;
-            std::string materialpath = workingDirectory + "/" + materialname;
 
             auto modelName = projectfile["solver_settings"]["model_part_name"].GetString();
 
@@ -197,9 +209,7 @@ namespace Kratos
 
             KRATOS_INFO_IF("GeoFlowKernel", this->GetEchoLevel() > 0) << "Parsed Mesh" << std::endl;
 
-            KratosGeoParser::parseMaterial(current_model, materialpath);
-
-            KRATOS_INFO_IF("GeoFlowKernel", this->GetEchoLevel() > 0) << "Parsed Material" << std::endl;
+            ReadMaterialsFrom(GetMaterialsFilePath(workingDirectory, projectfile));
 
             // Dofs for Water Pressure
             VariableUtils().AddDofWithReaction(WATER_PRESSURE, REACTION_WATER_PRESSURE, model_part);
@@ -435,5 +445,11 @@ namespace Kratos
         rModelPart.AddNodalSolutionStepVariable(NODAL_JOINT_DAMAGE);
 
         KRATOS_INFO_IF("GeoFlowKernel", GetEchoLevel() > 0) << "Nodal Solution Variables Added" << std::endl;
+    }
+
+    void KratosGeoFlow::ReadMaterialsFrom(const std::string& rMaterialsFilePath)
+    {
+        KratosGeoParser::parseMaterial(GetModelPointer(), rMaterialsFilePath);
+        KRATOS_INFO_IF("GeoFlowKernel", GetEchoLevel() > 0) << "Parsed Material" << std::endl;
     }
 }
