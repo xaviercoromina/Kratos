@@ -206,10 +206,10 @@ namespace Kratos
 
             KRATOS_INFO_IF("GeoFlowKernel", this->GetEchoLevel() > 0) << "Setup Solving Strategy" << std::endl;
 
-            AddVariablesTo(model_part);
+            AddNodalSolutionStepVariablesTo(model_part);
 
             ReadMeshFrom(GetMeshFilePath(workingDirectory, projectfile), model_part);
-            ReadMaterialsFrom(GetMaterialsFilePath(workingDirectory, projectfile));
+            ReadMaterialsFrom(GetMaterialsFilePath(workingDirectory, projectfile), current_model);
 
             // Dofs for Water Pressure
             VariableUtils().AddDofWithReaction(WATER_PRESSURE, REACTION_WATER_PRESSURE, model_part);
@@ -413,7 +413,7 @@ namespace Kratos
         return RiverBoundary;
     }
 
-    void KratosGeoFlow::AddVariablesTo(ModelPart& rModelPart) const
+    void KratosGeoFlow::AddNodalSolutionStepVariablesTo(ModelPart& rModelPart) const
     {
         rModelPart.AddNodalSolutionStepVariable(VELOCITY);
         rModelPart.AddNodalSolutionStepVariable(ACCELERATION);
@@ -447,9 +447,9 @@ namespace Kratos
         KRATOS_INFO_IF("GeoFlowKernel", GetEchoLevel() > 0) << "Nodal Solution Variables Added" << std::endl;
     }
 
-    void KratosGeoFlow::ReadMaterialsFrom(const std::string& rMaterialsFilePath)
+    void KratosGeoFlow::ReadMaterialsFrom(const std::string& rMaterialsFilePath, Model& rModel)
     {
-        KratosGeoParser::parseMaterial(GetModelPointer(), rMaterialsFilePath);
+        KratosGeoParser::parseMaterial(rModel, rMaterialsFilePath);
         KRATOS_INFO_IF("GeoFlowKernel", GetEchoLevel() > 0) << "Parsed Material" << std::endl;
     }
 
