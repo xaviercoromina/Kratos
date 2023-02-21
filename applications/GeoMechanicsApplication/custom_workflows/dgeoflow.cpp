@@ -211,13 +211,7 @@ namespace Kratos
             ReadMeshFrom(GetMeshFilePath(workingDirectory, projectfile), model_part);
             ReadMaterialsFrom(GetMaterialsFilePath(workingDirectory, projectfile), current_model);
 
-            // Dofs for Water Pressure
-            VariableUtils().AddDofWithReaction(WATER_PRESSURE, REACTION_WATER_PRESSURE, model_part);
-            VariableUtils().AddDof(VOLUME_ACCELERATION_X, model_part);
-            VariableUtils().AddDof(VOLUME_ACCELERATION_Y, model_part);
-            VariableUtils().AddDof(VOLUME_ACCELERATION_Z, model_part);
-
-            KRATOS_INFO_IF("GeoFlowKernel", this->GetEchoLevel() > 0) << "Added DoF" << std::endl;
+            AddDofsTo(model_part);
 
             std::vector<std::shared_ptr<Process>> processes = KratosGeoParser::parseProcess(model_part, projectfile);
 
@@ -447,13 +441,22 @@ namespace Kratos
         KRATOS_INFO_IF("GeoFlowKernel", GetEchoLevel() > 0) << "Nodal Solution Variables Added" << std::endl;
     }
 
-    void KratosGeoFlow::ReadMaterialsFrom(const std::string& rMaterialsFilePath, Model& rModel)
+    void KratosGeoFlow::AddDofsTo(ModelPart& rModelPart) const
+    {
+        VariableUtils().AddDofWithReaction(WATER_PRESSURE, REACTION_WATER_PRESSURE, rModelPart);
+        VariableUtils().AddDof(VOLUME_ACCELERATION_X, rModelPart);
+        VariableUtils().AddDof(VOLUME_ACCELERATION_Y, rModelPart);
+        VariableUtils().AddDof(VOLUME_ACCELERATION_Z, rModelPart);
+        KRATOS_INFO_IF("GeoFlowKernel", GetEchoLevel() > 0) << "Added DoF" << std::endl;
+    }
+
+    void KratosGeoFlow::ReadMaterialsFrom(const std::string& rMaterialsFilePath, Model& rModel) const
     {
         KratosGeoParser::parseMaterial(rModel, rMaterialsFilePath);
         KRATOS_INFO_IF("GeoFlowKernel", GetEchoLevel() > 0) << "Parsed Material" << std::endl;
     }
 
-    void KratosGeoFlow::ReadMeshFrom(const std::string& rMeshFilePath, ModelPart& rModelPart)
+    void KratosGeoFlow::ReadMeshFrom(const std::string& rMeshFilePath, ModelPart& rModelPart) const
     {
         KratosGeoParser::parseMesh(rModelPart, rMeshFilePath);
         KRATOS_INFO_IF("GeoFlowKernel", GetEchoLevel() > 0) << "Parsed Mesh" << std::endl;

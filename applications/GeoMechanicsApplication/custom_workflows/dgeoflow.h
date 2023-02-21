@@ -100,12 +100,12 @@ namespace Kratos
         shared_ptr<Process> FindRiverBoundaryByName(std::string criticalHeadBoundaryModelPartName,
                                                     std::vector<std::shared_ptr<Process>> processes);
 
-        // The one and only reason for the following function to be a member is
-        // that it needs access to the echo level to decide whether it needs to
-        // print info or not.
+        // The one and only reason for the following functions to be members is
+        // that they need access to the echo level to decide whether they need
+        // to print info or not.
         void AddNodalSolutionStepVariablesTo(ModelPart& rModelPart) const;
-
-        void ReadMaterialsFrom(const std::string& rMaterialsFilePath, Model& rModel);
-        void ReadMeshFrom(const std::string& rMeshFilePath, ModelPart& rModelPart);
+        void AddDofsTo(ModelPart& rModelPart) const;
+        void ReadMaterialsFrom(const std::string& rMaterialsFilePath, Model& rModel) const;
+        void ReadMeshFrom(const std::string& rMeshFilePath, ModelPart& rModelPart) const;
     };
 }
