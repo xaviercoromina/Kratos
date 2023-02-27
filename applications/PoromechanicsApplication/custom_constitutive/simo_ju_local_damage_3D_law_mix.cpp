@@ -45,6 +45,7 @@ void SimoJuLocalDamage3DLawMix::CalculateLinearElasticMatrix( Matrix& rLinearEla
 {
     rLinearElasticMatrix.clear();
 
+    // TODO: DCB test. Modify with orthotropic matrices
     // 3D linear elastic constitutive matrix
     // LinearElasticMatrix of glass fiber
     Matrix LinearElasticMatrix_glass(6,6);
