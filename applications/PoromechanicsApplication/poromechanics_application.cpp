@@ -198,6 +198,7 @@ void KratosPoromechanicsApplication::Register()
     Serializer::Register("ModifiedExponentialDamageHardeningLaw", mModifiedExponentialDamageHardeningLaw);
 
     KRATOS_REGISTER_CONSTITUTIVE_LAW("SimoJuLocalDamage3DLaw",mSimoJuLocalDamage3DLaw);
+    KRATOS_REGISTER_CONSTITUTIVE_LAW("SimoJuLocalDamage3DLawMix",mSimoJuLocalDamage3DLawMix);
     KRATOS_REGISTER_CONSTITUTIVE_LAW("SimoJuLocalDamagePlaneStrain2DLaw",mSimoJuLocalDamagePlaneStrain2DLaw);
     KRATOS_REGISTER_CONSTITUTIVE_LAW("SimoJuLocalDamagePlaneStress2DLaw",mSimoJuLocalDamagePlaneStress2DLaw);
 
@@ -206,6 +207,7 @@ void KratosPoromechanicsApplication::Register()
     KRATOS_REGISTER_CONSTITUTIVE_LAW("SimoJuNonlocalDamagePlaneStress2DLaw",mSimoJuNonlocalDamagePlaneStress2DLaw);
 
     KRATOS_REGISTER_CONSTITUTIVE_LAW("ModifiedMisesNonlocalDamage3DLaw",mModifiedMisesNonlocalDamage3DLaw);
+    KRATOS_REGISTER_CONSTITUTIVE_LAW("ModifiedMisesNonlocalDamage3DLawMix",mModifiedMisesNonlocalDamage3DLawMix);
     KRATOS_REGISTER_CONSTITUTIVE_LAW("ModifiedMisesNonlocalDamagePlaneStrain2DLaw",mModifiedMisesNonlocalDamagePlaneStrain2DLaw);
     KRATOS_REGISTER_CONSTITUTIVE_LAW("ModifiedMisesNonlocalDamagePlaneStress2DLaw",mModifiedMisesNonlocalDamagePlaneStress2DLaw);
 
@@ -280,6 +282,7 @@ void KratosPoromechanicsApplication::Register()
     KRATOS_REGISTER_VARIABLE( FLUX_RESIDUAL )
     KRATOS_REGISTER_VARIABLE( G_COEFFICIENT )
     KRATOS_REGISTER_VARIABLE( THETA_FACTOR )
+    KRATOS_REGISTER_3D_VARIABLE_WITH_COMPONENTS( NODAL_MASS_ARRAY )
 
     KRATOS_REGISTER_3D_VARIABLE_WITH_COMPONENTS( TARGET_REACTION )
     KRATOS_REGISTER_3D_VARIABLE_WITH_COMPONENTS( AVERAGE_REACTION )

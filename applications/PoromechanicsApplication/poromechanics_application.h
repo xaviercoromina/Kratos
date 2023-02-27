@@ -55,6 +55,7 @@
 #include "custom_constitutive/custom_flow_rules/nonlocal_damage_flow_rule.hpp"
 
 #include "custom_constitutive/simo_ju_local_damage_3D_law.hpp"
+#include "custom_constitutive/simo_ju_local_damage_3D_law_mix.hpp"
 #include "custom_constitutive/simo_ju_local_damage_plane_strain_2D_law.hpp"
 #include "custom_constitutive/simo_ju_local_damage_plane_stress_2D_law.hpp"
 
@@ -63,6 +64,7 @@
 #include "custom_constitutive/simo_ju_nonlocal_damage_plane_stress_2D_law.hpp"
 
 #include "custom_constitutive/modified_mises_nonlocal_damage_3D_law.hpp"
+#include "custom_constitutive/modified_mises_nonlocal_damage_3D_law_mix.hpp"
 #include "custom_constitutive/modified_mises_nonlocal_damage_plane_strain_2D_law.hpp"
 #include "custom_constitutive/modified_mises_nonlocal_damage_plane_stress_2D_law.hpp"
 
@@ -200,6 +202,7 @@ const LocalDamageFlowRule mLocalDamageFlowRule;
 const NonlocalDamageFlowRule mNonlocalDamageFlowRule;
 
 const SimoJuLocalDamage3DLaw mSimoJuLocalDamage3DLaw;
+const SimoJuLocalDamage3DLawMix mSimoJuLocalDamage3DLawMix;
 const SimoJuLocalDamagePlaneStrain2DLaw mSimoJuLocalDamagePlaneStrain2DLaw;
 const SimoJuLocalDamagePlaneStress2DLaw mSimoJuLocalDamagePlaneStress2DLaw;
 
@@ -208,6 +211,7 @@ const SimoJuNonlocalDamagePlaneStrain2DLaw mSimoJuNonlocalDamagePlaneStrain2DLaw
 const SimoJuNonlocalDamagePlaneStress2DLaw mSimoJuNonlocalDamagePlaneStress2DLaw;
 
 const ModifiedMisesNonlocalDamage3DLaw mModifiedMisesNonlocalDamage3DLaw;
+const ModifiedMisesNonlocalDamage3DLawMix mModifiedMisesNonlocalDamage3DLawMix;
 const ModifiedMisesNonlocalDamagePlaneStrain2DLaw mModifiedMisesNonlocalDamagePlaneStrain2DLaw;
 const ModifiedMisesNonlocalDamagePlaneStress2DLaw mModifiedMisesNonlocalDamagePlaneStress2DLaw;
 

@@ -139,6 +139,8 @@ public:
             // Set Nodal Mass to zero
             NodesArrayType& r_nodes = r_model_part.Nodes();
             VariableUtils().SetNonHistoricalVariable(NODAL_MASS, 0.0, r_nodes);
+            const array_1d<double, 3> nodal_mass_array = ZeroVector(3);
+            VariableUtils().SetNonHistoricalVariable(NODAL_MASS_ARRAY, nodal_mass_array, r_nodes);
             // TODO: Set Nodal AntiCompressibility to zero for mass-balance equation (C=1/Q, with Q being the compressibility coeff.)
 
             // Iterate over the elements
@@ -191,6 +193,8 @@ public:
             // Set Nodal Mass and Damping to zero
             NodesArrayType& r_nodes = r_model_part.Nodes();
             VariableUtils().SetNonHistoricalVariable(NODAL_MASS, 0.0, r_nodes);
+            const array_1d<double, 3> nodal_mass_array = ZeroVector(3);
+            VariableUtils().SetNonHistoricalVariable(NODAL_MASS_ARRAY, nodal_mass_array, r_nodes);
 
             Vector dummy_vector;
             #pragma omp parallel for firstprivate(dummy_vector), schedule(guided,512)
