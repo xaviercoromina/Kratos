@@ -171,6 +171,61 @@ namespace Kratos
         return p_solving_strategy;
     }
 
+    std::vector<std::shared_ptr<Process>> KratosGeoFlow::parseProcess(ModelPart& model_part, Parameters projFile)
+    {
+        // Currently: In DGeoflow only fixed hydrostatic head has been , also need load of gravity.
+        //            Note this only works for DGeoflow this needs rewriting if it is required after refactoring.
+
+        std::vector<std::shared_ptr<Process>> processes;
+
+        auto constraints_processes = projFile["processes"]["constraints_process_list"];
+        for (Parameters process : constraints_processes)
+        {
+            // we only support fixed hydrostatic head
+            auto name = process["Parameters"]["model_part_name"].GetString();
+            auto pressure_type = process["Parameters"]["fluid_pressure_type"].GetString();
+
+            std::size_t found = name.find_last_of(".");
+            std::string subname = name.substr(found + 1);
+
+            ModelPart& part = model_part.GetSubModelPart(subname);
+
+            if (pressure_type == "Uniform")
+            {
+                auto value = process["Parameters"]["value"].GetDouble();
+                processes.push_back(make_shared<GeoFlowApplyConstantScalarValueProcess>(GeoFlowApplyConstantScalarValueProcess(part, WATER_PRESSURE,
+                                                                                                                               value, 0, GeoFlowApplyConstantScalarValueProcess::VARIABLE_IS_FIXED)));
+            }
+            else if (pressure_type == "Hydrostatic")
+            {
+                auto cProcesses = process.Clone();
+                cProcesses["Parameters"].RemoveValue("fluid_pressure_type");
+                processes.push_back(make_shared<GeoFlowApplyConstantHydrostaticPressureProcess>(GeoFlowApplyConstantHydrostaticPressureProcess(part, cProcesses["Parameters"])));
+            }
+            else
+            {
+                KRATOS_ERROR << "Reading Processing - Not Implemented - Pressure_type" << std::endl;
+            }
+        }
+
+        auto loads_processes = projFile["processes"]["loads_process_list"];
+        // Should only have one.
+        auto name = loads_processes.GetArrayItem(0)["Parameters"]["model_part_name"].GetString();
+        std::size_t found = name.find_last_of(".");
+        std::string subname = name.substr(found + 1);
+        ModelPart& part = model_part.GetSubModelPart(subname);
+        processes.push_back(make_shared<ApplyConstantScalarValueProcess>(ApplyConstantScalarValueProcess(part, VOLUME_ACCELERATION_X,
+                                                                                                         0.0, 0, ApplyConstantScalarValueProcess::VARIABLE_IS_FIXED)));
+
+        processes.push_back(make_shared<ApplyConstantScalarValueProcess>(ApplyConstantScalarValueProcess(part, VOLUME_ACCELERATION_Y, -9.81,
+                                                                                                         0, ApplyConstantScalarValueProcess::VARIABLE_IS_FIXED)));
+
+        processes.push_back(make_shared<Process>(ApplyConstantScalarValueProcess(part, VOLUME_ACCELERATION_Z, 0.0,
+                                                                                 0, ApplyConstantScalarValueProcess::VARIABLE_IS_FIXED)));
+
+        return processes;
+    }
+
     int KratosGeoFlow::execute_application(std::string workingDirectory, std::string projectName,
                                            double minCriticalHead, double maxCriticalHead, double stepCriticalHead,
                                            std::string criticalHeadBoundaryModelPartName,
@@ -377,61 +432,6 @@ namespace Kratos
             return 1;
         }
     };
-
-    std::vector<std::shared_ptr<Process>> KratosGeoFlow::parseProcess(ModelPart& model_part, Parameters projFile)
-    {
-        // Currently: In DGeoflow only fixed hydrostatic head has been , also need load of gravity.
-        //            Note this only works for DGeoflow this needs rewriting if it is required after refactoring.
-
-        std::vector<std::shared_ptr<Process>> processes;
-
-        auto constraints_processes = projFile["processes"]["constraints_process_list"];
-        for (Parameters process : constraints_processes)
-        {
-            // we only support fixed hydrostatic head
-            auto name = process["Parameters"]["model_part_name"].GetString();
-            auto pressure_type = process["Parameters"]["fluid_pressure_type"].GetString();
-
-            std::size_t found = name.find_last_of(".");
-            std::string subname = name.substr(found + 1);
-
-            ModelPart& part = model_part.GetSubModelPart(subname);
-
-            if (pressure_type == "Uniform")
-            {
-                auto value = process["Parameters"]["value"].GetDouble();
-                processes.push_back(make_shared<GeoFlowApplyConstantScalarValueProcess>(GeoFlowApplyConstantScalarValueProcess(part, WATER_PRESSURE,
-                    value, 0, GeoFlowApplyConstantScalarValueProcess::VARIABLE_IS_FIXED)));
-            }
-            else if (pressure_type == "Hydrostatic")
-            {
-                auto cProcesses = process.Clone();
-                cProcesses["Parameters"].RemoveValue("fluid_pressure_type");
-                processes.push_back(make_shared<GeoFlowApplyConstantHydrostaticPressureProcess>(GeoFlowApplyConstantHydrostaticPressureProcess(part, cProcesses["Parameters"])));
-            }
-            else
-            {
-                KRATOS_ERROR << "Reading Processing - Not Implemented - Pressure_type" << std::endl;
-            }
-        }
-
-        auto loads_processes = projFile["processes"]["loads_process_list"];
-        // Should only have one.
-        auto name = loads_processes.GetArrayItem(0)["Parameters"]["model_part_name"].GetString();
-        std::size_t found = name.find_last_of(".");
-        std::string subname = name.substr(found + 1);
-        ModelPart& part = model_part.GetSubModelPart(subname);
-        processes.push_back(make_shared<ApplyConstantScalarValueProcess>(ApplyConstantScalarValueProcess(part, VOLUME_ACCELERATION_X,
-            0.0, 0, ApplyConstantScalarValueProcess::VARIABLE_IS_FIXED)));
-
-        processes.push_back(make_shared<ApplyConstantScalarValueProcess>(ApplyConstantScalarValueProcess(part, VOLUME_ACCELERATION_Y, -9.81,
-            0, ApplyConstantScalarValueProcess::VARIABLE_IS_FIXED)));
-
-        processes.push_back(make_shared<Process>(ApplyConstantScalarValueProcess(part, VOLUME_ACCELERATION_Z, 0.0,
-            0, ApplyConstantScalarValueProcess::VARIABLE_IS_FIXED)));
-
-        return processes;
-    }
 
     shared_ptr<Process> KratosGeoFlow::FindRiverBoundaryByName(std::string criticalHeadBoundaryModelPartName,
                                                                std::vector<std::shared_ptr<Process>> processes)
