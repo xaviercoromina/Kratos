@@ -96,7 +96,7 @@ namespace Kratos
         ImplicitSolvingStrategy<SparseSpaceType, LocalSpaceType, LinearSolverType>::Pointer strategy_settings(ModelPart &model_part);
 
     private:
-
+        std::vector<std::shared_ptr<Process>> parseProcess(ModelPart& model_part, Parameters projFile);
         shared_ptr<Process> FindRiverBoundaryByName(std::string criticalHeadBoundaryModelPartName,
                                                     std::vector<std::shared_ptr<Process>> processes);
 

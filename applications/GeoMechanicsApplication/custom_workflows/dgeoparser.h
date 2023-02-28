@@ -31,6 +31,5 @@ namespace Kratos
         static void parseMaterial(Model& model, const std::string& rFilepath);
         static void parseMesh(ModelPart& model_part, const std::string& rFilepath);
         static Parameters openProjectParamsFile(const std::string& rFilepath);
-        static std::vector<std::shared_ptr<Process>> parseProcess(ModelPart& model_part, Parameters projFile);
     };
 }
