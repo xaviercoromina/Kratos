@@ -6,45 +6,47 @@
 //
 
 // Application includes
-#include "custom_constitutive/simo_ju_local_damage_3D_law_mix.hpp"
+#include "custom_constitutive/simo_ju_local_damage_3D_law_mix_ortho.hpp"
 
 namespace Kratos
 {
 
 //Default Constructor
-SimoJuLocalDamage3DLawMix::SimoJuLocalDamage3DLawMix() : SimoJuLocalDamage3DLaw() {}
+SimoJuLocalDamage3DLawMixOrtho::SimoJuLocalDamage3DLawMixOrtho() : SimoJuLocalDamage3DLaw() {}
 
 //----------------------------------------------------------------------------------------
 
 //Second Constructor
-SimoJuLocalDamage3DLawMix::SimoJuLocalDamage3DLawMix(FlowRulePointer pFlowRule, YieldCriterionPointer pYieldCriterion, HardeningLawPointer pHardeningLaw)
+SimoJuLocalDamage3DLawMixOrtho::SimoJuLocalDamage3DLawMixOrtho(FlowRulePointer pFlowRule, YieldCriterionPointer pYieldCriterion, HardeningLawPointer pHardeningLaw)
     : SimoJuLocalDamage3DLaw(pFlowRule, pYieldCriterion, pHardeningLaw) {}
 
 //----------------------------------------------------------------------------------------
 
 //Copy Constructor
-SimoJuLocalDamage3DLawMix::SimoJuLocalDamage3DLawMix(const SimoJuLocalDamage3DLawMix& rOther) : SimoJuLocalDamage3DLaw(rOther) {}
+SimoJuLocalDamage3DLawMixOrtho::SimoJuLocalDamage3DLawMixOrtho(const SimoJuLocalDamage3DLawMixOrtho& rOther) : SimoJuLocalDamage3DLaw(rOther) {}
 
 //----------------------------------------------------------------------------------------
 
 //Destructor
-SimoJuLocalDamage3DLawMix::~SimoJuLocalDamage3DLawMix() {}
+SimoJuLocalDamage3DLawMixOrtho::~SimoJuLocalDamage3DLawMixOrtho() {}
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-ConstitutiveLaw::Pointer SimoJuLocalDamage3DLawMix::Clone() const
+ConstitutiveLaw::Pointer SimoJuLocalDamage3DLawMixOrtho::Clone() const
 {
-    SimoJuLocalDamage3DLawMix::Pointer p_clone(new SimoJuLocalDamage3DLawMix(*this));
+    SimoJuLocalDamage3DLawMixOrtho::Pointer p_clone(new SimoJuLocalDamage3DLawMixOrtho(*this));
     return p_clone;
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-void SimoJuLocalDamage3DLawMix::CalculateLinearElasticMatrix( Matrix& rLinearElasticMatrix,const double& YoungModulus,const double& PoissonCoefficient )
+void SimoJuLocalDamage3DLawMixOrtho::CalculateLinearElasticMatrix( Matrix& rLinearElasticMatrix,const double& YoungModulus,const double& PoissonCoefficient )
 {
     rLinearElasticMatrix.clear();
 
+    // TODO: DCB test. Modify with orthotropic matrices
+    
     // 3D linear elastic constitutive matrix
     // LinearElasticMatrix of glass fiber
     Matrix LinearElasticMatrix_glass(6,6);

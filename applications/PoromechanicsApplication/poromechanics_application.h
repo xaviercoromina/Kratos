@@ -56,6 +56,7 @@
 
 #include "custom_constitutive/simo_ju_local_damage_3D_law.hpp"
 #include "custom_constitutive/simo_ju_local_damage_3D_law_mix.hpp"
+#include "custom_constitutive/simo_ju_local_damage_3D_law_mix_ortho.hpp"
 #include "custom_constitutive/simo_ju_local_damage_plane_strain_2D_law.hpp"
 #include "custom_constitutive/simo_ju_local_damage_plane_stress_2D_law.hpp"
 
@@ -203,6 +204,7 @@ const NonlocalDamageFlowRule mNonlocalDamageFlowRule;
 
 const SimoJuLocalDamage3DLaw mSimoJuLocalDamage3DLaw;
 const SimoJuLocalDamage3DLawMix mSimoJuLocalDamage3DLawMix;
+const SimoJuLocalDamage3DLawMixOrtho mSimoJuLocalDamage3DLawMixOrtho;
 const SimoJuLocalDamagePlaneStrain2DLaw mSimoJuLocalDamagePlaneStrain2DLaw;
 const SimoJuLocalDamagePlaneStress2DLaw mSimoJuLocalDamagePlaneStress2DLaw;
 

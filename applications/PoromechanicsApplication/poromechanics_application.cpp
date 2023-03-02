@@ -199,6 +199,7 @@ void KratosPoromechanicsApplication::Register()
 
     KRATOS_REGISTER_CONSTITUTIVE_LAW("SimoJuLocalDamage3DLaw",mSimoJuLocalDamage3DLaw);
     KRATOS_REGISTER_CONSTITUTIVE_LAW("SimoJuLocalDamage3DLawMix",mSimoJuLocalDamage3DLawMix);
+    KRATOS_REGISTER_CONSTITUTIVE_LAW("SimoJuLocalDamage3DLawMixOrtho",mSimoJuLocalDamage3DLawMixOrtho);
     KRATOS_REGISTER_CONSTITUTIVE_LAW("SimoJuLocalDamagePlaneStrain2DLaw",mSimoJuLocalDamagePlaneStrain2DLaw);
     KRATOS_REGISTER_CONSTITUTIVE_LAW("SimoJuLocalDamagePlaneStress2DLaw",mSimoJuLocalDamagePlaneStress2DLaw);
 

@@ -21,6 +21,7 @@
 
 #include "custom_constitutive/simo_ju_local_damage_3D_law.hpp"
 #include "custom_constitutive/simo_ju_local_damage_3D_law_mix.hpp"
+#include "custom_constitutive/simo_ju_local_damage_3D_law_mix_ortho.hpp"
 #include "custom_constitutive/simo_ju_local_damage_plane_strain_2D_law.hpp"
 #include "custom_constitutive/simo_ju_local_damage_plane_stress_2D_law.hpp"
 
@@ -84,6 +85,9 @@ void  AddCustomConstitutiveLawsToPython(pybind11::module& m)
     .def( py::init<>() );
     py::class_< SimoJuLocalDamage3DLawMix, SimoJuLocalDamage3DLawMix::Pointer, ConstitutiveLaw >
     (m, "SimoJuLocalDamage3DLawMix")
+    .def( py::init<>() );
+    py::class_< SimoJuLocalDamage3DLawMixOrtho, SimoJuLocalDamage3DLawMixOrtho::Pointer, ConstitutiveLaw >
+    (m, "SimoJuLocalDamage3DLawMixOrtho")
     .def( py::init<>() );
     py::class_< SimoJuLocalDamagePlaneStrain2DLaw, SimoJuLocalDamagePlaneStrain2DLaw::Pointer, ConstitutiveLaw >
     (m, "SimoJuLocalDamagePlaneStrain2DLaw")
