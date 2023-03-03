@@ -178,7 +178,7 @@ class AnalysisStage(object):
                     total_force_top += node.GetSolutionStepValue(KratosMultiphysics.REACTION_Y)
                     disp_top = node.GetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_Y)
                 total_force_top = 2.0*total_force_top # symmetric conditions
-                out_total_force_top = open("time_disp_totalforce.txt","a")
+                out_total_force_top = open("time_disptop_totalforcetop.txt","a")
                 out_total_force_top.write(str(time))
                 out_total_force_top.write(" ")
                 out_total_force_top.write(str(disp_top))
@@ -186,7 +186,7 @@ class AnalysisStage(object):
                 out_total_force_top.write(str(total_force_top))
                 out_total_force_top.write("\n")
                 out_total_force_top.close()
-                print('Delamination test total force (N): ', total_force_top)
+                print('Delamination test total top force (N): ', total_force_top)
             else:
                 # TODO: Pullout test. Total force
                 total_force = 0.0
