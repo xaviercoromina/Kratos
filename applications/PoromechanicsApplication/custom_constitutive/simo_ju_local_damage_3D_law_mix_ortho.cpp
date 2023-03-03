@@ -45,53 +45,40 @@ void SimoJuLocalDamage3DLawMixOrtho::CalculateLinearElasticMatrix( Matrix& rLine
 {
     rLinearElasticMatrix.clear();
 
-    // TODO: DCB test. Modify with orthotropic matrices
-    
+    // TODO: DCB_test. We calculated C matrix in Matlab/Excel
+    // const double E_1      = 1.38e11;
+    // const double E_2      = 8.96e9;
+    // const double E_3      = E_2;
+    // const double G_12     = 7.1e9;
+    // const double G_23     = 3.446e9;
+    // const double nu_12    = 0.3;
+    // const double nu_23    = nu_12;
+    // const double nu_13    = nu_12;
+    // const double nu_21    = E_2/E_1*nu_12;
+    // const double nu_32    = E_3/E_2*nu_23;
+    // const double nu_31    = E_3/E_1*nu_13;
+    // const double G_31_inv = (1.0+nu_31)/E_1+(1.0+nu_13)/E_3;
+    // const double G_31     = 1.0/G_31_inv;
+
     // 3D linear elastic constitutive matrix
-    // LinearElasticMatrix of glass fiber
-    Matrix LinearElasticMatrix_glass(6,6);
-    noalias(LinearElasticMatrix_glass) = ZeroMatrix(6,6);
-    LinearElasticMatrix_glass ( 0 , 0 ) = (YoungModulus*(1.0-PoissonCoefficient)/((1.0+PoissonCoefficient)*(1.0-2.0*PoissonCoefficient)));
-    LinearElasticMatrix_glass ( 1 , 1 ) = LinearElasticMatrix_glass ( 0 , 0 );
-    LinearElasticMatrix_glass ( 2 , 2 ) = LinearElasticMatrix_glass ( 0 , 0 );
 
-    LinearElasticMatrix_glass ( 3 , 3 ) = LinearElasticMatrix_glass ( 0 , 0 )*(1.0-2.0*PoissonCoefficient)/(2.0*(1.0-PoissonCoefficient));
-    LinearElasticMatrix_glass ( 4 , 4 ) = LinearElasticMatrix_glass ( 3 , 3 );
-    LinearElasticMatrix_glass ( 5 , 5 ) = LinearElasticMatrix_glass ( 3 , 3 );
+    Matrix TempLinearElasticMatrix(6,6);
+    noalias(TempLinearElasticMatrix) = ZeroMatrix(6,6);
+    TempLinearElasticMatrix ( 0 , 0 ) = 140343119915.104;
+    TempLinearElasticMatrix ( 0 , 1 ) = 3905199858.50725;
+    TempLinearElasticMatrix ( 0 , 2 ) = 3905199858.50725;
+    TempLinearElasticMatrix ( 1 , 0 ) = 3905199858.50725;
+    TempLinearElasticMatrix ( 1 , 1 ) = 9954820276.99927;
+    TempLinearElasticMatrix ( 1 , 2 ) = 3062512584.69157;
+    TempLinearElasticMatrix ( 2 , 0 ) = 3905199858.50725;
+    TempLinearElasticMatrix ( 2 , 1 ) = 3062512584.69157;
+    TempLinearElasticMatrix ( 2 , 2 ) = 9954820276.99926;
+    TempLinearElasticMatrix ( 3 , 3 ) = 3446000000.00000; // Using formulas we obtained this (same as in paper)
+    TempLinearElasticMatrix ( 4 , 4 ) = 7100000000.00000; // paper data
+    // TempLinearElasticMatrix ( 4 , 4 ) = 6558374380.36490; // Using formulas we obtained this...
+    TempLinearElasticMatrix ( 5 , 5 ) = 6558374380.36490;
 
-    LinearElasticMatrix_glass ( 0 , 1 ) = LinearElasticMatrix_glass ( 0 , 0 )*PoissonCoefficient/(1.0-PoissonCoefficient);
-    LinearElasticMatrix_glass ( 1 , 0 ) = LinearElasticMatrix_glass ( 0 , 1 );
-
-    LinearElasticMatrix_glass ( 0 , 2 ) = LinearElasticMatrix_glass ( 0 , 1 );
-    LinearElasticMatrix_glass ( 2 , 0 ) = LinearElasticMatrix_glass ( 0 , 1 );
-
-    LinearElasticMatrix_glass ( 1 , 2 ) = LinearElasticMatrix_glass ( 0 , 1 );
-    LinearElasticMatrix_glass ( 2 , 1 ) = LinearElasticMatrix_glass ( 0 , 1 );
-
-    // LinearElasticMatrix of Epoxy
-    const double young_epoxy = 3.17e9;
-    const double poisson_epoxy = 0.38;
-    Matrix LinearElasticMatrix_epoxy(6,6);
-    noalias(LinearElasticMatrix_epoxy) = ZeroMatrix(6,6);
-    LinearElasticMatrix_epoxy ( 0 , 0 ) = (young_epoxy*(1.0-poisson_epoxy)/((1.0+poisson_epoxy)*(1.0-2.0*poisson_epoxy)));
-    LinearElasticMatrix_epoxy ( 1 , 1 ) = LinearElasticMatrix_epoxy ( 0 , 0 );
-    LinearElasticMatrix_epoxy ( 2 , 2 ) = LinearElasticMatrix_epoxy ( 0 , 0 );
-
-    LinearElasticMatrix_epoxy ( 3 , 3 ) = LinearElasticMatrix_epoxy ( 0 , 0 )*(1.0-2.0*poisson_epoxy)/(2.0*(1.0-poisson_epoxy));
-    LinearElasticMatrix_epoxy ( 4 , 4 ) = LinearElasticMatrix_epoxy ( 3 , 3 );
-    LinearElasticMatrix_epoxy ( 5 , 5 ) = LinearElasticMatrix_epoxy ( 3 , 3 );
-
-    LinearElasticMatrix_epoxy ( 0 , 1 ) = LinearElasticMatrix_epoxy ( 0 , 0 )*poisson_epoxy/(1.0-poisson_epoxy);
-    LinearElasticMatrix_epoxy ( 1 , 0 ) = LinearElasticMatrix_epoxy ( 0 , 1 );
-
-    LinearElasticMatrix_epoxy ( 0 , 2 ) = LinearElasticMatrix_epoxy ( 0 , 1 );
-    LinearElasticMatrix_epoxy ( 2 , 0 ) = LinearElasticMatrix_epoxy ( 0 , 1 );
-
-    LinearElasticMatrix_epoxy ( 1 , 2 ) = LinearElasticMatrix_epoxy ( 0 , 1 );
-    LinearElasticMatrix_epoxy ( 2 , 1 ) = LinearElasticMatrix_epoxy ( 0 , 1 );
-
-    noalias(rLinearElasticMatrix) = 0.3*LinearElasticMatrix_epoxy + 0.7*LinearElasticMatrix_glass;
-
+    noalias(rLinearElasticMatrix) = TempLinearElasticMatrix;
 }
 
 } // Namespace Kratos
