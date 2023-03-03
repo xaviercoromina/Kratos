@@ -166,45 +166,44 @@ class AnalysisStage(object):
             for process in self._GetListOfProcesses():
                 process.ExecuteAfterOutputStep()
 
-            # TODO: Pullout test. Total force
-            # model_part_name = self.project_parameters["solver_settings"]["model_part_name"].GetString()
-            # main_model_part = self.model.GetModelPart(model_part_name)
-            # time = main_model_part.ProcessInfo[KratosMultiphysics.TIME]
-            # total_force = 0.0
-            # disp = 0.0
-            # for node in self.model.GetModelPart('PorousModelPart.ImposedDisp_Y').Nodes:
-            #     total_force += node.GetSolutionStepValue(KratosMultiphysics.REACTION_Y)
-            #     disp = node.GetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_Y)
-            # total_force = 4.0*total_force # symmetric conditions
-            # out_total_force = open("time_disp_totalforce.txt","a")
-            # out_total_force.write(str(time))
-            # out_total_force.write(" ")
-            # out_total_force.write(str(disp))
-            # out_total_force.write(" ")
-            # out_total_force.write(str(total_force))
-            # out_total_force.write("\n")
-            # out_total_force.close()
-            # print('Pull-Out total force (N): ', total_force)
-
-            # TODO: DCB test. Delamination test total force
-            # model_part_name = self.project_parameters["solver_settings"]["model_part_name"].GetString()
-            # main_model_part = self.model.GetModelPart(model_part_name)
-            # time = main_model_part.ProcessInfo[KratosMultiphysics.TIME]
-            # total_force = 0.0
-            # disp = 0.0
-            # for node in self.model.GetModelPart('PorousModelPart.ImposedDisp_Y').Nodes:
-            #     total_force += node.GetSolutionStepValue(KratosMultiphysics.REACTION_Y)
-            #     disp = node.GetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_Y)
-            # total_force = 4.0*total_force # symmetric conditions
-            # out_total_force = open("time_disp_totalforce.txt","a")
-            # out_total_force.write(str(time))
-            # out_total_force.write(" ")
-            # out_total_force.write(str(disp))
-            # out_total_force.write(" ")
-            # out_total_force.write(str(total_force))
-            # out_total_force.write("\n")
-            # out_total_force.close()
-            # print('Pull-Out total force (N): ', total_force)
+            run_DCB_test = self.project_parameters["problem_data"]["run_DCB_test"].GetBool()
+            model_part_name = self.project_parameters["solver_settings"]["model_part_name"].GetString()
+            main_model_part = self.model.GetModelPart(model_part_name)
+            time = main_model_part.ProcessInfo[KratosMultiphysics.TIME]
+            if run_DCB_test:
+                # TODO: DCB_test. Delamination test total force
+                total_force_top = 0.0
+                disp_top = 0.0
+                for node in self.model.GetModelPart('PorousModelPart.imposed_dispY_top').Nodes:
+                    total_force_top += node.GetSolutionStepValue(KratosMultiphysics.REACTION_Y)
+                    disp_top = node.GetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_Y)
+                total_force_top = 2.0*total_force_top # symmetric conditions
+                out_total_force_top = open("time_disp_totalforce.txt","a")
+                out_total_force_top.write(str(time))
+                out_total_force_top.write(" ")
+                out_total_force_top.write(str(disp_top))
+                out_total_force_top.write(" ")
+                out_total_force_top.write(str(total_force_top))
+                out_total_force_top.write("\n")
+                out_total_force_top.close()
+                print('Delamination test total force (N): ', total_force_top)
+            else:
+                # TODO: Pullout test. Total force
+                total_force = 0.0
+                disp = 0.0
+                for node in self.model.GetModelPart('PorousModelPart.ImposedDisp_Y').Nodes:
+                    total_force += node.GetSolutionStepValue(KratosMultiphysics.REACTION_Y)
+                    disp = node.GetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_Y)
+                total_force = 4.0*total_force # symmetric conditions
+                out_total_force = open("time_disp_totalforce.txt","a")
+                out_total_force.write(str(time))
+                out_total_force.write(" ")
+                out_total_force.write(str(disp))
+                out_total_force.write(" ")
+                out_total_force.write(str(total_force))
+                out_total_force.write("\n")
+                out_total_force.close()
+                print('Pull-Out total force (N): ', total_force)
 
     def Check(self):
         """This function checks the AnalysisStage
