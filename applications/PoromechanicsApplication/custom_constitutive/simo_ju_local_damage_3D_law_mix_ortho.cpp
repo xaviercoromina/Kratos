@@ -76,7 +76,8 @@ void SimoJuLocalDamage3DLawMixOrtho::CalculateLinearElasticMatrix( Matrix& rLine
     TempLinearElasticMatrix ( 3 , 3 ) = 3446000000.00000; // Using formulas we obtained this (same as in paper)
     TempLinearElasticMatrix ( 4 , 4 ) = 7100000000.00000; // paper data
     // TempLinearElasticMatrix ( 4 , 4 ) = 6558374380.36490; // Using formulas we obtained this...
-    TempLinearElasticMatrix ( 5 , 5 ) = 6558374380.36490;
+    TempLinearElasticMatrix ( 5 , 5 ) = 7100000000.00000; // just like D(4,4)
+    // TempLinearElasticMatrix ( 5 , 5 ) = 6558374380.36490; // Using formulas we obtained this... (the solution is not stiff enough)
 
     noalias(rLinearElasticMatrix) = TempLinearElasticMatrix;
 }
