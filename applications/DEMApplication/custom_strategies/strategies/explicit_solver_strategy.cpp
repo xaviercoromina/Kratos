@@ -2599,10 +2599,9 @@ namespace Kratos {
 
       //-------------------- rve_coordinates --------------------
       std::ofstream mRVE_FileCoordinates("rve_coordinates.txt", std::ofstream::trunc);
-      mRVE_FileCoordinates << "1 - STEP | ";
-      mRVE_FileCoordinates << "2 - TIME | ";
-      mRVE_FileCoordinates << "3 - WALL_MIN_X WALL_MAX_X WALL_MIN_Y WALL_MAX_Y WALL_MIN_Z WALL_MAX_Z | ";
-      mRVE_FileCoordinates << "4 - X Y Z R of all particles";
+      mRVE_FileCoordinates << "LINE 1 - STEP & TIME | ";
+      mRVE_FileCoordinates << "LINE 2 - WALL_MIN_X WALL_MAX_X WALL_MIN_Y WALL_MAX_Y WALL_MIN_Z WALL_MAX_Z | ";
+      mRVE_FileCoordinates << "OTHER LINES - X Y Z R OF EACH PARTICLE";
       mRVE_FileCoordinates << std::endl;
 
       double xmin, xmax, ymin, ymax, zmin, zmax;
@@ -2619,15 +2618,15 @@ namespace Kratos {
       if (mRVE_WallZMax.size() > 0) zmax = mRVE_WallZMax[0]->GetGeometry()[0][2];
       else                          zmax = 0.0;
 
-      mRVE_FileCoordinates << time_step << " " << time << " ";
-      mRVE_FileCoordinates << xmin << " " << xmax << " " << ymin << " " << ymax << " " << zmin << " " << zmax << " ";
+      mRVE_FileCoordinates << time_step << " " << time << std::endl;
+      mRVE_FileCoordinates << xmin << " " << xmax << " " << ymin << " " << ymax << " " << zmin << " " << zmax << std::endl;
 
       for (int i = 0; i < number_of_particles; i++) {
         const double x = mListOfSphericParticles[i]->GetGeometry()[0][0];
         const double y = mListOfSphericParticles[i]->GetGeometry()[0][1];
         const double z = mListOfSphericParticles[i]->GetGeometry()[0][2];
         const double r = mListOfSphericParticles[i]->GetRadius();
-        mRVE_FileCoordinates << x << " " << y << " " << z << " " << r << " ";
+        mRVE_FileCoordinates << x << " " << y << " " << z << " " << r << std::endl;
       }
       mRVE_FileCoordinates.close();
 
@@ -2647,14 +2646,13 @@ namespace Kratos {
 
       //-------------------- rve_contact_number --------------------
       std::ofstream mRVE_FileContactNumber("rve_contact_number.txt", std::ofstream::trunc);
-      mRVE_FileContactNumber << "1 - STEP | ";
-      mRVE_FileContactNumber << "2 - TIME | ";
-      mRVE_FileContactNumber << "3 - NUMBER OF CONTACTS OF ALL PARTICLES";
+      mRVE_FileContactNumber << "LINE 1 - STEP & TIME | ";
+      mRVE_FileContactNumber << "OTHER LINES - #CONTACTS OF EACH PARTICLE";
       mRVE_FileContactNumber << std::endl;
       mRVE_FileContactNumber << time_step << " " << time << " ";
       for (int i = 0; i < number_of_particles; i++)
         if (mListOfSphericParticles[i]->mWall == 0)
-          mRVE_FileContactNumber << mListOfSphericParticles[i]->mCoordNum << " ";
+          mRVE_FileContactNumber << mListOfSphericParticles[i]->mCoordNum << std::endl;
       mRVE_FileContactNumber.close();
 
       //-------------------- rve_coordination_number --------------------
@@ -2671,31 +2669,34 @@ namespace Kratos {
 
       //-------------------- rve_inner_volume_particles --------------------
       std::ofstream mRVE_FileInnerVolumeParticles("rve_inner_volume_particles.txt", std::ofstream::trunc);
-      mRVE_FileInnerVolumeParticles << "1 - STEP | ";
-      mRVE_FileInnerVolumeParticles << "2 - TIME | ";
-      mRVE_FileInnerVolumeParticles << "3 - Number of particles | ";
-      mRVE_FileInnerVolumeParticles << "4 - [X Y Z R] of each particles";
+      mRVE_FileInnerVolumeParticles << "LINE 1 - STEP & TIME | ";
+      mRVE_FileInnerVolumeParticles << "LINE 2 - #PARTICLES | ";
+      mRVE_FileInnerVolumeParticles << "OTHER LINES - [X Y Z R] OF EACH PARTICLE";
       mRVE_FileInnerVolumeParticles << std::endl;
-      mRVE_FileInnerVolumeParticles << time_step << " " << time << " " << mRVE_InnerVolParticles.size() << " ";
+      mRVE_FileInnerVolumeParticles << time_step << " " << time << std::endl;
+      mRVE_FileInnerVolumeParticles << mRVE_InnerVolParticles.size() << std::endl;
       for (int i = 0; i < mRVE_InnerVolParticles.size(); i++) {
         array_1d<double, 3> coords = mRVE_InnerVolParticles[i]->GetGeometry()[0].Coordinates();
         const double radius        = mRVE_InnerVolParticles[i]->GetRadius();
-        mRVE_FileInnerVolumeParticles << coords[0] << " " << coords[1] << " " << coords[2] << " " << radius << " ";
+        mRVE_FileInnerVolumeParticles << coords[0] << " " << coords[1] << " " << coords[2] << " " << radius << std::endl;
       }
       mRVE_FileInnerVolumeParticles.close();
 
       //-------------------- rve_force_chain --------------------
       std::ofstream mRVE_FileForceChain("rve_force_chain.txt", std::ofstream::trunc);
-      mRVE_FileForceChain << "1 - STEP | ";
-      mRVE_FileForceChain << "2 - TIME | ";
-      mRVE_FileForceChain << "3 - [X1 Y1 Z1 X2 Y2 Z2 F] of each contact";
+      mRVE_FileForceChain << "LINE 1 - STEP & TIME | ";
+      mRVE_FileForceChain << "OTHER LINES - [X1 Y1 Z1 X2 Y2 Z2 F] OF EACH CONTACT";
       mRVE_FileForceChain << std::endl;
-      mRVE_FileForceChain << time_step << " " << time << " ";
-      for (int i = 0; i < mRVE_ForceChain.size(); i++) mRVE_FileForceChain << mRVE_ForceChain[i] << " ";
+      mRVE_FileForceChain << time_step << " " << time << std::endl;
+      for (int i = 0; i < mRVE_ForceChain.size(); i++) mRVE_FileForceChain << mRVE_ForceChain[i] << std::endl;
       mRVE_FileForceChain.close();
 
       //-------------------- rve_elastic_forces --------------------
       std::ofstream mRVE_FileElasticContactForces("rve_elastic_forces.txt", std::ofstream::trunc);
+      mRVE_FileElasticContactForces << "1 - PARTICLE ID | ";
+      mRVE_FileElasticContactForces << "2 - #NEIGHBORS | ";
+      mRVE_FileElasticContactForces << "3 - [FX FY FZ] WITH EACH NEIGHBOR";
+      mRVE_FileElasticContactForces << std::endl;
       for (int i = 0; i < number_of_particles; i++) {
         const int n_neighbors = mListOfSphericParticles[i]->mNeighbourElements.size();
         mRVE_FileElasticContactForces << i << " " << n_neighbors << " ";
