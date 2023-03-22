@@ -1814,7 +1814,6 @@ namespace Kratos {
       // Initialize properties
       mRVE_FlatWalls   = r_conditions.size() > 0;
       mRVE_Compress    = true;
-      mRVE_Equilibrium = false;
       mRVE_FreqWrite  *= r_process_info[RVE_EVAL_FREQ];
       mRVE_Dimension   = r_process_info[DOMAIN_SIZE];
       mRVE_EqSteps     = 0;
@@ -1853,47 +1852,54 @@ namespace Kratos {
 
       // Initialize variables
       if (mRVE_Solve && time_step > 0) {
-        const int dim  = mRVE_Dimension;
-        const int dim2 = mRVE_Dimension * mRVE_Dimension;
+        mRVE_VolSolid = 0.0;
 
-        mRVE_NumContacts             = 0;
-        mRVE_NumContactsInner        = 0;
-        mRVE_NumParticlesInner       = 0;
-        mRVE_AvgCoordNum             = 0.0;
-        mRVE_AvgCoordNumInner        = 0.0;
-        mRVE_VolSolid                = 0.0;
-        mRVE_WallForces              = 0.0;
-        mRVE_RoseDiagram             = ZeroMatrix(2,40);
-        mRVE_RoseDiagramInner        = ZeroMatrix(2,40);
-        mRVE_FabricTensor            = ZeroMatrix(dim,dim);
-        mRVE_FabricTensorInner       = ZeroMatrix(dim,dim);
-        mRVE_CauchyTensor            = ZeroMatrix(dim,dim);
-        mRVE_CauchyTensorInner       = ZeroMatrix(dim,dim);
-        mRVE_TangentTensor           = ZeroMatrix(dim2,dim2);
-        mRVE_TangentTensorInner      = ZeroMatrix(dim2,dim2);
-        mRVE_ConductivityTensor      = ZeroMatrix(dim,dim);
-        mRVE_ConductivityTensorInner = ZeroMatrix(dim,dim);
-        mRVE_InnerVolParticles.clear();
-        mRVE_ForceChain.clear();
+        if (!mRVE_Compress) {
+          const int dim = mRVE_Dimension;
+          const int dim2 = mRVE_Dimension * mRVE_Dimension;
+          mRVE_NumContacts             = 0;
+          mRVE_NumContactsInner        = 0;
+          mRVE_NumParticlesInner       = 0;
+          mRVE_AvgCoordNum             = 0.0;
+          mRVE_AvgCoordNumInner        = 0.0;
+          mRVE_WallForces              = 0.0;
+          mRVE_RoseDiagram             = ZeroMatrix(2,40);
+          mRVE_RoseDiagramInner        = ZeroMatrix(2,40);
+          mRVE_FabricTensor            = ZeroMatrix(dim,dim);
+          mRVE_FabricTensorInner       = ZeroMatrix(dim,dim);
+          mRVE_CauchyTensor            = ZeroMatrix(dim,dim);
+          mRVE_CauchyTensorInner       = ZeroMatrix(dim,dim);
+          mRVE_TangentTensor           = ZeroMatrix(dim2,dim2);
+          mRVE_TangentTensorInner      = ZeroMatrix(dim2,dim2);
+          mRVE_ConductivityTensor      = ZeroMatrix(dim,dim);
+          mRVE_ConductivityTensorInner = ZeroMatrix(dim,dim);
+          mRVE_InnerVolParticles.clear();
+          mRVE_ForceChain.clear();
+        }
       }
     }
 
     //-----------------------------------------------------------------------------------------------------------------------------------------
     void ExplicitSolverStrategy::RVEExecuteParticlePre(SphericParticle* p_particle) {
-      p_particle->mRVESolve = mRVE_Solve;
+      p_particle->mRVESolve = mRVE_Solve && !mRVE_Compress;
+
       if (!mRVE_Solve)
         return;
 
-      const int dim  = mRVE_Dimension;
-      const int dim2 = mRVE_Dimension * mRVE_Dimension;
+      p_particle->mVolOverlap = 0.0;
+
+      if (mRVE_Compress)
+        return;
 
       if (p_particle->mWall == 0) {
+        const int dim  = mRVE_Dimension;
+        const int dim2 = mRVE_Dimension * mRVE_Dimension;
+
         p_particle->mInner                   = (p_particle->mNeighbourRigidFaces.size() == 0);
         p_particle->mSkin                    = false;
         p_particle->mNumContacts             = 0;
         p_particle->mNumContactsInner        = 0;
         p_particle->mCoordNum                = 0;
-        p_particle->mVolOverlap              = 0.0;
         p_particle->mWallForces              = 0.0;
         p_particle->mRoseDiagram             = ZeroMatrix(2,40);
         p_particle->mFabricTensor            = ZeroMatrix(dim,dim);
@@ -1912,10 +1918,13 @@ namespace Kratos {
     void ExplicitSolverStrategy::RVEExecuteParticlePos(SphericParticle* p_particle) {
       if (!mRVE_Solve) return;
 
+      mRVE_VolSolid += RVEComputeParticleVolume(p_particle) - p_particle->mVolOverlap;
+
+      if (mRVE_Compress) return;
+
       if (p_particle->mWall == 0) {
         mRVE_NumContacts        += p_particle->mNumContacts;
         mRVE_AvgCoordNum        += p_particle->mCoordNum;
-        mRVE_VolSolid           += RVEComputeParticleVolume(p_particle) - p_particle->mVolOverlap;
         mRVE_WallForces         += p_particle->mWallForces;
         mRVE_RoseDiagram        += p_particle->mRoseDiagram;
         mRVE_FabricTensor       += p_particle->mFabricTensor;
@@ -1950,51 +1959,45 @@ namespace Kratos {
     void ExplicitSolverStrategy::RVEFinalizeSolutionStep(void) {
       if (!mRVE_Solve) return;
 
-      // Average coordination number
-      mRVE_AvgCoordNum      /= mRVE_NumParticles;
-      mRVE_AvgCoordNumInner /= mRVE_NumParticlesInner;
-
-      // Compute volume
+      // Compute/write porosity and void ratio
       mRVE_VolTotal = RVEComputeTotalVolume();
-      mRVE_VolInner = RVEComputeInnerVolume();
-
-      // Compute porosity and void ratio
       RVEComputePorosity();
+      mRVE_FilePorosityAndVoidRatio << GetModelPart().GetProcessInfo()[TIME] << " " << mRVE_Porosity << " " << mRVE_VoidRatio << std::endl;
 
-      // Compute stress applied by walls
-      if (mRVE_FlatWalls)
-        mRVE_WallStress = mRVE_WallForces / RVEComputeTotalSurface();
-      else
-        mRVE_WallStress = 0.0;  // TODO: Not computed for particle walls
+      if (mRVE_Compress) {
+        mRVE_EffectStress = 0.0;
+        mRVE_DevStress    = 0.0;
+      }
+      else {
+        // Compute inner volume
+        mRVE_VolInner = RVEComputeInnerVolume();
 
-      // Save previous values
-      double prev_effect_stress = mRVE_EffectStress;
-      double prev_dev_stress    = mRVE_DevStress;
+        // Average coordination number
+        mRVE_AvgCoordNum /= mRVE_NumParticles;
+        mRVE_AvgCoordNumInner /= mRVE_NumParticlesInner;
 
-      // Compute homogenized parameters
-      RVEHomogenization();
+        // Compute stress applied by walls
+        if (mRVE_FlatWalls)
+          mRVE_WallStress = mRVE_WallForces / RVEComputeTotalSurface();
+        else
+          mRVE_WallStress = 0.0;  // TODO: Not computed for particle walls
 
-      // Compute uniformity of rose diagram
-      RVEComputeRoseUniformity();
+        // Save previous values
+        double prev_effect_stress = mRVE_EffectStress;
+        double prev_dev_stress    = mRVE_DevStress;
 
-      // Write files
-      RVEWriteFiles();
+        // Compute homogenized parameters
+        RVEHomogenization();
+
+        // Compute uniformity of rose diagram
+        RVEComputeRoseUniformity();
+
+        // Write files
+        RVEWriteFiles();
+      }
 
       // Stop compression
       RVEStopCompression();
-
-      // Check equilibrium
-      double tol = 0.0000000001;
-      double ratio_eff = std::abs((mRVE_EffectStress-prev_effect_stress) / mRVE_EffectStress);
-      double ratio_dev = std::abs((mRVE_DevStress-prev_dev_stress) / mRVE_DevStress);
-
-      if (!mRVE_Compress && ratio_eff < tol && ratio_dev < tol)
-        mRVE_EqSteps++;
-      else
-        mRVE_EqSteps = 0;
-
-      if (mRVE_EqSteps >= 10)
-        mRVE_Equilibrium = true;
     }
 
     //-----------------------------------------------------------------------------------------------------------------------------------------
@@ -2518,7 +2521,7 @@ namespace Kratos {
       ModelPart& r_dem_model_part = GetModelPart();
       const double limit_stress = r_dem_model_part.GetProcessInfo()[LIMIT_CONSOLIDATION_STRESS];
 
-      if (mRVE_Compress && std::abs(mRVE_EffectStressInner) >= limit_stress) {
+      if (mRVE_Compress && std::abs(mRVE_Porosity) <= limit_stress) {
         mRVE_Compress = false;
 
         if (mRVE_FlatWalls) {
@@ -2585,304 +2588,51 @@ namespace Kratos {
 
     //-----------------------------------------------------------------------------------------------------------------------------------------
     void ExplicitSolverStrategy::RVEWriteFiles(void) {
-      ModelPart&   r_dem_model_part = GetModelPart();
-      ProcessInfo& r_process_info   = r_dem_model_part.GetProcessInfo();
-      const int    time_step        = r_process_info[TIME_STEPS];
-      const double time             = r_process_info[TIME];
+      ModelPart&   r_dem_model_part    = GetModelPart();
+      ProcessInfo& r_process_info      = r_dem_model_part.GetProcessInfo();
+      const int    time_step           = r_process_info[TIME_STEPS];
+      const double time                = r_process_info[TIME];
+      const int    number_of_particles = (int)mListOfSphericParticles.size();
 
       if (time_step % mRVE_FreqWrite != 0.0)
         return;
 
-      if (mRVE_FileCoordinates.is_open()) {
-        double xmin, xmax, ymin, ymax, zmin, zmax;
-
-        if (mRVE_WallXMin.size() > 0) xmin = mRVE_WallXMin[0]->GetGeometry()[0][0];
-        else                          xmin = 0.0;
-        if (mRVE_WallXMax.size() > 0) xmax = mRVE_WallXMax[0]->GetGeometry()[0][0];
-        else                          xmax = 0.0;
-        if (mRVE_WallYMin.size() > 0) ymin = mRVE_WallYMin[0]->GetGeometry()[0][1];
-        else                          ymin = 0.0;
-        if (mRVE_WallYMax.size() > 0) ymax = mRVE_WallYMax[0]->GetGeometry()[0][1];
-        else                          ymax = 0.0;
-        if (mRVE_WallZMin.size() > 0) zmin = mRVE_WallZMin[0]->GetGeometry()[0][2];
-        else                          zmin = 0.0;
-        if (mRVE_WallZMax.size() > 0) zmax = mRVE_WallZMax[0]->GetGeometry()[0][2];
-        else                          zmax = 0.0;
-
-        mRVE_FileCoordinates << time_step << " " << time << " ";
-        mRVE_FileCoordinates << xmin << " " << xmax << " " << ymin << " " << ymax << " " << zmin << " " << zmax << " ";
-
-        const int number_of_particles = (int)mListOfSphericParticles.size();
-        for (int i = 0; i < number_of_particles; i++) {
-          const double x = mListOfSphericParticles[i]->GetGeometry()[0][0];
-          const double y = mListOfSphericParticles[i]->GetGeometry()[0][1];
-          const double z = mListOfSphericParticles[i]->GetGeometry()[0][2];
-          const double r = mListOfSphericParticles[i]->GetRadius();
-          mRVE_FileCoordinates << x << " " << y << " " << z << " " << r << " ";
-        }
-        mRVE_FileCoordinates << std::endl;
-      }
-
-      if (mRVE_FilePorosity.is_open())
-        mRVE_FilePorosity << time_step     << " "
-                          << time          << " "
-                          << mRVE_VolInner << " "
-                          << mRVE_VolTotal << " "
-                          << mRVE_VolSolid << " "
-                          << mRVE_VolTotal-mRVE_VolSolid << " "
-                          << mRVE_Porosity << " "
-                          << mRVE_VoidRatio
-                          << std::endl;
-
-      if (mRVE_FileContactNumber.is_open()) {
-        mRVE_FileContactNumber << time_step << " " << time << " ";
-        for (int i = 0; i < mListOfSphericParticles.size(); i++) {
-          if (mListOfSphericParticles[i]->mWall == 0) {
-            const int contacts = mListOfSphericParticles[i]->mCoordNum;
-            mRVE_FileContactNumber << contacts << " ";
-          }
-        }
-        mRVE_FileContactNumber << std::endl;
-      }
-
-      if (mRVE_FileCoordNumber.is_open())
-        mRVE_FileCoordNumber << time_step             << " "
-                             << time                  << " "
-                             << mRVE_NumContacts      << " "
-                             << mRVE_NumContactsInner << " "
-                             << mRVE_AvgCoordNum      << " "
-                             << mRVE_AvgCoordNumInner
-                             << std::endl;
-
-      if (mRVE_FileInnerVolumeParticles.is_open()) {
-        mRVE_FileInnerVolumeParticles << time_step << " " << time << " ";
-        mRVE_FileInnerVolumeParticles << mRVE_InnerVolParticles.size() << " ";
-        for (int i = 0; i < mRVE_InnerVolParticles.size(); i++) {
-          array_1d<double,3> coords = mRVE_InnerVolParticles[i]->GetGeometry()[0].Coordinates();
-          const double radius       = mRVE_InnerVolParticles[i]->GetRadius();
-          mRVE_FileInnerVolumeParticles << coords[0] << " " << coords[1] << " " << coords[2] << " " << radius << " ";
-        }
-        mRVE_FileInnerVolumeParticles << std::endl;
-      }
-
-      if (mRVE_FileForceChain.is_open()) {
-        mRVE_FileForceChain << time_step << " " << time << " ";
-        for (int i = 0; i < mRVE_ForceChain.size(); i++) mRVE_FileForceChain << mRVE_ForceChain[i] << " ";
-        mRVE_FileForceChain << std::endl;
-      }
-
-      if (mRVE_FileElasticContactForces.is_open() && mRVE_Equilibrium) {
-        for (int i = 0; i < mListOfSphericParticles.size(); i++) {
-          const int n_neighbors = mListOfSphericParticles[i]->mNeighbourElements.size();
-          mRVE_FileElasticContactForces << i << " ";
-          mRVE_FileElasticContactForces << n_neighbors << " ";
-          for (int j = 0; j < n_neighbors; j++) {
-            array_1d<double, 3> force = mListOfSphericParticles[i]->mNeighbourElasticContactForces[j];
-            mRVE_FileElasticContactForces << force[0] << " ";
-            mRVE_FileElasticContactForces << force[1] << " ";
-            mRVE_FileElasticContactForces << force[2] << " ";
-          }
-          mRVE_FileElasticContactForces << std::endl;
-        }
-        mRVE_FileElasticContactForces.close();
-      }
-
-      if (mRVE_FileRoseDiagram.is_open()) {
-        mRVE_FileRoseDiagram << time_step << " " << time << " ";
-        
-        mRVE_FileRoseDiagram << "[ ";
-        for (unsigned int i = 0; i < mRVE_RoseDiagram.size2(); i++) mRVE_FileRoseDiagram << mRVE_RoseDiagram(0,i) << " ";
-        mRVE_FileRoseDiagram << "] ";
-
-        mRVE_FileRoseDiagram << "[ ";
-        for (unsigned int i = 0; i < mRVE_RoseDiagram.size2(); i++) mRVE_FileRoseDiagram << mRVE_RoseDiagram(1,i) << " ";
-        mRVE_FileRoseDiagram << "]";
-
-        mRVE_FileRoseDiagram << std::endl;
-      }
-
-      if (mRVE_FileRoseDiagramInner.is_open()) {
-        mRVE_FileRoseDiagramInner << time_step << " " << time << " ";
-
-        mRVE_FileRoseDiagramInner << "[ ";
-        for (unsigned int i = 0; i < mRVE_RoseDiagramInner.size2(); i++) mRVE_FileRoseDiagramInner << mRVE_RoseDiagramInner(0,i) << " ";
-        mRVE_FileRoseDiagramInner << "] ";
-
-        mRVE_FileRoseDiagramInner << "[ ";
-        for (unsigned int i = 0; i < mRVE_RoseDiagramInner.size2(); i++) mRVE_FileRoseDiagramInner << mRVE_RoseDiagramInner(1,i) << " ";
-        mRVE_FileRoseDiagramInner << "]";
-
-        mRVE_FileRoseDiagramInner << std::endl;
-      }
-
-      if (mRVE_FileRoseDiagramUniformity.is_open())
-        mRVE_FileRoseDiagramUniformity << time_step << " "
-                                       << time      << " "
-                                       << mRVE_StdDevRoseXYAll << " "
-                                       << mRVE_StdDevRoseAzAll << " "
-                                       << mRVE_StdDevRoseXYInn << " "
-                                       << mRVE_StdDevRoseAzInn
-                                       << std::endl;
-
-      if (mRVE_FileAnisotropy.is_open())
-        mRVE_FileAnisotropy << time_step       << " "
-                            << time            << " "
-                            << mRVE_Anisotropy << " "
-                            << mRVE_AnisotropyInner
-                            << std::endl;
-
-      if (mRVE_FileFabricTensor.is_open()) {
-        if (mRVE_Dimension == 2)
-          mRVE_FileFabricTensor << time_step << " " << time << " "
-                                << "[[" << mRVE_FabricTensor(0,0) << "],[" << mRVE_FabricTensor(0,1) << "]]" << " "
-                                << "[[" << mRVE_FabricTensor(1,0) << "],[" << mRVE_FabricTensor(1,1) << "]]"
-                                << std::endl;
-        else if (mRVE_Dimension == 3)
-          mRVE_FileFabricTensor << time_step << " " << time << " "
-                                << "[[" << mRVE_FabricTensor(0,0) << "],[" << mRVE_FabricTensor(0,1) << "],[" << mRVE_FabricTensor(0,2) << "]]" << " "
-                                << "[[" << mRVE_FabricTensor(1,0) << "],[" << mRVE_FabricTensor(1,1) << "],[" << mRVE_FabricTensor(1,2) << "]]" << " "
-                                << "[[" << mRVE_FabricTensor(2,0) << "],[" << mRVE_FabricTensor(2,1) << "],[" << mRVE_FabricTensor(2,2) << "]]"
-                                << std::endl;
-      }
-
-      if (mRVE_FileFabricTensorInner.is_open()) {
-        if (mRVE_Dimension == 2)
-          mRVE_FileFabricTensorInner << time_step << " " << time << " "
-                                     << "[[" << mRVE_FabricTensorInner(0,0) << "],[" << mRVE_FabricTensorInner(0,1) << "]]" << " "
-                                     << "[[" << mRVE_FabricTensorInner(1,0) << "],[" << mRVE_FabricTensorInner(1,1) << "]]"
-                                     << std::endl;
-        else if (mRVE_Dimension == 3)
-          mRVE_FileFabricTensorInner << time_step << " " << time << " "
-                                     << "[[" << mRVE_FabricTensorInner(0,0) << "],[" << mRVE_FabricTensorInner(0,1) << "],[" << mRVE_FabricTensorInner(0,2) << "]]" << " "
-                                     << "[[" << mRVE_FabricTensorInner(1,0) << "],[" << mRVE_FabricTensorInner(1,1) << "],[" << mRVE_FabricTensorInner(1,2) << "]]" << " "
-                                     << "[[" << mRVE_FabricTensorInner(2,0) << "],[" << mRVE_FabricTensorInner(2,1) << "],[" << mRVE_FabricTensorInner(2,2) << "]]"
-                                     << std::endl;
-      }
-
-      if (mRVE_FileStress.is_open())
-        mRVE_FileStress << time_step              << " "
-                        << time                   << " "
-                        << mRVE_WallStress        << " "
-                        << mRVE_EffectStress      << " "
-                        << mRVE_DevStress         << " "
-                        << mRVE_EffectStressInner << " "
-                        << mRVE_DevStressInner
-                        << std::endl;
-
-      if (mRVE_FileCauchyTensor.is_open()) {
-        if (mRVE_Dimension == 2)
-          mRVE_FileCauchyTensor << time_step << " " << time << " "
-                                << "[[" << mRVE_CauchyTensor(0,0) << "],[" << mRVE_CauchyTensor(0,1) << "]]" << " "
-                                << "[[" << mRVE_CauchyTensor(1,0) << "],[" << mRVE_CauchyTensor(1,1) << "]]"
-                                << std::endl;
-        else if (mRVE_Dimension == 3)
-          mRVE_FileCauchyTensor << time_step << " " << time << " "
-                                << "[[" << mRVE_CauchyTensor(0,0) << "],[" << mRVE_CauchyTensor(0,1) << "],[" << mRVE_CauchyTensor(0,2) << "]]" << " "
-                                << "[[" << mRVE_CauchyTensor(1,0) << "],[" << mRVE_CauchyTensor(1,1) << "],[" << mRVE_CauchyTensor(1,2) << "]]" << " "
-                                << "[[" << mRVE_CauchyTensor(2,0) << "],[" << mRVE_CauchyTensor(2,1) << "],[" << mRVE_CauchyTensor(2,2) << "]]"
-                                << std::endl;
-      }
-
-      if (mRVE_FileCauchyTensorInner.is_open()) {
-        if (mRVE_Dimension == 2)
-          mRVE_FileCauchyTensorInner << time_step << " " << time << " "
-                                     << "[[" << mRVE_CauchyTensorInner(0,0) << "],[" << mRVE_CauchyTensorInner(0,1) << "]]" << " "
-                                     << "[[" << mRVE_CauchyTensorInner(1,0) << "],[" << mRVE_CauchyTensorInner(1,1) << "]]"
-                                     << std::endl;
-        else if (mRVE_Dimension == 3)
-          mRVE_FileCauchyTensorInner << time_step << " " << time << " "
-                                     << "[[" << mRVE_CauchyTensorInner(0,0) << "],[" << mRVE_CauchyTensorInner(0,1) << "],[" << mRVE_CauchyTensorInner(0,2) << "]]" << " "
-                                     << "[[" << mRVE_CauchyTensorInner(1,0) << "],[" << mRVE_CauchyTensorInner(1,1) << "],[" << mRVE_CauchyTensorInner(1,2) << "]]" << " "
-                                     << "[[" << mRVE_CauchyTensorInner(2,0) << "],[" << mRVE_CauchyTensorInner(2,1) << "],[" << mRVE_CauchyTensorInner(2,2) << "]]"
-                                     << std::endl;
-      }
-
-      if (mRVE_FileTangentTensor.is_open()) {
-          if (mRVE_Dimension == 2)
-            mRVE_FileTangentTensor << time_step << " " << time << " "
-                                   << "[[" << mRVE_TangentTensor(0,0) << "],[" << mRVE_TangentTensor(0,1) << "],[" << mRVE_TangentTensor(0,2) << "],[" << mRVE_TangentTensor(0,3) << "]]" << " "
-                                   << "[[" << mRVE_TangentTensor(1,0) << "],[" << mRVE_TangentTensor(1,1) << "],[" << mRVE_TangentTensor(1,2) << "],[" << mRVE_TangentTensor(1,3) << "]]" << " "
-                                   << "[[" << mRVE_TangentTensor(2,0) << "],[" << mRVE_TangentTensor(2,1) << "],[" << mRVE_TangentTensor(2,2) << "],[" << mRVE_TangentTensor(2,3) << "]]" << " "
-                                   << "[[" << mRVE_TangentTensor(3,0) << "],[" << mRVE_TangentTensor(3,1) << "],[" << mRVE_TangentTensor(3,2) << "],[" << mRVE_TangentTensor(3,3) << "]]"
-                                   << std::endl;
-          else if (mRVE_Dimension == 3)
-            mRVE_FileTangentTensor << time_step << " " << time << " "
-                                   << "[[" << mRVE_TangentTensor(0,0) << "],[" << mRVE_TangentTensor(0,1) << "],[" << mRVE_TangentTensor(0,2) << "],[" << mRVE_TangentTensor(0,3) << "],[" << mRVE_TangentTensor(0,4) << "],[" << mRVE_TangentTensor(0,5) << "],[" << mRVE_TangentTensor(0,6) << "],[" << mRVE_TangentTensor(0,7) << "],[" << mRVE_TangentTensor(0,8) << "]]" << " "
-                                   << "[[" << mRVE_TangentTensor(1,0) << "],[" << mRVE_TangentTensor(1,1) << "],[" << mRVE_TangentTensor(1,2) << "],[" << mRVE_TangentTensor(1,3) << "],[" << mRVE_TangentTensor(1,4) << "],[" << mRVE_TangentTensor(1,5) << "],[" << mRVE_TangentTensor(1,6) << "],[" << mRVE_TangentTensor(1,7) << "],[" << mRVE_TangentTensor(1,8) << "]]" << " "
-                                   << "[[" << mRVE_TangentTensor(2,0) << "],[" << mRVE_TangentTensor(2,1) << "],[" << mRVE_TangentTensor(2,2) << "],[" << mRVE_TangentTensor(2,3) << "],[" << mRVE_TangentTensor(2,4) << "],[" << mRVE_TangentTensor(2,5) << "],[" << mRVE_TangentTensor(2,6) << "],[" << mRVE_TangentTensor(2,7) << "],[" << mRVE_TangentTensor(2,8) << "]]" << " "
-                                   << "[[" << mRVE_TangentTensor(3,0) << "],[" << mRVE_TangentTensor(3,1) << "],[" << mRVE_TangentTensor(3,2) << "],[" << mRVE_TangentTensor(3,3) << "],[" << mRVE_TangentTensor(3,4) << "],[" << mRVE_TangentTensor(3,5) << "],[" << mRVE_TangentTensor(3,6) << "],[" << mRVE_TangentTensor(3,7) << "],[" << mRVE_TangentTensor(3,8) << "]]" << " "
-                                   << "[[" << mRVE_TangentTensor(4,0) << "],[" << mRVE_TangentTensor(4,1) << "],[" << mRVE_TangentTensor(4,2) << "],[" << mRVE_TangentTensor(4,3) << "],[" << mRVE_TangentTensor(4,4) << "],[" << mRVE_TangentTensor(4,5) << "],[" << mRVE_TangentTensor(4,6) << "],[" << mRVE_TangentTensor(4,7) << "],[" << mRVE_TangentTensor(4,8) << "]]" << " "
-                                   << "[[" << mRVE_TangentTensor(5,0) << "],[" << mRVE_TangentTensor(5,1) << "],[" << mRVE_TangentTensor(5,2) << "],[" << mRVE_TangentTensor(5,3) << "],[" << mRVE_TangentTensor(5,4) << "],[" << mRVE_TangentTensor(5,5) << "],[" << mRVE_TangentTensor(5,6) << "],[" << mRVE_TangentTensor(5,7) << "],[" << mRVE_TangentTensor(5,8) << "]]" << " "
-                                   << "[[" << mRVE_TangentTensor(6,0) << "],[" << mRVE_TangentTensor(6,1) << "],[" << mRVE_TangentTensor(6,2) << "],[" << mRVE_TangentTensor(6,3) << "],[" << mRVE_TangentTensor(6,4) << "],[" << mRVE_TangentTensor(6,5) << "],[" << mRVE_TangentTensor(6,6) << "],[" << mRVE_TangentTensor(6,7) << "],[" << mRVE_TangentTensor(6,8) << "]]" << " "
-                                   << "[[" << mRVE_TangentTensor(7,0) << "],[" << mRVE_TangentTensor(7,1) << "],[" << mRVE_TangentTensor(7,2) << "],[" << mRVE_TangentTensor(7,3) << "],[" << mRVE_TangentTensor(7,4) << "],[" << mRVE_TangentTensor(7,5) << "],[" << mRVE_TangentTensor(7,6) << "],[" << mRVE_TangentTensor(7,7) << "],[" << mRVE_TangentTensor(7,8) << "]]" << " "
-                                   << "[[" << mRVE_TangentTensor(8,0) << "],[" << mRVE_TangentTensor(8,1) << "],[" << mRVE_TangentTensor(8,2) << "],[" << mRVE_TangentTensor(8,3) << "],[" << mRVE_TangentTensor(8,4) << "],[" << mRVE_TangentTensor(8,5) << "],[" << mRVE_TangentTensor(8,6) << "],[" << mRVE_TangentTensor(8,7) << "],[" << mRVE_TangentTensor(8,8) << "]]"
-                                   << std::endl;
-      }
-
-      if (mRVE_FileTangentTensorInner.is_open()) {
-          if (mRVE_Dimension == 2)
-            mRVE_FileTangentTensorInner << time_step << " " << time << " "
-                                        << "[[" << mRVE_TangentTensorInner(0,0) << "],[" << mRVE_TangentTensorInner(0,1) << "],[" << mRVE_TangentTensorInner(0,2) << "],[" << mRVE_TangentTensorInner(0,3) << "]]" << " "
-                                        << "[[" << mRVE_TangentTensorInner(1,0) << "],[" << mRVE_TangentTensorInner(1,1) << "],[" << mRVE_TangentTensorInner(1,2) << "],[" << mRVE_TangentTensorInner(1,3) << "]]" << " "
-                                        << "[[" << mRVE_TangentTensorInner(2,0) << "],[" << mRVE_TangentTensorInner(2,1) << "],[" << mRVE_TangentTensorInner(2,2) << "],[" << mRVE_TangentTensorInner(2,3) << "]]" << " "
-                                        << "[[" << mRVE_TangentTensorInner(3,0) << "],[" << mRVE_TangentTensorInner(3,1) << "],[" << mRVE_TangentTensorInner(3,2) << "],[" << mRVE_TangentTensorInner(3,3) << "]]"
-                                        << std::endl;
-          else if (mRVE_Dimension == 3)
-            mRVE_FileTangentTensorInner << time_step << " " << time << " "
-                                        << "[[" << mRVE_TangentTensorInner(0,0) << "],[" << mRVE_TangentTensorInner(0,1) << "],[" << mRVE_TangentTensorInner(0,2) << "],[" << mRVE_TangentTensorInner(0,3) << "],[" << mRVE_TangentTensorInner(0,4) << "],[" << mRVE_TangentTensorInner(0,5) << "],[" << mRVE_TangentTensorInner(0,6) << "],[" << mRVE_TangentTensorInner(0,7) << "],[" << mRVE_TangentTensorInner(0,8) << "]]" << " "
-                                        << "[[" << mRVE_TangentTensorInner(1,0) << "],[" << mRVE_TangentTensorInner(1,1) << "],[" << mRVE_TangentTensorInner(1,2) << "],[" << mRVE_TangentTensorInner(1,3) << "],[" << mRVE_TangentTensorInner(1,4) << "],[" << mRVE_TangentTensorInner(1,5) << "],[" << mRVE_TangentTensorInner(1,6) << "],[" << mRVE_TangentTensorInner(1,7) << "],[" << mRVE_TangentTensorInner(1,8) << "]]" << " "
-                                        << "[[" << mRVE_TangentTensorInner(2,0) << "],[" << mRVE_TangentTensorInner(2,1) << "],[" << mRVE_TangentTensorInner(2,2) << "],[" << mRVE_TangentTensorInner(2,3) << "],[" << mRVE_TangentTensorInner(2,4) << "],[" << mRVE_TangentTensorInner(2,5) << "],[" << mRVE_TangentTensorInner(2,6) << "],[" << mRVE_TangentTensorInner(2,7) << "],[" << mRVE_TangentTensorInner(2,8) << "]]" << " "
-                                        << "[[" << mRVE_TangentTensorInner(3,0) << "],[" << mRVE_TangentTensorInner(3,1) << "],[" << mRVE_TangentTensorInner(3,2) << "],[" << mRVE_TangentTensorInner(3,3) << "],[" << mRVE_TangentTensorInner(3,4) << "],[" << mRVE_TangentTensorInner(3,5) << "],[" << mRVE_TangentTensorInner(3,6) << "],[" << mRVE_TangentTensorInner(3,7) << "],[" << mRVE_TangentTensorInner(3,8) << "]]" << " "
-                                        << "[[" << mRVE_TangentTensorInner(4,0) << "],[" << mRVE_TangentTensorInner(4,1) << "],[" << mRVE_TangentTensorInner(4,2) << "],[" << mRVE_TangentTensorInner(4,3) << "],[" << mRVE_TangentTensorInner(4,4) << "],[" << mRVE_TangentTensorInner(4,5) << "],[" << mRVE_TangentTensorInner(4,6) << "],[" << mRVE_TangentTensorInner(4,7) << "],[" << mRVE_TangentTensorInner(4,8) << "]]" << " "
-                                        << "[[" << mRVE_TangentTensorInner(5,0) << "],[" << mRVE_TangentTensorInner(5,1) << "],[" << mRVE_TangentTensorInner(5,2) << "],[" << mRVE_TangentTensorInner(5,3) << "],[" << mRVE_TangentTensorInner(5,4) << "],[" << mRVE_TangentTensorInner(5,5) << "],[" << mRVE_TangentTensorInner(5,6) << "],[" << mRVE_TangentTensorInner(5,7) << "],[" << mRVE_TangentTensorInner(5,8) << "]]" << " "
-                                        << "[[" << mRVE_TangentTensorInner(6,0) << "],[" << mRVE_TangentTensorInner(6,1) << "],[" << mRVE_TangentTensorInner(6,2) << "],[" << mRVE_TangentTensorInner(6,3) << "],[" << mRVE_TangentTensorInner(6,4) << "],[" << mRVE_TangentTensorInner(6,5) << "],[" << mRVE_TangentTensorInner(6,6) << "],[" << mRVE_TangentTensorInner(6,7) << "],[" << mRVE_TangentTensorInner(6,8) << "]]" << " "
-                                        << "[[" << mRVE_TangentTensorInner(7,0) << "],[" << mRVE_TangentTensorInner(7,1) << "],[" << mRVE_TangentTensorInner(7,2) << "],[" << mRVE_TangentTensorInner(7,3) << "],[" << mRVE_TangentTensorInner(7,4) << "],[" << mRVE_TangentTensorInner(7,5) << "],[" << mRVE_TangentTensorInner(7,6) << "],[" << mRVE_TangentTensorInner(7,7) << "],[" << mRVE_TangentTensorInner(7,8) << "]]" << " "
-                                        << "[[" << mRVE_TangentTensorInner(8,0) << "],[" << mRVE_TangentTensorInner(8,1) << "],[" << mRVE_TangentTensorInner(8,2) << "],[" << mRVE_TangentTensorInner(8,3) << "],[" << mRVE_TangentTensorInner(8,4) << "],[" << mRVE_TangentTensorInner(8,5) << "],[" << mRVE_TangentTensorInner(8,6) << "],[" << mRVE_TangentTensorInner(8,7) << "],[" << mRVE_TangentTensorInner(8,8) << "]]"
-                                        << std::endl;
-      }
-
-      if (mRVE_FileConductivityTensor.is_open()) {
-        if (mRVE_Dimension == 2)
-          mRVE_FileConductivityTensor << time_step << " " << time << " "
-                                      << "[[" << mRVE_ConductivityTensor(0,0) << "],[" << mRVE_ConductivityTensor(0,1) << "]]" << " "
-                                      << "[[" << mRVE_ConductivityTensor(1,0) << "],[" << mRVE_ConductivityTensor(1,1) << "]]"
-                                      << std::endl;
-        else if (mRVE_Dimension == 3)
-          mRVE_FileConductivityTensor << time_step << " " << time << " "
-                                      << "[[" << mRVE_ConductivityTensor(0,0) << "],[" << mRVE_ConductivityTensor(0,1) << "],[" << mRVE_ConductivityTensor(0,2) << "]]" << " "
-                                      << "[[" << mRVE_ConductivityTensor(1,0) << "],[" << mRVE_ConductivityTensor(1,1) << "],[" << mRVE_ConductivityTensor(1,2) << "]]" << " "
-                                      << "[[" << mRVE_ConductivityTensor(2,0) << "],[" << mRVE_ConductivityTensor(2,1) << "],[" << mRVE_ConductivityTensor(2,2) << "]]"
-                                      << std::endl;
-      }
-
-      if (mRVE_FileConductivityTensorInner.is_open()) {
-        if (mRVE_Dimension == 2)
-          mRVE_FileConductivityTensorInner << time_step << " " << time << " "
-                                           << "[[" << mRVE_ConductivityTensorInner(0,0) << "],[" << mRVE_ConductivityTensorInner(0,1) << "]]" << " "
-                                           << "[[" << mRVE_ConductivityTensorInner(1,0) << "],[" << mRVE_ConductivityTensorInner(1,1) << "]]"
-                                           << std::endl;
-        else if (mRVE_Dimension == 3)
-          mRVE_FileConductivityTensorInner << time_step << " " << time << " "
-                                           << "[[" << mRVE_ConductivityTensorInner(0,0) << "],[" << mRVE_ConductivityTensorInner(0,1) << "],[" << mRVE_ConductivityTensorInner(0,2) << "]]" << " "
-                                           << "[[" << mRVE_ConductivityTensorInner(1,0) << "],[" << mRVE_ConductivityTensorInner(1,1) << "],[" << mRVE_ConductivityTensorInner(1,2) << "]]" << " "
-                                           << "[[" << mRVE_ConductivityTensorInner(2,0) << "],[" << mRVE_ConductivityTensorInner(2,1) << "],[" << mRVE_ConductivityTensorInner(2,2) << "]]"
-                                           << std::endl;
-      }
-    }
-
-    //-----------------------------------------------------------------------------------------------------------------------------------------
-    void ExplicitSolverStrategy::RVEOpenFiles(void) {
-
-      mRVE_FileCoordinates.open("rve_coordinates.txt", std::ios::out);
-      KRATOS_ERROR_IF_NOT(mRVE_FileCoordinates) << "Could not open file rve_coordinates.txt!" << std::endl;
+      //-------------------- rve_coordinates --------------------
+      std::ofstream mRVE_FileCoordinates("rve_coordinates.txt", std::ofstream::trunc);
       mRVE_FileCoordinates << "1 - STEP | ";
       mRVE_FileCoordinates << "2 - TIME | ";
       mRVE_FileCoordinates << "3 - WALL_MIN_X WALL_MAX_X WALL_MIN_Y WALL_MAX_Y WALL_MIN_Z WALL_MAX_Z | ";
       mRVE_FileCoordinates << "4 - X Y Z R of all particles";
       mRVE_FileCoordinates << std::endl;
 
-      mRVE_FilePorosity.open("rve_porosity.txt", std::ios::out);
-      KRATOS_ERROR_IF_NOT(mRVE_FilePorosity) << "Could not open file rve_porosity.txt!" << std::endl;
+      double xmin, xmax, ymin, ymax, zmin, zmax;
+      if (mRVE_WallXMin.size() > 0) xmin = mRVE_WallXMin[0]->GetGeometry()[0][0];
+      else                          xmin = 0.0;
+      if (mRVE_WallXMax.size() > 0) xmax = mRVE_WallXMax[0]->GetGeometry()[0][0];
+      else                          xmax = 0.0;
+      if (mRVE_WallYMin.size() > 0) ymin = mRVE_WallYMin[0]->GetGeometry()[0][1];
+      else                          ymin = 0.0;
+      if (mRVE_WallYMax.size() > 0) ymax = mRVE_WallYMax[0]->GetGeometry()[0][1];
+      else                          ymax = 0.0;
+      if (mRVE_WallZMin.size() > 0) zmin = mRVE_WallZMin[0]->GetGeometry()[0][2];
+      else                          zmin = 0.0;
+      if (mRVE_WallZMax.size() > 0) zmax = mRVE_WallZMax[0]->GetGeometry()[0][2];
+      else                          zmax = 0.0;
+
+      mRVE_FileCoordinates << time_step << " " << time << " ";
+      mRVE_FileCoordinates << xmin << " " << xmax << " " << ymin << " " << ymax << " " << zmin << " " << zmax << " ";
+
+      for (int i = 0; i < number_of_particles; i++) {
+        const double x = mListOfSphericParticles[i]->GetGeometry()[0][0];
+        const double y = mListOfSphericParticles[i]->GetGeometry()[0][1];
+        const double z = mListOfSphericParticles[i]->GetGeometry()[0][2];
+        const double r = mListOfSphericParticles[i]->GetRadius();
+        mRVE_FileCoordinates << x << " " << y << " " << z << " " << r << " ";
+      }
+      mRVE_FileCoordinates.close();
+
+      //-------------------- rve_porosity --------------------
+      std::ofstream mRVE_FilePorosity("rve_porosity.txt", std::ofstream::trunc);
       mRVE_FilePorosity << "1 - STEP | ";
       mRVE_FilePorosity << "2 - TIME | ";
       mRVE_FilePorosity << "3 - INNER VOLUME | ";
@@ -2892,16 +2642,23 @@ namespace Kratos {
       mRVE_FilePorosity << "7 - POROSITY | ";
       mRVE_FilePorosity << "8 - VOID RATIO";
       mRVE_FilePorosity << std::endl;
+      mRVE_FilePorosity << time_step << " " << time << " " << mRVE_VolInner << " " << mRVE_VolTotal << " " << mRVE_VolSolid << " " << mRVE_VolTotal-mRVE_VolSolid << " " << mRVE_Porosity << " " << mRVE_VoidRatio;
+      mRVE_FilePorosity.close();
 
-      mRVE_FileContactNumber.open("rve_contact_number.txt", std::ios::out);
-      KRATOS_ERROR_IF_NOT(mRVE_FileContactNumber) << "Could not open file rve_conact_number.txt!" << std::endl;
+      //-------------------- rve_contact_number --------------------
+      std::ofstream mRVE_FileContactNumber("rve_contact_number.txt", std::ofstream::trunc);
       mRVE_FileContactNumber << "1 - STEP | ";
       mRVE_FileContactNumber << "2 - TIME | ";
       mRVE_FileContactNumber << "3 - NUMBER OF CONTACTS OF ALL PARTICLES";
       mRVE_FileContactNumber << std::endl;
+      mRVE_FileContactNumber << time_step << " " << time << " ";
+      for (int i = 0; i < number_of_particles; i++)
+        if (mListOfSphericParticles[i]->mWall == 0)
+          mRVE_FileContactNumber << mListOfSphericParticles[i]->mCoordNum << " ";
+      mRVE_FileContactNumber.close();
 
-      mRVE_FileCoordNumber.open("rve_coordination_number.txt", std::ios::out);
-      KRATOS_ERROR_IF_NOT(mRVE_FileCoordNumber) << "Could not open file rve_coordination_number.txt!" << std::endl;
+      //-------------------- rve_coordination_number --------------------
+      std::ofstream mRVE_FileCoordNumber("rve_coordination_number.txt", std::ofstream::trunc);
       mRVE_FileCoordNumber << "1 - STEP | ";
       mRVE_FileCoordNumber << "2 - TIME | ";
       mRVE_FileCoordNumber << "3 - NUMBER OF UNIQUE CONTACTS - ALL | ";
@@ -2909,43 +2666,83 @@ namespace Kratos {
       mRVE_FileCoordNumber << "5 - AVG COORDINATION NUMBER - ALL | ";
       mRVE_FileCoordNumber << "6 - AVG COORDINATION NUMBER - INNER";
       mRVE_FileCoordNumber << std::endl;
+      mRVE_FileCoordNumber << time_step << " " << time << " " << mRVE_NumContacts << " " << mRVE_NumContactsInner << " " << mRVE_AvgCoordNum << " " << mRVE_AvgCoordNumInner;
+      mRVE_FileCoordNumber.close();
 
-      mRVE_FileInnerVolumeParticles.open("rve_inner_volume_particles.txt", std::ios::out);
-      KRATOS_ERROR_IF_NOT(mRVE_FileInnerVolumeParticles) << "Could not open file rve_inner_volume_particles.txt!" << std::endl;
+      //-------------------- rve_inner_volume_particles --------------------
+      std::ofstream mRVE_FileInnerVolumeParticles("rve_inner_volume_particles.txt", std::ofstream::trunc);
       mRVE_FileInnerVolumeParticles << "1 - STEP | ";
       mRVE_FileInnerVolumeParticles << "2 - TIME | ";
       mRVE_FileInnerVolumeParticles << "3 - Number of particles | ";
       mRVE_FileInnerVolumeParticles << "4 - [X Y Z R] of each particles";
       mRVE_FileInnerVolumeParticles << std::endl;
+      mRVE_FileInnerVolumeParticles << time_step << " " << time << " " << mRVE_InnerVolParticles.size() << " ";
+      for (int i = 0; i < mRVE_InnerVolParticles.size(); i++) {
+        array_1d<double, 3> coords = mRVE_InnerVolParticles[i]->GetGeometry()[0].Coordinates();
+        const double radius        = mRVE_InnerVolParticles[i]->GetRadius();
+        mRVE_FileInnerVolumeParticles << coords[0] << " " << coords[1] << " " << coords[2] << " " << radius << " ";
+      }
+      mRVE_FileInnerVolumeParticles.close();
 
-      mRVE_FileForceChain.open("rve_force_chain.txt", std::ios::out);
-      KRATOS_ERROR_IF_NOT(mRVE_FileForceChain) << "Could not open file rve_force_chain.txt!" << std::endl;
+      //-------------------- rve_force_chain --------------------
+      std::ofstream mRVE_FileForceChain("rve_force_chain.txt", std::ofstream::trunc);
       mRVE_FileForceChain << "1 - STEP | ";
       mRVE_FileForceChain << "2 - TIME | ";
       mRVE_FileForceChain << "3 - [X1 Y1 Z1 X2 Y2 Z2 F] of each contact";
       mRVE_FileForceChain << std::endl;
+      mRVE_FileForceChain << time_step << " " << time << " ";
+      for (int i = 0; i < mRVE_ForceChain.size(); i++) mRVE_FileForceChain << mRVE_ForceChain[i] << " ";
+      mRVE_FileForceChain.close();
 
-      mRVE_FileElasticContactForces.open("rve_elastic_forces.txt", std::ios::out);
-      KRATOS_ERROR_IF_NOT(mRVE_FileElasticContactForces) << "Could not open file rve_elastic_forces.txt!" << std::endl;
+      //-------------------- rve_elastic_forces --------------------
+      std::ofstream mRVE_FileElasticContactForces("rve_elastic_forces.txt", std::ofstream::trunc);
+      for (int i = 0; i < number_of_particles; i++) {
+        const int n_neighbors = mListOfSphericParticles[i]->mNeighbourElements.size();
+        mRVE_FileElasticContactForces << i << " " << n_neighbors << " ";
+        for (int j = 0; j < n_neighbors; j++) {
+          array_1d<double, 3> force = mListOfSphericParticles[i]->mNeighbourElasticContactForces[j];
+          mRVE_FileElasticContactForces << force[0] << " ";
+          mRVE_FileElasticContactForces << force[1] << " ";
+          mRVE_FileElasticContactForces << force[2] << " ";
+        }
+        mRVE_FileElasticContactForces << std::endl;
+      }
+      mRVE_FileElasticContactForces.close();
 
-      mRVE_FileRoseDiagram.open("rve_rose_diagram.txt", std::ios::out);
-      KRATOS_ERROR_IF_NOT(mRVE_FileRoseDiagram) << "Could not open file rve_rose_diagram.txt!" << std::endl;
+      //-------------------- rve_rose_diagram --------------------
+      std::ofstream mRVE_FileRoseDiagram("rve_rose_diagram.txt", std::ofstream::trunc);
       mRVE_FileRoseDiagram << "1 - STEP | ";
       mRVE_FileRoseDiagram << "2 - TIME | ";
       mRVE_FileRoseDiagram << "3 - [ARRAY OF ANGLES IN XY PLANE] | ";
       mRVE_FileRoseDiagram << "4 - [ARRAY OF AZIMUTH ANGLES]";
       mRVE_FileRoseDiagram << std::endl;
+      mRVE_FileRoseDiagram << time_step << " " << time << " ";
+      mRVE_FileRoseDiagram << "[ ";
+      for (unsigned int i = 0; i < mRVE_RoseDiagram.size2(); i++) mRVE_FileRoseDiagram << mRVE_RoseDiagram(0, i) << " ";
+      mRVE_FileRoseDiagram << "] ";
+      mRVE_FileRoseDiagram << "[ ";
+      for (unsigned int i = 0; i < mRVE_RoseDiagram.size2(); i++) mRVE_FileRoseDiagram << mRVE_RoseDiagram(1, i) << " ";
+      mRVE_FileRoseDiagram << "]";
+      mRVE_FileRoseDiagram.close();
 
-      mRVE_FileRoseDiagramInner.open("rve_rose_diagram_inner.txt", std::ios::out);
-      KRATOS_ERROR_IF_NOT(mRVE_FileRoseDiagramInner) << "Could not open file rve_rose_diagram_inner.txt!" << std::endl;
+      //-------------------- rve_rose_diagram_inner --------------------
+      std::ofstream mRVE_FileRoseDiagramInner("rve_rose_diagram_inner.txt", std::ofstream::trunc);
       mRVE_FileRoseDiagramInner << "1 - STEP | ";
       mRVE_FileRoseDiagramInner << "2 - TIME | ";
       mRVE_FileRoseDiagramInner << "3 - [ARRAY OF ANGLES IN XY PLANE] | ";
       mRVE_FileRoseDiagramInner << "4 - [ARRAY OF AZIMUTH ANGLES]";
       mRVE_FileRoseDiagramInner << std::endl;
+      mRVE_FileRoseDiagramInner << time_step << " " << time << " ";
+      mRVE_FileRoseDiagramInner << "[ ";
+      for (unsigned int i = 0; i < mRVE_RoseDiagramInner.size2(); i++) mRVE_FileRoseDiagramInner << mRVE_RoseDiagramInner(0, i) << " ";
+      mRVE_FileRoseDiagramInner << "] ";
+      mRVE_FileRoseDiagramInner << "[ ";
+      for (unsigned int i = 0; i < mRVE_RoseDiagramInner.size2(); i++) mRVE_FileRoseDiagramInner << mRVE_RoseDiagramInner(1, i) << " ";
+      mRVE_FileRoseDiagramInner << "]";
+      mRVE_FileRoseDiagramInner.close();
 
-      mRVE_FileRoseDiagramUniformity.open("rve_rose_diagram_uniformity.txt", std::ios::out);
-      KRATOS_ERROR_IF_NOT(mRVE_FileRoseDiagramUniformity) << "Could not open file rve_rose_diagram_uniformity.txt!" << std::endl;
+      //-------------------- rve_rose_diagram_uniformity --------------------
+      std::ofstream mRVE_FileRoseDiagramUniformity("rve_rose_diagram_uniformity.txt", std::ofstream::trunc);
       mRVE_FileRoseDiagramUniformity << "1 - STEP | ";
       mRVE_FileRoseDiagramUniformity << "2 - TIME | ";
       mRVE_FileRoseDiagramUniformity << "3 - STD DEV XY - ALL | ";
@@ -2953,64 +2750,116 @@ namespace Kratos {
       mRVE_FileRoseDiagramUniformity << "5 - STD DEV XY - INNER | ";
       mRVE_FileRoseDiagramUniformity << "6 - STD DEV AZ - INNER";
       mRVE_FileRoseDiagramUniformity << std::endl;
+      mRVE_FileRoseDiagramUniformity << time_step << " " << time << " " << mRVE_StdDevRoseXYAll << " " << mRVE_StdDevRoseAzAll << " " << mRVE_StdDevRoseXYInn << " " << mRVE_StdDevRoseAzInn;
+      mRVE_FileRoseDiagramUniformity.close();
 
-      mRVE_FileAnisotropy.open("rve_anisotropy.txt", std::ios::out);
-      KRATOS_ERROR_IF_NOT(mRVE_FileAnisotropy) << "Could not open file rve_anisotropy.txt!" << std::endl;
+      //-------------------- rve_anisotropy --------------------
+      std::ofstream mRVE_FileAnisotropy("rve_anisotropy.txt", std::ofstream::trunc);
       mRVE_FileAnisotropy << "1 - STEP | ";
       mRVE_FileAnisotropy << "2 - TIME | ";
       mRVE_FileAnisotropy << "3 - ANISOTROPY - ALL | ";
       mRVE_FileAnisotropy << "4 - ANISOTROPY - INNER";
       mRVE_FileAnisotropy << std::endl;
+      mRVE_FileAnisotropy << time_step << " " << time << " " << mRVE_Anisotropy << " " << mRVE_AnisotropyInner;
+      mRVE_FileAnisotropy.close();
 
-      mRVE_FileFabricTensor.open("rve_fabric_tensor.txt", std::ios::out);
-      KRATOS_ERROR_IF_NOT(mRVE_FileFabricTensor) << "Could not open file rve_fabric_tensor.txt!" << std::endl;
+      //-------------------- rve_fabric_tensor --------------------
+      std::ofstream mRVE_FileFabricTensor("rve_fabric_tensor.txt", std::ofstream::trunc);
       mRVE_FileFabricTensor << "1 - STEP | ";
       mRVE_FileFabricTensor << "2 - TIME | ";
       mRVE_FileFabricTensor << "3 - [[1,1][1,2][1,3]] | ";
       mRVE_FileFabricTensor << "4 - [[2,1][2,2][2,3]] | ";
       mRVE_FileFabricTensor << "5 - [[3,1][3,2][3,3]]";
       mRVE_FileFabricTensor << std::endl;
-
-      mRVE_FileFabricTensorInner.open("rve_fabric_tensor_inner.txt", std::ios::out);
-      KRATOS_ERROR_IF_NOT(mRVE_FileFabricTensorInner) << "Could not open file rve_fabric_tensor_inner.txt!" << std::endl;
+      if (mRVE_Dimension == 2)
+        mRVE_FileFabricTensor << time_step << " " << time << " "
+                              << "[[" << mRVE_FabricTensor(0,0) << "],[" << mRVE_FabricTensor(0,1) << "]]" << " "
+                              << "[[" << mRVE_FabricTensor(1,0) << "],[" << mRVE_FabricTensor(1,1) << "]]"
+                              << std::endl;
+      else if (mRVE_Dimension == 3)
+        mRVE_FileFabricTensor << time_step << " " << time << " "
+                              << "[[" << mRVE_FabricTensor(0,0) << "],[" << mRVE_FabricTensor(0,1) << "],[" << mRVE_FabricTensor(0,2) << "]]" << " "
+                              << "[[" << mRVE_FabricTensor(1,0) << "],[" << mRVE_FabricTensor(1,1) << "],[" << mRVE_FabricTensor(1,2) << "]]" << " "
+                              << "[[" << mRVE_FabricTensor(2,0) << "],[" << mRVE_FabricTensor(2,1) << "],[" << mRVE_FabricTensor(2,2) << "]]"
+                              << std::endl;
+      mRVE_FileFabricTensor.close();
+     
+      //-------------------- rve_fabric_tensor_inner --------------------
+      std::ofstream mRVE_FileFabricTensorInner("rve_fabric_tensor_inner.txt", std::ofstream::trunc);
       mRVE_FileFabricTensorInner << "1 - STEP | ";
       mRVE_FileFabricTensorInner << "2 - TIME | ";
       mRVE_FileFabricTensorInner << "3 - [[1,1][1,2][1,3]] | ";
       mRVE_FileFabricTensorInner << "4 - [[2,1][2,2][2,3]] | ";
       mRVE_FileFabricTensorInner << "5 - [[3,1][3,2][3,3]]";
       mRVE_FileFabricTensorInner << std::endl;
-
-      mRVE_FileStress.open("rve_stresses.txt", std::ios::out);
-      KRATOS_ERROR_IF_NOT(mRVE_FileStress) << "Could not open file rve_stresses.txt!" << std::endl;
-      mRVE_FileStress << "1 - STEP | ";
-      mRVE_FileStress << "2 - TIME | ";
-      mRVE_FileStress << "3 - WALL STRESS | ";
-      mRVE_FileStress << "4 - MEAN EFFECTIVE STRESS - ALL | ";
-      mRVE_FileStress << "5 - DEVIATORIC STRESS - ALL | ";
-      mRVE_FileStress << "6 - MEAN EFFECTIVE STRESS - INNER | ";
-      mRVE_FileStress << "7 - DEVIATORIC STRESS - INNER";
-      mRVE_FileStress << std::endl;
-
-      mRVE_FileCauchyTensor.open("rve_cauchy_tensor.txt", std::ios::out);
-      KRATOS_ERROR_IF_NOT(mRVE_FileCauchyTensor) << "Could not open file rve_cauchy_tensor.txt!" << std::endl;
+      if (mRVE_Dimension == 2)
+        mRVE_FileFabricTensorInner << time_step << " " << time << " "
+                                   << "[[" << mRVE_FabricTensorInner(0,0) << "],[" << mRVE_FabricTensorInner(0,1) << "]]" << " "
+                                   << "[[" << mRVE_FabricTensorInner(1,0) << "],[" << mRVE_FabricTensorInner(1,1) << "]]"
+                                   << std::endl;
+      else if (mRVE_Dimension == 3)
+        mRVE_FileFabricTensorInner << time_step << " " << time << " "
+                                   << "[[" << mRVE_FabricTensorInner(0,0) << "],[" << mRVE_FabricTensorInner(0,1) << "],[" << mRVE_FabricTensorInner(0,2) << "]]" << " "
+                                   << "[[" << mRVE_FabricTensorInner(1,0) << "],[" << mRVE_FabricTensorInner(1,1) << "],[" << mRVE_FabricTensorInner(1,2) << "]]" << " "
+                                   << "[[" << mRVE_FabricTensorInner(2,0) << "],[" << mRVE_FabricTensorInner(2,1) << "],[" << mRVE_FabricTensorInner(2,2) << "]]"
+                                   << std::endl;
+      mRVE_FileFabricTensorInner.close();
+      
+      //-------------------- rve_stresses --------------------
+      if (mRVE_FileStress.is_open())
+        mRVE_FileStress << time_step              << " "
+                        << time                   << " "
+                        << mRVE_WallStress        << " "
+                        << mRVE_EffectStress      << " "
+                        << mRVE_DevStress         << " "
+                        << mRVE_EffectStressInner << " "
+                        << mRVE_DevStressInner
+                        << std::endl;
+      
+      //-------------------- rve_cauchy_tensor --------------------
+      std::ofstream mRVE_FileCauchyTensor("rve_cauchy_tensor.txt", std::ofstream::trunc);
       mRVE_FileCauchyTensor << "1 - STEP | ";
       mRVE_FileCauchyTensor << "2 - TIME | ";
       mRVE_FileCauchyTensor << "3 - [[1,1][1,2][1,3]] | ";
       mRVE_FileCauchyTensor << "4 - [[2,1][2,2][2,3]] | ";
       mRVE_FileCauchyTensor << "5 - [[3,1][3,2][3,3]]";
       mRVE_FileCauchyTensor << std::endl;
+      if (mRVE_Dimension == 2)
+        mRVE_FileCauchyTensor << time_step << " " << time << " "
+                              << "[[" << mRVE_CauchyTensor(0,0) << "],[" << mRVE_CauchyTensor(0,1) << "]]" << " "
+                              << "[[" << mRVE_CauchyTensor(1,0) << "],[" << mRVE_CauchyTensor(1,1) << "]]"
+                              << std::endl;
+      else if (mRVE_Dimension == 3)
+        mRVE_FileCauchyTensor << time_step << " " << time << " "
+                              << "[[" << mRVE_CauchyTensor(0,0) << "],[" << mRVE_CauchyTensor(0,1) << "],[" << mRVE_CauchyTensor(0,2) << "]]" << " "
+                              << "[[" << mRVE_CauchyTensor(1,0) << "],[" << mRVE_CauchyTensor(1,1) << "],[" << mRVE_CauchyTensor(1,2) << "]]" << " "
+                              << "[[" << mRVE_CauchyTensor(2,0) << "],[" << mRVE_CauchyTensor(2,1) << "],[" << mRVE_CauchyTensor(2,2) << "]]"
+                              << std::endl;
+      mRVE_FileCauchyTensor.close();
 
-      mRVE_FileCauchyTensorInner.open("rve_cauchy_tensor_inner.txt", std::ios::out);
-      KRATOS_ERROR_IF_NOT(mRVE_FileCauchyTensorInner) << "Could not open file rve_cauchy_tensor_inner.txt!" << std::endl;
+      //-------------------- rve_cauchy_tensor_inner --------------------
+      std::ofstream mRVE_FileCauchyTensorInner("rve_cauchy_tensor_inner.txt", std::ofstream::trunc);
       mRVE_FileCauchyTensorInner << "1 - STEP | ";
       mRVE_FileCauchyTensorInner << "2 - TIME | ";
       mRVE_FileCauchyTensorInner << "3 - [[1,1][1,2][1,3]] | ";
       mRVE_FileCauchyTensorInner << "4 - [[2,1][2,2][2,3]] | ";
       mRVE_FileCauchyTensorInner << "5 - [[3,1][3,2][3,3]]";
       mRVE_FileCauchyTensorInner << std::endl;
-
-      mRVE_FileTangentTensor.open("rve_tangent_tensor.txt", std::ios::out);
-      KRATOS_ERROR_IF_NOT(mRVE_FileTangentTensor) << "Could not open file rve_tangent_tensor.txt!" << std::endl;
+      if (mRVE_Dimension == 2)
+        mRVE_FileCauchyTensorInner << time_step << " " << time << " "
+                                   << "[[" << mRVE_CauchyTensorInner(0,0) << "],[" << mRVE_CauchyTensorInner(0,1) << "]]" << " "
+                                   << "[[" << mRVE_CauchyTensorInner(1,0) << "],[" << mRVE_CauchyTensorInner(1,1) << "]]"
+                                   << std::endl;
+      else if (mRVE_Dimension == 3)
+        mRVE_FileCauchyTensorInner << time_step << " " << time << " "
+                                   << "[[" << mRVE_CauchyTensorInner(0,0) << "],[" << mRVE_CauchyTensorInner(0,1) << "],[" << mRVE_CauchyTensorInner(0,2) << "]]" << " "
+                                   << "[[" << mRVE_CauchyTensorInner(1,0) << "],[" << mRVE_CauchyTensorInner(1,1) << "],[" << mRVE_CauchyTensorInner(1,2) << "]]" << " "
+                                   << "[[" << mRVE_CauchyTensorInner(2,0) << "],[" << mRVE_CauchyTensorInner(2,1) << "],[" << mRVE_CauchyTensorInner(2,2) << "]]"
+                                   << std::endl;
+      mRVE_FileCauchyTensorInner.close();
+      
+      //-------------------- rve_tangent_tensor --------------------
+      std::ofstream mRVE_FileTangentTensor("rve_tangent_tensor.txt", std::ofstream::trunc);
       mRVE_FileTangentTensor << "1 - STEP | ";
       mRVE_FileTangentTensor << "2 - TIME | ";
       mRVE_FileTangentTensor << "ROW1: [[D1111][D1112][D1113][D1121][D1122][D1123][D1131][D1132][D1133]] | ";
@@ -3023,9 +2872,29 @@ namespace Kratos {
       mRVE_FileTangentTensor << "ROW8: [[D3211][D3212][D3213][D3221][D3222][D3223][D3231][D3232][D3233]] | ";
       mRVE_FileTangentTensor << "ROW9: [[D3311][D3312][D3313][D3321][D3322][D3323][D3331][D3332][D3333]]";
       mRVE_FileTangentTensor << std::endl;
+      if (mRVE_Dimension == 2)
+        mRVE_FileTangentTensor << time_step << " " << time << " "
+                               << "[[" << mRVE_TangentTensor(0,0) << "],[" << mRVE_TangentTensor(0,1) << "],[" << mRVE_TangentTensor(0,2) << "],[" << mRVE_TangentTensor(0,3) << "]]" << " "
+                               << "[[" << mRVE_TangentTensor(1,0) << "],[" << mRVE_TangentTensor(1,1) << "],[" << mRVE_TangentTensor(1,2) << "],[" << mRVE_TangentTensor(1,3) << "]]" << " "
+                               << "[[" << mRVE_TangentTensor(2,0) << "],[" << mRVE_TangentTensor(2,1) << "],[" << mRVE_TangentTensor(2,2) << "],[" << mRVE_TangentTensor(2,3) << "]]" << " "
+                               << "[[" << mRVE_TangentTensor(3,0) << "],[" << mRVE_TangentTensor(3,1) << "],[" << mRVE_TangentTensor(3,2) << "],[" << mRVE_TangentTensor(3,3) << "]]"
+                               << std::endl;
+      else if (mRVE_Dimension == 3)
+        mRVE_FileTangentTensor << time_step << " " << time << " "
+                               << "[[" << mRVE_TangentTensor(0,0) << "],[" << mRVE_TangentTensor(0,1) << "],[" << mRVE_TangentTensor(0,2) << "],[" << mRVE_TangentTensor(0,3) << "],[" << mRVE_TangentTensor(0,4) << "],[" << mRVE_TangentTensor(0,5) << "],[" << mRVE_TangentTensor(0,6) << "],[" << mRVE_TangentTensor(0,7) << "],[" << mRVE_TangentTensor(0,8) << "]]" << " "
+                               << "[[" << mRVE_TangentTensor(1,0) << "],[" << mRVE_TangentTensor(1,1) << "],[" << mRVE_TangentTensor(1,2) << "],[" << mRVE_TangentTensor(1,3) << "],[" << mRVE_TangentTensor(1,4) << "],[" << mRVE_TangentTensor(1,5) << "],[" << mRVE_TangentTensor(1,6) << "],[" << mRVE_TangentTensor(1,7) << "],[" << mRVE_TangentTensor(1,8) << "]]" << " "
+                               << "[[" << mRVE_TangentTensor(2,0) << "],[" << mRVE_TangentTensor(2,1) << "],[" << mRVE_TangentTensor(2,2) << "],[" << mRVE_TangentTensor(2,3) << "],[" << mRVE_TangentTensor(2,4) << "],[" << mRVE_TangentTensor(2,5) << "],[" << mRVE_TangentTensor(2,6) << "],[" << mRVE_TangentTensor(2,7) << "],[" << mRVE_TangentTensor(2,8) << "]]" << " "
+                               << "[[" << mRVE_TangentTensor(3,0) << "],[" << mRVE_TangentTensor(3,1) << "],[" << mRVE_TangentTensor(3,2) << "],[" << mRVE_TangentTensor(3,3) << "],[" << mRVE_TangentTensor(3,4) << "],[" << mRVE_TangentTensor(3,5) << "],[" << mRVE_TangentTensor(3,6) << "],[" << mRVE_TangentTensor(3,7) << "],[" << mRVE_TangentTensor(3,8) << "]]" << " "
+                               << "[[" << mRVE_TangentTensor(4,0) << "],[" << mRVE_TangentTensor(4,1) << "],[" << mRVE_TangentTensor(4,2) << "],[" << mRVE_TangentTensor(4,3) << "],[" << mRVE_TangentTensor(4,4) << "],[" << mRVE_TangentTensor(4,5) << "],[" << mRVE_TangentTensor(4,6) << "],[" << mRVE_TangentTensor(4,7) << "],[" << mRVE_TangentTensor(4,8) << "]]" << " "
+                               << "[[" << mRVE_TangentTensor(5,0) << "],[" << mRVE_TangentTensor(5,1) << "],[" << mRVE_TangentTensor(5,2) << "],[" << mRVE_TangentTensor(5,3) << "],[" << mRVE_TangentTensor(5,4) << "],[" << mRVE_TangentTensor(5,5) << "],[" << mRVE_TangentTensor(5,6) << "],[" << mRVE_TangentTensor(5,7) << "],[" << mRVE_TangentTensor(5,8) << "]]" << " "
+                               << "[[" << mRVE_TangentTensor(6,0) << "],[" << mRVE_TangentTensor(6,1) << "],[" << mRVE_TangentTensor(6,2) << "],[" << mRVE_TangentTensor(6,3) << "],[" << mRVE_TangentTensor(6,4) << "],[" << mRVE_TangentTensor(6,5) << "],[" << mRVE_TangentTensor(6,6) << "],[" << mRVE_TangentTensor(6,7) << "],[" << mRVE_TangentTensor(6,8) << "]]" << " "
+                               << "[[" << mRVE_TangentTensor(7,0) << "],[" << mRVE_TangentTensor(7,1) << "],[" << mRVE_TangentTensor(7,2) << "],[" << mRVE_TangentTensor(7,3) << "],[" << mRVE_TangentTensor(7,4) << "],[" << mRVE_TangentTensor(7,5) << "],[" << mRVE_TangentTensor(7,6) << "],[" << mRVE_TangentTensor(7,7) << "],[" << mRVE_TangentTensor(7,8) << "]]" << " "
+                               << "[[" << mRVE_TangentTensor(8,0) << "],[" << mRVE_TangentTensor(8,1) << "],[" << mRVE_TangentTensor(8,2) << "],[" << mRVE_TangentTensor(8,3) << "],[" << mRVE_TangentTensor(8,4) << "],[" << mRVE_TangentTensor(8,5) << "],[" << mRVE_TangentTensor(8,6) << "],[" << mRVE_TangentTensor(8,7) << "],[" << mRVE_TangentTensor(8,8) << "]]"
+                               << std::endl;
+      mRVE_FileTangentTensor.close();
 
-      mRVE_FileTangentTensorInner.open("rve_tangent_tensor_inner.txt", std::ios::out);
-      KRATOS_ERROR_IF_NOT(mRVE_FileTangentTensorInner) << "Could not open file rve_tangent_tensor_inner.txt!" << std::endl;
+      //-------------------- rve_tangent_tensor_inner --------------------
+      std::ofstream mRVE_FileTangentTensorInner("rve_tangent_tensor_inner.txt", std::ofstream::trunc);
       mRVE_FileTangentTensorInner << "1 - STEP | ";
       mRVE_FileTangentTensorInner << "2 - TIME | ";
       mRVE_FileTangentTensorInner << "ROW1: [[D1111][D1112][D1113][D1121][D1122][D1123][D1131][D1132][D1133]] | ";
@@ -3038,48 +2907,95 @@ namespace Kratos {
       mRVE_FileTangentTensorInner << "ROW8: [[D3211][D3212][D3213][D3221][D3222][D3223][D3231][D3232][D3233]] | ";
       mRVE_FileTangentTensorInner << "ROW9: [[D3311][D3312][D3313][D3321][D3322][D3323][D3331][D3332][D3333]]";
       mRVE_FileTangentTensorInner << std::endl;
+      if (mRVE_Dimension == 2)
+        mRVE_FileTangentTensorInner << time_step << " " << time << " "
+                                    << "[[" << mRVE_TangentTensorInner(0,0) << "],[" << mRVE_TangentTensorInner(0,1) << "],[" << mRVE_TangentTensorInner(0,2) << "],[" << mRVE_TangentTensorInner(0,3) << "]]" << " "
+                                    << "[[" << mRVE_TangentTensorInner(1,0) << "],[" << mRVE_TangentTensorInner(1,1) << "],[" << mRVE_TangentTensorInner(1,2) << "],[" << mRVE_TangentTensorInner(1,3) << "]]" << " "
+                                    << "[[" << mRVE_TangentTensorInner(2,0) << "],[" << mRVE_TangentTensorInner(2,1) << "],[" << mRVE_TangentTensorInner(2,2) << "],[" << mRVE_TangentTensorInner(2,3) << "]]" << " "
+                                    << "[[" << mRVE_TangentTensorInner(3,0) << "],[" << mRVE_TangentTensorInner(3,1) << "],[" << mRVE_TangentTensorInner(3,2) << "],[" << mRVE_TangentTensorInner(3,3) << "]]"
+                                    << std::endl;
+      else if (mRVE_Dimension == 3)
+        mRVE_FileTangentTensorInner << time_step << " " << time << " "
+                                    << "[[" << mRVE_TangentTensorInner(0,0) << "],[" << mRVE_TangentTensorInner(0,1) << "],[" << mRVE_TangentTensorInner(0,2) << "],[" << mRVE_TangentTensorInner(0,3) << "],[" << mRVE_TangentTensorInner(0,4) << "],[" << mRVE_TangentTensorInner(0,5) << "],[" << mRVE_TangentTensorInner(0,6) << "],[" << mRVE_TangentTensorInner(0,7) << "],[" << mRVE_TangentTensorInner(0,8) << "]]" << " "
+                                    << "[[" << mRVE_TangentTensorInner(1,0) << "],[" << mRVE_TangentTensorInner(1,1) << "],[" << mRVE_TangentTensorInner(1,2) << "],[" << mRVE_TangentTensorInner(1,3) << "],[" << mRVE_TangentTensorInner(1,4) << "],[" << mRVE_TangentTensorInner(1,5) << "],[" << mRVE_TangentTensorInner(1,6) << "],[" << mRVE_TangentTensorInner(1,7) << "],[" << mRVE_TangentTensorInner(1,8) << "]]" << " "
+                                    << "[[" << mRVE_TangentTensorInner(2,0) << "],[" << mRVE_TangentTensorInner(2,1) << "],[" << mRVE_TangentTensorInner(2,2) << "],[" << mRVE_TangentTensorInner(2,3) << "],[" << mRVE_TangentTensorInner(2,4) << "],[" << mRVE_TangentTensorInner(2,5) << "],[" << mRVE_TangentTensorInner(2,6) << "],[" << mRVE_TangentTensorInner(2,7) << "],[" << mRVE_TangentTensorInner(2,8) << "]]" << " "
+                                    << "[[" << mRVE_TangentTensorInner(3,0) << "],[" << mRVE_TangentTensorInner(3,1) << "],[" << mRVE_TangentTensorInner(3,2) << "],[" << mRVE_TangentTensorInner(3,3) << "],[" << mRVE_TangentTensorInner(3,4) << "],[" << mRVE_TangentTensorInner(3,5) << "],[" << mRVE_TangentTensorInner(3,6) << "],[" << mRVE_TangentTensorInner(3,7) << "],[" << mRVE_TangentTensorInner(3,8) << "]]" << " "
+                                    << "[[" << mRVE_TangentTensorInner(4,0) << "],[" << mRVE_TangentTensorInner(4,1) << "],[" << mRVE_TangentTensorInner(4,2) << "],[" << mRVE_TangentTensorInner(4,3) << "],[" << mRVE_TangentTensorInner(4,4) << "],[" << mRVE_TangentTensorInner(4,5) << "],[" << mRVE_TangentTensorInner(4,6) << "],[" << mRVE_TangentTensorInner(4,7) << "],[" << mRVE_TangentTensorInner(4,8) << "]]" << " "
+                                    << "[[" << mRVE_TangentTensorInner(5,0) << "],[" << mRVE_TangentTensorInner(5,1) << "],[" << mRVE_TangentTensorInner(5,2) << "],[" << mRVE_TangentTensorInner(5,3) << "],[" << mRVE_TangentTensorInner(5,4) << "],[" << mRVE_TangentTensorInner(5,5) << "],[" << mRVE_TangentTensorInner(5,6) << "],[" << mRVE_TangentTensorInner(5,7) << "],[" << mRVE_TangentTensorInner(5,8) << "]]" << " "
+                                    << "[[" << mRVE_TangentTensorInner(6,0) << "],[" << mRVE_TangentTensorInner(6,1) << "],[" << mRVE_TangentTensorInner(6,2) << "],[" << mRVE_TangentTensorInner(6,3) << "],[" << mRVE_TangentTensorInner(6,4) << "],[" << mRVE_TangentTensorInner(6,5) << "],[" << mRVE_TangentTensorInner(6,6) << "],[" << mRVE_TangentTensorInner(6,7) << "],[" << mRVE_TangentTensorInner(6,8) << "]]" << " "
+                                    << "[[" << mRVE_TangentTensorInner(7,0) << "],[" << mRVE_TangentTensorInner(7,1) << "],[" << mRVE_TangentTensorInner(7,2) << "],[" << mRVE_TangentTensorInner(7,3) << "],[" << mRVE_TangentTensorInner(7,4) << "],[" << mRVE_TangentTensorInner(7,5) << "],[" << mRVE_TangentTensorInner(7,6) << "],[" << mRVE_TangentTensorInner(7,7) << "],[" << mRVE_TangentTensorInner(7,8) << "]]" << " "
+                                    << "[[" << mRVE_TangentTensorInner(8,0) << "],[" << mRVE_TangentTensorInner(8,1) << "],[" << mRVE_TangentTensorInner(8,2) << "],[" << mRVE_TangentTensorInner(8,3) << "],[" << mRVE_TangentTensorInner(8,4) << "],[" << mRVE_TangentTensorInner(8,5) << "],[" << mRVE_TangentTensorInner(8,6) << "],[" << mRVE_TangentTensorInner(8,7) << "],[" << mRVE_TangentTensorInner(8,8) << "]]"
+                                    << std::endl;
+      mRVE_FileTangentTensorInner.close();
 
-      mRVE_FileConductivityTensor.open("rve_conductivity_tensor.txt", std::ios::out);
-      KRATOS_ERROR_IF_NOT(mRVE_FileConductivityTensor) << "Could not open file rve_conductivity_tensor.txt!" << std::endl;
+      //-------------------- rve_conductivity_tensor --------------------
+      std::ofstream mRVE_FileConductivityTensor("rve_conductivity_tensor.txt", std::ofstream::trunc);
       mRVE_FileConductivityTensor << "1 - STEP | ";
       mRVE_FileConductivityTensor << "2 - TIME | ";
       mRVE_FileConductivityTensor << "3 - [[1,1][1,2][1,3]] | ";
       mRVE_FileConductivityTensor << "4 - [[2,1][2,2][2,3]] | ";
       mRVE_FileConductivityTensor << "5 - [[3,1][3,2][3,3]]";
       mRVE_FileConductivityTensor << std::endl;
+      if (mRVE_Dimension == 2)
+        mRVE_FileConductivityTensor << time_step << " " << time << " "
+                                    << "[[" << mRVE_ConductivityTensor(0,0) << "],[" << mRVE_ConductivityTensor(0,1) << "]]" << " "
+                                    << "[[" << mRVE_ConductivityTensor(1,0) << "],[" << mRVE_ConductivityTensor(1,1) << "]]"
+                                    << std::endl;
+      else if (mRVE_Dimension == 3)
+        mRVE_FileConductivityTensor << time_step << " " << time << " "
+                                    << "[[" << mRVE_ConductivityTensor(0,0) << "],[" << mRVE_ConductivityTensor(0,1) << "],[" << mRVE_ConductivityTensor(0,2) << "]]" << " "
+                                    << "[[" << mRVE_ConductivityTensor(1,0) << "],[" << mRVE_ConductivityTensor(1,1) << "],[" << mRVE_ConductivityTensor(1,2) << "]]" << " "
+                                    << "[[" << mRVE_ConductivityTensor(2,0) << "],[" << mRVE_ConductivityTensor(2,1) << "],[" << mRVE_ConductivityTensor(2,2) << "]]"
+                                    << std::endl;
+      mRVE_FileConductivityTensor.close();
 
-      mRVE_FileConductivityTensorInner.open("rve_conductivity_tensor_inner.txt", std::ios::out);
-      KRATOS_ERROR_IF_NOT(mRVE_FileConductivityTensorInner) << "Could not open file rve_conductivity_tensor_inner.txt!" << std::endl;
+      //-------------------- rve_conductivity_tensor_inner --------------------
+      std::ofstream mRVE_FileConductivityTensorInner("rve_conductivity_tensor_inner.txt", std::ofstream::trunc);
       mRVE_FileConductivityTensorInner << "1 - STEP | ";
       mRVE_FileConductivityTensorInner << "2 - TIME | ";
       mRVE_FileConductivityTensorInner << "3 - [[1,1][1,2][1,3]] | ";
       mRVE_FileConductivityTensorInner << "4 - [[2,1][2,2][2,3]] | ";
       mRVE_FileConductivityTensorInner << "5 - [[3,1][3,2][3,3]]";
       mRVE_FileConductivityTensorInner << std::endl;
+      if (mRVE_Dimension == 2)
+        mRVE_FileConductivityTensorInner << time_step << " " << time << " "
+                                         << "[[" << mRVE_ConductivityTensorInner(0,0) << "],[" << mRVE_ConductivityTensorInner(0,1) << "]]" << " "
+                                         << "[[" << mRVE_ConductivityTensorInner(1,0) << "],[" << mRVE_ConductivityTensorInner(1,1) << "]]"
+                                         << std::endl;
+      else if (mRVE_Dimension == 3)
+        mRVE_FileConductivityTensorInner << time_step << " " << time << " "
+                                         << "[[" << mRVE_ConductivityTensorInner(0,0) << "],[" << mRVE_ConductivityTensorInner(0,1) << "],[" << mRVE_ConductivityTensorInner(0,2) << "]]" << " "
+                                         << "[[" << mRVE_ConductivityTensorInner(1,0) << "],[" << mRVE_ConductivityTensorInner(1,1) << "],[" << mRVE_ConductivityTensorInner(1,2) << "]]" << " "
+                                         << "[[" << mRVE_ConductivityTensorInner(2,0) << "],[" << mRVE_ConductivityTensorInner(2,1) << "],[" << mRVE_ConductivityTensorInner(2,2) << "]]"
+                                         << std::endl;
+      mRVE_FileConductivityTensorInner.close();
+
+
+    }
+
+    //-----------------------------------------------------------------------------------------------------------------------------------------
+    void ExplicitSolverStrategy::RVEOpenFiles(void) {
+      mRVE_FileStress.open("rve_stresses.txt", std::ios::out);
+      mRVE_FileStress << "1 - STEP | ";
+      mRVE_FileStress << "2 - TIME | ";
+      mRVE_FileStress << "3 - WALL STRESS | ";
+      mRVE_FileStress << "4 - MEAN EFFECTIVE STRESS - ALL | ";
+      mRVE_FileStress << "5 - DEVIATORIC STRESS - ALL | ";
+      mRVE_FileStress << "6 - MEAN EFFECTIVE STRESS - INNER | ";
+      mRVE_FileStress << "7 - DEVIATORIC STRESS - INNER";
+      mRVE_FileStress << std::endl;
+
+      mRVE_FilePorosityAndVoidRatio.open("rve_porosity_voidratio.txt", std::ios::out);
+      mRVE_FilePorosityAndVoidRatio << "1 - TIME | ";
+      mRVE_FilePorosityAndVoidRatio << "2 - POROSITY | ";
+      mRVE_FilePorosityAndVoidRatio << "3 - VOID RATIO";
+      mRVE_FilePorosityAndVoidRatio << std::endl;
     }
 
     //-----------------------------------------------------------------------------------------------------------------------------------------
     void ExplicitSolverStrategy::RVECloseFiles(void) {
-      if (mRVE_FileCoordinates.is_open())             mRVE_FileCoordinates.close();
-      if (mRVE_FilePorosity.is_open())                mRVE_FilePorosity.close();
-      if (mRVE_FileContactNumber.is_open())           mRVE_FileContactNumber.close();
-      if (mRVE_FileCoordNumber.is_open())             mRVE_FileCoordNumber.close();
-      if (mRVE_FileInnerVolumeParticles.is_open())    mRVE_FileInnerVolumeParticles.close();
-      if (mRVE_FileForceChain.is_open())              mRVE_FileForceChain.close();
-      if (mRVE_FileElasticContactForces.is_open())    mRVE_FileElasticContactForces.close();
-      if (mRVE_FileRoseDiagram.is_open())             mRVE_FileRoseDiagram.close();
-      if (mRVE_FileRoseDiagramInner.is_open())        mRVE_FileRoseDiagramInner.close();
-      if (mRVE_FileRoseDiagramUniformity.is_open())   mRVE_FileRoseDiagramUniformity.close();
-      if (mRVE_FileAnisotropy.is_open())              mRVE_FileAnisotropy.close();
-      if (mRVE_FileFabricTensor.is_open())            mRVE_FileFabricTensor.close();
-      if (mRVE_FileFabricTensorInner.is_open())       mRVE_FileFabricTensorInner.close();
-      if (mRVE_FileStress.is_open())                  mRVE_FileStress.close();
-      if (mRVE_FileCauchyTensor.is_open())            mRVE_FileCauchyTensor.close();
-      if (mRVE_FileCauchyTensorInner.is_open())       mRVE_FileCauchyTensorInner.close();
-      if (mRVE_FileTangentTensor.is_open())           mRVE_FileTangentTensor.close();
-      if (mRVE_FileTangentTensorInner.is_open())      mRVE_FileTangentTensorInner.close();
-      if (mRVE_FileConductivityTensor.is_open())      mRVE_FileConductivityTensor.close();
-      if (mRVE_FileConductivityTensorInner.is_open()) mRVE_FileConductivityTensorInner.close();
+      if (mRVE_FileStress.is_open())               mRVE_FileStress.close();
+      if (mRVE_FilePorosityAndVoidRatio.is_open()) mRVE_FilePorosityAndVoidRatio.close();
     }
 
     //-----------------------------------------------------------------------------------------------------------------------

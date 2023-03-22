@@ -303,7 +303,6 @@ namespace Kratos {
         bool   mRVE_FlatWalls;          // Flag for flat rigid walls
         bool   mRVE_Solve;              // Flag for evaluating RVE in current step
         bool   mRVE_Compress;           // Flag for compressing RVE
-        bool   mRVE_Equilibrium;        // Flag for static equilibrium of particles
         int    mRVE_FreqWrite = 1;      // Frequency for writing results as a multiplication factor of the evaluating frequency
         int    mRVE_Dimension;          // RVE dimension: 2D or 3D
         int    mRVE_EqSteps;            // Number of RVE solution steps in equilibrium
@@ -360,26 +359,8 @@ namespace Kratos {
         Matrix mRVE_ConductivityTensor;      // Effective thermal conductivity tensor (all particles)
         Matrix mRVE_ConductivityTensorInner; // Effective thermal conductivity tensor (inner particles)
 
-        std::ofstream mRVE_FileCoordinates;
-        std::ofstream mRVE_FilePorosity;
-        std::ofstream mRVE_FileContactNumber;
-        std::ofstream mRVE_FileCoordNumber;
-        std::ofstream mRVE_FileInnerVolumeParticles;
-        std::ofstream mRVE_FileForceChain;
-        std::ofstream mRVE_FileElasticContactForces;
-        std::ofstream mRVE_FileRoseDiagram;
-        std::ofstream mRVE_FileRoseDiagramInner;
-        std::ofstream mRVE_FileRoseDiagramUniformity;
-        std::ofstream mRVE_FileAnisotropy;
-        std::ofstream mRVE_FileFabricTensor;
-        std::ofstream mRVE_FileFabricTensorInner;
         std::ofstream mRVE_FileStress;
-        std::ofstream mRVE_FileCauchyTensor;
-        std::ofstream mRVE_FileCauchyTensorInner;
-        std::ofstream mRVE_FileTangentTensor;
-        std::ofstream mRVE_FileTangentTensorInner;
-        std::ofstream mRVE_FileConductivityTensor;
-        std::ofstream mRVE_FileConductivityTensorInner;
+        std::ofstream mRVE_FilePorosityAndVoidRatio;
 
         // Methods
         void RVEInitialize             (void);
