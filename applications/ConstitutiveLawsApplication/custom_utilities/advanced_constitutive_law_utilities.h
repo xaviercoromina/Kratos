@@ -21,6 +21,7 @@
 #include "includes/ublas_interface.h"
 #include "includes/node.h"
 #include "geometries/geometry.h"
+#include "includes/constitutive_law.h"
 
 namespace Kratos
 {
@@ -329,6 +330,23 @@ class KRATOS_API(CONSTITUTIVE_LAWS_APPLICATION) AdvancedConstitutiveLawUtilities
         BoundedVectorType& rStressVectorTension,
         BoundedVectorType& rStressVectorCompression
         );
+    
+    /**
+     * @brief This method performs No-tension Decomposition of the Stress Vector/Tensor
+     * @details see "A phase-field model for fatigue crack growth" - Y. Lo, M. J. Borden, K. Ravi-Chandar, and M. Landis.
+     * @param rStressVector The Stress Vector
+     * @param rStressVectorTension The Stress Vector
+     * @param rStressVectorCompression The Stress Vector
+     * @param rValues Parameters of the constitutive law
+     * 
+     */
+    static void NoTensionDecomposition(
+        const BoundedVectorType& rStressVector,
+        BoundedVectorType& rStressVectorTension,
+        BoundedVectorType& rStressVectorCompression,
+        ConstitutiveLaw::Parameters& rValues
+        );
+    
 
     /**
      * @brief This computes the elastic def gradient tensor
