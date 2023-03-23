@@ -37,7 +37,7 @@ int ParallelUtilities::GetNumThreads()
     int nthreads = omp_get_max_threads();
     KRATOS_DEBUG_ERROR_IF(nthreads <= 0) << "GetNumThreads would devolve nthreads = " << nthreads << " which is not possible" << std::endl;
     return nthreads;
-#elif defined(KRATOS_SMP_CXX11)
+#elif defined(KRATOS_SMP_CXX)
     int nthreads = GetNumberOfThreads();
     KRATOS_DEBUG_ERROR_IF(nthreads <= 0) << "GetNumThreads would devolve nthreads = " << nthreads << " which is not possible" << std::endl;
     return nthreads;
@@ -71,7 +71,7 @@ int ParallelUtilities::GetNumProcs()
 #ifdef KRATOS_SMP_OPENMP
     return omp_get_num_procs();
 
-#elif defined(KRATOS_SMP_CXX11)
+#elif defined(KRATOS_SMP_CXX)
     // NOTE: std::thread::hardware_concurrency() can return 0 in some systems!
     int num_procs = std::thread::hardware_concurrency();
 

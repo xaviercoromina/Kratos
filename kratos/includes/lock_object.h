@@ -76,7 +76,7 @@ public:
 
     inline void lock() const
     {
-#ifdef KRATOS_SMP_CXX11
+#ifdef KRATOS_SMP_CXX
         mLock.lock();
 #elif KRATOS_SMP_OPENMP
         omp_set_lock(&mLock);
@@ -91,7 +91,7 @@ public:
 
     inline void unlock() const
     {
-#ifdef KRATOS_SMP_CXX11
+#ifdef KRATOS_SMP_CXX
         mLock.unlock();
 #elif KRATOS_SMP_OPENMP
         omp_unset_lock(&mLock);
@@ -106,7 +106,7 @@ public:
 
     inline bool try_lock() const
     {
-#ifdef KRATOS_SMP_CXX11
+#ifdef KRATOS_SMP_CXX
         return mLock.try_lock();
 #elif KRATOS_SMP_OPENMP
         return omp_test_lock(&mLock);
@@ -120,7 +120,7 @@ private:
     ///@name Member Variables
     ///@{
 
-#ifdef KRATOS_SMP_CXX11
+#ifdef KRATOS_SMP_CXX
         mutable std::mutex mLock;
 #elif KRATOS_SMP_OPENMP
 	    mutable omp_lock_t mLock;

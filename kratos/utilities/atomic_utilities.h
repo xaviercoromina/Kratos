@@ -22,7 +22,7 @@
 #include <omp.h>
 #endif
 
-#if !defined(__cpp_lib_atomic_ref) && defined(KRATOS_SMP_CXX11)
+#if !defined(__cpp_lib_atomic_ref) && defined(KRATOS_SMP_CXX)
 #include <boost/atomic/atomic_ref.hpp>
 #endif
 
@@ -32,7 +32,7 @@
 
 namespace Kratos {
 
-#if defined(KRATOS_SMP_CXX11)
+#if defined(KRATOS_SMP_CXX)
     #if defined(__cpp_lib_atomic_ref) // C++20
         template <class T>
         using AtomicRef = std::atomic_ref<T>;
@@ -40,7 +40,7 @@ namespace Kratos {
         template <class T>
         using AtomicRef = boost::atomic_ref<T>;
     #endif //__cpp_lib_atomic_ref
-#endif // KRATOS_SMP_CXX11
+#endif // KRATOS_SMP_CXX
 
 ///@addtogroup KratosCore
 /**
@@ -57,7 +57,7 @@ inline void AtomicAdd(TDataType& target, const TDataType& value)
 #ifdef KRATOS_SMP_OPENMP
     #pragma omp atomic
     target += value;
-#elif defined(KRATOS_SMP_CXX11)
+#elif defined(KRATOS_SMP_CXX)
     AtomicRef<TDataType>{target} += value;
 #else
     target += value;
@@ -120,7 +120,7 @@ inline void AtomicSub(TDataType& target, const TDataType& value)
 #ifdef KRATOS_SMP_OPENMP
     #pragma omp atomic
     target -= value;
-#elif defined(KRATOS_SMP_CXX11)
+#elif defined(KRATOS_SMP_CXX)
     AtomicRef<TDataType>{target} -= value;
 #else
     target -= value;
@@ -181,7 +181,7 @@ inline void AtomicMult(TDataType& target, const TDataType& value)
 #ifdef KRATOS_SMP_OPENMP
     #pragma omp atomic
     target *= value;
-#elif defined(KRATOS_SMP_CXX11)
+#elif defined(KRATOS_SMP_CXX)
     AtomicRef<TDataType> at_ref{target};
     at_ref = at_ref*value;
 #else
