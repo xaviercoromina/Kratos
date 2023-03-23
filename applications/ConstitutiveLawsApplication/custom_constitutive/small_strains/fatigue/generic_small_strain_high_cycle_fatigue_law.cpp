@@ -397,8 +397,8 @@ void GenericSmallStrainHighCycleFatigueLaw<TConstLawIntegratorType>::FinalizeMat
         // S0 = C:(E-E0) + S0
         noalias(predictive_stress_vector) = prod(r_constitutive_matrix, r_strain_vector);
         this->template AddInitialStressVectorContribution<array_1d<double, VoigtSize>>(predictive_stress_vector);
-        AdvancedConstitutiveLawUtilities<VoigtSize>::SpectralDecomposition(predictive_stress_vector, predictive_stress_vector_tension, predictive_stress_vector_compression);
-
+        AdvancedConstitutiveLawUtilities<VoigtSize>::NoTensionDecomposition(predictive_stress_vector, predictive_stress_vector_tension, predictive_stress_vector_compression, rValues);
+        // KRATOS_WATCH(predictive_stress_vector_tension)
 
         // Initialize Plastic Parameters
         double fatigue_reduction_factor = mFatigueReductionFactor;
@@ -406,6 +406,11 @@ void GenericSmallStrainHighCycleFatigueLaw<TConstLawIntegratorType>::FinalizeMat
         double uniaxial_stress_tension;
         TConstLawIntegratorType::YieldSurfaceType::CalculateEquivalentStress(predictive_stress_vector, r_strain_vector, uniaxial_stress, rValues);
         TConstLawIntegratorType::YieldSurfaceType::CalculateEquivalentStress(predictive_stress_vector_tension, r_strain_vector, uniaxial_stress_tension, rValues);
+        // 
+        // if ((mMinStress/mMaxStress) < 6.16015e-01 && (mMinStress/mMaxStress) > 6.16005e-01){
+        //     KRATOS_WATCH(uniaxial_stress_tension)
+        // }
+
 
         double sign_factor = HighCycleFatigueLawIntegrator<6>::CalculateTensionCompressionFactor(predictive_stress_vector_tension);
         // uniaxial_stress *= sign_factor;
@@ -685,8 +690,10 @@ double& GenericSmallStrainHighCycleFatigueLaw<TConstLawIntegratorType>::Calculat
         const Vector& r_stress_vector = rParameterValues.GetStressVector();
         array_1d<double, VoigtSize> r_stress_vector_tension;
         array_1d<double, VoigtSize> r_stress_vector_compression;
-        AdvancedConstitutiveLawUtilities<VoigtSize>::SpectralDecomposition(r_stress_vector, r_stress_vector_tension, r_stress_vector_compression);
+        AdvancedConstitutiveLawUtilities<VoigtSize>::NoTensionDecomposition(r_stress_vector, r_stress_vector_tension, r_stress_vector_compression, rParameterValues);
         
+        // KRATOS_WATCH(r_stress_vector_tension)
+
         const Vector& r_strain_vector = rParameterValues.GetStrainVector();
 
         BoundedArrayType aux_stress_vector = r_stress_vector_tension;

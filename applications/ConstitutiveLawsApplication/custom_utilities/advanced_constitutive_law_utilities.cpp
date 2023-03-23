@@ -495,16 +495,19 @@ void AdvancedConstitutiveLawUtilities<TVoigtSize>::NoTensionDecomposition(
     const Properties& r_material_properties = rValues.GetMaterialProperties();
     const double E  = r_material_properties[YOUNG_MODULUS];
     const double NU = r_material_properties[POISSON_RATIO];
-    
-    Matrix rK;
+
+    Matrix rK;  
+    if (rK.size1() != VoigtSize){
+        rK.resize(VoigtSize, VoigtSize, false);
+    }
     noalias(rK) = ZeroMatrix(VoigtSize,VoigtSize);
 
-    const double lame_lambda = (E * NU) / ((1.0 + NU) * (1.0 + 2.0 * NU));
+    const double lame_lambda = (E * NU) / ((1.0 + NU) * (1.0 - 2.0 * NU));
     const double MU = E / (2.0 * (1.0 + NU));
     const double c1 = 1.0 / E;
-    const double c2 = - c1 * NU;
+    const double c2 = - NU / E;
     const double c3 = 1.0 / MU;
-    
+
     rK(0,0) = c1; rK(0,1) = c2; rK(0,2) = c2;
     rK(1,0) = c2; rK(1,1) = c1; rK(1,2) = c2;
     rK(2,0) = c2; rK(2,1) = c2; rK(2,2) = c1;
@@ -521,7 +524,7 @@ void AdvancedConstitutiveLawUtilities<TVoigtSize>::NoTensionDecomposition(
     BoundedMatrix<double, Dimension, Dimension> eigen_vectors_matrix;
     BoundedMatrix<double, Dimension, Dimension> eigen_values_matrix;
 
-    MathUtils<double>::GaussSeidelEigenSystem(strain_tensor, eigen_vectors_matrix, eigen_values_matrix, 1.0e-16, 20);
+    MathUtils<double>::GaussSeidelEigenSystem(strain_tensor, eigen_vectors_matrix, eigen_values_matrix, 1.0e-18, 20);
 
     std::vector<Vector> eigen_vectors_container;
     Vector auxiliary_vector = ZeroVector(Dimension);
@@ -529,42 +532,44 @@ void AdvancedConstitutiveLawUtilities<TVoigtSize>::NoTensionDecomposition(
     for (IndexType i = 0; i < Dimension; ++i) {
         for (IndexType j = 0; j < Dimension; ++j) {
             auxiliary_vector[j] = eigen_vectors_matrix(j, i);
-            eigenvalues_vector[j] = eigen_values_matrix(j, i);
         }
         eigen_vectors_container.push_back(auxiliary_vector);
-        std::sort(eigenvalues_vector.begin(), eigenvalues_vector.end());
+        eigenvalues_vector[i] = eigen_values_matrix(i, i);
     }
-        
+    std::sort(eigenvalues_vector.begin(), eigenvalues_vector.end());
+
     rStressVectorTension     = ZeroVector(TVoigtSize);
     rStressVectorCompression = ZeroVector(TVoigtSize);
 
     Vector sigma_tension_vector;
+    Matrix auxiliary_tensor = ZeroMatrix(Dimension, Dimension);
     Matrix sigma_tension_tensor = ZeroMatrix(Dimension, Dimension);
+
+    bool condition1 = false;
+    bool condition2 = false;
+
     for (IndexType i = 0; i < Dimension; ++i) {
         if (eigenvalues_vector[0] > 0.0) {
-            sigma_tension_tensor(i, i) = lame_lambda * (eigenvalues_vector[0] + eigenvalues_vector[1] + eigenvalues_vector[2]) + 2.0 * MU * eigenvalues_vector[i];
-            sigma_tension_tensor = sigma_tension_tensor (i,i) * outer_prod(eigen_vectors_container[i], eigen_vectors_container[i]); // p_i x p_i
-            rStressVectorTension += MathUtils<double>::StressTensorToVector(sigma_tension_tensor);
-        } else if (NU * eigenvalues_vector[0] + eigenvalues_vector[1] > 0.0) {
+            auxiliary_tensor(i, i) = lame_lambda * (eigenvalues_vector[0] + eigenvalues_vector[1] + eigenvalues_vector[2]) + 2.0 * MU * eigenvalues_vector[i];
+            condition1 = true;
+        } else if ((NU * eigenvalues_vector[0] + eigenvalues_vector[1] > 0.0) && !condition1){
             if (i < 1) {
-                sigma_tension_tensor(i, i) = 2.0 * NU * lame_lambda * (2.0 * NU * eigenvalues_vector[0] + eigenvalues_vector[1] + eigenvalues_vector[2]) + 2.0 * NU * MU * (2.0 * NU * eigenvalues_vector[0] + eigenvalues_vector[1] + eigenvalues_vector[2]);
-            } else{
-                sigma_tension_tensor (i, i) = (lame_lambda / 2.0) * (2.0 * NU * eigenvalues_vector[0] + eigenvalues_vector[1] + eigenvalues_vector[2]) + MU * (NU * eigenvalues_vector[0] + eigenvalues_vector[i]);
-            }
-            sigma_tension_tensor = sigma_tension_tensor (i, i) * outer_prod(eigen_vectors_container[i], eigen_vectors_container[i]); // p_i x p_i
-            rStressVectorTension += MathUtils<double>::StressTensorToVector(sigma_tension_tensor);
-        } else if (NU * (eigenvalues_vector[0] + eigenvalues_vector[1]) + (1 - NU) * eigenvalues_vector[2] > 0.0) {
-            if (i < 2){
-                sigma_tension_tensor (i, i) = (lame_lambda / (1.0 - NU)) * (NU * (eigenvalues_vector[0] + eigenvalues_vector[1]) +  (1 - NU) * eigenvalues_vector[2]);
+                auxiliary_tensor(i, i) = 2.0 * NU * lame_lambda * (2.0 * NU * eigenvalues_vector[0] + eigenvalues_vector[1] + eigenvalues_vector[2]) + 2.0 * NU * MU * (2.0 * NU * eigenvalues_vector[0] + eigenvalues_vector[1] + eigenvalues_vector[2]);
             } else {
-                sigma_tension_tensor (i, i) = (lame_lambda / NU) * (NU * (eigenvalues_vector[0] + eigenvalues_vector[1]) +  (1 - NU) * eigenvalues_vector[2]);
+                auxiliary_tensor(i, i) = lame_lambda * (2.0 * NU * eigenvalues_vector[0] + eigenvalues_vector[1] + eigenvalues_vector[2]) + 2.0 * MU * (NU * eigenvalues_vector[0] + eigenvalues_vector[i]);
             }
-            sigma_tension_tensor (i, i) = (lame_lambda / 2.0) * (2.0 * NU * eigenvalues_vector[0] + eigenvalues_vector[1] + eigenvalues_vector[2]) + MU * (NU * eigenvalues_vector[0] + eigenvalues_vector[i]);
-            sigma_tension_tensor = sigma_tension_tensor (i, i) * outer_prod(eigen_vectors_container[i], eigen_vectors_container[i]); // p_i x p_i
-            rStressVectorTension += MathUtils<double>::StressTensorToVector(sigma_tension_tensor);
+            condition2 = true;
+        } else if ((NU * (eigenvalues_vector[0] + eigenvalues_vector[1]) + (1 - NU) * eigenvalues_vector[2] > 0.0) && !condition1 && !condition2) {
+            if (i < 2){
+                auxiliary_tensor(i, i) = ((NU * lame_lambda) / (1.0 - NU)) * (NU * (eigenvalues_vector[0] + eigenvalues_vector[1]) +  (1 - NU) * eigenvalues_vector[2]);
+            } else {
+                auxiliary_tensor(i, i) = lame_lambda * (NU * (eigenvalues_vector[0] + eigenvalues_vector[1]) +  (1 - NU) * eigenvalues_vector[2]);
+            }
         } else {
-            rStressVectorTension = MathUtils<double>::StressTensorToVector(sigma_tension_tensor);
+            auxiliary_tensor(i, i) = 0.0;
         }
+        sigma_tension_tensor = auxiliary_tensor(i, i) * outer_prod(eigen_vectors_container[i], eigen_vectors_container[i]); // p_i x p_i
+        rStressVectorTension += MathUtils<double>::StressTensorToVector(sigma_tension_tensor);
     }
     rStressVectorCompression = rStressVector - rStressVectorTension;
 }
