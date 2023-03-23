@@ -2649,7 +2649,7 @@ namespace Kratos {
       mRVE_FileContactNumber << "LINE 1 - STEP & TIME | ";
       mRVE_FileContactNumber << "OTHER LINES - #CONTACTS OF EACH PARTICLE";
       mRVE_FileContactNumber << std::endl;
-      mRVE_FileContactNumber << time_step << " " << time << " ";
+      mRVE_FileContactNumber << time_step << " " << time << std::endl;
       for (int i = 0; i < number_of_particles; i++)
         if (mListOfSphericParticles[i]->mWall == 0)
           mRVE_FileContactNumber << mListOfSphericParticles[i]->mCoordNum << std::endl;
