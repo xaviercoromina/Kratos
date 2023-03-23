@@ -102,7 +102,7 @@ void GenericSmallStrainHighCycleFatigueLaw<TConstLawIntegratorType>::InitializeM
     const bool new_model_part = rValues.GetProcessInfo()[NEW_MODEL_PART];
     int time = rValues.GetProcessInfo()[TIME];
     const int time_offset = 2;
-    const int length_of_load_increments = 16;
+    const int length_of_load_increments = 20;
 
     int number_of_load_increments = mNumberOfLoadIncrements;
 
@@ -692,10 +692,32 @@ double& GenericSmallStrainHighCycleFatigueLaw<TConstLawIntegratorType>::Calculat
     double& rValue
     )
 {
-    if (this->Has(rThisVariable))
+    if (this->Has(rThisVariable)) {
         return this->GetValue(rThisVariable, rValue);
-    else
+    } else if (rThisVariable == UNIAXIAL_STRESS_TENSION) {
+
+        Vector& r_strain_vector = rParameterValues.GetStrainVector();
+        Matrix& r_constitutive_matrix = rParameterValues.GetConstitutiveMatrix();
+        this->CalculateValue(rParameterValues, CONSTITUTIVE_MATRIX, r_constitutive_matrix);
+
+        array_1d<double, VoigtSize> predictive_stress_vector;
+
+        noalias(predictive_stress_vector) = prod(r_constitutive_matrix, r_strain_vector);
+
+        double nominal_uniaxial_stress;
+        TConstLawIntegratorType::YieldSurfaceType::CalculateEquivalentStress(predictive_stress_vector, r_strain_vector, nominal_uniaxial_stress, rParameterValues);
+
+        double sign_factor = HighCycleFatigueLawIntegrator<6>::CalculateTensionCompressionFactor(predictive_stress_vector);
+        
+        double damage = this->GetDamage();
+
+        nominal_uniaxial_stress *= sign_factor;
+        rValue = (1 - damage) * nominal_uniaxial_stress;
+
+        return rValue;
+    } else {
         return BaseType::CalculateValue(rParameterValues, rThisVariable, rValue);
+    }
 }
 
 /***********************************************************************************/
