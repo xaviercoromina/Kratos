@@ -470,6 +470,10 @@ KRATOS_CREATE_3D_VARIABLE_WITH_COMPONENTS(PARAMETER_2D_COORDINATES)
 KRATOS_CREATE_VARIABLE(double, VARIATIONAL_REDISTANCE_COEFFICIENT_FIRST)
 KRATOS_CREATE_VARIABLE(double, VARIATIONAL_REDISTANCE_COEFFICIENT_SECOND)
 
+// For searching/mapping
+KRATOS_CREATE_VARIABLE(int, INTERFACE_EQUATION_ID)
+KRATOS_CREATE_VARIABLE(int, PAIRING_STATUS)
+
 //------------------------------------------------------------------------------//
 //------------------------------------------------------------------------------//
 //------------------------------------------------------------------------------//
@@ -939,5 +943,9 @@ void KratosApplication::RegisterVariables() {
     // Variational redistance
     KRATOS_REGISTER_VARIABLE(VARIATIONAL_REDISTANCE_COEFFICIENT_FIRST)
     KRATOS_REGISTER_VARIABLE(VARIATIONAL_REDISTANCE_COEFFICIENT_SECOND)
+
+    // For searching/mapping
+    KRATOS_REGISTER_VARIABLE(INTERFACE_EQUATION_ID)
+    KRATOS_REGISTER_VARIABLE(PAIRING_STATUS)
 }
 }  // namespace Kratos.

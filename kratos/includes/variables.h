@@ -10,8 +10,7 @@
 //  Main authors:    Pooyan Dadvand
 //
 
-#if !defined(KRATOS_VARIABLES_H_INCLUDED )
-#define  KRATOS_VARIABLES_H_INCLUDED
+#pragma once
 
 // System includes
 #include <string>
@@ -478,9 +477,11 @@ namespace Kratos
     KRATOS_DEFINE_VARIABLE(double, VARIATIONAL_REDISTANCE_COEFFICIENT_FIRST)
     KRATOS_DEFINE_VARIABLE(double, VARIATIONAL_REDISTANCE_COEFFICIENT_SECOND)
 
+    // For searching/mapping
+    KRATOS_DEFINE_VARIABLE(int, INTERFACE_EQUATION_ID) // Has to be int bcs of MPI
+    KRATOS_DEFINE_VARIABLE(int, PAIRING_STATUS)
+
 }  // namespace Kratos.
 
 #undef  KRATOS_EXPORT_MACRO
 #define KRATOS_EXPORT_MACRO KRATOS_NO_EXPORT
-
-#endif // KRATOS_VARIABLES_H_INCLUDED  defined
