@@ -28,7 +28,7 @@
 #include "utilities/math_utils.h"
 #include "mapping_application_variables.h"
 #include "mappers/mapper_flags.h"
-#include "custom_utilities/mapper_local_system.h"
+#include "searching/search_local_system/search_local_system.h"
 
 namespace Kratos {
 namespace MapperUtilities {
@@ -37,17 +37,6 @@ typedef std::size_t SizeType;
 typedef std::size_t IndexType;
 
 typedef Node<3> NodeType;
-
-typedef Kratos::unique_ptr<MapperInterfaceInfo> MapperInterfaceInfoUniquePointerType;
-
-typedef Kratos::shared_ptr<MapperInterfaceInfo> MapperInterfaceInfoPointerType;
-typedef std::vector<std::vector<MapperInterfaceInfoPointerType>> MapperInterfaceInfoPointerVectorType;
-
-typedef Kratos::unique_ptr<MapperLocalSystem> MapperLocalSystemPointer;
-typedef std::vector<MapperLocalSystemPointer> MapperLocalSystemPointerVector;
-typedef Kratos::shared_ptr<MapperLocalSystemPointerVector> MapperLocalSystemPointerVectorPointer;
-
-using BoundingBoxType = std::array<double, 6>;
 
 static void FillFunction(const NodeType& rNode,
                          const Variable<double>& rVariable,
@@ -196,22 +185,13 @@ void UpdateModelPartFromSystemVector(
 */
 void AssignInterfaceEquationIds(Communicator& rModelPartCommunicator);
 
-void CreateMapperLocalSystemsFromNodes(const MapperLocalSystem& rMapperLocalSystemPrototype,
+void CreateSearchLocalSystemsFromNodes(const SearchLocalSystem& rSearchLocalSystemPrototype,
                                        const Communicator& rModelPartCommunicator,
-                                       std::vector<Kratos::unique_ptr<MapperLocalSystem>>& rLocalSystems);
+                                       std::vector<Kratos::unique_ptr<SearchLocalSystem>>& rLocalSystems);
 
-void CreateMapperLocalSystemsFromGeometries(const MapperLocalSystem& rMapperLocalSystemPrototype,
+void CreateSearchLocalSystemsFromGeometries(const SearchLocalSystem& rSearchLocalSystemPrototype,
                                             const Communicator& rModelPartCommunicator,
-                                            std::vector<Kratos::unique_ptr<MapperLocalSystem>>& rLocalSystems);
-
-template <class T1, class T2>
-inline double ComputeDistance(const T1& rCoords1,
-                              const T2& rCoords2)
-{
-    return std::sqrt( std::pow(rCoords1[0] - rCoords2[0] , 2) +
-                      std::pow(rCoords1[1] - rCoords2[1] , 2) +
-                      std::pow(rCoords1[2] - rCoords2[2] , 2) );
-}
+                                            std::vector<Kratos::unique_ptr<SearchLocalSystem>>& rLocalSystems);
 
 template <class T1, class T2, class T3>
 bool PointsAreCollinear(
@@ -229,27 +209,7 @@ bool PointsAreCollinear(
     return (std::sqrt(s*(s-a)*(s-b)*(s-c))) < 1e-12;
 }
 
-template <typename TContainer>
-double ComputeMaxEdgeLengthLocal(const TContainer& rEntityContainer);
-
-double ComputeSearchRadius(const ModelPart& rModelPart, int EchoLevel);
-
-double ComputeSearchRadius(const ModelPart& rModelPart1, const ModelPart& rModelPart2, const int EchoLevel);
-
 void CheckInterfaceModelParts(const int CommRank);
-
-BoundingBoxType ComputeLocalBoundingBox(const ModelPart& rModelPart);
-
-BoundingBoxType ComputeGlobalBoundingBox(const ModelPart& rModelPart);
-
-void ComputeBoundingBoxesWithTolerance(const std::vector<double>& rBoundingBoxes,
-                                       const double Tolerance,
-                                       std::vector<double>& rBoundingBoxesWithTolerance);
-
-std::string BoundingBoxStringStream(const BoundingBoxType& rBoundingBox);
-
-bool PointIsInsideBoundingBox(const BoundingBoxType& rBoundingBox,
-                              const array_1d<double, 3>& rCoords);
 
 void KRATOS_API(MAPPING_APPLICATION) SaveCurrentConfiguration(ModelPart& rModelPart);
 void KRATOS_API(MAPPING_APPLICATION) RestoreCurrentConfiguration(ModelPart& rModelPart);
@@ -265,64 +225,6 @@ void EraseNodalVariable(ModelPart& rModelPart, const Variable<TDataType>& rVaria
 
     KRATOS_CATCH("");
 }
-
-void FillBufferBeforeLocalSearch(const MapperLocalSystemPointerVector& rMapperLocalSystems,
-                                 const std::vector<double>& rBoundingBoxes,
-                                 const SizeType BufferSizeEstimate,
-                                 std::vector<std::vector<double>>& rSendBuffer,
-                                 std::vector<int>& rSendSizes);
-
-void CreateMapperInterfaceInfosFromBuffer(const std::vector<std::vector<double>>& rRecvBuffer,
-                                          const MapperInterfaceInfoUniquePointerType& rpRefInterfaceInfo,
-                                          const int CommRank,
-                                          MapperInterfaceInfoPointerVectorType& rMapperInterfaceInfosContainer);
-
-void FillBufferAfterLocalSearch(MapperInterfaceInfoPointerVectorType& rMapperInterfaceInfosContainer,
-                                const MapperInterfaceInfoUniquePointerType& rpRefInterfaceInfo,
-                                const int CommRank,
-                                std::vector<std::vector<char>>& rSendBuffer,
-                                std::vector<int>& rSendSizes);
-
-void AssignInterfaceInfosAfterRemoteSearch(const MapperInterfaceInfoPointerVectorType& rMapperInterfaceInfosContainer,
-                                           MapperLocalSystemPointerVectorPointer& rpMapperLocalSystems);
-
-void DeserializeMapperInterfaceInfosFromBuffer(
-    const std::vector<std::vector<char>>& rSendBuffer,
-    const MapperInterfaceInfoUniquePointerType& rpRefInterfaceInfo,
-    const int CommRank,
-    MapperInterfaceInfoPointerVectorType& rMapperInterfaceInfosContainer);
-
-/**
- * @class MapperInterfaceInfoSerializer
- * @ingroup MappingApplication
- * @brief Helper class to serialize/deserialize a vector containing MapperInterfaceInfos
- * @details This class serializes the vector containing the MapperInterfaceInfos (Shared Ptrs)
- * The goal of this class is to have a more efficient/faster implementation than the
- * one of the Serializer by avoiding the casting that is done in the serializer when pointers
- * are serialized
- * @TODO test the performance against the Serializer
- * @author Philipp Bucher
- */
-class KRATOS_API(MAPPING_APPLICATION) MapperInterfaceInfoSerializer
-{
-public:
-
-    MapperInterfaceInfoSerializer(std::vector<MapperInterfaceInfoPointerType>& rMapperInterfaceInfosContainer,
-                                  const MapperInterfaceInfoUniquePointerType& rpRefInterfaceInfo)
-        : mrInterfaceInfos(rMapperInterfaceInfosContainer)
-        , mrpRefInterfaceInfo(rpRefInterfaceInfo->Create())
-        { }
-
-private:
-
-    std::vector<MapperInterfaceInfoPointerType>& mrInterfaceInfos;
-    MapperInterfaceInfoPointerType mrpRefInterfaceInfo;
-
-    friend class Kratos::Serializer; // Adding "Kratos::" is nedded bcs of the "MapperUtilities"-namespace
-
-    virtual void save(Kratos::Serializer& rSerializer) const;
-    virtual void load(Kratos::Serializer& rSerializer);
-};
 
 }  // namespace MapperUtilities.
 

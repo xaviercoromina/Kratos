@@ -4,7 +4,7 @@
 //   _|\_\_|  \__,_|\__|\___/ ____/
 //                   Multi-Physics
 //
-//  License:		 BSD License
+//  License:         BSD License
 //                   Kratos default license: kratos/license.txt
 //
 //  Main authors:    Philipp Bucher (https://github.com/philbucher)
@@ -14,12 +14,11 @@
 #include "containers/model.h"
 #include "testing/testing.h"
 #include "mpi/utilities/model_part_communicator_utilities.h"
-#include "custom_utilities/mapper_utilities.h"
+#include "utilities/search_utilities.h"
 
-namespace Kratos {
-namespace Testing {
+namespace Kratos::Testing {
 
-KRATOS_DISTRIBUTED_TEST_CASE_IN_SUITE(MapperUtilities_ComputeGlobalBoundingBox_distributed, KratosMappingApplicationMPITestSuite)
+KRATOS_DISTRIBUTED_TEST_CASE_IN_SUITE(SearchUtilities_ComputeGlobalBoundingBox_distributed, KratosMPICoreFastSuite)
 {
     Model current_model;
     ModelPart& model_part = current_model.CreateModelPart("Generated");
@@ -36,11 +35,11 @@ KRATOS_DISTRIBUTED_TEST_CASE_IN_SUITE(MapperUtilities_ComputeGlobalBoundingBox_d
     model_part.CreateNewNode(3, -9.2, -17.13, 1.5);
     model_part.CreateNewNode(4, 12.6+my_pid, 5.3, -8.3-my_pid);
 
-    const auto bbox = MapperUtilities::ComputeGlobalBoundingBox(model_part);
+    const auto bbox = SearchUtilities::ComputeGlobalBoundingBox(model_part);
 
-    // std::cout << MapperUtilities::BoundingBoxStringStream(bbox) << std::endl;
+    // std::cout << SearchUtilities::BoundingBoxStringStream(bbox) << std::endl;
 
-    const MapperUtilities::BoundingBoxType exp_bbox = {
+    const SearchUtilities::BoundingBoxType exp_bbox = {
         12.6 + total_procs -1,
         -9.2,
         25.3,
@@ -55,5 +54,4 @@ KRATOS_DISTRIBUTED_TEST_CASE_IN_SUITE(MapperUtilities_ComputeGlobalBoundingBox_d
     }
 }
 
-}  // namespace Testing
-}  // namespace Kratos
+}  // namespace Kratos::Testing
