@@ -4,8 +4,8 @@
 //   _|\_\_|  \__,_|\__|\___/ ____/
 //                   Multi-Physics
 //
-//  License:		 BSD License
-//					 Kratos default license: kratos/license.txt
+//  License:         BSD License
+//                   Kratos default license: kratos/license.txt
 //
 //  Main authors:    Philipp Bucher, Jordi Cotela
 //
@@ -18,8 +18,7 @@
 // External includes
 
 // Project includes
-#include "projection_utilities.h"
-#include "mapping_application_variables.h"
+#include "utilities/projection_utilities.h"
 
 namespace Kratos
 {
@@ -53,6 +52,9 @@ void FillEquationIdVector(const GeometryType& rGeometry,
     KRATOS_CATCH("")
 }
 
+/***********************************************************************************/
+/***********************************************************************************/
+
 bool IsBetterProjection(const PairingIndex CurrentPairingIndex,
                         const PairingIndex PairingIndexToCheck,
                         const double CurrentMinDistance,
@@ -65,6 +67,9 @@ bool IsBetterProjection(const PairingIndex CurrentPairingIndex,
 }
 
 }
+
+/***********************************************************************************/
+/***********************************************************************************/
 
 PairingIndex ProjectOnLine(const GeometryType& rGeometry,
                            const Point& rPointToProject,
@@ -122,6 +127,9 @@ PairingIndex ProjectOnLine(const GeometryType& rGeometry,
     KRATOS_CATCH("")
 }
 
+/***********************************************************************************/
+/***********************************************************************************/
+
 PairingIndex ProjectOnSurface(const GeometryType& rGeometry,
                      const Point& rPointToProject,
                      const double LocalCoordTol,
@@ -176,6 +184,9 @@ PairingIndex ProjectOnSurface(const GeometryType& rGeometry,
 
     KRATOS_CATCH("")
 }
+
+/***********************************************************************************/
+/***********************************************************************************/
 
 PairingIndex ProjectIntoVolume(const GeometryType& rGeometry,
                                const Point& rPointToProject,
@@ -233,6 +244,9 @@ PairingIndex ProjectIntoVolume(const GeometryType& rGeometry,
 
     KRATOS_CATCH("")
 }
+
+/***********************************************************************************/
+/***********************************************************************************/
 
 bool ComputeProjection(const GeometryType& rGeometry,
                        const Point& rPointToProject,

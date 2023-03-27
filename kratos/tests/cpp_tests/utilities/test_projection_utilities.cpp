@@ -4,7 +4,7 @@
 //   _|\_\_|  \__,_|\__|\___/ ____/
 //                   Multi-Physics
 //
-//  License:		 BSD License
+//  License:         BSD License
 //                   Kratos default license: kratos/license.txt
 //
 //  Main authors:    Philipp Bucher
@@ -18,13 +18,11 @@
 #include "geometries/hexahedra_3d_8.h"
 #include "testing/testing.h"
 #include "utilities/projection_utilities.h"
-#include "mapping_application_variables.h"
 
-namespace Kratos {
-namespace Testing {
+namespace Kratos::Testing {
 
-typedef Node<3> NodeType;
-typedef Geometry<NodeType> GeometryType;
+using NodeType = Node<3>;
+using GeometryType = Geometry<NodeType>;
 
 namespace {
 
@@ -76,7 +74,7 @@ void TestComputeProjection(const GeometryType& rGeometry,
 
 }
 
-KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Line_Inside, KratosMappingApplicationSerialTestSuite)
+KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Line_Inside, KratosCoreFastSuite)
 {
     auto node_1(Kratos::make_intrusive<NodeType>(1, 0.0, 0.0, 0.0));
     auto node_2(Kratos::make_intrusive<NodeType>(2, 1.0, 0.0, 0.0));
@@ -96,7 +94,7 @@ KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Line_Inside, KratosMappingApplicationS
     TestComputeProjection(*p_geom, point_to_project, local_coord_tol, exp_sf_values, exp_eq_ids, proj_dist, pairing_index, compute_approximation, full_projection);
 }
 
-KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Line_Outside, KratosMappingApplicationSerialTestSuite)
+KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Line_Outside, KratosCoreFastSuite)
 {
     auto node_1(Kratos::make_intrusive<NodeType>(1, 0.0, 0.0, 0.0));
     auto node_2(Kratos::make_intrusive<NodeType>(2, 1.0, 0.0, 0.0));
@@ -116,7 +114,7 @@ KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Line_Outside, KratosMappingApplication
     TestComputeProjection(*p_geom, point_to_project, local_coord_tol, exp_sf_values, exp_eq_ids, proj_dist, pairing_index, compute_approximation, full_projection);
 }
 
-KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Line_Closest_Point, KratosMappingApplicationSerialTestSuite)
+KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Line_Closest_Point, KratosCoreFastSuite)
 {
     auto node_1(Kratos::make_intrusive<NodeType>(1, 0.0, 0.0, 0.0));
     auto node_2(Kratos::make_intrusive<NodeType>(2, 1.0, 0.0, 0.0));
@@ -137,7 +135,7 @@ KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Line_Closest_Point, KratosMappingAppli
     TestComputeProjection(*p_geom, point_to_project, local_coord_tol, exp_sf_values, exp_eq_ids, proj_dist, pairing_index, compute_approximation, full_projection);
 }
 
-KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Line_Unspecified, KratosMappingApplicationSerialTestSuite)
+KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Line_Unspecified, KratosCoreFastSuite)
 {
     auto node_1(Kratos::make_intrusive<NodeType>(1, 0.0, 0.0, 0.0));
     auto node_2(Kratos::make_intrusive<NodeType>(2, 1.0, 0.0, 0.0));
@@ -156,7 +154,7 @@ KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Line_Unspecified, KratosMappingApplica
     TestComputeProjection(*p_geom, point_to_project, local_coord_tol, exp_sf_values, exp_eq_ids, proj_dist, pairing_index, compute_approximation, full_projection);
 }
 
-KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Triangle_Inside, KratosMappingApplicationSerialTestSuite)
+KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Triangle_Inside, KratosCoreFastSuite)
 {
     auto node_1(Kratos::make_intrusive<NodeType>(1, 0.0, 0.0, 0.0));
     auto node_2(Kratos::make_intrusive<NodeType>(2, 1.0, 0.0, 0.0));
@@ -178,7 +176,7 @@ KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Triangle_Inside, KratosMappingApplicat
     TestComputeProjection(*p_geom, point_to_project, local_coord_tol, exp_sf_values, exp_eq_ids, proj_dist, pairing_index, compute_approximation, full_projection);
 }
 
-KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Triangle_Outside, KratosMappingApplicationSerialTestSuite)
+KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Triangle_Outside, KratosCoreFastSuite)
 {
     auto node_1(Kratos::make_intrusive<NodeType>(1, 0.0, 0.0, 0.0));
     auto node_2(Kratos::make_intrusive<NodeType>(2, 1.0, 0.0, 0.0));
@@ -200,7 +198,7 @@ KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Triangle_Outside, KratosMappingApplica
     TestComputeProjection(*p_geom, point_to_project, local_coord_tol, exp_sf_values, exp_eq_ids, proj_dist, pairing_index, compute_approximation, full_projection);
 }
 
-KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Triangle_Line, KratosMappingApplicationSerialTestSuite)
+KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Triangle_Line, KratosCoreFastSuite)
 {
     auto node_1(Kratos::make_intrusive<NodeType>(1, 0.0, 0.0, 0.0));
     auto node_2(Kratos::make_intrusive<NodeType>(2, 1.0, 0.0, 0.0));
@@ -223,7 +221,7 @@ KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Triangle_Line, KratosMappingApplicatio
     TestComputeProjection(*p_geom, point_to_project, local_coord_tol, exp_sf_values, exp_eq_ids, proj_dist, pairing_index, compute_approximation, full_projection);
 }
 
-KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Triangle_Closest_Point, KratosMappingApplicationSerialTestSuite)
+KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Triangle_Closest_Point, KratosCoreFastSuite)
 {
     auto node_1(Kratos::make_intrusive<NodeType>(1, 0.0, 0.0, 0.0));
     auto node_2(Kratos::make_intrusive<NodeType>(2, 1.0, 0.0, 0.0));
@@ -246,7 +244,7 @@ KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Triangle_Closest_Point, KratosMappingA
     TestComputeProjection(*p_geom, point_to_project, local_coord_tol, exp_sf_values, exp_eq_ids, proj_dist, pairing_index, compute_approximation, full_projection);
 }
 
-KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Triangle_Unspecified, KratosMappingApplicationSerialTestSuite)
+KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Triangle_Unspecified, KratosCoreFastSuite)
 {
     auto node_1(Kratos::make_intrusive<NodeType>(1, 0.0, 0.0, 0.0));
     auto node_2(Kratos::make_intrusive<NodeType>(2, 1.0, 0.0, 0.0));
@@ -267,7 +265,7 @@ KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Triangle_Unspecified, KratosMappingApp
     TestComputeProjection(*p_geom, point_to_project, local_coord_tol, exp_sf_values, exp_eq_ids, proj_dist, pairing_index, compute_approximation, full_projection);
 }
 
-KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Quadrilateral_Inside, KratosMappingApplicationSerialTestSuite)
+KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Quadrilateral_Inside, KratosCoreFastSuite)
 {
     auto node_1(Kratos::make_intrusive<NodeType>(1, 0.0, 0.0, 0.0));
     auto node_2(Kratos::make_intrusive<NodeType>(2, 1.0, 0.0, 0.0));
@@ -290,7 +288,7 @@ KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Quadrilateral_Inside, KratosMappingApp
     TestComputeProjection(*p_geom, point_to_project, local_coord_tol, exp_sf_values, exp_eq_ids, proj_dist, pairing_index, compute_approximation, full_projection);
 }
 
-KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Quadrilateral_Outside, KratosMappingApplicationSerialTestSuite)
+KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Quadrilateral_Outside, KratosCoreFastSuite)
 {
     auto node_1(Kratos::make_intrusive<NodeType>(1, 0.0, 0.0, 0.0));
     auto node_2(Kratos::make_intrusive<NodeType>(2, 1.0, 0.0, 0.0));
@@ -313,7 +311,7 @@ KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Quadrilateral_Outside, KratosMappingAp
     TestComputeProjection(*p_geom, point_to_project, local_coord_tol, exp_sf_values, exp_eq_ids, proj_dist, pairing_index, compute_approximation, full_projection);
 }
 
-KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Tetrahedra_Inside, KratosMappingApplicationSerialTestSuite)
+KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Tetrahedra_Inside, KratosCoreFastSuite)
 {
     auto node_1(Kratos::make_intrusive<NodeType>(1, 0.0, 0.0, 0.0));
     auto node_2(Kratos::make_intrusive<NodeType>(2, 1.0, 0.0, 0.0));
@@ -336,7 +334,7 @@ KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Tetrahedra_Inside, KratosMappingApplic
     TestComputeProjection(*p_geom, point_to_project, local_coord_tol, exp_sf_values, exp_eq_ids, proj_dist, pairing_index, compute_approximation, full_projection);
 }
 
-KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Hexahedra_Inside, KratosMappingApplicationSerialTestSuite)
+KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Hexahedra_Inside, KratosCoreFastSuite)
 {
     auto node_1(Kratos::make_intrusive<NodeType>(1, 0.0, 0.0, 0.0));
     auto node_2(Kratos::make_intrusive<NodeType>(2, 1.0, 0.0, 0.0));
@@ -363,7 +361,7 @@ KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Hexahedra_Inside, KratosMappingApplica
     TestComputeProjection(*p_geom, point_to_project, local_coord_tol, exp_sf_values, exp_eq_ids, proj_dist, pairing_index, compute_approximation, full_projection);
 }
 
-KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Hexahedra_Outside, KratosMappingApplicationSerialTestSuite)
+KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Hexahedra_Outside, KratosCoreFastSuite)
 {
     auto node_1(Kratos::make_intrusive<NodeType>(1, 0.0, 0.0, 0.0));
     auto node_2(Kratos::make_intrusive<NodeType>(2, 1.0, 0.0, 0.0));
@@ -390,5 +388,4 @@ KRATOS_TEST_CASE_IN_SUITE(ProjectionUtils_Hexahedra_Outside, KratosMappingApplic
     TestComputeProjection(*p_geom, point_to_project, local_coord_tol, exp_sf_values, exp_eq_ids, proj_dist, pairing_index, compute_approximation, full_projection);
 }
 
-}  // namespace Testing
-}  // namespace Kratos
+}  // namespace Kratos::Testing
