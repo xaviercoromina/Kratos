@@ -24,7 +24,6 @@
 #include "includes/node.h"
 #include "geometries/geometry.h"
 
-
 namespace Kratos
 {
 ///@addtogroup MappingApplication
