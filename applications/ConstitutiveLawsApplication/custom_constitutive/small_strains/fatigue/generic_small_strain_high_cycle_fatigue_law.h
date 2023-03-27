@@ -412,8 +412,7 @@ private:
     ///@}
     ///@name Member Variables
     ///@{
-    double mMinReferenceDamage = 0.0;
-    double mMaxReferenceDamage = 0.0;
+    double mReferenceDamage = 0.0;
     double mFatigueReductionFactor = 1.0;
     Vector mPreviousStresses = ZeroVector(2); // [S_t-2, S_t-1]
     double mPreviousMaxStress = 0.0;
