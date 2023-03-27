@@ -4,7 +4,7 @@
 //   _|\_\_|  \__,_|\__|\___/ ____/
 //                   Multi-Physics
 //
-//  License:		 BSD License
+//  License:         BSD License
 //                   Kratos default license: kratos/license.txt
 //
 //  Main authors:    Philipp Bucher
@@ -13,13 +13,11 @@
 // Project includes
 #include "testing/testing.h"
 #include "geometries/quadrilateral_2d_4.h"
-#include "custom_searching/interface_object.h"
+#include "searching/interface_object.h"
 
-namespace Kratos {
-namespace Testing {
+namespace Kratos::Testing {
 
-
-KRATOS_TEST_CASE_IN_SUITE(InterfaceGeometryObject, KratosMappingApplicationSerialTestSuite)
+KRATOS_TEST_CASE_IN_SUITE(InterfaceGeometryObject, KratosCoreFastSuite)
 {
     array_1d<double, 3> init_coords;
     init_coords[0] = 0.0;
@@ -48,7 +46,7 @@ KRATOS_TEST_CASE_IN_SUITE(InterfaceGeometryObject, KratosMappingApplicationSeria
         KRATOS_CHECK_DOUBLE_EQUAL(interface_obj.Coordinates()[i], new_coords[i]);
 }
 
-KRATOS_TEST_CASE_IN_SUITE(InterfaceNode, KratosMappingApplicationSerialTestSuite)
+KRATOS_TEST_CASE_IN_SUITE(InterfaceNode, KratosCoreFastSuite)
 {
     Point coords(1.0, 2.5, 30.0);
 
@@ -65,7 +63,7 @@ KRATOS_TEST_CASE_IN_SUITE(InterfaceNode, KratosMappingApplicationSerialTestSuite
     KRATOS_CHECK_EQUAL(*(p_interface_obj->pGetBaseNode()), *node_1);
 }
 
-KRATOS_TEST_CASE_IN_SUITE(InterfaceObject, KratosMappingApplicationSerialTestSuite)
+KRATOS_TEST_CASE_IN_SUITE(InterfaceObject, KratosCoreFastSuite)
 {
     Node<3>::Pointer p_point1(new Node<3>(1, 0.00, 0.00, 0.00));
     Node<3>::Pointer p_point2(new Node<3>(2, 0.00, 10.00, 0.00));
@@ -89,5 +87,4 @@ KRATOS_TEST_CASE_IN_SUITE(InterfaceObject, KratosMappingApplicationSerialTestSui
     // KRATOS_CHECK_EQUAL(*(p_interface_obj->pGetBaseGeometry()), *p_quad); // does not compile ...
 }
 
-}  // namespace Testing
-}  // namespace Kratos
+}  // namespace Kratos::Testing
