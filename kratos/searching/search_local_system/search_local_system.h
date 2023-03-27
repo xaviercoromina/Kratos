@@ -13,8 +13,7 @@
 // "Development and Implementation of a Parallel
 //  Framework for Non-Matching Grid Mapping"
 
-#if !defined(KRATOS_MAPPER_LOCAL_SYSTEM_H_INCLUDED )
-#define  KRATOS_MAPPER_LOCAL_SYSTEM_H_INCLUDED
+#pragma once
 
 // System includes
 
@@ -22,39 +21,39 @@
 
 // Project includes
 #include "includes/define.h"
-#include "mapper_interface_info.h"
+#include "searching/search_interface_info/search_interface_info.h"
 
 namespace Kratos
 {
-///@addtogroup MappingApplication
+///@addtogroup KratosCore
 ///@{
 
 ///@name Kratos Classes
 ///@{
 
-/// This is the "Condition" of the mappers
-/** This class assembles the local system for the mappers, using the Information that
- * was provided by the "MapperInterfaceInfo"
+/// This is the "Condition" of the search
+/** This class assembles the local system for the searches, using the Information that
+ * was provided by the "SearchInterfaceInfo"
 */
-class MapperLocalSystem
+class SearchLocalSystem
 {
 public:
     ///@name Type Definitions
     ///@{
 
-    /// Pointer definition of MapperLocalSystem
-    KRATOS_CLASS_POINTER_DEFINITION(MapperLocalSystem);
+    /// Pointer definition of SearchLocalSystem
+    KRATOS_CLASS_POINTER_DEFINITION(SearchLocalSystem);
 
-    typedef Kratos::shared_ptr<MapperInterfaceInfo> MapperInterfaceInfoPointerType;
-    typedef Kratos::unique_ptr<MapperLocalSystem> MapperLocalSystemUniquePointer;
+    using SearchInterfaceInfoPointerType = Kratos::shared_ptr<SearchInterfaceInfo>;
+    using SearchLocalSystemUniquePointer = Kratos::unique_ptr<SearchLocalSystem>;
 
-    typedef typename MapperInterfaceInfo::CoordinatesArrayType CoordinatesArrayType;
+    using CoordinatesArrayType = typename SearchInterfaceInfo::CoordinatesArrayType;
 
-    typedef Matrix MatrixType;
-    typedef std::vector<int> EquationIdVectorType; // int bcs of mpi
+    using MatrixType = Matrix;
+    using EquationIdVectorType = std::vector<int>; // int bcs of mpi
 
-    typedef InterfaceObject::NodePointerType NodePointerType;
-    typedef InterfaceObject::GeometryPointerType GeometryPointerType;
+    using NodePointerType = InterfaceObject::NodePointerType;
+    using GeometryPointerType = InterfaceObject::GeometryPointerType;
 
     ///@}
     ///@name  Enum's
@@ -72,7 +71,7 @@ public:
     ///@{
 
     /// Destructor.
-    virtual ~MapperLocalSystem() = default;
+    virtual ~SearchLocalSystem() = default;
 
     ///@}
     ///@name Operations
@@ -115,16 +114,16 @@ public:
     * @param rLocalMappingMatrix The vector conatining the mapping weights
     * @param rOriginIds The vector containing the ids on the origin
     * @param rDestinationIds The vector containing the ids on the destination
-    * @param rPairingStatus The pairingstatus of the MapperLocalSystem
+    * @param rPairingStatus The pairingstatus of the SearchLocalSystem
     * @see CalculateAll
     * @author Philipp Bucher
     */
     void ResizeToZero(MatrixType& rLocalMappingMatrix,
                       EquationIdVectorType& rOriginIds,
                       EquationIdVectorType& rDestinationIds,
-                      MapperLocalSystem::PairingStatus& rPairingStatus) const
+                      SearchLocalSystem::PairingStatus& rPairingStatus) const
     {
-        rPairingStatus = MapperLocalSystem::PairingStatus::NoInterfaceInfo;
+        rPairingStatus = SearchLocalSystem::PairingStatus::NoInterfaceInfo;
 
         rLocalMappingMatrix.resize(0, 0, false);
         rOriginIds.resize(0);
@@ -134,7 +133,7 @@ public:
     virtual CoordinatesArrayType& Coordinates() const = 0;
 
 
-    void AddInterfaceInfo(MapperInterfaceInfoPointerType pInterfaceInfo) // TODO pass by const ref?
+    void AddInterfaceInfo(SearchInterfaceInfoPointerType pInterfaceInfo) // TODO pass by const ref?
     {
         mInterfaceInfos.push_back(pInterfaceInfo);
     }
@@ -159,16 +158,15 @@ public:
         return HasInterfaceInfoThatIsNotAnApproximation();
     }
 
-    virtual MapperLocalSystemUniquePointer Create(NodePointerType pNode) const
+    virtual SearchLocalSystemUniquePointer Create(NodePointerType pNode) const
     {
         KRATOS_ERROR << "Create is not implemented for NodePointerType!" << std::endl;
     }
 
-    virtual MapperLocalSystemUniquePointer Create(GeometryPointerType pGeometry) const
+    virtual SearchLocalSystemUniquePointer Create(GeometryPointerType pGeometry) const
     {
         KRATOS_ERROR << "Create is not implemented for GeometryPointerType!" << std::endl;
     }
-
 
     virtual void Clear()
     {
@@ -196,7 +194,7 @@ public:
     virtual void PairingInfo(std::ostream& rOStream, const int EchoLevel) const = 0;
 
     /// Turn back information as a string.
-    virtual std::string Info() const {return "MapperLocalSystem";}
+    virtual std::string Info() const {return "SearchLocalSystem";}
 
     /// Print information about this object.
     virtual void PrintInfo(std::ostream& rOStream) const {}
@@ -210,13 +208,13 @@ protected:
     ///@name Protected Life Cycle
     ///@{
 
-    MapperLocalSystem() = default; // only accessbíble by derived classes
+    SearchLocalSystem() = default; // only accessbíble by derived classes
 
     ///@}
     ///@name Protected member Variables
     ///@{
 
-    std::vector<MapperInterfaceInfoPointerType> mInterfaceInfos;
+    std::vector<SearchInterfaceInfoPointerType> mInterfaceInfos;
 
     bool mIsComputed = false;
 
@@ -236,16 +234,14 @@ protected:
     virtual void CalculateAll(MatrixType& rLocalMappingMatrix,
                               EquationIdVectorType& rOriginIds,
                               EquationIdVectorType& rDestinationIds,
-                              MapperLocalSystem::PairingStatus& rPairingStatus) const = 0;
+                              SearchLocalSystem::PairingStatus& rPairingStatus) const = 0;
 
     ///@}
 
-}; // Class MapperLocalSystem
+}; // Class SearchLocalSystem
 
 ///@}
 
 ///@} addtogroup block
 
 }  // namespace Kratos.
-
-#endif // KRATOS_MAPPER_LOCAL_SYSTEM_H_INCLUDED  defined
