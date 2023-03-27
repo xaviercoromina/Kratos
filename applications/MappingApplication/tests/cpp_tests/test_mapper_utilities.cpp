@@ -23,8 +23,7 @@
 #include "custom_utilities/mapper_utilities.h"
 #include "custom_mappers/nearest_neighbor_mapper.h"
 
-namespace Kratos {
-namespace Testing {
+namespace Kratos::Testing {
 namespace {
 
 void CreateNodesForMapping(ModelPart& rModelPart, const int NumNodes)
