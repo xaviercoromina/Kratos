@@ -20,7 +20,7 @@
 
 // Kratos includes
 #include "utilities/contact_pair.h"
-#include "custom_searching/interface_object.h"
+#include "searching/interface_object.h"
 
 namespace Kratos
 {
