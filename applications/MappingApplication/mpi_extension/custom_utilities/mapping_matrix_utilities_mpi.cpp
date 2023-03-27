@@ -4,8 +4,8 @@
 //   _|\_\_|  \__,_|\__|\___/ ____/
 //                   Multi-Physics
 //
-//  License:		 BSD License
-//					 Kratos default license: kratos/license.txt
+//  License:         BSD License
+//                   Kratos default license: kratos/license.txt
 //
 //  Main authors:    Philipp Bucher, Jordi Cotela
 //
@@ -35,17 +35,17 @@ typedef typename MPIMapperDefinitions::DenseSpaceType  DenseSpaceType;
 
 typedef MappingMatrixUtilities<MappingSparseSpaceType, DenseSpaceType> MappingMatrixUtilitiesType;
 
-typedef typename MapperLocalSystem::MatrixType MatrixType;
-typedef typename MapperLocalSystem::EquationIdVectorType EquationIdVectorType;
+typedef typename SearchLocalSystem::MatrixType MatrixType;
+typedef typename SearchLocalSystem::EquationIdVectorType EquationIdVectorType;
 
-void ConstructRowColIdSets(std::vector<Kratos::unique_ptr<MapperLocalSystem>>& rMapperLocalSystems,
+void ConstructRowColIdSets(std::vector<Kratos::unique_ptr<SearchLocalSystem>>& rSearchLocalSystems,
                            std::set<int>& rRowEquationIds,
                            std::set<int>& rColEquationIds)
 {
     EquationIdVectorType origin_ids;
     EquationIdVectorType destination_ids;
 
-    for (auto& rp_local_sys : rMapperLocalSystems) {
+    for (auto& rp_local_sys : rSearchLocalSystems) {
         rp_local_sys->EquationIdVectors(origin_ids, destination_ids);
 
         rRowEquationIds.insert(destination_ids.begin(), destination_ids.end());
@@ -54,13 +54,13 @@ void ConstructRowColIdSets(std::vector<Kratos::unique_ptr<MapperLocalSystem>>& r
 }
 
 void ConstructMatrixStructure(Epetra_FECrsGraph& rGraph,
-                              std::vector<Kratos::unique_ptr<MapperLocalSystem>>& rMapperLocalSystems)
+                              std::vector<Kratos::unique_ptr<SearchLocalSystem>>& rSearchLocalSystems)
 {
     EquationIdVectorType origin_ids;
     EquationIdVectorType destination_ids;
     int ierr;
 
-    for (auto& rp_local_sys : rMapperLocalSystems) {
+    for (auto& rp_local_sys : rSearchLocalSystems) {
         rp_local_sys->EquationIdVectors(origin_ids, destination_ids);
 
         if (origin_ids.size() > 0) {
@@ -76,14 +76,14 @@ void ConstructMatrixStructure(Epetra_FECrsGraph& rGraph,
 }
 
 void BuildMatrix(Kratos::unique_ptr<typename MappingSparseSpaceType::MatrixType>& rpMdo,
-                 std::vector<Kratos::unique_ptr<MapperLocalSystem>>& rMapperLocalSystems)
+                 std::vector<Kratos::unique_ptr<SearchLocalSystem>>& rSearchLocalSystems)
 {
     MatrixType local_mapping_matrix;
     EquationIdVectorType origin_ids;
     EquationIdVectorType destination_ids;
     int ierr;
 
-    for (auto& rp_local_sys : rMapperLocalSystems) {
+    for (auto& rp_local_sys : rSearchLocalSystems) {
         rp_local_sys->CalculateLocalSystem(local_mapping_matrix, origin_ids, destination_ids);
 
         KRATOS_DEBUG_ERROR_IF(local_mapping_matrix.size1() != destination_ids.size()) << "MPI-MappingMatrixAssembly: DestinationID vector size mismatch: LocalMappingMatrix-Size1: " << local_mapping_matrix.size1() << " | DestinationIDs-size: " << destination_ids.size() << std::endl;
@@ -124,7 +124,7 @@ void MappingMatrixUtilitiesType::BuildMappingMatrix(
     Kratos::unique_ptr<typename MappingSparseSpaceType::VectorType>& rpInterfaceVectorDestination,
     const ModelPart& rModelPartOrigin,
     const ModelPart& rModelPartDestination,
-    std::vector<Kratos::unique_ptr<MapperLocalSystem>>& rMapperLocalSystems,
+    std::vector<Kratos::unique_ptr<SearchLocalSystem>>& rSearchLocalSystems,
     const int EchoLevel)
 {
     KRATOS_TRY
@@ -154,7 +154,7 @@ void MappingMatrixUtilitiesType::BuildMappingMatrix(
     // Construct vectors containing all the equation ids of rows and columns this processor contributes to
     std::set<int> row_equation_ids_set;
     std::set<int> col_equation_ids_set;
-    ConstructRowColIdSets(rMapperLocalSystems, row_equation_ids_set, col_equation_ids_set);
+    ConstructRowColIdSets(rSearchLocalSystems, row_equation_ids_set, col_equation_ids_set);
     std::vector<int> row_equation_ids(row_equation_ids_set.begin(), row_equation_ids_set.end());
     std::vector<int> col_equation_ids(col_equation_ids_set.begin(), col_equation_ids_set.end());
 
@@ -200,7 +200,7 @@ void MappingMatrixUtilitiesType::BuildMappingMatrix(
                                    epetra_col_map,
                                    num_indices_per_row);
 
-    ConstructMatrixStructure(epetra_graph, rMapperLocalSystems);
+    ConstructMatrixStructure(epetra_graph, rSearchLocalSystems);
 
     // range- and domain-map have to be passed since the matrix is rectangular
     int ierr = epetra_graph.GlobalAssemble(epetra_domain_map, epetra_range_map); // TODO check if it should call "FillComplete"
@@ -214,7 +214,7 @@ void MappingMatrixUtilitiesType::BuildMappingMatrix(
     Kratos::unique_ptr<typename MappingSparseSpaceType::MatrixType> p_Mdo =
         Kratos::make_unique<typename MappingSparseSpaceType::MatrixType>(Epetra_DataAccess::Copy, epetra_graph);
 
-    BuildMatrix(p_Mdo, rMapperLocalSystems);
+    BuildMatrix(p_Mdo, rSearchLocalSystems);
 
     // range- and domain-map have to be passed since the matrix is rectangular
     ierr = p_Mdo->GlobalAssemble(epetra_domain_map, epetra_range_map);

@@ -22,7 +22,7 @@
 
 // Project includes
 #include "includes/model_part.h"
-#include "custom_utilities/mapper_local_system.h"
+#include "searching/search_local_system/search_local_system.h"
 
 namespace Kratos {
 
@@ -40,7 +40,7 @@ static void BuildMappingMatrix(
     Kratos::unique_ptr<typename TSparseSpace::VectorType>& rpInterfaceVectorDestination,
     const ModelPart& rModelPartOrigin,
     const ModelPart& rModelPartDestination,
-    std::vector<Kratos::unique_ptr<MapperLocalSystem>>& rMapperLocalSystems,
+    std::vector<Kratos::unique_ptr<SearchLocalSystem>>& rSearchLocalSystems,
     const int EchoLevel);
 
 static void CheckRowSum(

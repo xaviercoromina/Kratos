@@ -32,8 +32,8 @@ typedef typename MapperDefinitions::DenseSpaceType  DenseSpaceType;
 
 typedef MappingMatrixUtilities<MappingSparseSpaceType, DenseSpaceType> MappingMatrixUtilitiesType;
 
-typedef typename MapperLocalSystem::MatrixType MatrixType;
-typedef typename MapperLocalSystem::EquationIdVectorType EquationIdVectorType;
+typedef typename SearchLocalSystem::MatrixType MatrixType;
+typedef typename SearchLocalSystem::EquationIdVectorType EquationIdVectorType;
 
 typedef std::size_t IndexType;
 typedef std::size_t SizeType;
@@ -43,7 +43,7 @@ typedef std::size_t SizeType;
 /***********************************************************************************/
 
 void ConstructMatrixStructure(Kratos::unique_ptr<typename MappingSparseSpaceType::MatrixType>& rpMdo,
-                              std::vector<Kratos::unique_ptr<MapperLocalSystem>>& rMapperLocalSystems,
+                              std::vector<Kratos::unique_ptr<SearchLocalSystem>>& rSearchLocalSystems,
                               const SizeType NumNodesOrigin,
                               const SizeType NumNodesDestination)
 {
@@ -62,7 +62,7 @@ void ConstructMatrixStructure(Kratos::unique_ptr<typename MappingSparseSpaceType
 
     // Looping the local-systems to get the entries for the matrix
     // TODO omp
-    for (/*const*/auto& r_local_sys : rMapperLocalSystems) { // TODO I think this can be const bcs it is the ptr
+    for (/*const*/auto& r_local_sys : rSearchLocalSystems) { // TODO I think this can be const bcs it is the ptr
         r_local_sys->EquationIdVectors(origin_ids, destination_ids);
         for (const auto dest_idx : destination_ids) {
             indices[dest_idx].insert(origin_ids.begin(), origin_ids.end());
@@ -111,13 +111,13 @@ void ConstructMatrixStructure(Kratos::unique_ptr<typename MappingSparseSpaceType
 }
 
 void BuildMatrix(Kratos::unique_ptr<typename MappingSparseSpaceType::MatrixType>& rpMdo,
-                 std::vector<Kratos::unique_ptr<MapperLocalSystem>>& rMapperLocalSystems)
+                 std::vector<Kratos::unique_ptr<SearchLocalSystem>>& rSearchLocalSystems)
 {
     MatrixType local_mapping_matrix;
     EquationIdVectorType origin_ids;
     EquationIdVectorType destination_ids;
 
-    for (auto& r_local_sys : rMapperLocalSystems) { // TODO omp
+    for (auto& r_local_sys : rSearchLocalSystems) { // TODO omp
 
         r_local_sys->CalculateLocalSystem(local_mapping_matrix, origin_ids, destination_ids);
 
@@ -189,7 +189,7 @@ void MappingMatrixUtilitiesType::BuildMappingMatrix(
     Kratos::unique_ptr<typename MappingSparseSpaceType::VectorType>& rpInterfaceVectorDestination,
     const ModelPart& rModelPartOrigin,
     const ModelPart& rModelPartDestination,
-    std::vector<Kratos::unique_ptr<MapperLocalSystem>>& rMapperLocalSystems,
+    std::vector<Kratos::unique_ptr<SearchLocalSystem>>& rSearchLocalSystems,
     const int EchoLevel)
 {
     KRATOS_TRY
@@ -201,10 +201,10 @@ void MappingMatrixUtilitiesType::BuildMappingMatrix(
 
     // Initialize the Matrix
     // This has to be done always since the Graph has changed if the Interface is updated!
-    ConstructMatrixStructure(rpMappingMatrix, rMapperLocalSystems,
+    ConstructMatrixStructure(rpMappingMatrix, rSearchLocalSystems,
                              num_nodes_origin, num_nodes_destination);
 
-    BuildMatrix(rpMappingMatrix, rMapperLocalSystems);
+    BuildMatrix(rpMappingMatrix, rSearchLocalSystems);
 
     // refactor to be used from the mapper directly
     // if (EchoLevel > 2) {

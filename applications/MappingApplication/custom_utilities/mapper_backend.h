@@ -18,7 +18,7 @@
 // External includes
 
 // Project includes
-#include "custom_searching/interface_communicator.h"
+#include "searching/interface_communicator.h"
 #include "custom_utilities/mapping_matrix_utilities.h"
 #include "custom_utilities/interface_vector_container.h"
 
