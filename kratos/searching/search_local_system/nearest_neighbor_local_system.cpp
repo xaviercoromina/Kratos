@@ -18,54 +18,45 @@
 // External includes
 
 // Project includes
-#include "nearest_neighbor_mapper.h"
-#include "mapping_application_variables.h"
+#include "includes/variables.h"
+#include "searching/search_local_system/nearest_neighbor_local_system.h"
+#include "searching/search_interface_info/nearest_neighbor_interface_info.h"
 
-namespace Kratos {
-
-void NearestNeighborInterfaceInfo::ProcessSearchResult(const InterfaceObject& rInterfaceObject)
+namespace Kratos
 {
-    SetLocalSearchWasSuccessful();
+///@name Kratos Classes
+///@{
 
-    const double neighbor_distance = MapperUtilities::ComputeDistance(this->Coordinates(), rInterfaceObject.Coordinates());
-
-    if (neighbor_distance < mNearestNeighborDistance) {
-        mNearestNeighborDistance = neighbor_distance;
-        mNearestNeighborId.resize(1);
-        mNearestNeighborId[0] = rInterfaceObject.pGetBaseNode()->GetValue(INTERFACE_EQUATION_ID);
-    } else if (neighbor_distance == mNearestNeighborDistance) {
-        mNearestNeighborId.push_back(rInterfaceObject.pGetBaseNode()->GetValue(INTERFACE_EQUATION_ID));
-    }
-}
-
-void NearestNeighborLocalSystem::CalculateAll(MatrixType& rLocalMappingMatrix,
-                    EquationIdVectorType& rOriginIds,
-                    EquationIdVectorType& rDestinationIds,
-                    MapperLocalSystem::PairingStatus& rPairingStatus) const
+void NearestNeighborLocalSystem::CalculateAll(
+    MatrixType& rLocalMappingMatrix,
+    EquationIdVectorType& rOriginIds,
+    EquationIdVectorType& rDestinationIds,
+    SearchLocalSystem::PairingStatus& rPairingStatus
+    ) const
 {
     if (mInterfaceInfos.size() > 0) {
-        rPairingStatus = MapperLocalSystem::PairingStatus::InterfaceInfoFound;
+        rPairingStatus = SearchLocalSystem::PairingStatus::InterfaceInfoFound;
 
         if (rDestinationIds.size() != 1) rDestinationIds.resize(1);
 
         std::vector<int> nearest_neighbor_id;
         double nearest_neighbor_distance;
-        mInterfaceInfos[0]->GetValue(nearest_neighbor_id, MapperInterfaceInfo::InfoType::Dummy);
-        mInterfaceInfos[0]->GetValue(nearest_neighbor_distance, MapperInterfaceInfo::InfoType::Dummy);
+        mInterfaceInfos[0]->GetValue(nearest_neighbor_id, SearchInterfaceInfo::InfoType::Dummy);
+        mInterfaceInfos[0]->GetValue(nearest_neighbor_distance, SearchInterfaceInfo::InfoType::Dummy);
         rOriginIds = nearest_neighbor_id;
 
         for (std::size_t i=1; i<mInterfaceInfos.size(); ++i) {
             // no check if this InterfaceInfo is an approximation is necessary
             // bcs this does not exist for NearestNeighbor
             double distance;
-            mInterfaceInfos[i]->GetValue(distance, MapperInterfaceInfo::InfoType::Dummy);
+            mInterfaceInfos[i]->GetValue(distance, SearchInterfaceInfo::InfoType::Dummy);
 
             if (distance < nearest_neighbor_distance) {
                 nearest_neighbor_distance = distance;
-                mInterfaceInfos[i]->GetValue(nearest_neighbor_id, MapperInterfaceInfo::InfoType::Dummy);
+                mInterfaceInfos[i]->GetValue(nearest_neighbor_id, SearchInterfaceInfo::InfoType::Dummy);
                 rOriginIds = nearest_neighbor_id;
             } else if (distance == nearest_neighbor_distance) {
-                mInterfaceInfos[i]->GetValue(nearest_neighbor_id, MapperInterfaceInfo::InfoType::Dummy);
+                mInterfaceInfos[i]->GetValue(nearest_neighbor_id, SearchInterfaceInfo::InfoType::Dummy);
                 rOriginIds.insert(rOriginIds.end(), nearest_neighbor_id.begin(), nearest_neighbor_id.end()); // appending to end
             }
         }
@@ -85,6 +76,9 @@ void NearestNeighborLocalSystem::CalculateAll(MatrixType& rLocalMappingMatrix,
     }
 }
 
+/***********************************************************************************/
+/***********************************************************************************/
+
 void NearestNeighborLocalSystem::PairingInfo(std::ostream& rOStream, const int EchoLevel) const
 {
     KRATOS_DEBUG_ERROR_IF_NOT(mpNode) << "Members are not intitialized!" << std::endl;
@@ -94,14 +88,17 @@ void NearestNeighborLocalSystem::PairingInfo(std::ostream& rOStream, const int E
         rOStream << " at Coordinates " << Coordinates()[0] << " | " << Coordinates()[1] << " | " << Coordinates()[2];
     }
 }
+/***********************************************************************************/
+/***********************************************************************************/
 
 void NearestNeighborLocalSystem::SetPairingStatusForPrinting()
 {
-    if (mPairingStatus == MapperLocalSystem::PairingStatus::Approximation) {
+    if (mPairingStatus == SearchLocalSystem::PairingStatus::Approximation) {
         mpNode->SetValue(PAIRING_STATUS, 0);
     } else {
         mpNode->SetValue(PAIRING_STATUS, -1);
     }
 }
 
+///@} addtogroup block
 }  // namespace Kratos.

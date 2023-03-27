@@ -19,7 +19,7 @@
 // Project includes
 #include "interpolative_mapper_base.h"
 #include "custom_utilities/closest_points.h"
-#include "custom_utilities/projection_utilities.h"
+#include "utilities/projection_utilities.h"
 
 namespace Kratos
 {
@@ -32,7 +32,7 @@ enum class BarycentricInterpolationType {
     TETRAHEDRA
 };
 
-class KRATOS_API(MAPPING_APPLICATION) BarycentricInterfaceInfo : public MapperInterfaceInfo
+class KRATOS_API(MAPPING_APPLICATION) BarycentricInterfaceInfo : public SearchInterfaceInfo
 {
 public:
     explicit BarycentricInterfaceInfo(const BarycentricInterpolationType InterpolationType);
@@ -42,9 +42,9 @@ public:
                                       const IndexType SourceRank,
                                       const BarycentricInterpolationType InterpolationType);
 
-    MapperInterfaceInfo::Pointer Create() const override;
+    SearchInterfaceInfo::Pointer Create() const override;
 
-    MapperInterfaceInfo::Pointer Create(const CoordinatesArrayType& rCoordinates,
+    SearchInterfaceInfo::Pointer Create(const CoordinatesArrayType& rCoordinates,
                                         const IndexType SourceLocalSystemIndex,
                                         const IndexType SourceRank) const override;
 
@@ -70,7 +70,7 @@ private:
     void load(Serializer& rSerializer) override;
 };
 
-class KRATOS_API(MAPPING_APPLICATION) BarycentricLocalSystem : public MapperLocalSystem
+class KRATOS_API(MAPPING_APPLICATION) BarycentricLocalSystem : public SearchLocalSystem
 {
 public:
 
@@ -79,7 +79,7 @@ public:
     void CalculateAll(MatrixType& rLocalMappingMatrix,
                       EquationIdVectorType& rOriginIds,
                       EquationIdVectorType& rDestinationIds,
-                      MapperLocalSystem::PairingStatus& rPairingStatus) const override;
+                      SearchLocalSystem::PairingStatus& rPairingStatus) const override;
 
     CoordinatesArrayType& Coordinates() const override
     {
@@ -87,7 +87,7 @@ public:
         return mpNode->Coordinates();
     }
 
-    MapperLocalSystemUniquePointer Create(NodePointerType pNode) const override
+    SearchLocalSystemUniquePointer Create(NodePointerType pNode) const override
     {
         return Kratos::make_unique<BarycentricLocalSystem>(pNode);
     }
@@ -121,7 +121,7 @@ public:
 
     typedef InterpolativeMapperBase<TSparseSpace, TDenseSpace, TMapperBackend> BaseType;
     typedef typename BaseType::MapperUniquePointerType MapperUniquePointerType;
-    typedef typename BaseType::MapperInterfaceInfoUniquePointerType MapperInterfaceInfoUniquePointerType;
+    typedef typename BaseType::SearchInterfaceInfoUniquePointerType SearchInterfaceInfoUniquePointerType;
 
     ///@}
     ///@name Life Cycle
@@ -221,17 +221,17 @@ private:
     ///@name Private Operations
     ///@{
 
-    void CreateMapperLocalSystems(
+    void CreateSearchLocalSystems(
         const Communicator& rModelPartCommunicator,
-        std::vector<Kratos::unique_ptr<MapperLocalSystem>>& rLocalSystems) override
+        std::vector<Kratos::unique_ptr<SearchLocalSystem>>& rLocalSystems) override
     {
-        MapperUtilities::CreateMapperLocalSystemsFromNodes(
+        MapperUtilities::CreateSearchLocalSystemsFromNodes(
             BarycentricLocalSystem(nullptr),
             rModelPartCommunicator,
             rLocalSystems);
     }
 
-    MapperInterfaceInfoUniquePointerType GetMapperInterfaceInfo() const override
+    SearchInterfaceInfoUniquePointerType GetSearchInterfaceInfo() const override
     {
         return Kratos::make_unique<BarycentricInterfaceInfo>(mInterpolationType);
     }

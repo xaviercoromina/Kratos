@@ -30,7 +30,7 @@ namespace Kratos {
 void CouplingGeometryLocalSystem::CalculateAll(MatrixType& rLocalMappingMatrix,
                     EquationIdVectorType& rOriginIds,
                     EquationIdVectorType& rDestinationIds,
-                    MapperLocalSystem::PairingStatus& rPairingStatus) const
+                    SearchLocalSystem::PairingStatus& rPairingStatus) const
 {
     const IndexType slave_index = (mIsDestinationIsSlave) ? 1 : 0;
     const IndexType master_index = 1 - slave_index;
@@ -47,7 +47,7 @@ void CouplingGeometryLocalSystem::CalculateAll(MatrixType& rLocalMappingMatrix,
     const std::size_t number_of_nodes_master = r_geometry_master.size();
     const std::size_t number_of_nodes_slave = r_geometry_slave.size();
 
-    rPairingStatus = MapperLocalSystem::PairingStatus::InterfaceInfoFound;
+    rPairingStatus = SearchLocalSystem::PairingStatus::InterfaceInfoFound;
 
     if (rLocalMappingMatrix.size1() != number_of_nodes_slave || rLocalMappingMatrix.size2() != number_of_nodes_master) {
         rLocalMappingMatrix.resize(number_of_nodes_slave, number_of_nodes_master, false);
@@ -155,13 +155,13 @@ void CouplingGeometryMapper<TSparseSpace, TDenseSpace>::InitializeInterface(Krat
     CouplingGeometryLocalSystem ref_projector_local_system(nullptr, true, dual_mortar, direct_map_to_destination);
     CouplingGeometryLocalSystem ref_slave_local_system(nullptr, false, dual_mortar, direct_map_to_destination);
 
-    MapperUtilities::CreateMapperLocalSystemsFromGeometries(ref_projector_local_system,
+    MapperUtilities::CreateSearchLocalSystemsFromGeometries(ref_projector_local_system,
                              mpCouplingMP->GetCommunicator(),
-                             mMapperLocalSystemsProjector);
+                             mSearchLocalSystemsProjector);
 
-    MapperUtilities::CreateMapperLocalSystemsFromGeometries(ref_slave_local_system,
+    MapperUtilities::CreateSearchLocalSystemsFromGeometries(ref_slave_local_system,
                              mpCouplingMP->GetCommunicator(),
-                             mMapperLocalSystemsSlave);
+                             mSearchLocalSystemsSlave);
 
     AssignInterfaceEquationIds(); // Has to be done every time in case of overlapping interfaces!
 
@@ -177,7 +177,7 @@ void CouplingGeometryMapper<TSparseSpace, TDenseSpace>::InitializeInterface(Krat
         mpInterfaceVectorContainerSlave->pGetVector(),
         mpInterfaceVectorContainerSlave->GetModelPart(),
         mpInterfaceVectorContainerSlave->GetModelPart(),
-        mMapperLocalSystemsSlave,
+        mSearchLocalSystemsSlave,
         0); // The echo-level is no longer neeed here, refactor in separate PR
 
     MappingMatrixUtilities<TSparseSpace, TDenseSpace>::BuildMappingMatrix(
@@ -186,7 +186,7 @@ void CouplingGeometryMapper<TSparseSpace, TDenseSpace>::InitializeInterface(Krat
         mpInterfaceVectorContainerSlave->pGetVector(),
         mpInterfaceVectorContainerMaster->GetModelPart(),
         mpInterfaceVectorContainerSlave->GetModelPart(),
-        mMapperLocalSystemsProjector,
+        mSearchLocalSystemsProjector,
         0); // The echo-level is no longer neeed here, refactor in separate PR
 
     // Perform consistency scaling if requested

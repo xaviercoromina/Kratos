@@ -21,7 +21,7 @@
 // Project includes
 #include "mappers/mapper.h"
 #include "custom_utilities/interface_vector_container.h"
-#include "custom_utilities/mapper_local_system.h"
+#include "searching/search_local_system/search_local_system.h"
 
 #include "custom_utilities/mapping_intersection_utilities.h"
 #include "custom_modelers/mapping_geometries_modeler.h"
@@ -34,7 +34,7 @@ namespace Kratos
 ///@name Kratos Classes
 ///@{
 
-class CouplingGeometryLocalSystem : public MapperLocalSystem
+class CouplingGeometryLocalSystem : public SearchLocalSystem
 {
 public:
 
@@ -52,7 +52,7 @@ public:
     void CalculateAll(MatrixType& rLocalMappingMatrix,
                       EquationIdVectorType& rOriginIds,
                       EquationIdVectorType& rDestinationIds,
-                      MapperLocalSystem::PairingStatus& rPairingStatus) const override;
+                      SearchLocalSystem::PairingStatus& rPairingStatus) const override;
 
     CoordinatesArrayType& Coordinates() const override
     {
@@ -61,7 +61,7 @@ public:
         KRATOS_ERROR << "not implemented, needs checking" << std::endl;
     }
 
-    MapperLocalSystemUniquePointer Create(GeometryPointerType pGeometry) const override
+    SearchLocalSystemUniquePointer Create(GeometryPointerType pGeometry) const override
     {
         return Kratos::make_unique<CouplingGeometryLocalSystem>(pGeometry, mIsProjection, mIsDualMortar, mIsDestinationIsSlave);
     }
@@ -105,8 +105,8 @@ public:
 
     typedef Mapper<TSparseSpace, TDenseSpace> BaseType;
 
-    typedef Kratos::unique_ptr<MapperLocalSystem> MapperLocalSystemPointer;
-    typedef std::vector<MapperLocalSystemPointer> MapperLocalSystemPointerVector;
+    typedef Kratos::unique_ptr<SearchLocalSystem> SearchLocalSystemPointer;
+    typedef std::vector<SearchLocalSystemPointer> SearchLocalSystemPointerVector;
 
     typedef InterfaceVectorContainer<TSparseSpace, TDenseSpace> InterfaceVectorContainerType;
     typedef Kratos::unique_ptr<InterfaceVectorContainerType> InterfaceVectorContainerPointerType;
@@ -299,8 +299,8 @@ private:
 
     TSystemVectorUniquePointerType mpTempVector;
 
-    MapperLocalSystemPointerVector mMapperLocalSystemsProjector;
-    MapperLocalSystemPointerVector mMapperLocalSystemsSlave;
+    SearchLocalSystemPointerVector mSearchLocalSystemsProjector;
+    SearchLocalSystemPointerVector mSearchLocalSystemsSlave;
 
     InterfaceVectorContainerPointerType mpInterfaceVectorContainerMaster;
     InterfaceVectorContainerPointerType mpInterfaceVectorContainerSlave;

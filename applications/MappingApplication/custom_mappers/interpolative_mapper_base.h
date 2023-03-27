@@ -26,12 +26,12 @@
 
 #include "mappers/mapper.h"
 #include "mapping_application_variables.h"
-#include "custom_searching/interface_communicator.h"
+#include "searching/interface_communicator.h"
 #include "custom_utilities/interface_vector_container.h"
 #include "mappers/mapper_flags.h"
 #include "utilities/parallel_utilities.h"
 #include "utilities/reduction_utilities.h"
-#include "custom_utilities/mapper_local_system.h"
+#include "searching/search_local_system/search_local_system.h"
 #include "custom_utilities/mapping_matrix_utilities.h"
 #include "custom_utilities/mapper_utilities.h"
 
@@ -50,26 +50,26 @@ public:
 
     /// Interface definitions
     typedef typename TMapperBackend::InterfaceCommunicatorType InterfaceCommunicatorType;
-    typedef typename InterfaceCommunicator::MapperInterfaceInfoUniquePointerType MapperInterfaceInfoUniquePointerType;
+    typedef typename InterfaceCommunicator::SearchInterfaceInfoUniquePointerType SearchInterfaceInfoUniquePointerType;
 
     ///@}
     ///@name Operations
     ///@{
 
     template<class TMapper>
-    static void CreateMapperLocalSystems(
+    static void CreateSearchLocalSystems(
         TMapper& rMapper,
         const Communicator& rModelPartCommunicator,
-        std::vector<Kratos::unique_ptr<MapperLocalSystem>>& rLocalSystems
+        std::vector<Kratos::unique_ptr<SearchLocalSystem>>& rLocalSystems
         )
     {
-        rMapper.CreateMapperLocalSystems(rModelPartCommunicator, rLocalSystems);
+        rMapper.CreateSearchLocalSystems(rModelPartCommunicator, rLocalSystems);
     }
 
     template<class TMapper>
-    static MapperInterfaceInfoUniquePointerType GetMapperInterfaceInfo(const TMapper& rMapper)
+    static SearchInterfaceInfoUniquePointerType GetSearchInterfaceInfo(const TMapper& rMapper)
     {
-        return rMapper.GetMapperInterfaceInfo();
+        return rMapper.GetSearchInterfaceInfo();
     }
 
     ///@}
@@ -90,10 +90,10 @@ public:
 
     typedef typename TMapperBackend::InterfaceCommunicatorType InterfaceCommunicatorType;
     typedef Kratos::unique_ptr<InterfaceCommunicator> InterfaceCommunicatorPointerType;
-    typedef typename InterfaceCommunicator::MapperInterfaceInfoUniquePointerType MapperInterfaceInfoUniquePointerType;
+    typedef typename InterfaceCommunicator::SearchInterfaceInfoUniquePointerType SearchInterfaceInfoUniquePointerType;
 
-    typedef Kratos::unique_ptr<MapperLocalSystem> MapperLocalSystemPointer;
-    typedef std::vector<MapperLocalSystemPointer> MapperLocalSystemPointerVector;
+    typedef Kratos::unique_ptr<SearchLocalSystem> SearchLocalSystemPointer;
+    typedef std::vector<SearchLocalSystemPointer> SearchLocalSystemPointerVector;
 
     typedef InterfaceVectorContainer<TSparseSpace, TDenseSpace> InterfaceVectorContainerType;
     typedef Kratos::unique_ptr<InterfaceVectorContainerType> InterfaceVectorContainerPointerType;
@@ -346,7 +346,7 @@ private:
 
     MapperUniquePointerType mpInverseMapper = nullptr;
 
-    MapperLocalSystemPointerVector mMapperLocalSystems;
+    SearchLocalSystemPointerVector mSearchLocalSystems;
 
     InterfaceVectorContainerPointerType mpInterfaceVectorContainerOrigin;
     InterfaceVectorContainerPointerType mpInterfaceVectorContainerDestination;
@@ -359,8 +359,8 @@ private:
     {
         KRATOS_TRY;
 
-        CreateMapperLocalSystems(mrModelPartDestination.GetCommunicator(),
-                                 mMapperLocalSystems);
+        CreateSearchLocalSystems(mrModelPartDestination.GetCommunicator(),
+                                 mSearchLocalSystems);
 
         const bool use_initial_configuration = mMapperSettings["use_initial_configuration"].GetBool();
 
@@ -376,10 +376,10 @@ private:
 
         auto p_interface_comm = Kratos::make_unique<InterfaceCommunicatorType>(
             mrModelPartOrigin,
-            mMapperLocalSystems,
+            mSearchLocalSystems,
             mMapperSettings["search_settings"]);
 
-        const MapperInterfaceInfoUniquePointerType p_ref_interface_info = GetMapperInterfaceInfo();
+        const SearchInterfaceInfoUniquePointerType p_ref_interface_info = GetSearchInterfaceInfo();
 
         p_interface_comm->ExchangeInterfaceData(mrModelPartDestination.GetCommunicator(),
                                                       p_ref_interface_info);
@@ -395,7 +395,7 @@ private:
             mpInterfaceVectorContainerDestination->pGetVector(),
             mpInterfaceVectorContainerOrigin->GetModelPart(),
             mpInterfaceVectorContainerDestination->GetModelPart(),
-            mMapperLocalSystems,
+            mSearchLocalSystems,
             echo_level);
 
         if (use_initial_configuration) {
@@ -406,8 +406,8 @@ private:
         PrintPairingInfo(echo_level);
 
         // free memory
-        mMapperLocalSystems.clear();
-        mMapperLocalSystems.shrink_to_fit();
+        mSearchLocalSystems.clear();
+        mSearchLocalSystems.shrink_to_fit();
 
         KRATOS_CATCH("");
     }
@@ -495,16 +495,16 @@ private:
         if (r_data_comm.IsNullOnThisRank()) {return;}
 
         if (EchoLevel > 2) {
-            for (const auto& rp_local_sys : mMapperLocalSystems) {
+            for (const auto& rp_local_sys : mSearchLocalSystems) {
                 const auto pairing_status = rp_local_sys->GetPairingStatus();
 
-                if (pairing_status != MapperLocalSystem::PairingStatus::InterfaceInfoFound) {
+                if (pairing_status != SearchLocalSystem::PairingStatus::InterfaceInfoFound) {
                     std::stringstream warning_msg;
                     rp_local_sys->PairingInfo(warning_msg, EchoLevel);
 
-                    if (pairing_status == MapperLocalSystem::PairingStatus::Approximation) {
+                    if (pairing_status == SearchLocalSystem::PairingStatus::Approximation) {
                         warning_msg << " is using an approximation";
-                    } else if (pairing_status == MapperLocalSystem::PairingStatus::NoInterfaceInfo) {
+                    } else if (pairing_status == SearchLocalSystem::PairingStatus::NoInterfaceInfo) {
                         warning_msg << " has not found a neighbor";
                     }
 
@@ -516,12 +516,12 @@ private:
         if (EchoLevel > 0) {
             using TwoReduction = CombinedReduction<SumReduction<int>, SumReduction<int>>;
             int approximations, no_neighbor;
-            std::tie(approximations, no_neighbor) = block_for_each<TwoReduction>(mMapperLocalSystems,
-                [](const MapperLocalSystemPointer& rpLocalSys){
+            std::tie(approximations, no_neighbor) = block_for_each<TwoReduction>(mSearchLocalSystems,
+                [](const SearchLocalSystemPointer& rpLocalSys){
                     const auto pairing_status = rpLocalSys->GetPairingStatus();
-                    if (pairing_status == MapperLocalSystem::PairingStatus::Approximation) {
+                    if (pairing_status == SearchLocalSystem::PairingStatus::Approximation) {
                         return std::make_tuple(1,0);
-                    } else if (pairing_status == MapperLocalSystem::PairingStatus::NoInterfaceInfo) {
+                    } else if (pairing_status == SearchLocalSystem::PairingStatus::NoInterfaceInfo) {
                         return std::make_tuple(0,1);
                     }
                     return std::make_tuple(0,0);
@@ -541,7 +541,7 @@ private:
             // initialize data
             VariableUtils().SetNonHistoricalVariable(PAIRING_STATUS, 1, mrModelPartDestination.Nodes());
 
-            block_for_each(mMapperLocalSystems, [](const MapperLocalSystemPointer& rpLocalSys){
+            block_for_each(mSearchLocalSystems, [](const SearchLocalSystemPointer& rpLocalSys){
                 rpLocalSys->SetPairingStatusForPrinting();
             });
 
@@ -570,11 +570,11 @@ private:
     friend class AccessorInterpolativeMapperBase<TMapperBackend>;
 
     // functions for customizing the behavior of this Mapper
-    virtual void CreateMapperLocalSystems(
+    virtual void CreateSearchLocalSystems(
         const Communicator& rModelPartCommunicator,
-        std::vector<Kratos::unique_ptr<MapperLocalSystem>>& rLocalSystems) = 0;
+        std::vector<Kratos::unique_ptr<SearchLocalSystem>>& rLocalSystems) = 0;
 
-    virtual MapperInterfaceInfoUniquePointerType GetMapperInterfaceInfo() const = 0;
+    virtual SearchInterfaceInfoUniquePointerType GetSearchInterfaceInfo() const = 0;
 
     virtual Parameters GetMapperDefaultSettings() const = 0;
 

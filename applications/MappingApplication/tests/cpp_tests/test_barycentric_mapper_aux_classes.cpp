@@ -26,9 +26,9 @@
 namespace Kratos {
 namespace Testing {
 
-typedef typename MapperLocalSystem::MatrixType MatrixType;
-typedef typename MapperLocalSystem::EquationIdVectorType EquationIdVectorType;
-typedef Kratos::shared_ptr<MapperInterfaceInfo> MapperInterfaceInfoPointerType;
+typedef typename SearchLocalSystem::MatrixType MatrixType;
+typedef typename SearchLocalSystem::EquationIdVectorType EquationIdVectorType;
+typedef Kratos::shared_ptr<SearchInterfaceInfo> SearchInterfaceInfoPointerType;
 
 typedef Node<3> NodeType;
 
@@ -204,7 +204,7 @@ KRATOS_TEST_CASE_IN_SUITE(BarycentricLocalSystem_simple_line_interpolation, Krat
 
     std::size_t source_local_sys_idx = 123;
 
-    MapperInterfaceInfoPointerType p_interface_info(Kratos::make_shared<BarycentricInterfaceInfo>(coords, source_local_sys_idx, 0, BarycentricInterpolationType::LINE));
+    SearchInterfaceInfoPointerType p_interface_info(Kratos::make_shared<BarycentricInterfaceInfo>(coords, source_local_sys_idx, 0, BarycentricInterpolationType::LINE));
 
     auto node_1(Kratos::make_intrusive<NodeType>(3,  1.0, 0.0, 0.0)); // second closest
     auto node_2(Kratos::make_intrusive<NodeType>(15, 0.0, 0.0, 0.0)); // closest
@@ -297,14 +297,14 @@ KRATOS_TEST_CASE_IN_SUITE(BarycentricInterfaceInfo_simple_triangle_interpolation
     KRATOS_SKIP_TEST << "this test needs some updates" << std::endl;
 
     std::vector<int> found_ids;
-    barycentric_info.GetValue(found_ids, MapperInterfaceInfo::InfoType::Dummy);
+    barycentric_info.GetValue(found_ids, SearchInterfaceInfo::InfoType::Dummy);
     KRATOS_CHECK_EQUAL(found_ids.size(), 3);
     KRATOS_CHECK_EQUAL(found_ids[0], 13);
     KRATOS_CHECK_EQUAL(found_ids[1], 5);
     KRATOS_CHECK_EQUAL(found_ids[2], 108);
 
     std::vector<double> neighbor_coords;
-    barycentric_info.GetValue(neighbor_coords, MapperInterfaceInfo::InfoType::Dummy);
+    barycentric_info.GetValue(neighbor_coords, SearchInterfaceInfo::InfoType::Dummy);
     const std::vector<double> exp_results {
         0.0, 0.0, 0.0,
         1.0, 0.0, 0.0,
@@ -359,14 +359,14 @@ KRATOS_TEST_CASE_IN_SUITE(BarycentricInterfaceInfo_triangle_collinear_nodes_inte
     KRATOS_SKIP_TEST << "this test needs some updates" << std::endl;
 
     std::vector<int> found_ids;
-    barycentric_info.GetValue(found_ids, MapperInterfaceInfo::InfoType::Dummy);
+    barycentric_info.GetValue(found_ids, SearchInterfaceInfo::InfoType::Dummy);
     KRATOS_CHECK_EQUAL(found_ids.size(), 3);
     KRATOS_CHECK_EQUAL(found_ids[0], 13);
     KRATOS_CHECK_EQUAL(found_ids[1], 64);
     KRATOS_CHECK_EQUAL(found_ids[2], 108);
 
     std::vector<double> neighbor_coords;
-    barycentric_info.GetValue(neighbor_coords, MapperInterfaceInfo::InfoType::Dummy);
+    barycentric_info.GetValue(neighbor_coords, SearchInterfaceInfo::InfoType::Dummy);
     const std::vector<double> exp_results {
         0.0, 0.0, 0.0,
         0.5, 0.0, 0.0,
@@ -405,14 +405,14 @@ KRATOS_TEST_CASE_IN_SUITE(BarycentricInterfaceInfo_triangle_only_collinear_nodes
     KRATOS_SKIP_TEST << "this test needs some updates" << std::endl;
 
     std::vector<int> found_ids;
-    barycentric_info.GetValue(found_ids, MapperInterfaceInfo::InfoType::Dummy);
+    barycentric_info.GetValue(found_ids, SearchInterfaceInfo::InfoType::Dummy);
     KRATOS_CHECK_EQUAL(found_ids.size(), 3);
     KRATOS_CHECK_EQUAL(found_ids[0], 13);
     KRATOS_CHECK_EQUAL(found_ids[1], 108);
     KRATOS_CHECK_EQUAL(found_ids[2], -1);
 
     std::vector<double> neighbor_coords;
-    barycentric_info.GetValue(neighbor_coords, MapperInterfaceInfo::InfoType::Dummy);
+    barycentric_info.GetValue(neighbor_coords, SearchInterfaceInfo::InfoType::Dummy);
     const std::vector<double> exp_results {
         0.0, 0.0, 0.0,
         0.5, 0.0, 0.0,
@@ -455,7 +455,7 @@ KRATOS_TEST_CASE_IN_SUITE(BarycentricInterfaceInfo_simple_tetra_interpolation, K
     KRATOS_SKIP_TEST << "this test needs some updates" << std::endl;
 
     std::vector<int> found_ids;
-    barycentric_info.GetValue(found_ids, MapperInterfaceInfo::InfoType::Dummy);
+    barycentric_info.GetValue(found_ids, SearchInterfaceInfo::InfoType::Dummy);
     KRATOS_CHECK_EQUAL(found_ids.size(), 4);
     KRATOS_CHECK_EQUAL(found_ids[0], 13);
     KRATOS_CHECK_EQUAL(found_ids[1], 5);
@@ -463,7 +463,7 @@ KRATOS_TEST_CASE_IN_SUITE(BarycentricInterfaceInfo_simple_tetra_interpolation, K
     KRATOS_CHECK_EQUAL(found_ids[3], 41);
 
     std::vector<double> neighbor_coords;
-    barycentric_info.GetValue(neighbor_coords, MapperInterfaceInfo::InfoType::Dummy);
+    barycentric_info.GetValue(neighbor_coords, SearchInterfaceInfo::InfoType::Dummy);
     const std::vector<double> exp_results {
         0.0, 0.0, 0.0,
         1.0, 0.0, 0.0,

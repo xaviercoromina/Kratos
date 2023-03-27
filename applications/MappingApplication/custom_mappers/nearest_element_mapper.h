@@ -21,148 +21,13 @@
 
 // Project includes
 #include "interpolative_mapper_base.h"
-#include "custom_utilities/projection_utilities.h"
+#include "searching/search_local_system/nearest_element_local_system.h"
+#include "searching/search_interface_info/nearest_element_interface_info.h"
 
 namespace Kratos
 {
 ///@name Kratos Classes
 ///@{
-
-class KRATOS_API(MAPPING_APPLICATION) NearestElementInterfaceInfo : public MapperInterfaceInfo
-{
-public:
-
-    /// Default constructor.
-    explicit NearestElementInterfaceInfo(const double LocalCoordTol=0.0) : mLocalCoordTol(LocalCoordTol) {}
-
-    explicit NearestElementInterfaceInfo(const CoordinatesArrayType& rCoordinates,
-                                const IndexType SourceLocalSystemIndex,
-                                const IndexType SourceRank,
-                                         const double LocalCoordTol=0.0)
-        : MapperInterfaceInfo(rCoordinates, SourceLocalSystemIndex, SourceRank), mLocalCoordTol(LocalCoordTol) {}
-
-    MapperInterfaceInfo::Pointer Create() const override
-    {
-        return Kratos::make_shared<NearestElementInterfaceInfo>(mLocalCoordTol);
-    }
-
-    MapperInterfaceInfo::Pointer Create(const CoordinatesArrayType& rCoordinates,
-                                        const IndexType SourceLocalSystemIndex,
-                                        const IndexType SourceRank) const override
-    {
-        return Kratos::make_shared<NearestElementInterfaceInfo>(
-            rCoordinates,
-            SourceLocalSystemIndex,
-            SourceRank,
-            mLocalCoordTol);
-    }
-
-    InterfaceObject::ConstructionType GetInterfaceObjectType() const override
-    {
-        return InterfaceObject::ConstructionType::Geometry_Center;
-    }
-
-    void ProcessSearchResult(const InterfaceObject& rInterfaceObject) override;
-
-    void ProcessSearchResultForApproximation(const InterfaceObject& rInterfaceObject) override;
-
-    void GetValue(std::vector<int>& rValue,
-                  const InfoType ValueType) const override
-    {
-        rValue = mNodeIds;
-    }
-
-    void GetValue(std::vector<double>& rValue,
-                  const InfoType ValueType) const override
-    {
-        rValue = mShapeFunctionValues;
-    }
-
-    void GetValue(double& rValue,
-                  const InfoType ValueType) const override
-    {
-        rValue = mClosestProjectionDistance;
-    }
-
-    void GetValue(int& rValue,
-                  const InfoType ValueType) const override
-    {
-        rValue = (int)mPairingIndex;
-    }
-
-    std::size_t GetNumSearchResults() const { return mNumSearchResults; }
-
-private:
-
-    std::vector<int> mNodeIds;
-    std::vector<double> mShapeFunctionValues;
-    double mClosestProjectionDistance = std::numeric_limits<double>::max();
-    ProjectionUtilities::PairingIndex mPairingIndex = ProjectionUtilities::PairingIndex::Unspecified;
-    double mLocalCoordTol; // this is not needed after searching, hence no need to serialize it
-    std::size_t mNumSearchResults = 0;
-
-    void SaveSearchResult(const InterfaceObject& rInterfaceObject,
-                          const bool ComputeApproximation);
-
-    friend class Serializer;
-
-    void save(Serializer& rSerializer) const override
-    {
-        KRATOS_SERIALIZE_SAVE_BASE_CLASS( rSerializer, MapperInterfaceInfo );
-        rSerializer.save("NodeIds", mNodeIds);
-        rSerializer.save("SFValues", mShapeFunctionValues);
-        rSerializer.save("ClosestProjectionDistance", mClosestProjectionDistance);
-        rSerializer.save("PairingIndex", (int)mPairingIndex);
-        rSerializer.save("NumSearchResults", mNumSearchResults);
-    }
-
-    void load(Serializer& rSerializer) override
-    {
-        KRATOS_SERIALIZE_LOAD_BASE_CLASS( rSerializer, MapperInterfaceInfo );
-        rSerializer.load("NodeIds", mNodeIds);
-        rSerializer.load("SFValues", mShapeFunctionValues);
-        rSerializer.load("ClosestProjectionDistance", mClosestProjectionDistance);
-        int temp;
-        rSerializer.load("PairingIndex", temp);
-        mPairingIndex = (ProjectionUtilities::PairingIndex)temp;
-        rSerializer.load("NumSearchResults", mNumSearchResults);
-    }
-
-};
-
-class KRATOS_API(MAPPING_APPLICATION) NearestElementLocalSystem : public MapperLocalSystem
-{
-public:
-
-    explicit NearestElementLocalSystem(NodePointerType pNode) : mpNode(pNode) {}
-
-    void CalculateAll(MatrixType& rLocalMappingMatrix,
-                      EquationIdVectorType& rOriginIds,
-                      EquationIdVectorType& rDestinationIds,
-                      MapperLocalSystem::PairingStatus& rPairingStatus) const override;
-
-    CoordinatesArrayType& Coordinates() const override
-    {
-        KRATOS_DEBUG_ERROR_IF_NOT(mpNode) << "Members are not intitialized!" << std::endl;
-        return mpNode->Coordinates();
-    }
-
-    MapperLocalSystemUniquePointer Create(NodePointerType pNode) const override
-    {
-        return Kratos::make_unique<NearestElementLocalSystem>(pNode);
-    }
-
-    void PairingInfo(std::ostream& rOStream, const int EchoLevel) const override;
-
-    void SetPairingStatusForPrinting() override;
-
-    bool IsDoneSearching() const override;
-
-private:
-    NodePointerType mpNode;
-    mutable ProjectionUtilities::PairingIndex mPairingIndex = ProjectionUtilities::PairingIndex::Unspecified;
-
-};
 
 /// Interpolative Mapper
 /** This class implements the Nearest Element Mapping technique.
@@ -186,7 +51,7 @@ public:
 
     typedef InterpolativeMapperBase<TSparseSpace, TDenseSpace, TMapperBackend> BaseType;
     typedef typename BaseType::MapperUniquePointerType MapperUniquePointerType;
-    typedef typename BaseType::MapperInterfaceInfoUniquePointerType MapperInterfaceInfoUniquePointerType;
+    typedef typename BaseType::SearchInterfaceInfoUniquePointerType SearchInterfaceInfoUniquePointerType;
 
     ///@}
     ///@name Life Cycle
@@ -274,17 +139,17 @@ private:
     ///@name Private Operations
     ///@{
 
-    void CreateMapperLocalSystems(
+    void CreateSearchLocalSystems(
         const Communicator& rModelPartCommunicator,
-        std::vector<Kratos::unique_ptr<MapperLocalSystem>>& rLocalSystems) override
+        std::vector<Kratos::unique_ptr<SearchLocalSystem>>& rLocalSystems) override
     {
-        MapperUtilities::CreateMapperLocalSystemsFromNodes(
+        MapperUtilities::CreateSearchLocalSystemsFromNodes(
             NearestElementLocalSystem(nullptr),
             rModelPartCommunicator,
             rLocalSystems);
     }
 
-    MapperInterfaceInfoUniquePointerType GetMapperInterfaceInfo() const override
+    SearchInterfaceInfoUniquePointerType GetSearchInterfaceInfo() const override
     {
         return Kratos::make_unique<NearestElementInterfaceInfo>(mLocalCoordTol);
     }

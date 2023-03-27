@@ -159,7 +159,7 @@ public:
 
     /// Interface definitions
     typedef typename TMapperBackend::InterfaceCommunicatorType InterfaceCommunicatorType;
-    typedef typename InterfaceCommunicator::MapperInterfaceInfoUniquePointerType MapperInterfaceInfoUniquePointerType;
+    typedef typename InterfaceCommunicator::SearchInterfaceInfoUniquePointerType SearchInterfaceInfoUniquePointerType;
 
     /// Other mappers definition
     typedef NearestNeighborMapper<TSparseSpace, TDenseSpace, TMapperBackend> NearestNeighborMapperType;
@@ -591,18 +591,18 @@ private:
     }
 
     // Functions for customizing the behavior of this Mapper
-    void CreateMapperLocalSystems(
+    void CreateSearchLocalSystems(
         const Communicator& rModelPartCommunicator,
-        std::vector<Kratos::unique_ptr<MapperLocalSystem>>& rLocalSystems
+        std::vector<Kratos::unique_ptr<SearchLocalSystem>>& rLocalSystems
         ) override
     {
         // Calling base mapper method. But not sure if this must be changed
-        AccessorInterpolativeMapperBase<TMapperBackend>::CreateMapperLocalSystems(*mpBaseMapper, rModelPartCommunicator, rLocalSystems);
+        AccessorInterpolativeMapperBase<TMapperBackend>::CreateSearchLocalSystems(*mpBaseMapper, rModelPartCommunicator, rLocalSystems);
     }
 
-    MapperInterfaceInfoUniquePointerType GetMapperInterfaceInfo() const override
+    SearchInterfaceInfoUniquePointerType GetSearchInterfaceInfo() const override
     {
-        return AccessorInterpolativeMapperBase<TMapperBackend>::GetMapperInterfaceInfo(*mpBaseMapper);
+        return AccessorInterpolativeMapperBase<TMapperBackend>::GetSearchInterfaceInfo(*mpBaseMapper);
     }
 
     Parameters GetMapperDefaultSettings() const override

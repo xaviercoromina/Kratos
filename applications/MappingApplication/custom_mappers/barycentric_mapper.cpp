@@ -185,16 +185,16 @@ BarycentricInterfaceInfo::BarycentricInterfaceInfo(const CoordinatesArrayType& r
                                     const IndexType SourceLocalSystemIndex,
                                     const IndexType SourceRank,
                                     const BarycentricInterpolationType InterpolationType)
-    : MapperInterfaceInfo(rCoordinates, SourceLocalSystemIndex, SourceRank),
+    : SearchInterfaceInfo(rCoordinates, SourceLocalSystemIndex, SourceRank),
       mInterpolationType(InterpolationType),
       mClosestPoints(GetNumPointsApprox(InterpolationType)) {}
 
-MapperInterfaceInfo::Pointer BarycentricInterfaceInfo::Create() const
+SearchInterfaceInfo::Pointer BarycentricInterfaceInfo::Create() const
 {
     return Kratos::make_shared<BarycentricInterfaceInfo>(mInterpolationType);
 }
 
-MapperInterfaceInfo::Pointer BarycentricInterfaceInfo::Create(const CoordinatesArrayType& rCoordinates,
+SearchInterfaceInfo::Pointer BarycentricInterfaceInfo::Create(const CoordinatesArrayType& rCoordinates,
                                     const IndexType SourceLocalSystemIndex,
                                     const IndexType SourceRank) const
 {
@@ -221,7 +221,7 @@ void BarycentricInterfaceInfo::ProcessSearchResult(const InterfaceObject& rInter
     PointWithId point(
         r_node.GetValue(INTERFACE_EQUATION_ID),
         r_node.Coordinates(),
-        MapperUtilities::ComputeDistance(this->Coordinates(), r_node.Coordinates())
+        this->ComputeDistance(r_node.Coordinates())
         );
 
     mClosestPoints.Add(point);
@@ -238,7 +238,7 @@ void BarycentricInterfaceInfo::ProcessSearchResult(const InterfaceObject& rInter
 
 void BarycentricInterfaceInfo::save(Serializer& rSerializer) const
 {
-    KRATOS_SERIALIZE_SAVE_BASE_CLASS( rSerializer, MapperInterfaceInfo );
+    KRATOS_SERIALIZE_SAVE_BASE_CLASS( rSerializer, SearchInterfaceInfo );
     rSerializer.save("InterpolationType", static_cast<int>(mInterpolationType));
     rSerializer.save("ClosestPoints", mClosestPoints);
     rSerializer.save("NumSearchResults", mNumSearchResults);
@@ -246,7 +246,7 @@ void BarycentricInterfaceInfo::save(Serializer& rSerializer) const
 
 void BarycentricInterfaceInfo::load(Serializer& rSerializer)
 {
-    KRATOS_SERIALIZE_LOAD_BASE_CLASS( rSerializer, MapperInterfaceInfo );
+    KRATOS_SERIALIZE_LOAD_BASE_CLASS( rSerializer, SearchInterfaceInfo );
     int temp;
     rSerializer.load("InterpolationType", temp);
     mInterpolationType = static_cast<BarycentricInterpolationType>(temp);
@@ -258,7 +258,7 @@ void BarycentricInterfaceInfo::load(Serializer& rSerializer)
 void BarycentricLocalSystem::CalculateAll(MatrixType& rLocalMappingMatrix,
                     EquationIdVectorType& rOriginIds,
                     EquationIdVectorType& rDestinationIds,
-                    MapperLocalSystem::PairingStatus& rPairingStatus) const
+                    SearchLocalSystem::PairingStatus& rPairingStatus) const
 {
     KRATOS_TRY
 
@@ -285,7 +285,7 @@ void BarycentricLocalSystem::CalculateAll(MatrixType& rLocalMappingMatrix,
     rDestinationIds[0] = mpNode->GetValue(INTERFACE_EQUATION_ID);
 
     if (closest_points.GetPoints().size() == 1) { // only one node was found => using nearest-neighbor
-        rPairingStatus = MapperLocalSystem::PairingStatus::Approximation;
+        rPairingStatus = SearchLocalSystem::PairingStatus::Approximation;
         mPairingIndex = ProjectionUtilities::PairingIndex::Closest_Point;
         if (rLocalMappingMatrix.size1() != 1 || rLocalMappingMatrix.size2() != 1) rLocalMappingMatrix.resize(1, 1, false);
         rLocalMappingMatrix(0,0) = 1.0;
@@ -309,14 +309,14 @@ void BarycentricLocalSystem::CalculateAll(MatrixType& rLocalMappingMatrix,
         mPairingIndex,
         true);
 
-    rPairingStatus = is_full_projection ? MapperLocalSystem::PairingStatus::InterfaceInfoFound : MapperLocalSystem::PairingStatus::Approximation;
+    rPairingStatus = is_full_projection ? SearchLocalSystem::PairingStatus::InterfaceInfoFound : SearchLocalSystem::PairingStatus::Approximation;
 
-    if (rPairingStatus == MapperLocalSystem::PairingStatus::InterfaceInfoFound) {
+    if (rPairingStatus == SearchLocalSystem::PairingStatus::InterfaceInfoFound) {
         const auto interpol_type = r_first_info.GetInterpolationType();
         if ((interpol_type == BarycentricInterpolationType::LINE       && p_reconstr_geom->PointsNumber() != 2) ||
             (interpol_type == BarycentricInterpolationType::TRIANGLE   && p_reconstr_geom->PointsNumber() != 3) ||
             (interpol_type == BarycentricInterpolationType::TETRAHEDRA && p_reconstr_geom->PointsNumber() != 4)) {
-            rPairingStatus = MapperLocalSystem::PairingStatus::Approximation;
+            rPairingStatus = SearchLocalSystem::PairingStatus::Approximation;
         }
     }
 
@@ -342,7 +342,7 @@ void BarycentricLocalSystem::PairingInfo(std::ostream& rOStream, const int EchoL
 
 void BarycentricLocalSystem::SetPairingStatusForPrinting()
 {
-    if (mPairingStatus == MapperLocalSystem::PairingStatus::Approximation) {
+    if (mPairingStatus == SearchLocalSystem::PairingStatus::Approximation) {
         mpNode->SetValue(PAIRING_STATUS, (int)mPairingIndex);
     }
 }

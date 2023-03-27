@@ -21,110 +21,13 @@
 
 // Project includes
 #include "interpolative_mapper_base.h"
+#include "searching/search_interface_info/nearest_neighbor_interface_info.h"
+#include "searching/search_local_system/nearest_neighbor_local_system.h"
 
 namespace Kratos
 {
 ///@name Kratos Classes
 ///@{
-
-class KRATOS_API(MAPPING_APPLICATION) NearestNeighborInterfaceInfo : public MapperInterfaceInfo
-{
-public:
-
-    /// Default constructor.
-    NearestNeighborInterfaceInfo() {}
-
-    explicit NearestNeighborInterfaceInfo(const CoordinatesArrayType& rCoordinates,
-                                 const IndexType SourceLocalSystemIndex,
-                                 const IndexType SourceRank)
-        : MapperInterfaceInfo(rCoordinates, SourceLocalSystemIndex, SourceRank) {}
-
-    MapperInterfaceInfo::Pointer Create() const override
-    {
-        return Kratos::make_shared<NearestNeighborInterfaceInfo>();
-    }
-
-    MapperInterfaceInfo::Pointer Create(const CoordinatesArrayType& rCoordinates,
-                                        const IndexType SourceLocalSystemIndex,
-                                        const IndexType SourceRank) const override
-    {
-        return Kratos::make_shared<NearestNeighborInterfaceInfo>(
-            rCoordinates,
-            SourceLocalSystemIndex,
-            SourceRank);
-    }
-
-    InterfaceObject::ConstructionType GetInterfaceObjectType() const override
-    {
-        return InterfaceObject::ConstructionType::Node_Coords;
-    }
-
-    void ProcessSearchResult(const InterfaceObject& rInterfaceObject) override;
-
-    void GetValue(std::vector<int>& rValue,
-                  const InfoType ValueType) const override
-    {
-        rValue = mNearestNeighborId;
-    }
-
-    void GetValue(double& rValue,
-                  const InfoType ValueType) const override
-    {
-        rValue = mNearestNeighborDistance;
-    }
-
-private:
-
-    std::vector<int> mNearestNeighborId = {};
-    double mNearestNeighborDistance = std::numeric_limits<double>::max();
-
-    friend class Serializer;
-
-    void save(Serializer& rSerializer) const override
-    {
-        KRATOS_SERIALIZE_SAVE_BASE_CLASS( rSerializer, MapperInterfaceInfo );
-        rSerializer.save("NearestNeighborId", mNearestNeighborId);
-        rSerializer.save("NearestNeighborDistance", mNearestNeighborDistance);
-    }
-
-    void load(Serializer& rSerializer) override
-    {
-        KRATOS_SERIALIZE_LOAD_BASE_CLASS( rSerializer, MapperInterfaceInfo );
-        rSerializer.load("NearestNeighborId", mNearestNeighborId);
-        rSerializer.load("NearestNeighborDistance", mNearestNeighborDistance);
-    }
-};
-
-class KRATOS_API(MAPPING_APPLICATION) NearestNeighborLocalSystem : public MapperLocalSystem
-{
-public:
-
-    explicit NearestNeighborLocalSystem(NodePointerType pNode) : mpNode(pNode) {}
-
-    void CalculateAll(MatrixType& rLocalMappingMatrix,
-                      EquationIdVectorType& rOriginIds,
-                      EquationIdVectorType& rDestinationIds,
-                      MapperLocalSystem::PairingStatus& rPairingStatus) const override;
-
-    CoordinatesArrayType& Coordinates() const override
-    {
-        KRATOS_DEBUG_ERROR_IF_NOT(mpNode) << "Members are not intitialized!" << std::endl;
-        return mpNode->Coordinates();
-    }
-
-    MapperLocalSystemUniquePointer Create(NodePointerType pNode) const override
-    {
-        return Kratos::make_unique<NearestNeighborLocalSystem>(pNode);
-    }
-
-    void PairingInfo(std::ostream& rOStream, const int EchoLevel) const override;
-
-    void SetPairingStatusForPrinting() override;
-
-private:
-    NodePointerType mpNode;
-
-};
 
 /// Nearest Neighbor Mapper
 /** This class implements the Nearest Neighbor Mapping technique.
@@ -149,7 +52,7 @@ public:
 
     typedef InterpolativeMapperBase<TSparseSpace, TDenseSpace, TMapperBackend> BaseType;
     typedef typename BaseType::MapperUniquePointerType MapperUniquePointerType;
-    typedef typename BaseType::MapperInterfaceInfoUniquePointerType MapperInterfaceInfoUniquePointerType;
+    typedef typename BaseType::SearchInterfaceInfoUniquePointerType SearchInterfaceInfoUniquePointerType;
 
     ///@}
     ///@name Life Cycle
@@ -241,17 +144,17 @@ private:
     ///@name Private Operations
     ///@{
 
-    void CreateMapperLocalSystems(
+    void CreateSearchLocalSystems(
         const Communicator& rModelPartCommunicator,
-        std::vector<Kratos::unique_ptr<MapperLocalSystem>>& rLocalSystems) override
+        std::vector<Kratos::unique_ptr<SearchLocalSystem>>& rLocalSystems) override
     {
-        MapperUtilities::CreateMapperLocalSystemsFromNodes(
+        MapperUtilities::CreateSearchLocalSystemsFromNodes(
             NearestNeighborLocalSystem(nullptr),
             rModelPartCommunicator,
             rLocalSystems);
     }
 
-    MapperInterfaceInfoUniquePointerType GetMapperInterfaceInfo() const override
+    SearchInterfaceInfoUniquePointerType GetSearchInterfaceInfo() const override
     {
         return Kratos::make_unique<NearestNeighborInterfaceInfo>();
     }
