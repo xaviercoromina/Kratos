@@ -10,6 +10,7 @@
 //  Main authors:    Riccardo Rossi
 //                   Denis Demidov
 //                   Philipp Bucher (https://github.com/philbucher)
+//                   Vicente Mataix Ferrandiz
 //
 
 #pragma once
@@ -168,7 +169,8 @@ public:
         }
     }
 
-    /** @brief simple iteration loop. f called on every entry in rData
+    /**
+     * @brief simple iteration loop. f called on every entry in rData
      * @param f - must be a unary function accepting as input TContainerType::value_type&
      */
     template <class TUnaryFunction>
@@ -176,6 +178,9 @@ public:
     {
         KRATOS_PREPARE_CATCH_THREAD_EXCEPTION
 
+#ifdef KRATOS_SMP_CXX17
+        //std::for_each(v.cbegin(), v.cend(), f);
+#else
         #pragma omp parallel for
         for (int i=0; i<mNchunks; ++i) {
             KRATOS_TRY
@@ -184,7 +189,7 @@ public:
             }
             KRATOS_CATCH_THREAD_EXCEPTION
         }
-
+#endif
         KRATOS_CHECK_AND_THROW_THREAD_EXCEPTION
     }
 
