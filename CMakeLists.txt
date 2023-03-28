@@ -396,8 +396,8 @@ endif ()
 
 # std::atomic_ref is part of C++20, hence using boost::atomic_ref
 # boost::atomic_ref has full support from version 1.74
-if((KRATOS_SHARED_MEMORY_PARALLELIZATION STREQUAL "C++11") AND (CMAKE_CXX_STANDARD LESS 20) AND (Boost_VERSION_STRING VERSION_LESS 1.74))
-  message(FATAL_ERROR "Kratos requires at least boost version 1.74 when using C++11 for shared memory parallelization and compiling with C++17")
+if((KRATOS_SHARED_MEMORY_PARALLELIZATION STRGREATER "C++1") AND (CMAKE_CXX_STANDARD LESS 20) AND (Boost_VERSION_STRING VERSION_LESS 1.74))
+  message(FATAL_ERROR "Kratos requires at least boost version 1.74 when using C++11/C++17 for shared memory parallelization and compiling with C++17")
 endif ()
 
 ##*****************************
