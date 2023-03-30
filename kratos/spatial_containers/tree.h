@@ -352,22 +352,6 @@ public:
         return NumberOfResults;
     }
 
-    void SearchInRadius(
-        PointerType const& ThisPoints,
-        const SizeType NumberOfPoints,
-        std::vector<CoordinateType> const& Radius,
-        std::vector<IteratorType>& rResults,
-        std::vector<DistanceIteratorType>& rResultsDistances,
-        std::vector<SizeType>& NumberOfResults,
-        SizeType const& MaxNumberOfResults
-        )
-    {
-        IndexPartition<SizeType>(NumberOfPoints).for_each(
-            [&](SizeType iPoint)
-            { NumberOfResults[iPoint] = SearchInRadius(ThisPoints[iPoint],Radius[iPoint],rResults[iPoint],rResultsDistances[iPoint],MaxNumberOfResults); }
-        );
-    }
-
     SizeType SearchInBox(
         PointType const& MinPointBox,
         PointType const& MaxPointBox,
