@@ -141,7 +141,11 @@ public:
     ///@name Operations
     ///@{
 
-    void SearchNearestPoint(PointType const& rThisPoint, PointerType& rResult, CoordinateType& rResultDistance ) override
+    void SearchNearestPoint(
+        PointType const& rThisPoint,
+        PointerType& rResult,
+        CoordinateType& rResultDistance
+        ) override
     {
         SearchStructureType Auxiliar;
         for(SizeType i = 0 ; i < Dimension; i++)
@@ -149,7 +153,12 @@ public:
         SearchNearestPoint(rThisPoint, rResult, rResultDistance, Auxiliar );
     }
 
-    void SearchNearestPoint(PointType const& rThisPoint, PointerType& rResult, CoordinateType& rResultDistance, SearchStructureType& Auxiliar ) override
+    void SearchNearestPoint(
+        PointType const& rThisPoint,
+        PointerType& rResult,
+        CoordinateType& rResultDistance,
+        SearchStructureType& Auxiliar
+        ) override
     {
         CoordinateType temp = Auxiliar.residual_distance[mCutingDimension];
         CoordinateType distance_to_partition = rThisPoint[mCutingDimension] - mPosition;
@@ -185,8 +194,15 @@ public:
 
     }
 
-    void SearchInRadius(PointType const& ThisPoint, CoordinateType const& Radius, CoordinateType const& Radius2, IteratorType& Results,
-                        DistanceIteratorType& ResultsDistances, SizeType& NumberOfResults, SizeType const& MaxNumberOfResults) override
+    void SearchInRadius(
+        PointType const& ThisPoint,
+        CoordinateType const& Radius,
+        CoordinateType const& Radius2,
+        IteratorType& Results,
+        DistanceIteratorType& ResultsDistances,
+        SizeType& NumberOfResults,
+        SizeType const& MaxNumberOfResults
+        ) override
     {
         SearchStructureType Auxiliar;
         for(SizeType i = 0 ; i < Dimension; i++)
@@ -194,11 +210,19 @@ public:
         SearchInRadius(ThisPoint, Radius, Radius2, Results, ResultsDistances, NumberOfResults, MaxNumberOfResults, Auxiliar );
     }
 
-    void SearchInRadius(PointType const& ThisPoint, CoordinateType const& Radius, CoordinateType const& Radius2, IteratorType& Results,
-                        DistanceIteratorType& ResultsDistances, SizeType& NumberOfResults, SizeType const& MaxNumberOfResults, SearchStructureType& Auxiliar ) override
+    void SearchInRadius(
+        PointType const& ThisPoint,
+        CoordinateType const& Radius,
+        CoordinateType const& Radius2,
+        IteratorType& Results,
+        DistanceIteratorType& ResultsDistances,
+        SizeType& NumberOfResults,
+        SizeType const& MaxNumberOfResults,
+        SearchStructureType& Auxiliar
+        ) override
     {
-        CoordinateType temp = Auxiliar.residual_distance[mCutingDimension];
-        CoordinateType distance_to_partition = ThisPoint[mCutingDimension] - mPosition;
+        const CoordinateType temp = Auxiliar.residual_distance[mCutingDimension];
+        const CoordinateType distance_to_partition = ThisPoint[mCutingDimension] - mPosition;
 
         if(distance_to_partition < 0) // The point is in the left partition
         {
@@ -230,8 +254,14 @@ public:
 
     }
 
-    void SearchInRadius(PointType const& ThisPoint, CoordinateType const& Radius, CoordinateType const& Radius2, IteratorType& Results,
-                        SizeType& NumberOfResults, SizeType const& MaxNumberOfResults) override
+    void SearchInRadius(
+        PointType const& ThisPoint,
+        CoordinateType const& Radius,
+        CoordinateType const& Radius2,
+        IteratorType& Results,
+        SizeType& NumberOfResults,
+        SizeType const& MaxNumberOfResults
+        ) override
     {
         SearchStructureType Auxiliar;
         for(SizeType i = 0 ; i < Dimension; i++)
@@ -239,8 +269,15 @@ public:
         SearchInRadius(ThisPoint, Radius, Radius2, Results, NumberOfResults, MaxNumberOfResults, Auxiliar );
     }
 
-    void SearchInRadius(PointType const& ThisPoint, CoordinateType const& Radius, CoordinateType const& Radius2, IteratorType& Results,
-                        SizeType& NumberOfResults, SizeType const& MaxNumberOfResults, SearchStructureType& Auxiliar ) override
+    void SearchInRadius(
+        PointType const& ThisPoint,
+        CoordinateType const& Radius,
+        CoordinateType const& Radius2,
+        IteratorType& Results,
+        SizeType& NumberOfResults,
+        SizeType const& MaxNumberOfResults,
+        SearchStructureType& Auxiliar
+        ) override
     {
         CoordinateType temp = Auxiliar.residual_distance[mCutingDimension];
         CoordinateType distance_to_partition = ThisPoint[mCutingDimension] - mPosition;
@@ -276,8 +313,13 @@ public:
 
     }
 
-    void SearchInBox(PointType const& SearchMinPoint, PointType const& SearchMaxPoint, IteratorType& Results, SizeType& NumberOfResults,
-                     SizeType const& MaxNumberOfResults ) override
+    void SearchInBox(
+        PointType const& SearchMinPoint,
+        PointType const& SearchMaxPoint,
+        IteratorType& Results,
+        SizeType& NumberOfResults,
+        SizeType const& MaxNumberOfResults
+         ) override
     {
         if( SearchMinPoint[mCutingDimension] <= mPosition )
             mpChilds[0]->SearchInBox(SearchMinPoint,SearchMaxPoint,Results,NumberOfResults,MaxNumberOfResults);
@@ -374,9 +416,14 @@ public:
 
     ////////////////////
 
-    static IteratorType Partition( IteratorType PointsBegin, IteratorType PointsEnd, IndexType& rCuttingDimension, CoordinateType& rCuttingValue )
+    static IteratorType Partition(
+        IteratorType PointsBegin,
+        IteratorType PointsEnd,
+        IndexType& rCuttingDimension,
+        CoordinateType& rCuttingValue
+        )
     {
-        SizeType n = SearchUtils::PointerDistance(PointsBegin, PointsEnd);
+        const SizeType n = SearchUtils::PointerDistance(PointsBegin, PointsEnd);
         // find dimension of maximum spread
         rCuttingDimension = MaxSpread(PointsBegin, PointsEnd);
         IteratorType partition = PointsBegin + n / 2;
@@ -386,7 +433,10 @@ public:
         return partition;
     }
 
-    static SizeType MaxSpread( IteratorType PointsBegin, IteratorType PointsEnd )
+    static SizeType MaxSpread(
+        IteratorType PointsBegin,
+        IteratorType PointsEnd
+        )
     {
         SizeType max_dimension = 0;					// dimension of max spread
         CoordinateType max_spread = 0;				// amount of max spread
@@ -427,8 +477,13 @@ public:
         return max_dimension;
     }
 
-    static void MedianSplit( IteratorType PointsBegin, IteratorType PartitionPosition, IteratorType PointsEnd,
-                             IndexType CuttingDimension, CoordinateType& rCuttingValue )
+    static void MedianSplit(
+        IteratorType PointsBegin,
+        IteratorType PartitionPosition,
+        IteratorType PointsEnd,
+        IndexType CuttingDimension,
+        CoordinateType& rCuttingValue
+        )
     {
         IteratorType left  = PointsBegin;
         IteratorType right = PointsEnd - 1;
@@ -477,13 +532,16 @@ public:
         rCuttingValue = ((**last)[CuttingDimension] + (**PartitionPosition)[CuttingDimension])/2.0;
     }
 
-    //
-    //
-
 public:
 
 //     static TreeNodeType* Construct(IteratorType PointsBegin, IteratorType PointsEnd, PointType HighPoint, PointType LowPoint,	SizeType BucketSize)
-    static TreeNodeType* Construct(IteratorType PointsBegin, IteratorType PointsEnd, const PointType& HighPoint, const PointType& LowPoint,	SizeType BucketSize)
+    static TreeNodeType* Construct(
+        IteratorType PointsBegin,
+        IteratorType PointsEnd,
+        const PointType& HighPoint,
+        const PointType& LowPoint,
+        SizeType BucketSize
+        )
     {
         SizeType number_of_points = SearchUtils::PointerDistance(PointsBegin,PointsEnd);
         if (number_of_points == 0)
@@ -574,9 +632,17 @@ public:
 
 
     /// Partition constructor.
-    KDTreePartitionAverageSplit( IndexType CutingDimension, CoordinateType Position, CoordinateType LeftEnd, CoordinateType RightEnd,
-                                 TreeNodeType* pLeftChild = NULL, TreeNodeType* pRightChild = NULL)
-        : BaseType(CutingDimension,Position,LeftEnd,RightEnd,pLeftChild,pRightChild) {}
+    KDTreePartitionAverageSplit(
+        IndexType CutingDimension,
+        CoordinateType Position,
+        CoordinateType LeftEnd,
+        CoordinateType RightEnd,
+        TreeNodeType* pLeftChild = NULL,
+        TreeNodeType* pRightChild = NULL
+        )
+        : BaseType(CutingDimension,Position,LeftEnd,RightEnd,pLeftChild,pRightChild) 
+    {
+    }
 
     /// Destructor.
     virtual ~KDTreePartitionAverageSplit() {}
@@ -588,7 +654,12 @@ public:
 
     ////////////////////
 
-    static IteratorType Partition( IteratorType PointsBegin, IteratorType PointsEnd, IndexType& rCuttingDimension, CoordinateType& rCuttingValue )
+    static IteratorType Partition(
+        IteratorType PointsBegin,
+        IteratorType PointsEnd,
+        IndexType& rCuttingDimension,
+        CoordinateType& rCuttingValue
+        )
     {
 
         rCuttingDimension = MaxSpread( PointsBegin, PointsEnd, rCuttingValue );
@@ -600,7 +671,11 @@ public:
 
     }
 
-    static SizeType MaxSpread( IteratorType PointsBegin, IteratorType PointsEnd, CoordinateType& AverageValue )
+    static SizeType MaxSpread(
+        IteratorType PointsBegin,
+        IteratorType PointsEnd,
+        CoordinateType& AverageValue
+        )
     {
         SizeType max_dimension = 0;					// dimension of max spread
         CoordinateType max_spread = 0;				// amount of max spread
@@ -647,8 +722,13 @@ public:
     }
 
 
-    static void AverageSplit( IteratorType PointsBegin, IteratorType& PartitionPosition, IteratorType PointsEnd,
-                              IndexType& CuttingDimension, CoordinateType& rCuttingValue )
+    static void AverageSplit(
+        IteratorType PointsBegin,
+        IteratorType& PartitionPosition,
+        IteratorType PointsEnd,
+        IndexType& CuttingDimension,
+        CoordinateType& rCuttingValue
+        )
     {
         // reorder by cutting_dimension
         IteratorType left  = PointsBegin;
@@ -664,10 +744,14 @@ public:
         PartitionPosition = left;
     }
 
-    //
-    //
 public:
-    static TreeNodeType* Construct(IteratorType PointsBegin, IteratorType PointsEnd, PointType HighPoint, PointType LowPoint,	SizeType BucketSize)
+    static TreeNodeType* Construct(
+        IteratorType PointsBegin,
+        IteratorType PointsEnd,
+        PointType HighPoint,
+        PointType LowPoint,
+        SizeType BucketSize
+        )
     {
         SizeType number_of_points = SearchUtils::PointerDistance(PointsBegin,PointsEnd);
         if (number_of_points == 0)
@@ -751,7 +835,6 @@ public:
     ///@name Life Cycle
     ///@{
 
-
     /// Partition constructor.
     KDTreePartitionMidPointSplit( IndexType CutingDimension, CoordinateType Position, CoordinateType LeftEnd, CoordinateType RightEnd,
                                   TreeNodeType* pLeftChild = NULL, TreeNodeType* pRightChild = NULL)
@@ -764,10 +847,16 @@ public:
     ///@name Operations
     ///@{
 
-
     ////////////////////
 
-    static IteratorType Partition( IteratorType PointsBegin, IteratorType PointsEnd, PointType const& HighPoint, PointType const& LowPoint, IndexType& rCuttingDimension, CoordinateType& rCuttingValue )
+    static IteratorType Partition(
+        IteratorType PointsBegin,
+        IteratorType PointsEnd,
+        PointType const& HighPoint,
+        PointType const& LowPoint,
+        IndexType& rCuttingDimension,
+        CoordinateType& rCuttingValue
+        )
     {
         rCuttingDimension = MaxSpread( PointsBegin, PointsEnd, HighPoint, LowPoint, rCuttingValue );
         /*
@@ -788,7 +877,13 @@ public:
         return Split(PointsBegin, PointsEnd, rCuttingDimension, rCuttingValue);
     }
 
-    static SizeType MaxSpread( IteratorType PointsBegin, IteratorType PointsEnd, PointType const& HighPoint, PointType const& LowPoint, CoordinateType& CuttingValue )
+    static SizeType MaxSpread(
+        IteratorType PointsBegin,
+        IteratorType PointsEnd,
+        PointType const& HighPoint,
+        PointType const& LowPoint,
+        CoordinateType& CuttingValue
+        )
     {
 
         //CoordinateType size = static_cast<CoordinateType>(SearchUtils::PointerDistance(PointsBegin,PointsEnd));
@@ -825,7 +920,12 @@ public:
         return max_dimension;
     }
 
-    static IteratorType Split( IteratorType PointsBegin, IteratorType PointsEnd, IndexType& CuttingDimension, CoordinateType& rCuttingValue )
+    static IteratorType Split(
+        IteratorType PointsBegin,
+        IteratorType PointsEnd,
+        IndexType& CuttingDimension,
+        CoordinateType& rCuttingValue
+        )
     {
         // reorder by cutting_dimension
         IteratorType left  = PointsBegin;
@@ -845,7 +945,13 @@ public:
     //
 
 public:
-    static TreeNodeType* Construct(IteratorType PointsBegin, IteratorType PointsEnd, PointType HighPoint, PointType LowPoint,	SizeType BucketSize)
+    static TreeNodeType* Construct(
+        IteratorType PointsBegin,
+        IteratorType PointsEnd,
+        PointType HighPoint,
+        PointType LowPoint,
+        SizeType BucketSize
+        )
     {
         SizeType number_of_points = SearchUtils::PointerDistance(PointsBegin,PointsEnd);
         if (number_of_points == 0)
