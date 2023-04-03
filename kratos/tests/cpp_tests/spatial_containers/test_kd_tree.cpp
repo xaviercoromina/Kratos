@@ -126,4 +126,21 @@ KRATOS_TEST_CASE_IN_SUITE(KDTreeSearchInBox, KratosCoreFastSuite)
     KRATOS_CHECK_EQUAL(testKDTree.SearchInBox(point_12, point_10, result_points.begin(), max_number_results), 1);
 }
 
+/**
+ * @brief Test that Bounding box points works well works correctly
+ */
+KRATOS_TEST_CASE_IN_SUITE(KDTreeBB, KratosCoreFastSuite)
+{
+    PointVector points;
+
+    for(std::size_t i = 0; i < 10; i++) {
+        points.push_back(PointTypePointer(new PointType(i, i, i, i)));
+    }
+
+    KDTree testKDTree(points.begin(), points.end(), 100);
+
+    KRATOS_CHECK_VECTOR_EQUAL(testKDTree.BoundingBoxLowPoint().Coordinates(), points[0]->Coordinates());
+    KRATOS_CHECK_VECTOR_EQUAL(testKDTree.BoundingBoxHighPoint().Coordinates(), points[9]->Coordinates());
+}
+
 } // namespace Kratos::Testing
