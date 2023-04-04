@@ -256,6 +256,12 @@ private:
      */
     void SetRayCastingTolerances();
 
+    /**
+     * @brief This method returns the function that should be apply to the nodal distances
+     * once ray distance has been computed
+     */
+    std::function<void(const double,double&)> GetSetNodalDistanceFunction();
+
     ///@}
     ///@name Private  Access
     ///@{
