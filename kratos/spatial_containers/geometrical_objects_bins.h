@@ -90,11 +90,9 @@ public:
     ///@name Operators
     ///@{
 
-
     ///@}
     ///@name Operations
     ///@{
-
 
     ///@}
     ///@name Access
@@ -183,7 +181,7 @@ public:
      * If there are no objects in that radius the result will be set to not found.
      * Result contains a flag is the object has been found or not. 
     */
-     template<typename TPointType>
+    template<typename TPointType>
     ResultType SearchNearestInRadius(TPointType const& ThePoint, double Radius) {
         ResultType current_result;
         current_result.SetDistance(std::numeric_limits<double>::max());
@@ -238,7 +236,7 @@ public:
      * Result contains a flag is the object has been found or not. 
      * This method is a simplified and faster method of SearchNearest.
     */
-     template<typename TPointType>
+    template<typename TPointType>
     ResultType SearchIsInside(TPointType const& ThePoint) {
         ResultType current_result;
         current_result.SetDistance(std::numeric_limits<double>::max());
@@ -258,7 +256,6 @@ public:
     ///@}
     ///@name Inquiry
     ///@{
-
 
     ///@}
     ///@name Input and output
@@ -289,7 +286,6 @@ private:
     ///@name Static Member Variables
     ///@{
 
-
     ///@}
     ///@name Member Variables
     ///@{
@@ -300,11 +296,9 @@ private:
     array_1d<double, 3>  mInverseOfCellSize;
     std::vector<CellType> mCells;
 
-
     ///@}
     ///@name Private Operators
     ///@{
-
 
     ///@}
     ///@name Private Operations
@@ -453,11 +447,9 @@ private:
     ///@name Private  Access
     ///@{
 
-
     ///@}
     ///@name Private Inquiry
     ///@{
-
 
     ///@}
     ///@name Un accessible methods
@@ -477,7 +469,6 @@ private:
 
 ///@name Type Definitions
 ///@{
-
 
 ///@}
 ///@name Input and output

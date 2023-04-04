@@ -21,10 +21,9 @@
 // Project includes
 #include "includes/define.h"
 
-
 namespace Kratos
 {
-///@addtogroup ApplicationNameApplication
+///@addtogroup KratosCore
 ///@{
 
 ///@name Kratos Classes
@@ -72,8 +71,7 @@ public:
     ///@name Operators
     ///@{
 
-        SpatialSearchResult& operator=(SpatialSearchResult const& /*Other*/) = default;
-
+    SpatialSearchResult& operator=(SpatialSearchResult const& /*Other*/) = default;
 
     ///@}
     ///@name Operations
