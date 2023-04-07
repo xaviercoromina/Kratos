@@ -182,18 +182,13 @@ public:
         KRATOS_PREPARE_CATCH_THREAD_EXCEPTION
 
 #ifdef KRATOS_SMP_CXX17
-        // TODO
-
-        //std::for_each(v.cbegin(), v.cend(), f);
-        std::vector<double> vec(20,5.0);
-        if constexpr ( std::is_same_v<std::execution::parallel_policy, TExecutionPolicy> ) {
-            std::for_each(std::execution::par,
-                vec.cbegin(), vec.cend(),
-                [](double v) { return v * 2.0; }
-            );
-        } else {
-            // not passed
-        }
+        std::for_each(std::execution::par, mBlockPartition.begin(), mBlockPartition.end() - 1, [&](auto it) {
+            KRATOS_TRY
+            for (auto iter = *it; iter != *(it + 1); ++iter) {
+                f(*iter); //note that we pass the value to the function, not the iterator
+            }
+            KRATOS_CATCH_THREAD_EXCEPTION
+        });
 #else
         #pragma omp parallel for
         for (int i=0; i<mNchunks; ++i) {
