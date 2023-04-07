@@ -176,11 +176,10 @@ public:
      * @brief simple iteration loop. f called on every entry in rData
      * @param f - must be a unary function accepting as input TContainerType::value_type&
      */
-    template <class TUnaryFunction, class TExecutionPolicy = std::execution::parallel_policy> // NOTE sould default be std::execution::parallel_unsequenced_policy
+    template <class TUnaryFunction, ExecutionPolicy TExecutionPolicy = PARALLEL_POLICY> // NOTE sould default be PARALLEL_UNSEQUENCED_POLICY
     inline void for_each(TUnaryFunction&& f)
     {
         KRATOS_PREPARE_CATCH_THREAD_EXCEPTION
-
 #ifdef KRATOS_SMP_CXX17
         std::for_each(std::execution::par, mBlockPartition.begin(), mBlockPartition.end() - 1, [&](auto it) {
             KRATOS_TRY
@@ -207,7 +206,7 @@ public:
      * @param TReducer template parameter specifying the reduction operation to be done
      * @param f - must be a unary function accepting as input TContainerType::value_type&
      */
-    template <class TReducer, class TUnaryFunction>//, class TExecutionPolicy = std::execution::par> // NOTE sould default be std::execution::par_unseq
+    template <class TReducer, class TUnaryFunction>//, ExecutionPolicy TExecutionPolicy = PARALLEL_POLICY> // NOTE sould default be PARALLEL_UNSEQUENCED_POLICY
     [[nodiscard]] inline typename TReducer::return_type for_each(TUnaryFunction &&f)
     {
         KRATOS_PREPARE_CATCH_THREAD_EXCEPTION
@@ -233,7 +232,7 @@ public:
      * @param TThreadLocalStorage template parameter specifying the thread local storage
      * @param f - must be a function accepting as input TContainerType::value_type& and the thread local storage
      */
-    template <class TThreadLocalStorage, class TFunction>//, class TExecutionPolicy = std::execution::par> // NOTE sould default be std::execution::par_unseq
+    template <class TThreadLocalStorage, class TFunction>//, ExecutionPolicy TExecutionPolicy = PARALLEL_POLICY> // NOTE sould default be PARALLEL_UNSEQUENCED_POLICY
     inline void for_each(const TThreadLocalStorage& rThreadLocalStoragePrototype, TFunction &&f)
     {
         static_assert(std::is_copy_constructible<TThreadLocalStorage>::value, "TThreadLocalStorage must be copy constructible!");
@@ -263,7 +262,7 @@ public:
      * @param TThreadLocalStorage template parameter specifying the thread local storage
      * @param f - must be a function accepting as input TContainerType::value_type& and the thread local storage
      */
-    template <class TReducer, class TThreadLocalStorage, class TFunction>//, class TExecutionPolicy = std::execution::par> // NOTE sould default be std::execution::par_unseq
+    template <class TReducer, class TThreadLocalStorage, class TFunction>//, ExecutionPolicy TExecutionPolicy = PARALLEL_POLICY> // NOTE sould default be PARALLEL_UNSEQUENCED_POLICY
     [[nodiscard]] inline typename TReducer::return_type for_each(const TThreadLocalStorage& rThreadLocalStoragePrototype, TFunction &&f)
     {
         static_assert(std::is_copy_constructible<TThreadLocalStorage>::value, "TThreadLocalStorage must be copy constructible!");
