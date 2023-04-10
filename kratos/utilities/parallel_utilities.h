@@ -194,14 +194,14 @@ public:
      * @brief simple iteration loop. f called on every entry in rData
      * @param f - must be a unary function accepting as input TContainerType::value_type&
      */
-    template <class TUnaryFunction> //, class TExecutionPolicy>
-    inline void for_each(TUnaryFunction&& f) //, TExecutionPolicy&& policy = std::execution::par) // NOTE should default be std::execution::par_unseq
+    template <class TUnaryFunction>//, class TExecutionPolicy = std::execution::parallel_policy>
+    inline void for_each(TUnaryFunction&& f)//, const TExecutionPolicy&& policy = std::execution::par) // NOTE should default be std::execution::par_unseq
     {
         KRATOS_PREPARE_CATCH_THREAD_EXCEPTION
 #ifdef KRATOS_SMP_CXX17
         std::string i = "0";
-        std::for_each(std::execution::par, mBlockPartition.begin(), mBlockPartition.end(), [&](auto it) {
-        //std::for_each(std::forward<TExecutionPolicy>(policy), mBlockPartition.begin(), mBlockPartition.end(), [&](auto it) {
+        std::for_each(std::execution::par, mBlockPartition.begin(), mBlockPartition.end(), [&,i](auto it) mutable {
+        //std::for_each(std::forward<TExecutionPolicy>(policy), mBlockPartition.begin(), mBlockPartition.end(), [&](auto it) mutable {
             KRATOS_TRY
             // for (auto iter = *it; iter != *(it + 1); ++iter) {
             //     f(*iter); //note that we pass the value to the function, not the iterator
