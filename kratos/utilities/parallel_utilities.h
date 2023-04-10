@@ -203,9 +203,7 @@ public:
         std::for_each(std::execution::par, mBlockPartition.begin(), mBlockPartition.end(), [&,i](auto it) mutable {
         //std::for_each(std::forward<TExecutionPolicy>(policy), mBlockPartition.begin(), mBlockPartition.end(), [&](auto it) mutable {
             KRATOS_TRY
-            // for (auto iter = *it; iter != *(it + 1); ++iter) {
-            //     f(*iter); //note that we pass the value to the function, not the iterator
-            // }
+            f(*it); //note that we pass the value to the function, not the iterator
             i = ParallelCXXAuxiliaryUtils::ThreadIdToString(std::this_thread::get_id());
             KRATOS_CATCH_THREAD_EXCEPTION
         });
