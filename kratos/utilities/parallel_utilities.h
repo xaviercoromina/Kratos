@@ -133,15 +133,33 @@ private:
     ///@}
 }; // Class ParallelUtilities
 
+/**
+ * @class ParallelCXXAuxiliaryUtils
+ * @brief This class defines a set of auxiliary utilities for the parallel C++ utilities
+ */
+class ParallelCXXAuxiliaryUtils
+{
+public:
+    /**
+     * @brief This method returns the thread id as a string
+     * @param Id The thread id
+     * @return The thread id as a string
+     */
+    static std::string ThreadIdToString(const std::thread::id Id)
+    {
+        std::stringstream ss;
+        ss << Id;
+        return ss.str();
+    }
+};
 
-//***********************************************************************************
-//***********************************************************************************
-//***********************************************************************************
-/** @param TIterator - type of iterator (must be a random access iterator)
- *  @param MaxThreads - maximum number of threads allowed in the partitioning.
+/**
+ * @class BlockPartition
+ * @tparam TIterator - type of iterator (must be a random access iterator)
+ * @tparam TMaxThreads - maximum number of threads allowed in the partitioning.
  *                       must be known at compile time to avoid heap allocations in the partitioning
  */
-template<class TIterator, int MaxThreads=Globals::MaxAllowedThreads>
+template<class TIterator, int TMaxThreads=Globals::MaxAllowedThreads>
 class BlockPartition
 {
 public:
@@ -176,16 +194,19 @@ public:
      * @brief simple iteration loop. f called on every entry in rData
      * @param f - must be a unary function accepting as input TContainerType::value_type&
      */
-    template <class TUnaryFunction, ExecutionPolicy TExecutionPolicy = PARALLEL_POLICY> // NOTE sould default be PARALLEL_UNSEQUENCED_POLICY
-    inline void for_each(TUnaryFunction&& f)
+    template <class TUnaryFunction> //, class TExecutionPolicy>
+    inline void for_each(TUnaryFunction&& f) //, TExecutionPolicy&& policy = std::execution::par) // NOTE should default be std::execution::par_unseq
     {
         KRATOS_PREPARE_CATCH_THREAD_EXCEPTION
 #ifdef KRATOS_SMP_CXX17
-        std::for_each(std::execution::par, mBlockPartition.begin(), mBlockPartition.end() - 1, [&](auto it) {
+        std::string i = "0";
+        std::for_each(std::execution::par, mBlockPartition.begin(), mBlockPartition.end(), [&](auto it) {
+        //std::for_each(std::forward<TExecutionPolicy>(policy), mBlockPartition.begin(), mBlockPartition.end(), [&](auto it) {
             KRATOS_TRY
-            for (auto iter = *it; iter != *(it + 1); ++iter) {
-                f(*iter); //note that we pass the value to the function, not the iterator
-            }
+            // for (auto iter = *it; iter != *(it + 1); ++iter) {
+            //     f(*iter); //note that we pass the value to the function, not the iterator
+            // }
+            i = ParallelCXXAuxiliaryUtils::ThreadIdToString(std::this_thread::get_id());
             KRATOS_CATCH_THREAD_EXCEPTION
         });
 #else
@@ -206,7 +227,7 @@ public:
      * @param TReducer template parameter specifying the reduction operation to be done
      * @param f - must be a unary function accepting as input TContainerType::value_type&
      */
-    template <class TReducer, class TUnaryFunction>//, ExecutionPolicy TExecutionPolicy = PARALLEL_POLICY> // NOTE sould default be PARALLEL_UNSEQUENCED_POLICY
+    template <class TReducer, class TUnaryFunction>//, typename TExecutionPolicy> 
     [[nodiscard]] inline typename TReducer::return_type for_each(TUnaryFunction &&f)
     {
         KRATOS_PREPARE_CATCH_THREAD_EXCEPTION
@@ -232,7 +253,7 @@ public:
      * @param TThreadLocalStorage template parameter specifying the thread local storage
      * @param f - must be a function accepting as input TContainerType::value_type& and the thread local storage
      */
-    template <class TThreadLocalStorage, class TFunction>//, ExecutionPolicy TExecutionPolicy = PARALLEL_POLICY> // NOTE sould default be PARALLEL_UNSEQUENCED_POLICY
+    template <class TThreadLocalStorage, class TFunction>//, typename TExecutionPolicy> 
     inline void for_each(const TThreadLocalStorage& rThreadLocalStoragePrototype, TFunction &&f)
     {
         static_assert(std::is_copy_constructible<TThreadLocalStorage>::value, "TThreadLocalStorage must be copy constructible!");
@@ -262,7 +283,7 @@ public:
      * @param TThreadLocalStorage template parameter specifying the thread local storage
      * @param f - must be a function accepting as input TContainerType::value_type& and the thread local storage
      */
-    template <class TReducer, class TThreadLocalStorage, class TFunction>//, ExecutionPolicy TExecutionPolicy = PARALLEL_POLICY> // NOTE sould default be PARALLEL_UNSEQUENCED_POLICY
+    template <class TReducer, class TThreadLocalStorage, class TFunction>//, typename TExecutionPolicy> 
     [[nodiscard]] inline typename TReducer::return_type for_each(const TThreadLocalStorage& rThreadLocalStoragePrototype, TFunction &&f)
     {
         static_assert(std::is_copy_constructible<TThreadLocalStorage>::value, "TThreadLocalStorage must be copy constructible!");
@@ -292,8 +313,13 @@ public:
     }
 
 private:
-    int mNchunks;
-    std::array<TIterator, MaxThreads> mBlockPartition;
+    ///@name Member Variables
+    ///@{
+
+    int mNchunks;                                       /// Number of chunks
+    std::array<TIterator, TMaxThreads> mBlockPartition; /// Partition of the data
+
+    ///@}
 };
 
 /** @brief Execute a functor on all items of a range in parallel.
@@ -587,8 +613,13 @@ public:
     }
 
 private:
-    int mNchunks;
-    std::array<TIndexType, TMaxThreads> mBlockPartition;
+    ///@name Member Variables
+    ///@{
+
+    int mNchunks;                                        /// Number of chunks
+    std::array<TIndexType, TMaxThreads> mBlockPartition; /// Partition of the data
+
+    ///@}
 };
 
 } // namespace Kratos.
