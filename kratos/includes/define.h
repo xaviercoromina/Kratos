@@ -804,15 +804,6 @@ namespace Kratos
 #define KRATOS_WATCH_CERR(variable) std::cerr << #variable << " : " << variable << std::endl;
 #define KRATOS_WATCH_MPI(variable, mpi_data_comm) std::cout << "RANK " << mpi_data_comm.Rank() << "/" << mpi_data_comm.Size()  << "    "; KRATOS_WATCH(variable);
 
-// Defining Kratos execution policies enum
-enum class ExecutionPolicy
-{
-    SEQUENCED_POLICY,
-    PARALLEL_POLICY,
-    PARALLEL_UNSEQUENCED_POLICY,
-    UNSEQUENCED_POLICY 
-};
-    
 }  /* namespace Kratos.*/
 
 #define KRATOS_SERIALIZE_SAVE_BASE_CLASS(Serializer, BaseType) \
