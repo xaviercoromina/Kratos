@@ -245,12 +245,11 @@ public:
     template <class TReducer, class TUnaryFunction>
     [[nodiscard]] inline typename TReducer::return_type for_each(TUnaryFunction &&f)
     {
-    // #ifdef KRATOS_SMP_CXX17
-    // #else
-    // #endif
         KRATOS_PREPARE_CATCH_THREAD_EXCEPTION
 
         TReducer global_reducer;
+    #ifdef KRATOS_SMP_CXX17
+        // WIP
         #pragma omp parallel for
         for (int i=0; i<mNchunks; ++i) {
             KRATOS_TRY
@@ -261,7 +260,18 @@ public:
             global_reducer.ThreadSafeReduce(local_reducer);
             KRATOS_CATCH_THREAD_EXCEPTION
         }
-
+    #else
+        #pragma omp parallel for
+        for (int i=0; i<mNchunks; ++i) {
+            KRATOS_TRY
+            TReducer local_reducer;
+            for (auto it = mBlockPartition[i]; it != mBlockPartition[i+1]; ++it) {
+                local_reducer.LocalReduce(f(*it));
+            }
+            global_reducer.ThreadSafeReduce(local_reducer);
+            KRATOS_CATCH_THREAD_EXCEPTION
+        }
+    #endif
         KRATOS_CHECK_AND_THROW_THREAD_EXCEPTION
 
         return global_reducer.GetValue();
