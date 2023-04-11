@@ -194,14 +194,14 @@ public:
      * @brief simple iteration loop. f called on every entry in rData
      * @param f - must be a unary function accepting as input TContainerType::value_type&
      */
-    template <class TUnaryFunction>//, class TExecutionPolicy>
-    inline void for_each(TUnaryFunction&& f)//, const TExecutionPolicy&& policy = std::execution::par) // NOTE should default be std::execution::par_unseq?
+    template <class TUnaryFunction>
+    inline void for_each(TUnaryFunction&& f)
     {
         KRATOS_PREPARE_CATCH_THREAD_EXCEPTION
 #ifdef KRATOS_SMP_CXX17
         std::string i = "0";
+        // NOTE should default be std::execution::par_unseq?
         std::for_each(std::execution::par, mBlockPartition.begin(), mBlockPartition.end(), [&,i](auto it) mutable {
-        //std::for_each(std::forward<TExecutionPolicy>(policy), mBlockPartition.begin(), mBlockPartition.end(), [&,i](auto it) mutable {
             KRATOS_TRY
             f(*it); //note that we pass the value to the function, not the iterator
             i = ParallelCXXAuxiliaryUtils::ThreadIdToString(std::this_thread::get_id());
@@ -220,12 +220,36 @@ public:
         KRATOS_CHECK_AND_THROW_THREAD_EXCEPTION
     }
 
+    /**
+     * @brief simple iteration loop. f called on every entry in rData
+     * @details This version allows to specify the execution policy, now just for C++17
+     * @param f - must be a unary function accepting as input TContainerType::value_type&
+     * @param policy - execution policy
+     */
+    template <class TUnaryFunction, class TExecutionPolicy>
+    inline void for_each(TUnaryFunction&& f, const TExecutionPolicy&& policy)
+    {
+#ifdef KRATOS_SMP_CXX17
+        KRATOS_PREPARE_CATCH_THREAD_EXCEPTION
+        std::string i = "0";
+        std::for_each(std::forward<TExecutionPolicy>(policy), mBlockPartition.begin(), mBlockPartition.end(), [&,i](auto it) mutable {
+            KRATOS_TRY
+            f(*it); //note that we pass the value to the function, not the iterator
+            i = ParallelCXXAuxiliaryUtils::ThreadIdToString(std::this_thread::get_id());
+            KRATOS_CATCH_THREAD_EXCEPTION
+        });
+        KRATOS_CHECK_AND_THROW_THREAD_EXCEPTION
+#else
+        for_each(std::forward<TUnaryFunction>(f));
+#endif
+    }
+
     /** @brief loop allowing reductions. f called on every entry in rData
      * the function f needs to return the values to be used by the reducer
      * @param TReducer template parameter specifying the reduction operation to be done
      * @param f - must be a unary function accepting as input TContainerType::value_type&
      */
-    template <class TReducer, class TUnaryFunction>//, typename TExecutionPolicy> 
+    template <class TReducer, class TUnaryFunction>
     [[nodiscard]] inline typename TReducer::return_type for_each(TUnaryFunction &&f)
     {
         KRATOS_PREPARE_CATCH_THREAD_EXCEPTION
@@ -251,7 +275,7 @@ public:
      * @param TThreadLocalStorage template parameter specifying the thread local storage
      * @param f - must be a function accepting as input TContainerType::value_type& and the thread local storage
      */
-    template <class TThreadLocalStorage, class TFunction>//, typename TExecutionPolicy> 
+    template <class TThreadLocalStorage, class TFunction>
     inline void for_each(const TThreadLocalStorage& rThreadLocalStoragePrototype, TFunction &&f)
     {
         static_assert(std::is_copy_constructible<TThreadLocalStorage>::value, "TThreadLocalStorage must be copy constructible!");
@@ -281,7 +305,7 @@ public:
      * @param TThreadLocalStorage template parameter specifying the thread local storage
      * @param f - must be a function accepting as input TContainerType::value_type& and the thread local storage
      */
-    template <class TReducer, class TThreadLocalStorage, class TFunction>//, typename TExecutionPolicy> 
+    template <class TReducer, class TThreadLocalStorage, class TFunction>
     [[nodiscard]] inline typename TReducer::return_type for_each(const TThreadLocalStorage& rThreadLocalStoragePrototype, TFunction &&f)
     {
         static_assert(std::is_copy_constructible<TThreadLocalStorage>::value, "TThreadLocalStorage must be copy constructible!");
