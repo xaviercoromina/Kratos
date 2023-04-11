@@ -197,17 +197,10 @@ public:
     template <class TUnaryFunction>
     inline void for_each(TUnaryFunction&& f)
     {
+    #ifdef KRATOS_SMP_CXX17
+        for_each_policy(std::forward<TUnaryFunction>(f), std::execution::par); // NOTE: Default policy is par, could be changed to par_unseq
+    #else
         KRATOS_PREPARE_CATCH_THREAD_EXCEPTION
-#ifdef KRATOS_SMP_CXX17
-        std::string i = "0";
-        // NOTE should default be std::execution::par_unseq?
-        std::for_each(std::execution::par, mBlockPartition.begin(), mBlockPartition.end(), [&,i](auto it) mutable {
-            KRATOS_TRY
-            f(*it); //note that we pass the value to the function, not the iterator
-            i = ParallelCXXAuxiliaryUtils::ThreadIdToString(std::this_thread::get_id());
-            KRATOS_CATCH_THREAD_EXCEPTION
-        });
-#else
         #pragma omp parallel for
         for (int i=0; i<mNchunks; ++i) {
             KRATOS_TRY
@@ -216,8 +209,8 @@ public:
             }
             KRATOS_CATCH_THREAD_EXCEPTION
         }
-#endif
         KRATOS_CHECK_AND_THROW_THREAD_EXCEPTION
+    #endif
     }
 
     /**
@@ -227,9 +220,9 @@ public:
      * @param policy - execution policy
      */
     template <class TUnaryFunction, class TExecutionPolicy>
-    inline void for_each(TUnaryFunction&& f, const TExecutionPolicy&& policy)
+    inline void for_each_policy(TUnaryFunction&& f, TExecutionPolicy&& policy)
     {
-#ifdef KRATOS_SMP_CXX17
+    #ifdef KRATOS_SMP_CXX17
         KRATOS_PREPARE_CATCH_THREAD_EXCEPTION
         std::string i = "0";
         std::for_each(std::forward<TExecutionPolicy>(policy), mBlockPartition.begin(), mBlockPartition.end(), [&,i](auto it) mutable {
@@ -239,9 +232,9 @@ public:
             KRATOS_CATCH_THREAD_EXCEPTION
         });
         KRATOS_CHECK_AND_THROW_THREAD_EXCEPTION
-#else
+    #else
         for_each(std::forward<TUnaryFunction>(f));
-#endif
+    #endif
     }
 
     /** @brief loop allowing reductions. f called on every entry in rData
@@ -252,6 +245,9 @@ public:
     template <class TReducer, class TUnaryFunction>
     [[nodiscard]] inline typename TReducer::return_type for_each(TUnaryFunction &&f)
     {
+    // #ifdef KRATOS_SMP_CXX17
+    // #else
+    // #endif
         KRATOS_PREPARE_CATCH_THREAD_EXCEPTION
 
         TReducer global_reducer;
@@ -278,6 +274,9 @@ public:
     template <class TThreadLocalStorage, class TFunction>
     inline void for_each(const TThreadLocalStorage& rThreadLocalStoragePrototype, TFunction &&f)
     {
+    // #ifdef KRATOS_SMP_CXX17
+    // #else
+    // #endif
         static_assert(std::is_copy_constructible<TThreadLocalStorage>::value, "TThreadLocalStorage must be copy constructible!");
 
         KRATOS_PREPARE_CATCH_THREAD_EXCEPTION
@@ -308,6 +307,9 @@ public:
     template <class TReducer, class TThreadLocalStorage, class TFunction>
     [[nodiscard]] inline typename TReducer::return_type for_each(const TThreadLocalStorage& rThreadLocalStoragePrototype, TFunction &&f)
     {
+    // #ifdef KRATOS_SMP_CXX17
+    // #else
+    // #endif
         static_assert(std::is_copy_constructible<TThreadLocalStorage>::value, "TThreadLocalStorage must be copy constructible!");
 
         KRATOS_PREPARE_CATCH_THREAD_EXCEPTION
