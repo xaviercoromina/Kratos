@@ -225,9 +225,12 @@ public:
     #ifdef KRATOS_SMP_CXX17
         KRATOS_PREPARE_CATCH_THREAD_EXCEPTION
         std::string i = "0";
-        std::for_each(std::forward<TExecutionPolicy>(policy), mBlockPartition.begin(), mBlockPartition.end(), [&,i](auto it) mutable {
+        std::for_each(std::forward<TExecutionPolicy>(policy), mBlockPartition.begin(), mBlockPartition.end() - 1, [&,i](auto it_begin) mutable {
             KRATOS_TRY
-            f(*it); //note that we pass the value to the function, not the iterator
+            auto it_end = std::next(it_begin);
+            for (auto it = it_begin; it != it_end; ++it) {
+                f(*it); //note that we pass the value to the function, not the iterator
+            }
             i = ParallelCXXAuxiliaryUtils::ThreadIdToString(std::this_thread::get_id());
             KRATOS_CATCH_THREAD_EXCEPTION
         });
