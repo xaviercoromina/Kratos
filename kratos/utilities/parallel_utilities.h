@@ -240,44 +240,71 @@ public:
     #endif
     }
 
-    /** @brief loop allowing reductions. f called on every entry in rData
-     * the function f needs to return the values to be used by the reducer
+    /**
+     * @brief Loop allowing reductions. f called on every entry in rData
+     * @details The function f needs to return the values to be used by the reducer
      * @param TReducer template parameter specifying the reduction operation to be done
      * @param f - must be a unary function accepting as input TContainerType::value_type&
      */
     template <class TReducer, class TUnaryFunction>
     [[nodiscard]] inline typename TReducer::return_type for_each(TUnaryFunction &&f)
     {
+    #ifdef KRATOS_SMP_CXX17
+        return for_each_policy<TReducer>(std::forward<TUnaryFunction>(f), std::execution::par); // NOTE: Default policy is par, could be changed to par_unseq
+    #else
+        KRATOS_PREPARE_CATCH_THREAD_EXCEPTION
+        TReducer global_reducer;
+        #pragma omp parallel for
+        for (int i=0; i<mNchunks; ++i) {
+            KRATOS_TRY
+            TReducer local_reducer;
+            for (auto it = mBlockPartition[i]; it != mBlockPartition[i+1]; ++it) {
+                local_reducer.LocalReduce(f(*it));
+            }
+            global_reducer.ThreadSafeReduce(local_reducer);
+            KRATOS_CATCH_THREAD_EXCEPTION
+        }
+        KRATOS_CHECK_AND_THROW_THREAD_EXCEPTION
+        return global_reducer.GetValue();
+    #endif
+    }
+
+    /**
+     * @brief Loop allowing reductions. f called on every entry in rData
+     * @details This version allows to specify the execution policy, now just for C++17
+     * The function f needs to return the values to be used by the reducer
+     * @param TReducer template parameter specifying the reduction operation to be done
+     * @param f - must be a unary function accepting as input TContainerType::value_type&
+     * @param policy - execution policy
+     */
+    template <class TReducer, class TUnaryFunction, class TExecutionPolicy>
+    [[nodiscard]] inline typename TReducer::return_type for_each_policy(TUnaryFunction &&f, TExecutionPolicy&& policy)
+    {
+    #ifdef KRATOS_SMP_CXX17
         KRATOS_PREPARE_CATCH_THREAD_EXCEPTION
 
         TReducer global_reducer;
-    #ifdef KRATOS_SMP_CXX17
-        // WIP
-        #pragma omp parallel for
-        for (int i=0; i<mNchunks; ++i) {
-            KRATOS_TRY
+
+        std::vector<TReducer> local_reducers(mNchunks);
+        std::transform(std::forward<TExecutionPolicy>(policy), mBlockPartition.begin(), mBlockPartition.end() - 1, local_reducers.begin(), [&](auto it_begin) {
+            auto it_end = std::next(it_begin);
             TReducer local_reducer;
-            for (auto it = mBlockPartition[i]; it != mBlockPartition[i+1]; ++it) {
+            for (auto it = it_begin; it != it_end; ++it) {
                 local_reducer.LocalReduce(f(*it));
             }
-            global_reducer.ThreadSafeReduce(local_reducer);
-            KRATOS_CATCH_THREAD_EXCEPTION
+            return local_reducer;
+        });
+
+        for (auto& r_local_reducer : local_reducers) {
+            global_reducer.ThreadSafeReduce(r_local_reducer);
         }
-    #else
-        #pragma omp parallel for
-        for (int i=0; i<mNchunks; ++i) {
-            KRATOS_TRY
-            TReducer local_reducer;
-            for (auto it = mBlockPartition[i]; it != mBlockPartition[i+1]; ++it) {
-                local_reducer.LocalReduce(f(*it));
-            }
-            global_reducer.ThreadSafeReduce(local_reducer);
-            KRATOS_CATCH_THREAD_EXCEPTION
-        }
-    #endif
+
         KRATOS_CHECK_AND_THROW_THREAD_EXCEPTION
 
         return global_reducer.GetValue();
+    #else
+        return for_each<TReducer>(std::forward<TUnaryFunction>(f));
+    #endif
     }
 
     /** @brief loop with thread local storage (TLS). f called on every entry in rData
