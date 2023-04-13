@@ -282,17 +282,20 @@ public:
     {
     #ifdef KRATOS_SMP_CXX17
         KRATOS_PREPARE_CATCH_THREAD_EXCEPTION
+        std::string i = "0";
 
         TReducer global_reducer;
-
         std::vector<TReducer> local_reducers(mNchunks);
-        std::transform(std::forward<TExecutionPolicy>(policy), mBlockPartition.begin(), mBlockPartition.end() - 1, local_reducers.begin(), [&](auto it_begin) {
+        std::transform(std::forward<TExecutionPolicy>(policy), mBlockPartition.begin(), mBlockPartition.end() - 1, local_reducers.begin(), [&,i](auto it_begin) mutable {
+            KRATOS_TRY
             auto it_end = std::next(it_begin);
             TReducer local_reducer;
             for (auto it = it_begin; it != it_end; ++it) {
                 local_reducer.LocalReduce(f(*it));
             }
+            i = ParallelCXXAuxiliaryUtils::ThreadIdToString(std::this_thread::get_id());
             return local_reducer;
+            KRATOS_CATCH_THREAD_EXCEPTION
         });
 
         for (auto& r_local_reducer : local_reducers) {
@@ -309,15 +312,15 @@ public:
 
     /**
      * @brief Loop with thread local storage (TLS). f called on every entry in rData
-     * @param TThreadLocalStorage template parameter specifying the thread local storage
+     * @tparam TThreadLocalStorage template parameter specifying the thread local storage
      * @param f - must be a function accepting as input TContainerType::value_type& and the thread local storage
      */
     template <class TThreadLocalStorage, class TFunction>
     inline void for_each(const TThreadLocalStorage& rThreadLocalStoragePrototype, TFunction &&f)
     {
-    // #ifdef KRATOS_SMP_CXX17
-    // #else
-    // #endif
+    #ifdef KRATOS_SMP_CXX17
+        for_each_policy<TThreadLocalStorage>(rThreadLocalStoragePrototype, std::forward<TFunction>(f), std::execution::par); // NOTE: Default policy is par, could be changed to par_unseq
+    #else
         static_assert(std::is_copy_constructible<TThreadLocalStorage>::value, "TThreadLocalStorage must be copy constructible!");
 
         KRATOS_PREPARE_CATCH_THREAD_EXCEPTION
@@ -337,6 +340,42 @@ public:
             }
         }
         KRATOS_CHECK_AND_THROW_THREAD_EXCEPTION
+    #endif
+    }
+
+    /**
+     * @brief Loop with thread local storage (TLS). f called on every entry in rData
+     * @details This version allows to specify the execution policy, now just for C++17
+     * @tparam TThreadLocalStorage template parameter specifying the thread local storage
+     * @param f - must be a function accepting as input TContainerType::value_type& and the thread local storage
+     * @param policy - execution policy
+     */
+    template <class TThreadLocalStorage, class TFunction, class TExecutionPolicy>
+    inline void for_each_policy(const TThreadLocalStorage& rThreadLocalStoragePrototype, TFunction &&f, TExecutionPolicy&& policy)
+    {
+    #ifdef KRATOS_SMP_CXX17
+        static_assert(std::is_copy_constructible<TThreadLocalStorage>::value, "TThreadLocalStorage must be copy constructible!");
+
+        KRATOS_PREPARE_CATCH_THREAD_EXCEPTION
+
+        std::string i = "0";
+        std::for_each(std::forward<TExecutionPolicy>(policy), mBlockPartition.begin(), mBlockPartition.end() - 1, [&,i](auto it_begin) mutable {
+            TThreadLocalStorage thread_local_storage(rThreadLocalStoragePrototype);
+
+            auto it_end = std::next(it_begin);
+
+            KRATOS_TRY
+            for (auto it = it_begin; it != it_end; ++it) {
+                f(*it, thread_local_storage); // note that we pass the value to the function, not the iterator
+            }
+            i = ParallelCXXAuxiliaryUtils::ThreadIdToString(std::this_thread::get_id());
+            KRATOS_CATCH_THREAD_EXCEPTION
+        });
+
+        KRATOS_CHECK_AND_THROW_THREAD_EXCEPTION
+    #else
+        for_each(rThreadLocalStoragePrototype, std::forward<TFunction>(f));
+    #endif
     }
 
     /**
