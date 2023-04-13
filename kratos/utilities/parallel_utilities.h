@@ -296,6 +296,7 @@ public:
             i = ParallelCXXAuxiliaryUtils::ThreadIdToString(std::this_thread::get_id());
             return local_reducer;
             KRATOS_CATCH_THREAD_EXCEPTION
+            return TReducer{};
         });
 
         for (auto& r_local_reducer : local_reducers) {
