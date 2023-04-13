@@ -157,15 +157,15 @@ public:
  * @class BlockPartition
  * @tparam TIterator - type of iterator (must be a random access iterator)
  * @tparam TMaxThreads - maximum number of threads allowed in the partitioning.
- *                       must be known at compile time to avoid heap allocations in the partitioning
+ *                      must be known at compile time to avoid heap allocations in the partitioning
  */
 template<class TIterator, int TMaxThreads=Globals::MaxAllowedThreads>
 class BlockPartition
 {
 public:
     /** @param it_begin - iterator pointing at the beginning of the container
-     *  @param it_end - iterator pointing to the end of the container
-     *  @param Nchunks - number of threads to be used in the loop (must be lower than TMaxThreads)
+     * @param it_end - iterator pointing to the end of the container
+     * @param Nchunks - number of threads to be used in the loop (must be lower than TMaxThreads)
      */
     BlockPartition(TIterator it_begin,
                    TIterator it_end,
@@ -307,7 +307,8 @@ public:
     #endif
     }
 
-    /** @brief loop with thread local storage (TLS). f called on every entry in rData
+    /**
+     * @brief Loop with thread local storage (TLS). f called on every entry in rData
      * @param TThreadLocalStorage template parameter specifying the thread local storage
      * @param f - must be a function accepting as input TContainerType::value_type& and the thread local storage
      */
@@ -338,8 +339,9 @@ public:
         KRATOS_CHECK_AND_THROW_THREAD_EXCEPTION
     }
 
-    /** @brief loop with thread local storage (TLS) allowing reductions. f called on every entry in rData
-     * the function f needs to return the values to be used by the reducer
+    /**
+     * @brief loop with thread local storage (TLS) allowing reductions. f called on every entry in rData
+     * @details The function f needs to return the values to be used by the reducer
      * @param TReducer template parameter specifying the reduction operation to be done
      * @param TThreadLocalStorage template parameter specifying the thread local storage
      * @param f - must be a function accepting as input TContainerType::value_type& and the thread local storage
@@ -386,12 +388,13 @@ private:
     ///@}
 };
 
-/** @brief Execute a functor on all items of a range in parallel.
- *  @tparam TIterator: random access iterator.
- *  @tparam TFunction: functor taking the dereferenced type of @a TIterator.
- *  @param itBegin: iterator to the first item in the container to loop on.
- *  @param itEnd: iterator past the last item in the container.
- *  @param rFunction: function to execute on each item.
+/**
+ * @brief Execute a functor on all items of a range in parallel.
+ * @tparam TIterator: random access iterator.
+ * @tparam TFunction: functor taking the dereferenced type of @a TIterator.
+ * @param itBegin: iterator to the first item in the container to loop on.
+ * @param itEnd: iterator past the last item in the container.
+ * @param rFunction: function to execute on each item.
  */
 template <class TIterator,
           class TFunction,
@@ -401,13 +404,14 @@ void block_for_each(TIterator itBegin, TIterator itEnd, TFunction&& rFunction)
     BlockPartition<TIterator>(itBegin, itEnd).for_each(std::forward<TFunction>(rFunction));
 }
 
-/** @brief Execute a functor on all items of a range in parallel, and perform a reduction.
- *  @tparam TReduction: type of reduction to apply. See @ref SumReduction for an example.
- *  @tparam TIterator: random access iterator.
- *  @tparam TFunction: functor taking the dereferenced type of @a TIterator.
- *  @param itBegin: iterator to the first item in the container to loop on.
- *  @param itEnd: iterator past the last item in the container.
- *  @param rFunction: function to execute on each item.
+/**
+ * @brief Execute a functor on all items of a range in parallel, and perform a reduction.
+ * @tparam TReduction: type of reduction to apply. See @ref SumReduction for an example.
+ * @tparam TIterator: random access iterator.
+ * @tparam TFunction: functor taking the dereferenced type of @a TIterator.
+ * @param itBegin: iterator to the first item in the container to loop on.
+ * @param itEnd: iterator past the last item in the container.
+ * @param rFunction: function to execute on each item.
  */
 template <class TReduction,
           class TIterator,
@@ -418,14 +422,15 @@ template <class TReduction,
     return  BlockPartition<TIterator>(itBegin, itEnd).template for_each<TReduction>(std::forward<TFunction>(std::forward<TFunction>(rFunction)));
 }
 
-/** @brief Execute a functor with thread local storage on all items of a range in parallel.
- *  @tparam TIterator:  random access iterator.
- *  @tparam TTLS: copy constructible thread-local type.
- *  @tparam TFunction: functor taking the dereferenced type of @a TIterator.
- *  @param itBegin: iterator to the first item in the container to loop on.
- *  @param itEnd: iterator past the last item in the container.
- *  @param rTLS: thread local storage
- *  @param rFunction: function to execute on each item.
+/**
+ * @brief Execute a functor with thread local storage on all items of a range in parallel.
+ * @tparam TIterator:  random access iterator.
+ * @tparam TTLS: copy constructible thread-local type.
+ * @tparam TFunction: functor taking the dereferenced type of @a TIterator.
+ * @param itBegin: iterator to the first item in the container to loop on.
+ * @param itEnd: iterator past the last item in the container.
+ * @param rTLS: thread local storage
+ * @param rFunction: function to execute on each item.
  */
 template <class TIterator,
           class TTLS,
@@ -436,15 +441,16 @@ void block_for_each(TIterator itBegin, TIterator itEnd, const TTLS& rTLS, TFunct
      BlockPartition<TIterator>(itBegin, itEnd).for_each(rTLS, std::forward<TFunction>(rFunction));
 }
 
-/** @brief Execute a functor with thread local storage on all items of a range in parallel, and perform a reduction.
- *  @tparam TReduction: type of reduction to apply. See @ref SumReduction for an example.
- *  @tparam TIterator: random access iterator.
- *  @tparam TTLS: copy constructible thread-local type.
- *  @tparam TFunction: functor taking the dereferenced type of @a TIterator.
- *  @param itBegin: iterator to the first item in the container to loop on.
- *  @param itEnd: iterator past the last item in the container.
- *  @param rTLS: thread local storage
- *  @param rFunction: function to execute on each item.
+/**
+ * @brief Execute a functor with thread local storage on all items of a range in parallel, and perform a reduction.
+ * @tparam TReduction: type of reduction to apply. See @ref SumReduction for an example.
+ * @tparam TIterator: random access iterator.
+ * @tparam TTLS: copy constructible thread-local type.
+ * @tparam TFunction: functor taking the dereferenced type of @a TIterator.
+ * @param itBegin: iterator to the first item in the container to loop on.
+ * @param itEnd: iterator past the last item in the container.
+ * @param rTLS: thread local storage
+ * @param rFunction: function to execute on each item.
  */
 template <class TReduction,
           class TIterator,
@@ -456,7 +462,8 @@ template <class TReduction,
     return BlockPartition<TIterator>(itBegin, itEnd).template for_each<TReduction>(tls, std::forward<TFunction>(std::forward<TFunction>(rFunction)));
 }
 
-/** @brief simplified version of the basic loop (without reduction) to enable template type deduction
+/**
+ * @brief simplified version of the basic loop (without reduction) to enable template type deduction
  * @param v - containers to be looped upon
  * @param func - must be a unary function accepting as input TContainerType::value_type&
  */
@@ -466,7 +473,8 @@ void block_for_each(TContainerType &&v, TFunctionType &&func)
     block_for_each(v.begin(), v.end(), std::forward<TFunctionType>(func));
 }
 
-/** @brief simplified version of the basic loop with reduction to enable template type deduction
+/**
+ * @brief simplified version of the basic loop with reduction to enable template type deduction
  * @param v - containers to be looped upon
  * @param func - must be a unary function accepting as input TContainerType::value_type&
  */
@@ -476,7 +484,8 @@ template <class TReducer, class TContainerType, class TFunctionType>
     return block_for_each<TReducer>(v.begin(), v.end(), std::forward<TFunctionType>(func));
 }
 
-/** @brief simplified version of the basic loop with thread local storage (TLS) to enable template type deduction
+/**
+ * @brief simplified version of the basic loop with thread local storage (TLS) to enable template type deduction
  * @param v - containers to be looped upon
  * @param tls - thread local storage
  * @param func - must be a function accepting as input TContainerType::value_type& and the thread local storage
@@ -487,7 +496,8 @@ void block_for_each(TContainerType &&v, const TThreadLocalStorage& tls, TFunctio
     block_for_each(v.begin(), v.end(), tls, std::forward<TFunctionType>(func));
 }
 
-/** @brief simplified version of the basic loop with reduction and thread local storage (TLS) to enable template type deduction
+/**
+ * @brief simplified version of the basic loop with reduction and thread local storage (TLS) to enable template type deduction
  * @param v - containers to be looped upon
  * @param tls - thread local storage
  * @param func - must be a function accepting as input TContainerType::value_type& and the thread local storage
@@ -501,20 +511,22 @@ template <class TReducer, class TContainerType, class TThreadLocalStorage, class
 //***********************************************************************************
 //***********************************************************************************
 //***********************************************************************************
-/** @brief This class is useful for index iteration over containers
- *  @param TIndexType type of index to be used in the loop
- *  @param TMaxThreads - maximum number of threads allowed in the partitioning.
- *                       must be known at compile time to avoid heap allocations in the partitioning
+/**
+ * @brief This class is useful for index iteration over containers
+ * @param TIndexType type of index to be used in the loop
+ * @param TMaxThreads - maximum number of threads allowed in the partitioning.
+ *                      must be known at compile time to avoid heap allocations in the partitioning
  */
 template<class TIndexType=std::size_t, int TMaxThreads=Globals::MaxAllowedThreads>
 class IndexPartition
 {
 public:
 
-/** @brief constructor using the size of the partition to be used
- *  @param Size - the size of the partition
- *  @param Nchunks - number of threads to be used in the loop (must be lower than TMaxThreads)
- */
+    /**
+     * @brief constructor using the size of the partition to be used
+     * @param Size - the size of the partition
+     * @param Nchunks - number of threads to be used in the loop (must be lower than TMaxThreads)
+     */
     IndexPartition(TIndexType Size,
                    int Nchunks = ParallelUtilities::GetNumThreads())
     {
@@ -567,7 +579,8 @@ public:
         }
     }
 
-    /** simple version of for_each (no reduction) to be called for each index in the partition
+    /**
+     * @brief simple version of for_each (no reduction) to be called for each index in the partition
      * @param f - must be a unary function accepting as input IndexType
      */
     template <class TUnaryFunction>
@@ -586,8 +599,9 @@ public:
         KRATOS_CHECK_AND_THROW_THREAD_EXCEPTION
     }
 
-    /** version with reduction to be called for each index in the partition
-     * function f is expected to return the values to be reduced
+    /**
+     * @brief version with reduction to be called for each index in the partition
+     * @details function f is expected to return the values to be reduced
      * @param TReducer - template parameter specifying the type of reducer to be applied
      * @param f - must be a unary function accepting as input IndexType
      */
@@ -612,7 +626,8 @@ public:
     }
 
 
-    /** @brief loop with thread local storage (TLS). f called on every entry in rData
+    /**
+     * @brief loop with thread local storage (TLS). f called on every entry in rData
      * @param TThreadLocalStorage template parameter specifying the thread local storage
      * @param f - must be a function accepting as input IndexType and the thread local storage
      */
@@ -640,8 +655,9 @@ public:
         KRATOS_CHECK_AND_THROW_THREAD_EXCEPTION
     }
 
-    /** version with reduction and thread local storage (TLS) to be called for each index in the partition
-     * function f is expected to return the values to be reduced
+    /**
+     * @brief version with reduction and thread local storage (TLS) to be called for each index in the partition
+     * @details function f is expected to return the values to be reduced
      * @param TReducer - template parameter specifying the type of reducer to be applied
      * @param TThreadLocalStorage template parameter specifying the thread local storage
      * @param f - must be a function accepting as input IndexType and the thread local storage
