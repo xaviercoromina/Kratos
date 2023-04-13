@@ -194,11 +194,11 @@ public:
      * @brief simple iteration loop. f called on every entry in rData
      * @param f - must be a unary function accepting as input TContainerType::value_type&
      */
-    template <class TUnaryFunction>
-    inline void for_each(TUnaryFunction&& f)
+    template <class TFunction>
+    inline void for_each(TFunction&& f)
     {
     #ifdef KRATOS_SMP_CXX17
-        for_each_policy(std::forward<TUnaryFunction>(f), std::execution::par); // NOTE: Default policy is par, could be changed to par_unseq
+        for_each_policy(std::forward<TFunction>(f), std::execution::par); // NOTE: Default policy is par, could be changed to par_unseq
     #else
         KRATOS_PREPARE_CATCH_THREAD_EXCEPTION
         #pragma omp parallel for
@@ -219,8 +219,8 @@ public:
      * @param f - must be a unary function accepting as input TContainerType::value_type&
      * @param policy - execution policy
      */
-    template <class TUnaryFunction, class TExecutionPolicy>
-    inline void for_each_policy(TUnaryFunction&& f, TExecutionPolicy&& policy)
+    template <class TFunction, class TExecutionPolicy>
+    inline void for_each_policy(TFunction&& f, TExecutionPolicy&& policy)
     {
     #ifdef KRATOS_SMP_CXX17
         KRATOS_PREPARE_CATCH_THREAD_EXCEPTION
@@ -236,7 +236,7 @@ public:
         });
         KRATOS_CHECK_AND_THROW_THREAD_EXCEPTION
     #else
-        for_each(std::forward<TUnaryFunction>(f));
+        for_each(std::forward<TFunction>(f));
     #endif
     }
 
@@ -246,11 +246,11 @@ public:
      * @param TReducer template parameter specifying the reduction operation to be done
      * @param f - must be a unary function accepting as input TContainerType::value_type&
      */
-    template <class TReducer, class TUnaryFunction>
-    [[nodiscard]] inline typename TReducer::return_type for_each(TUnaryFunction &&f)
+    template <class TReducer, class TFunction>
+    [[nodiscard]] inline typename TReducer::return_type for_each(TFunction &&f)
     {
     #ifdef KRATOS_SMP_CXX17
-        return for_each_policy<TReducer>(std::forward<TUnaryFunction>(f), std::execution::par); // NOTE: Default policy is par, could be changed to par_unseq
+        return for_each_policy<TReducer>(std::forward<TFunction>(f), std::execution::par); // NOTE: Default policy is par, could be changed to par_unseq
     #else
         KRATOS_PREPARE_CATCH_THREAD_EXCEPTION
         TReducer global_reducer;
@@ -277,8 +277,8 @@ public:
      * @param f - must be a unary function accepting as input TContainerType::value_type&
      * @param policy - execution policy
      */
-    template <class TReducer, class TUnaryFunction, class TExecutionPolicy>
-    [[nodiscard]] inline typename TReducer::return_type for_each_policy(TUnaryFunction &&f, TExecutionPolicy&& policy)
+    template <class TReducer, class TFunction, class TExecutionPolicy>
+    [[nodiscard]] inline typename TReducer::return_type for_each_policy(TFunction &&f, TExecutionPolicy&& policy)
     {
     #ifdef KRATOS_SMP_CXX17
         KRATOS_PREPARE_CATCH_THREAD_EXCEPTION
@@ -306,7 +306,7 @@ public:
 
         return global_reducer.GetValue();
     #else
-        return for_each<TReducer>(std::forward<TUnaryFunction>(f));
+        return for_each<TReducer>(std::forward<TFunction>(f));
     #endif
     }
 
@@ -589,8 +589,8 @@ public:
 
     //NOT COMMENTING IN DOXYGEN - THIS SHOULD BE SORT OF HIDDEN UNTIL GIVEN PRIME TIME
     //pure c++11 version (can handle exceptions)
-    template <class TUnaryFunction>
-    inline void for_pure_c11(TUnaryFunction &&f)
+    template <class TFunction>
+    inline void for_pure_c11(TFunction &&f)
     {
         std::vector< std::future<void> > runners(mNchunks);
         const auto& partition = mBlockPartition;
@@ -622,8 +622,8 @@ public:
      * @brief simple version of for_each (no reduction) to be called for each index in the partition
      * @param f - must be a unary function accepting as input IndexType
      */
-    template <class TUnaryFunction>
-    inline void for_each(TUnaryFunction &&f)
+    template <class TFunction>
+    inline void for_each(TFunction &&f)
     {
         KRATOS_PREPARE_CATCH_THREAD_EXCEPTION
 
@@ -644,8 +644,8 @@ public:
      * @param TReducer - template parameter specifying the type of reducer to be applied
      * @param f - must be a unary function accepting as input IndexType
      */
-    template <class TReducer, class TUnaryFunction>
-    [[nodiscard]] inline typename TReducer::return_type for_each(TUnaryFunction &&f)
+    template <class TReducer, class TFunction>
+    [[nodiscard]] inline typename TReducer::return_type for_each(TFunction &&f)
     {
         KRATOS_PREPARE_CATCH_THREAD_EXCEPTION
 
