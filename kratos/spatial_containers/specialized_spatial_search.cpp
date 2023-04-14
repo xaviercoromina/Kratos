@@ -287,7 +287,7 @@ void SpecializedSpatialSearch<TSearchBackend>::SearchConditionsInRadiusExclusive
     } else if constexpr (TSearchBackend == SpatialContainer::BinsStatic) {
         // Retrieving parameters
         const int bucket_size = mParameters["bucket_size"].GetInt();
-        
+
         /// StaticBins definitions
         using StaticBins = Bins<3ul, PointType, PointVector, PointTypePointer, PointIterator, DistanceIterator>;
         using StaticBinsTree = Tree<StaticBins>;
