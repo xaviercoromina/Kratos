@@ -44,7 +44,8 @@ public:
 
     /// Pointer definition of SpatialSearchResult
     KRATOS_CLASS_POINTER_DEFINITION(SpatialSearchResult);
-	
+
+    /// Global pointer definition of TObjectType
     using TPointerType = GlobalPointer<TObjectType>;
 
     ///@}
@@ -60,8 +61,10 @@ public:
 			mIsObjectFound = true;
 	}
 
+    /// Copy constructor.
 	SpatialSearchResult(SpatialSearchResult const& /* Other */) = default;
 
+    /// Move constructor.
 	SpatialSearchResult(SpatialSearchResult&& /* Other */) = default;
 
     /// Destructor.
@@ -71,15 +74,18 @@ public:
     ///@name Operators
     ///@{
 
+    /// Assignment operator.
     SpatialSearchResult& operator=(SpatialSearchResult const& /*Other*/) = default;
 
     ///@}
     ///@name Operations
     ///@{
 
-	void Reset() {
-		mpObject = mpObject(nullptr);
-		mDistance = 0.00;
+    /// Reset the result
+	void Reset()
+    {
+		mpObject = nullptr;
+		mDistance = 0.0;
 		mIsObjectFound = false;
 		mIsDistanceCalculated = false;
 	}
@@ -89,13 +95,13 @@ public:
     ///@{
 
     /// Returns the global pointer to the object
-	TPointerType Get() { 
-        return mpObject; 
+	TPointerType Get() {
+        return mpObject;
     }
-    
+
     /// Returns a const global pointer to the object
-	TPointerType const Get() const { 
-        return mpObject; 
+	TPointerType const Get() const {
+        return mpObject;
     }
 
     /// Set the object to be pointed
@@ -105,12 +111,12 @@ public:
 	}
 
     /// Getting the result distance
-	double GetDistance() const { 
-        return mDistance; 
+	double GetDistance() const {
+        return mDistance;
     }
 
     /// Setting the result distance
-	void SetDistance(double TheDistance) {
+	void SetDistance(const double TheDistance) {
 		mDistance = TheDistance;
 		mIsDistanceCalculated = true;
 	}
@@ -153,10 +159,10 @@ private:
     ///@name Member Variables
     ///@{
 
-	TPointerType mpObject;
-	double mDistance;
-	bool mIsObjectFound;
-	bool mIsDistanceCalculated;
+	TPointerType mpObject;      /// The object found
+	double mDistance;           /// The distance to the object
+	bool mIsObjectFound;        /// If the object is found
+	bool mIsDistanceCalculated; /// If the distance is calculated
 
     ///@}
     ///@name Private Operations
@@ -168,15 +174,12 @@ private:
 }; // Class SpatialSearchResult
 
 ///@}
-
 ///@name Type Definitions
 ///@{
-
 
 ///@}
 ///@name Input and output
 ///@{
-
 
 /// input stream function
 template <typename TObjectType>
