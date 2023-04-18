@@ -380,8 +380,8 @@ public:
         return this->Volume();
     }
 
-    /** 
-     * @brief This method calculate and return volume of this geometry. 
+    /**
+     * @brief This method calculate and return volume of this geometry.
      * @details For one and two dimensional geometry it returns zero and for three dimensional it gives volume of geometry.
      * @return double value contains volume.
      * @see Length()
@@ -537,40 +537,40 @@ public:
         typedef typename Geometry<TPointType>::Pointer EdgePointerType;
         edges.push_back( EdgePointerType( new EdgeType(
                                               this->pGetPoint( 0 ),
-                                              this->pGetPoint( 6 ),
-                                              this->pGetPoint( 1 ) ) ) );
+                                              this->pGetPoint( 1 ),
+                                              this->pGetPoint( 6 ) ) ) );
         edges.push_back( EdgePointerType( new EdgeType(
                                               this->pGetPoint( 1 ),
-                                              this->pGetPoint( 7 ),
-                                              this->pGetPoint( 2 ) ) ) );
+                                              this->pGetPoint( 2 ),
+                                              this->pGetPoint( 7 ) ) ) );
         edges.push_back( EdgePointerType( new EdgeType(
                                               this->pGetPoint( 2 ),
-                                              this->pGetPoint( 8 ),
-                                              this->pGetPoint( 0 ) ) ) );
+                                              this->pGetPoint( 0 ),
+                                              this->pGetPoint( 8 ) ) ) );
         edges.push_back( EdgePointerType( new EdgeType(
                                               this->pGetPoint( 3 ),
-                                              this->pGetPoint( 12 ),
-                                              this->pGetPoint( 4 ) ) ) );
+                                              this->pGetPoint( 4 ),
+                                              this->pGetPoint( 12 ) ) ) );
         edges.push_back( EdgePointerType( new EdgeType(
                                               this->pGetPoint( 4 ),
-                                              this->pGetPoint( 13 ),
-                                              this->pGetPoint( 5 ) ) ) );
+                                              this->pGetPoint( 5 ),
+                                              this->pGetPoint( 13 ) ) ) );
         edges.push_back( EdgePointerType( new EdgeType(
                                               this->pGetPoint( 5 ),
-                                              this->pGetPoint( 14 ),
-                                              this->pGetPoint( 3 ) ) ) );
+                                              this->pGetPoint( 3 ),
+                                              this->pGetPoint( 14 ) ) ) );
         edges.push_back( EdgePointerType( new EdgeType(
                                               this->pGetPoint( 0 ),
-                                              this->pGetPoint( 9 ),
-                                              this->pGetPoint( 3 ) ) ) );
+                                              this->pGetPoint( 3 ),
+                                              this->pGetPoint( 9 ) ) ) );
         edges.push_back( EdgePointerType( new EdgeType(
                                               this->pGetPoint( 1 ),
-                                              this->pGetPoint( 10 ),
-                                              this->pGetPoint( 4 ) ) ) );
+                                              this->pGetPoint( 4 ),
+                                              this->pGetPoint( 10 ) ) ) );
         edges.push_back( EdgePointerType( new EdgeType(
                                               this->pGetPoint( 2 ),
-                                              this->pGetPoint( 11 ),
-                                              this->pGetPoint( 5 ) ) ) );
+                                              this->pGetPoint( 5 ),
+                                              this->pGetPoint( 11 ) ) ) );
         return edges;
     }
 
@@ -659,9 +659,9 @@ public:
      *
      * @return the value of the shape function at the given point
      */
-    double ShapeFunctionValue( 
+    double ShapeFunctionValue(
         IndexType ShapeFunctionIndex,
-        const CoordinatesArrayType& rPoint 
+        const CoordinatesArrayType& rPoint
         ) const override
     {
         return CalculateShapeFunctionValue(ShapeFunctionIndex, rPoint);
@@ -768,9 +768,9 @@ private:
      *
      * @return the value of the shape function at the given point
      */
-    static double CalculateShapeFunctionValue( 
+    static double CalculateShapeFunctionValue(
         const IndexType ShapeFunctionIndex,
-        const CoordinatesArrayType& rPoint 
+        const CoordinatesArrayType& rPoint
         )
     {
         const double x = rPoint[0];
@@ -830,7 +830,7 @@ private:
         rResult(  12  ) = x*z*(2*z - 1)*(-4.0*x - 4.0*y + 4.0) ;
         rResult(  13  ) = 4.0*x*y*z*(2*z - 1) ;
         rResult(  14  ) = 4.0*y*z*(2*z - 1)*(-x - y + 1.0) ;
-        
+
         return rResult;
     }
 
@@ -910,13 +910,13 @@ private:
     {
         IntegrationPointsContainerType all_integration_points = AllIntegrationPoints();
         IntegrationPointsArrayType integration_points = all_integration_points[static_cast<int>(ThisMethod)];
-        
+
         // Number of integration points
         const std::size_t integration_points_number = integration_points.size();
-        
+
         //Setting up return matrix
         Matrix shape_function_values( integration_points_number, 15 );
-        
+
         // Loop over all integration points
         double x, y, z;
         for ( std::size_t pnt = 0; pnt < integration_points_number; pnt++ ) {
@@ -962,7 +962,7 @@ private:
         // Number of integration points
         const std::size_t integration_points_number = integration_points.size();
         ShapeFunctionsGradientsType d_shape_f_values( integration_points_number );
-        
+
         // Initialising container
         Matrix result = ZeroMatrix( 15, 3 );
 
@@ -1109,7 +1109,6 @@ GeometryData Prism3D15<TPointType>::msGeometryData(
 );
 
 template<class TPointType> const
-GeometryDimension Prism3D15<TPointType>::msGeometryDimension(
-    3, 3, 3);
+GeometryDimension Prism3D15<TPointType>::msGeometryDimension(3, 3);
 
 }// namespace Kratos.

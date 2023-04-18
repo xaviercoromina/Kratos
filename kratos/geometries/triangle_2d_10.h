@@ -8,10 +8,10 @@
 //                   Kratos default license: kratos/license.txt
 //
 //  Main authors:    Mohamed Nabi
-//                   
-//                   
-//  Contributors:    
-//                   
+//
+//
+//  Contributors:
+//
 //
 
 #pragma once
@@ -59,8 +59,8 @@ namespace Kratos
  *          |        `\
  *          0---3--4---1
  * @author Mohamed Nabi
- * @author 
- * @author 
+ * @author
+ * @author
  */
 template<class TPointType>
 class Triangle2D10 : public Geometry<TPointType>
@@ -288,7 +288,7 @@ public:
      * obvious that any change to this new geometry's point affect
      * source geometry's points too.
      */
-    template<class TOtherPointType> Triangle2D10(Triangle2D10<TOtherPointType> const& rOther) 
+    template<class TOtherPointType> Triangle2D10(Triangle2D10<TOtherPointType> const& rOther)
         : BaseType(rOther)
     {
     }
@@ -367,7 +367,7 @@ public:
      * @param rThisPoints the nodes of the new geometry
      * @return Pointer to the new geometry
      */
-    typename BaseType::Pointer Create(const IndexType NewGeometryId, 
+    typename BaseType::Pointer Create(const IndexType NewGeometryId,
         PointsArrayType const& rThisPoints) const override
     {
         return typename BaseType::Pointer(new Triangle2D10(NewGeometryId, rThisPoints));
@@ -693,9 +693,9 @@ public:
     GeometriesArrayType GenerateEdges() const override
     {
         GeometriesArrayType edges = GeometriesArrayType();
-        edges.push_back(Kratos::make_shared<EdgeType>(this->pGetPoint(0), this->pGetPoint(3), this->pGetPoint(4), this->pGetPoint(1)));
-        edges.push_back(Kratos::make_shared<EdgeType>(this->pGetPoint(1), this->pGetPoint(5), this->pGetPoint(6), this->pGetPoint(2)));
-        edges.push_back(Kratos::make_shared<EdgeType>(this->pGetPoint(2), this->pGetPoint(7), this->pGetPoint(8), this->pGetPoint(0)));
+        edges.push_back(Kratos::make_shared<EdgeType>(this->pGetPoint(0), this->pGetPoint(1), this->pGetPoint(3), this->pGetPoint(4)));
+        edges.push_back(Kratos::make_shared<EdgeType>(this->pGetPoint(1), this->pGetPoint(2), this->pGetPoint(5), this->pGetPoint(6)));
+        edges.push_back(Kratos::make_shared<EdgeType>(this->pGetPoint(2), this->pGetPoint(0), this->pGetPoint(7), this->pGetPoint(8)));
         return edges;
     }
 
@@ -745,7 +745,7 @@ public:
      */
     virtual ShapeFunctionsGradientsType ShapeFunctionsLocalGradients(IntegrationMethod ThisMethod)
     {
-        ShapeFunctionsGradientsType localGradients 
+        ShapeFunctionsGradientsType localGradients
             = CalculateShapeFunctionsIntegrationPointsLocalGradients(ThisMethod);
         const int integration_points_number = msGeometryData.IntegrationPointsNumber(ThisMethod);
         ShapeFunctionsGradientsType Result(integration_points_number);
@@ -763,7 +763,7 @@ public:
     virtual ShapeFunctionsGradientsType ShapeFunctionsLocalGradients()
     {
         IntegrationMethod ThisMethod = msGeometryData.DefaultIntegrationMethod();
-        ShapeFunctionsGradientsType localGradients 
+        ShapeFunctionsGradientsType localGradients
             = CalculateShapeFunctionsIntegrationPointsLocalGradients(ThisMethod);
         const int integration_points_number = msGeometryData.IntegrationPointsNumber(ThisMethod);
         ShapeFunctionsGradientsType Result(integration_points_number);
@@ -1347,6 +1347,6 @@ GeometryData Triangle2D10<TPointType>::msGeometryData(
     AllShapeFunctionsLocalGradients());
 
 template<class TPointType>
-const GeometryDimension Triangle2D10<TPointType>::msGeometryDimension(2, 2, 2);
+const GeometryDimension Triangle2D10<TPointType>::msGeometryDimension(2, 2);
 
 }// namespace Kratos.

@@ -9,10 +9,10 @@
 //                   Kratos default license: kratos/license.txt
 //
 //  Main authors:    Mohamed Nabi
-//                   
-//                   
-//  Contributors:    
-//                   
+//
+//
+//  Contributors:
+//
 //
 
 #pragma once
@@ -62,8 +62,8 @@ namespace Kratos
      *          |         `\
      *          0--3--4--5--1
      * @author Mohamed Nabi
-     * @author 
-     * @author 
+     * @author
+     * @author
      */
     template<class TPointType>
     class Triangle2D15 : public Geometry<TPointType>
@@ -202,7 +202,7 @@ namespace Kratos
         ///@}
         ///@name Life Cycle
         ///@{
-        
+
         Triangle2D15(const PointType& Point01, const PointType& Point02, const PointType& Point03,
             const PointType& Point04, const PointType& Point05, const PointType& Point06,
             const PointType& Point07, const PointType& Point08, const PointType& Point09,
@@ -275,12 +275,12 @@ namespace Kratos
         explicit Triangle2D15(const std::string& rGeometryName, const PointsArrayType& rThisPoints)
             : BaseType(rGeometryName, rThisPoints, &msGeometryData)
         {
-            KRATOS_ERROR_IF(this->PointsNumber() != 15) << "Invalid points number. Expected 15, given " 
+            KRATOS_ERROR_IF(this->PointsNumber() != 15) << "Invalid points number. Expected 15, given "
                 << this->PointsNumber() << std::endl;
         }
 
         /**
-         * Copy constructor. 
+         * Copy constructor.
          * Construct this geometry as a copy of given geometry.
          *
          * @note This copy constructor does not copy the points and new
@@ -293,10 +293,10 @@ namespace Kratos
         }
 
         /**
-         * Copy constructor from a geometry with other point type. 
-         * Construct this geometry as a copy of given geometry which 
-         * has different type of points. The given goemetry's 
-         * TOtherPointType* must be implicity convertible to this 
+         * Copy constructor from a geometry with other point type.
+         * Construct this geometry as a copy of given geometry which
+         * has different type of points. The given goemetry's
+         * TOtherPointType* must be implicity convertible to this
          * geometry PointType.
          *
          * @note This copy constructor does not copy the points and new
@@ -745,9 +745,9 @@ namespace Kratos
         GeometriesArrayType GenerateEdges() const override
         {
             GeometriesArrayType edges = GeometriesArrayType();
-            edges.push_back(Kratos::make_shared<EdgeType>(this->pGetPoint(0), this->pGetPoint(3), this->pGetPoint(4), this->pGetPoint(5), this->pGetPoint(1)));
-            edges.push_back(Kratos::make_shared<EdgeType>(this->pGetPoint(1), this->pGetPoint(6), this->pGetPoint(7), this->pGetPoint(8), this->pGetPoint(2)));
-            edges.push_back(Kratos::make_shared<EdgeType>(this->pGetPoint(2), this->pGetPoint(9), this->pGetPoint(10), this->pGetPoint(11), this->pGetPoint(0)));
+            edges.push_back(Kratos::make_shared<EdgeType>(this->pGetPoint(0), this->pGetPoint(1), this->pGetPoint(3), this->pGetPoint(4), this->pGetPoint(5)));
+            edges.push_back(Kratos::make_shared<EdgeType>(this->pGetPoint(1), this->pGetPoint(2), this->pGetPoint(6), this->pGetPoint(7), this->pGetPoint(8)));
+            edges.push_back(Kratos::make_shared<EdgeType>(this->pGetPoint(2), this->pGetPoint(0), this->pGetPoint(9), this->pGetPoint(10), this->pGetPoint(11)));
             return edges;
         }
 
@@ -800,7 +800,7 @@ namespace Kratos
          */
         virtual ShapeFunctionsGradientsType ShapeFunctionsLocalGradients(IntegrationMethod ThisMethod)
         {
-            ShapeFunctionsGradientsType localGradients 
+            ShapeFunctionsGradientsType localGradients
                 = CalculateShapeFunctionsIntegrationPointsLocalGradients(ThisMethod);
             const int integration_points_number = msGeometryData.IntegrationPointsNumber(ThisMethod);
             ShapeFunctionsGradientsType Result(integration_points_number);
@@ -1600,6 +1600,6 @@ namespace Kratos
         );
 
     template<class TPointType>
-    const GeometryDimension Triangle2D15<TPointType>::msGeometryDimension(2, 2, 2);
+    const GeometryDimension Triangle2D15<TPointType>::msGeometryDimension(2, 2);
 
 }// namespace Kratos.
