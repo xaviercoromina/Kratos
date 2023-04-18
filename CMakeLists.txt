@@ -614,6 +614,9 @@ endif(${USE_TRIANGLE_NONFREE_TPL} MATCHES ON )
 # Compiling the tinyexpr library
 add_subdirectory(${KRATOS_SOURCE_DIR}/external_libraries/tinyexpr)
 
+# Compiling the CppBenchmark library
+add_subdirectory(${KRATOS_SOURCE_DIR}/external_libraries/CppBenchmark)
+
 # runkratos - compiles "runkratos and packages the python lib needed"
 if(${INSTALL_RUNKRATOS} MATCHES ON )
     add_subdirectory(kratos/run_kratos)
