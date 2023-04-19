@@ -1,7 +1,7 @@
 SET(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 # Generate variables with the sources
-FILE(GLOB_RECURSE CPPBENCHMARK_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/source/benchmark/*.cpp") #all .cpp
+FILE(GLOB_RECURSE CPPBENCHMARK_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp") #all .cpp
 
 # Include the header files
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/include/)
