@@ -142,6 +142,7 @@ In Kratos Core:
 - [AMGCL](https://github.com/ddemidov/amgcl) for its highly scalable multigrid solver
 - [JSON](https://github.com/nlohmann/json) JSON for Modern C++
 - [ZLib](https://zlib.net/) The compression library
+- [CppBenchmark](https://github.com/chronoxor/CppBenchmark) Library that allows to create performance benchmarks
 
 In applications:
 - [Eigen](http://eigen.tuxfamily.org) For linear solvers used in the [LinearSolversApplication](applications/LinearSolversApplication)
