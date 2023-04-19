@@ -131,7 +131,6 @@ Some users of the technologies developed in Kratos are:
 <p>ONERA, The French Aerospace Lab<br>Applied Aerodynamics Department</p>
 </span>
 
-
 Looking forward to seeing your logo here!
 
 # Special Thanks To
