@@ -26,7 +26,8 @@ def Factory(settings, Model):
                 "direction"               : [1,1,1],
                 "velocity"                : 1,
                 "origin"                  : [0.0,0.0,0.0],
-                "configuration"           : [0.0]
+                "configuration"           : [0.0],
+                "function_path"           : "please specify a string to the UVEC function path"
             }
             """
                                                      )

@@ -367,10 +367,13 @@ bool MovingLoadCondition<TDim, TNumNodes>::HasRotDof() const
     KRATOS_CATCH("")
 }
 
+
 template< std::size_t TDim, std::size_t TNumNodes >
-void MovingLoadCondition<TDim, TNumNodes>::FinalizeNonLinearIteration(const ProcessInfo& rCurrentProcessInfo)
+	void MovingLoadCondition<TDim, TNumNodes>::FinalizeNonLinearIteration(const ProcessInfo& rCurrentProcessInfo)
 {
-    KRATOS_INFO("FinalizelizeNonLinearIteration");
+    KRATOS_INFO("FinalizelizeNonLinearIteration") << "Begin" << std::endl;
+    mNonLinearFunction();
+    KRATOS_INFO("FinalizelizeNonLinearIteration") << "End" << std::endl;
 }
 
 template class MovingLoadCondition<2, 2>;

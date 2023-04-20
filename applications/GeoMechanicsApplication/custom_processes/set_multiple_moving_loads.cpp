@@ -10,7 +10,10 @@
 //  Main authors:    Jonathan Nuttall
 //
 #include "set_multiple_moving_loads.h"
+
+#include <custom_conditions/moving_load_condition.h>
 #include "includes/variables.h"
+
 
 namespace Kratos
 {
@@ -30,7 +33,8 @@ namespace Kratos
             "direction"               : [1,1,1],
             "velocity"                : 1,
 			"origin"                  : [0.0, 0.0, 0.0],
-			"configuration"           : [0.0]
+			"configuration"           : [0.0],
+			"function_path"           : "please specify a string to the UVEC function path"
         }  )"
         );
 
@@ -75,6 +79,7 @@ namespace Kratos
 
             parameters_moving_load.RemoveValue("configuration");
             parameters_moving_load.RemoveValue("compute_model_part_name");
+            parameters_moving_load.RemoveValue("function_path");
     		parameters_moving_load.AddDouble("offset", offset);
     		auto r_moving_point_process = SetMovingLoadProcess(new_cloned_model_part, parameters_moving_load);
             mMovingPointLoadsProcesses.push_back(r_moving_point_process);
@@ -95,10 +100,29 @@ namespace Kratos
     	for(auto& moving_load_condition: mrModelPart.Conditions())
         {
             index++;
-    		const Condition::Pointer CloneCondition = moving_load_condition.Clone(index, moving_load_condition.GetGeometry());
-            new_model_part.AddCondition(CloneCondition);
+    		const Condition::Pointer clone_condition = moving_load_condition.Clone(index, moving_load_condition.GetGeometry());
+    		auto clone_condition_ptr = dynamic_cast<MovingLoadCondition<2, 2>*>(clone_condition.get());
+            if (clone_condition_ptr == nullptr) KRATOS_ERROR << "SetMultipleMovingLoadsProcess:" << "Could not cast condition to MovingLoadCondition" << std::endl;
+
+    		if (mPythonUvecFunction == nullptr) SetPythonUvecFunction();
+    		clone_condition_ptr->setUvecFunction(std::bind(&SetMultipleMovingLoadsProcess::PythonFinalizeNonLinearFunction, this));
+    		new_model_part.AddCondition(clone_condition);
         }
         return new_model_part;
+    }
+
+    void SetMultipleMovingLoadsProcess::SetPythonUvecFunction()
+    {
+        PyObject* python_uvec_function_module = PyImport_ImportModule(mParameters["function_path"].GetString().c_str());
+        mPythonUvecFunction = PyObject_GetAttrString(python_uvec_function_module, "UVEC");
+    }
+
+
+	void SetMultipleMovingLoadsProcess::PythonFinalizeNonLinearFunction()
+    {
+        // python version
+    	KRATOS_INFO("FinalizelizeNonLinearIteration") << "Python - C++" << std::endl;
+        PyObject_CallFunction(mPythonUvecFunction, nullptr);
     }
 
     int SetMultipleMovingLoadsProcess::GetMaxConditionsIndex()
@@ -116,12 +140,16 @@ namespace Kratos
     {
         auto& compute_model_part = mrModelPart.GetRootModelPart().GetSubModelPart(mParameters["compute_model_part_name"].GetString());
 
-    	for (auto& moving_load_condition : mrModelPart.Conditions())
+        KRATOS_INFO("RemoveClonedModelPart: Compute") << compute_model_part.Conditions().size() << std::endl;
+        for (auto& moving_load_condition : mrModelPart.Conditions())
         {
-            if (compute_model_part.HasCondition(moving_load_condition)) compute_model_part.pGetCondition(moving_load_condition)->Set(TO_ERASE, true);
+            compute_model_part.pGetCondition(moving_load_condition.Id())->Set(TO_ERASE, true);
         }
+
         // Call method
         compute_model_part.RemoveConditions(TO_ERASE);
+        KRATOS_INFO("RemoveClonedModelPart: Compute") << compute_model_part.Conditions().size() << std::endl;
+
     }
 
     void SetMultipleMovingLoadsProcess::ExecuteInitialize()

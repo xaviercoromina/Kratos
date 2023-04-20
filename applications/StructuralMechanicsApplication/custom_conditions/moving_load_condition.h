@@ -139,6 +139,20 @@ public:
     ///@name Access
     ///@{
 
+    void setConfigurationIndex(IndexType ind)
+    {
+        mConfigurationNumber = ind;
+    }
+
+    IndexType getConfigurationIndex(IndexType ind)
+    {
+        return mConfigurationNumber;
+    }
+
+    void setUvecFunction(std::function<void(void)> p_function)
+    {
+        mNonLinearFunction = p_function;
+    }
 
     ///@}
     ///@name Inquiry
@@ -169,6 +183,7 @@ public:
     {
         pGetGeometry()->PrintData(rOStream);
     }
+
 
     ///@}
     ///@name Friends
@@ -240,7 +255,6 @@ protected:
      */
     void CalculateRotationMatrix(BoundedMatrix<double, TDim, TDim>& rRotationMatrix, const GeometryType& rGeom);
 
-
     Matrix CalculateGlobalMomentMatrix(const VectorType& RotationalShapeFunctionVector, array_1d<double, TDim> LocalMovingLoad) const;
 
     void FinalizeNonLinearIteration(const ProcessInfo& rCurrentProcessInfo) override;
@@ -273,7 +287,9 @@ private:
     ///@name Member Variables
     ///@{
 
-
+	std::function<void(void)> mNonLinearFunction = nullptr;
+    int mConfigurationNumber;
+		
 
     ///@}
     ///@name Private Operators

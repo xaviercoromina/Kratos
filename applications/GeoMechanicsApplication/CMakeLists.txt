@@ -12,6 +12,7 @@ kratos_add_dependency(${KRATOS_SOURCE_DIR}/applications/StructuralMechanicsAppli
 include_directories( ${CMAKE_SOURCE_DIR}/kratos )
 include_directories( ${CMAKE_SOURCE_DIR}/applications/StructuralMechanicsApplication )
 include_directories( ${CMAKE_SOURCE_DIR}/applications/GeoMechanicsApplication )
+include_directories(${PYTHON_INCLUDE_DIRS})
 
 ## GeoMechanics Core sources
 file(GLOB_RECURSE KRATOS_GEO_MECHANICS_APPLICATION_CORE
@@ -40,7 +41,7 @@ endif(${KRATOS_BUILD_TESTING} MATCHES ON)
 file(GLOB_RECURSE KRATOS_GEO_MECHANICS_APPLICATION_PYTHON_INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/custom_python/*.cpp)
 
 add_library(KratosGeoMechanicsCore SHARED ${KRATOS_GEO_MECHANICS_APPLICATION_CORE} ${KRATOS_GEO_MECHANICS_APPLICATION_TESTING_SOURCES})
-target_link_libraries(KratosGeoMechanicsCore PUBLIC KratosCore KratosStructuralMechanicsCore ${CMAKE_DL_LIBS})
+target_link_libraries(KratosGeoMechanicsCore PUBLIC KratosCore KratosStructuralMechanicsCore ${CMAKE_DL_LIBS} ${PYTHON_LIBRARIES})
 set_target_properties(KratosGeoMechanicsCore PROPERTIES COMPILE_DEFINITIONS "GEO_MECHANICS_APPLICATION=EXPORT,API")
 
 

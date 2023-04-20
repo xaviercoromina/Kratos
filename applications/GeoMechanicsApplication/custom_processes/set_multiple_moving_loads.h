@@ -17,6 +17,7 @@
 #include "includes/model_part.h"
 #include "includes/kratos_parameters.h"
 #include "utilities/function_parser_utility.h"
+#include "Python.h"
 
 #include "../../StructuralMechanicsApplication/custom_processes/set_moving_load_process.h"
 
@@ -86,6 +87,8 @@ namespace Kratos {
 	        ModelPart& mrModelPart;
 	        Parameters mParameters;
 	        std::vector<SetMovingLoadProcess> mMovingPointLoadsProcesses;
+            PyObject* mPythonUvecFunction = nullptr;
+
         ///@}
         ///
         ///@name Operations
@@ -95,6 +98,10 @@ namespace Kratos {
         * \brief Clones condition into a new sub body part of the compute model part
     	*/
 			ModelPart& CloneMovingConditionInComputeModelPart(std::string NewBodyPartName);
+
+            void SetPythonUvecFunction();
+    		void PythonFinalizeNonLinearFunction();
+        
 
         /**
         * \brief Get maximum index of current conditions in root
