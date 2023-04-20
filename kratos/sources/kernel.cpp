@@ -14,6 +14,11 @@
 #include <iostream>
 
 // External includes
+#if KRATOS_BUILD_BENCHMARKING
+#include "benchmark/system.h"
+#include "benchmark/environment.h"
+#include "benchmark/reporter_console.h"
+#endif
 
 // Project includes
 #include "includes/kernel.h"
@@ -22,7 +27,9 @@
 #include "includes/parallel_environment.h"
 #include "input_output/logger.h"
 #include "utilities/parallel_utilities.h"
-
+#if KRATOS_BUILD_BENCHMARKING
+#include "utilities/color_utilities.h"
+#endif
 namespace Kratos {
 
 Kernel::Kernel() : mpKratosCoreApplication(Kratos::make_shared<KratosApplication>(
@@ -45,6 +52,8 @@ void Kernel::Initialize() {
                     << "           Compiled for "  << Kernel::OSName()  << " and " << Kernel::PythonVersion() << " with " << Kernel::Compiler() << std::endl;
 
     PrintParallelismSupportInfo();
+
+    PrintSystemInfo();
 
     if (!IsImported("KratosMultiphysics")) {
         this->ImportApplication(mpKratosCoreApplication);
@@ -176,6 +185,22 @@ void Kernel::PrintParallelismSupportInfo() const
             logger << "Running without MPI." << std::endl;
         }
     }
+}
+
+void Kernel::PrintSystemInfo() const
+{
+#if KRATOS_BUILD_BENCHMARKING
+    const std::string hyper_threading = CppBenchmark::System::CpuHyperThreading() ? "enabled" : "disabled";
+    KRATOS_INFO("") << BOLDFONT(FWHT("System information: "))                                                                                                << "\n"
+                    << BOLDFONT(FWHT("\tOS version: "))          << CppBenchmark::Environment::OSVersion()                                                   << "\n"
+                    << BOLDFONT(FWHT("\tCPU architecture: "))    << CppBenchmark::System::CpuArchitecture()                                                  << "\n"
+                    << BOLDFONT(FWHT("\tCPU logical cores: "))   << std::to_string(CppBenchmark::System::CpuLogicalCores())                                  << "\n"
+                    << BOLDFONT(FWHT("\tCPU physical cores: "))  << std::to_string(CppBenchmark::System::CpuPhysicalCores())                                 << "\n"
+                    << BOLDFONT(FWHT("\tCPU clock speed: "))     << CppBenchmark::ReporterConsole::GenerateClockSpeed(CppBenchmark::System::CpuClockSpeed()) << "\n"
+                    << BOLDFONT(FWHT("\tCPU Hyper-Threading: ")) << hyper_threading                                                                          << "\n"
+                    << BOLDFONT(FWHT("\tRAM total: "))           << CppBenchmark::ReporterConsole::GenerateDataSize(CppBenchmark::System::RamTotal())        << "\n"
+                    << BOLDFONT(FWHT("\tRAM free: "))            << CppBenchmark::ReporterConsole::GenerateDataSize(CppBenchmark::System::RamFree())         << std::endl;
+#endif
 }
 
 bool Kernel::mIsDistributedRun = false;
