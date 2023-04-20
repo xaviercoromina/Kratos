@@ -190,16 +190,16 @@ void Kernel::PrintParallelismSupportInfo() const
 void Kernel::PrintSystemInfo() const
 {
 #if KRATOS_BUILD_BENCHMARKING
-    const std::string hyper_threading = CppBenchmark::System::CpuHyperThreading() ? "enabled" : "disabled";
-    KRATOS_INFO("") << BOLDFONT(FWHT("System information: "))                                                                                                << "\n"
-                    << BOLDFONT(FWHT("\tOS version: "))          << CppBenchmark::Environment::OSVersion()                                                   << "\n"
-                    << BOLDFONT(FWHT("\tCPU architecture: "))    << CppBenchmark::System::CpuArchitecture()                                                  << "\n"
-                    << BOLDFONT(FWHT("\tCPU logical cores: "))   << std::to_string(CppBenchmark::System::CpuLogicalCores())                                  << "\n"
-                    << BOLDFONT(FWHT("\tCPU physical cores: "))  << std::to_string(CppBenchmark::System::CpuPhysicalCores())                                 << "\n"
-                    << BOLDFONT(FWHT("\tCPU clock speed: "))     << CppBenchmark::ReporterConsole::GenerateClockSpeed(CppBenchmark::System::CpuClockSpeed()) << "\n"
-                    << BOLDFONT(FWHT("\tCPU Hyper-Threading: ")) << hyper_threading                                                                          << "\n"
-                    << BOLDFONT(FWHT("\tRAM total: "))           << CppBenchmark::ReporterConsole::GenerateDataSize(CppBenchmark::System::RamTotal())        << "\n"
-                    << BOLDFONT(FWHT("\tRAM free: "))            << CppBenchmark::ReporterConsole::GenerateDataSize(CppBenchmark::System::RamFree())         << std::endl;
+    const std::string hyper_threading = CppBenchmark::System::CpuHyperThreading() ? "Enabled" : "Disabled";
+    KRATOS_INFO("") << BOLDFONT(FWHT("System information:"))                                                                                                         << RST << "\n"
+                    << ITAFONT(FWHT("\tOS version:\t\t"))        << KCYN << CppBenchmark::Environment::OSVersion()                                                   << RST << "\n"
+                    << ITAFONT(FWHT("\tCPU architecture:\t"))    << KGRN << CppBenchmark::System::CpuArchitecture()                                                  << RST << "\n"
+                    << ITAFONT(FWHT("\tCPU logical cores:\t"))   << KGRN << std::to_string(CppBenchmark::System::CpuLogicalCores())                                  << RST << "\n"
+                    << ITAFONT(FWHT("\tCPU physical cores:\t"))  << KGRN << std::to_string(CppBenchmark::System::CpuPhysicalCores())                                 << RST << "\n"
+                    << ITAFONT(FWHT("\tCPU clock speed:\t"))     << KGRN << CppBenchmark::ReporterConsole::GenerateClockSpeed(CppBenchmark::System::CpuClockSpeed()) << RST << "\n"
+                    << ITAFONT(FWHT("\tCPU Hyper-Threading:\t")) << KGRN << hyper_threading                                                                          << RST << "\n"
+                    << ITAFONT(FWHT("\tRAM total:\t\t"))         << KYEL << CppBenchmark::ReporterConsole::GenerateDataSize(CppBenchmark::System::RamTotal())        << RST << "\n"
+                    << ITAFONT(FWHT("\tRAM free:\t\t"))          << KYEL << CppBenchmark::ReporterConsole::GenerateDataSize(CppBenchmark::System::RamFree())         << RST << std::endl;
 #endif
 }
 
