@@ -59,6 +59,12 @@ set(CMAKE_INSTALL_RPATH "$ORIGIN/../libs")
 
 # If no test policy enable by default
 option(KRATOS_BUILD_TESTING "KRATOS_BUILD_TESTING defines if the C++ tests are compiled. These increase compilation time, but if not set only python tests can be executed. Default setting is ON" ON)
+option(KRATOS_BUILD_BENCHMARKING "KRATOS_BUILD_BENCHMARKING defines if the C++ benchamarks are compiled. These increase compilation time, but adds the option for benchmarking. Default setting is ON" ON)
+
+# Add the definitions if required
+IF (${KRATOS_BUILD_BENCHMARKING})
+    ADD_DEFINITIONS(-DKRATOS_BUILD_BENCHMARKING)
+ENDIF (${KRATOS_BUILD_BENCHMARKING})
 
 # If not defined mute the very verbose installation messages
 if(NOT DEFINED CMAKE_INSTALL_MESSAGE)
