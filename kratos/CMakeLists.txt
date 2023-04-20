@@ -80,7 +80,11 @@ target_compile_definitions(KratosVersion PRIVATE
 add_library(KratosCore SHARED ${KRATOS_CORE_SOURCES} ${KRATOS_CORE_TESTING_ENGINE_SOURCES} ${KRATOS_CORE_INPUT_OUTPUT_SOURCES} ${KRATOS_TEST_SOURCES} ${KRATOS_TPL_SOURCES} $<TARGET_OBJECTS:KratosVersion>)
 
 # Set the shared external libraries for kratos (gidpost, tinyexpr, clipper, cppbenchmark, etc...)
-set(KRATOS_EXTERNAL_LIBRARIES gidpost tinyexpr clipper cppbenchmark)
+IF (${KRATOS_BUILD_BENCHMARKING})
+    set(KRATOS_EXTERNAL_LIBRARIES gidpost tinyexpr clipper cppbenchmark)
+ELSE(${KRATOS_BUILD_BENCHMARKING})
+    set(KRATOS_EXTERNAL_LIBRARIES gidpost tinyexpr clipper)
+ENDIF (${KRATOS_BUILD_BENCHMARKING})
 
 # Set the TPL libraries if enabled (triangle, tetgen, etc...)
 if(${USE_TRIANGLE_NONFREE_TPL} MATCHES ON )
