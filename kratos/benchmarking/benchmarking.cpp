@@ -19,4 +19,6 @@
 
 namespace Kratos::Benchmarking
 {
+#if KRATOS_BUILD_BENCHMARKING
+#endif
 }  // namespace Kratos::Benchmarking.

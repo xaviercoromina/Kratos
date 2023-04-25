@@ -16,7 +16,7 @@
 // Project includes
 #include "includes/define_python.h"
 #include "includes/parallel_environment.h"
-// #include "testing/testing.h" // TODO
+#include "benchmarking/benchmarking.h"
 #include "add_benchmarking_to_python.h"
 
 namespace Kratos::Python
