@@ -21,6 +21,7 @@
 #include "utilities/parallel_utilities.h"
 #include "spatial_containers/spatial_search.h"
 #include "spatial_containers/specialized_spatial_search.h"
+#include "spatial_containers/specialized_spatial_search_factory.h"
 #include "spatial_containers/geometrical_objects_bins.h"
 #include "spatial_containers/spatial_search_result.h"
 
