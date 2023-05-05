@@ -323,7 +323,10 @@ namespace Kratos
             //Compute GradNpT, B and StrainVector
             this->CalculateKinematics(Variables, GPoint);
 
-            UpdateWaterProperties(Variables, GPoint);
+            if (Geom[0].HasDofFor(WATER_PRESSURE))
+            {
+                UpdateWaterProperties(Variables, GPoint);
+            }
 
             //Compute weighting coefficient for integration
             Variables.IntegrationCoefficient =
@@ -847,7 +850,7 @@ namespace Kratos
     }
 
     // ============================================================================================
-// ============================================================================================
+    // ============================================================================================
     template<unsigned int TDim, unsigned int TNumNodes>
     void TransientThermalElement<TDim, TNumNodes>::UpdateWaterProperties(
         ElementVariables& rVariables, unsigned int gPoint)
