@@ -38,6 +38,10 @@ def CreateSolver(model, custom_settings):
         elif (solver_type.lower() == "t" or solver_type.lower() == "geomechanics_t_solver" or solver_type.lower() == "twophase"):
             custom_settings["solver_settings"]["time_stepping"].AddValue("end_time", custom_settings["problem_data"]["end_time"])
             solver_module_name = "geomechanics_T_solver"
+            
+        elif (solver_type.lower() == "tpw" or solver_type.lower() == "thermalpressurecoupled" or solver_type.lower() == "twophase"):
+            custom_settings["solver_settings"]["time_stepping"].AddValue("end_time", custom_settings["problem_data"]["end_time"])
+            solver_module_name = "coupled_thermal_pressure_solver"
 
         else:
             err_msg =  "The requested solver type \"" + solver_type + "\" is not in the python solvers wrapper\n"
