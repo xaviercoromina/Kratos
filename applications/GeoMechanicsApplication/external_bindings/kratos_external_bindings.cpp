@@ -36,5 +36,12 @@ extern "C"
         return errorCode;
     }
 
+
+
+    EXPORT Kratos::KratosGeoSettlement* KratosGeoSettlement_CreateInstance()
+    {
+        return new Kratos::KratosGeoSettlement{};
+    }
+
 #endif
 }
