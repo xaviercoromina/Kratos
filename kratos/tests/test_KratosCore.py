@@ -83,6 +83,7 @@ import test_calculate_distance_to_path_process
 import test_check_same_modelpart_using_skin_distance
 import test_kratos_globals
 import test_container_expression
+import test_model_part_operation_utilities
 import test_geometrical_object_bins
 
 if sympy_available:
@@ -187,6 +188,7 @@ def AssembleTestSuites():
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([test_container_expression.TestNodalContainerExpression]))
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([test_container_expression.TestConditionContainerExpression]))
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([test_container_expression.TestElementContainerExpression]))
+    smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([test_model_part_operation_utilities.TestModelPartOperationUtilities]))
     smallSuite.addTests(KratosUnittest.TestLoader().loadTestsFromTestCases([test_geometrical_object_bins.TestGeometricalObjectBins]))
 
     if sympy_available:
