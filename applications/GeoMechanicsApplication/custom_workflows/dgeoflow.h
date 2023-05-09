@@ -203,8 +203,7 @@ namespace Kratos
         LinearSolverType::Pointer setup_solver_dgeoflow();
         GeoMechanicsNewtonRaphsonErosionProcessStrategyType::Pointer setup_strategy_dgeoflow(ModelPart &model_part);
         void parseMaterial(Model &model, std::string filepath);
-
-        Parameters openProjectParamsFile(std::string filepath);
+        
         std::vector<std::shared_ptr<Process>> parseProcess(ModelPart &model_part, Parameters projFile);
         void outputGiD(Model &model, ModelPart &model_part, Parameters parameters, std::string workingDirectory);
 

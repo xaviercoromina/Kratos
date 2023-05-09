@@ -21,6 +21,8 @@
 #include "input_output/logger_output.h"
 #include "input_output/logger_table_output.h"
 #include "includes/model_part_io.h"
+#include "custom_utilities/input_utilities.h"
+
 
 class GeoFlowApplyConstantScalarValueProcess : public Kratos::ApplyConstantScalarValueProcess
 {
@@ -226,15 +228,6 @@ namespace Kratos
         std::string parameters = "{ \"Parameters\" : { \"materials_filename\" :\"" + filepath + "\"}}";
         Parameters material_file{parameters};
         ReadMaterialsUtility(material_file, model);
-    }
-
-    Parameters KratosExecute::openProjectParamsFile(std::string filepath)
-    {
-        std::ifstream t(filepath);
-        std::stringstream buffer;
-        buffer << t.rdbuf();
-        Parameters projFile{buffer.str()};
-        return projFile;
     }
 
     std::vector<std::shared_ptr<Process>> KratosExecute::parseProcess(ModelPart &model_part, Parameters projFile)
@@ -457,7 +450,7 @@ namespace Kratos
             reportProgress(0.0);
 
             std::string projectpath = workingDirectory + "/" + projectName;
-            auto projectfile = openProjectParamsFile(projectpath);
+            auto projectfile = makeProjectParametersFrom(projectpath);
 
             auto materialname = projectfile["solver_settings"]["material_import_settings"]["materials_filename"].GetString();
             std::string materialpath = workingDirectory + "/" + materialname;
