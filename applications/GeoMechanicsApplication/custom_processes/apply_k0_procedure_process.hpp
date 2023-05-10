@@ -94,6 +94,18 @@ class ApplyK0ProcedureProcess : public Process
           const double& K0ValueYY = rProp[K0_VALUE_YY];
           const double& K0ValueZZ = rProp[K0_VALUE_ZZ];
          
+          //Check for alternative K0 specifications
+          double K0NC = 0.;
+          double PoissonUR = 0.;
+          if ( rProp.Has(K0_NC) || rProp.Has(SIN_PHI) ) {
+              if ( rProp.Has(K0_NC) ) {
+                  K0NC = rProp[K0_NC];
+              } else {
+                  K0NC = 1.0 - rProp[SIN_PHI];
+              }
+              PoissonUR = rProp[POISSON_UNLOADING_RELOADING];
+          }
+
           //Loop over integration points
           const Element::GeometryType& rGeom = rElement.GetGeometry();
           const Element::GeometryType::IntegrationPointsArrayType& IntegrationPoints = rGeom.IntegrationPoints(rElement.GetIntegrationMethod());
@@ -107,14 +119,34 @@ class ApplyK0ProcedureProcess : public Process
 
               // Apply K0 procedure
               if (K0MainDirection == 0) {
-                  rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_YY] = K0ValueYY * rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_XX];
-                  rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_ZZ] = K0ValueZZ * rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_XX];
+                  if (rProp.Has(K0_NC) || rProp.Has(SIN_PHI)) {
+                      double K0Value = K0NC;
+                      //Modify for presence of OCR (or POP?) field values
+                      double OCRValue = 1.0;
+                      if (rProp.Has(OCR)) OCRValue = rProp[OCR];
+                      K0Value = K0Value * OCRValue - (PoissonUR / (1.0 - PoissonUR)) * (OCRValue - 1.0);
+                      rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_YY] = K0Value * rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_XX];
+                      rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_ZZ] = K0Value * rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_XX];
+                  } else {
+                      rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_YY] = K0ValueYY * rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_XX];
+                      rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_ZZ] = K0ValueZZ * rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_XX];
+                  }
+
               }
               else if (K0MainDirection == 1) {
-                  rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_XX] = K0ValueXX * rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_YY];
-                  rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_ZZ] = K0ValueZZ * rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_YY];
-              }
-              else {
+                  if (rProp.Has(K0_NC) || rProp.Has(SIN_PHI)) {
+                      double K0Value = K0NC;
+                      //Modify for presence of OCR (or POP?) field values
+                      double OCRValue = 1.0;
+                      if (rProp.Has(OCR)) OCRValue = rProp[OCR];
+                      K0Value = K0Value * OCRValue - (PoissonUR / (1.0 - PoissonUR)) * (OCRValue - 1.0);
+                      rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_XX] = K0Value * rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_YY];
+                      rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_ZZ] = K0Value * rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_YY];
+                  } else {
+                      rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_XX] = K0ValueXX * rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_YY];
+                      rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_ZZ] = K0ValueZZ * rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_YY];
+                  }
+              } else {
                   KRATOS_ERROR << "undefined K0_MAIN_DIRECTION in ApplyK0ProcedureProcess: " << K0MainDirection << std::endl;
               }
           }
