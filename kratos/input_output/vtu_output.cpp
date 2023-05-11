@@ -585,7 +585,7 @@ void VtuOutput::AddHistoricalVariable(
 {
     using data_retriever_type =
         VtuOutputHelperUtilities::VariableDataRetrieval<TDataType, ModelPart::NodeType, ContainerDataIOTags::Historical>;
-    AddEntityData<TDataType, data_retriever_type>(
+    AddEntityData<ModelPart::NodeType, data_retriever_type>(
         rVariable.Name(), VtuOutputHelperUtilities::NumberOfComponents<TDataType>(),
         data_retriever_type(rVariable), Precision);
 }
@@ -599,7 +599,7 @@ void VtuOutput::AddNonHistoricalVariable(
     if (EntityFlags.Is(NODES)) {
         using data_retriever_type =
             VtuOutputHelperUtilities::VariableDataRetrieval<TDataType, ModelPart::NodeType, ContainerDataIOTags::NonHistorical>;
-        AddEntityData<TDataType, data_retriever_type>(
+        AddEntityData<ModelPart::NodeType, data_retriever_type>(
             rVariable.Name(), VtuOutputHelperUtilities::NumberOfComponents<TDataType>(),
             data_retriever_type(rVariable), Precision);
     }
@@ -607,7 +607,7 @@ void VtuOutput::AddNonHistoricalVariable(
     if (EntityFlags.Is(CONDITIONS)) {
         using data_retriever_type =
             VtuOutputHelperUtilities::VariableDataRetrieval<TDataType, ModelPart::ConditionType, ContainerDataIOTags::NonHistorical>;
-        AddEntityData<TDataType, data_retriever_type>(
+        AddEntityData<ModelPart::ConditionType, data_retriever_type>(
             rVariable.Name(), VtuOutputHelperUtilities::NumberOfComponents<TDataType>(),
             data_retriever_type(rVariable), Precision);
     }
@@ -615,7 +615,7 @@ void VtuOutput::AddNonHistoricalVariable(
     if (EntityFlags.Is(ELEMENTS)) {
         using data_retriever_type =
             VtuOutputHelperUtilities::VariableDataRetrieval<TDataType, ModelPart::ElementType, ContainerDataIOTags::NonHistorical>;
-        AddEntityData<TDataType, data_retriever_type>(
+        AddEntityData<ModelPart::ElementType, data_retriever_type>(
             rVariable.Name(), VtuOutputHelperUtilities::NumberOfComponents<TDataType>(),
             data_retriever_type(rVariable), Precision);
     }
@@ -629,21 +629,21 @@ void VtuOutput::AddFlagVariable(
     if (EntityFlags.Is(NODES)) {
         using data_retriever_type =
             VtuOutputHelperUtilities::VariableFlagRetrieval<ModelPart::NodeType>;
-        AddEntityData<bool, data_retriever_type>(
+        AddEntityData<ModelPart::NodeType, data_retriever_type>(
             rFlagName, 1, data_retriever_type(rFlagVariable), 1);
     }
 
     if (EntityFlags.Is(CONDITIONS)) {
         using data_retriever_type =
             VtuOutputHelperUtilities::VariableFlagRetrieval<ModelPart::ConditionType>;
-        AddEntityData<bool, data_retriever_type>(
+        AddEntityData<ModelPart::ConditionType, data_retriever_type>(
             rFlagName, 1, data_retriever_type(rFlagVariable), 1);
     }
 
     if (EntityFlags.Is(ELEMENTS)) {
         using data_retriever_type =
             VtuOutputHelperUtilities::VariableFlagRetrieval<ModelPart::ElementType>;
-        AddEntityData<bool, data_retriever_type>(
+        AddEntityData<ModelPart::ElementType, data_retriever_type>(
             rFlagName, 1, data_retriever_type(rFlagVariable), 1);
     }
 }
@@ -661,10 +661,14 @@ void VtuOutput::AddContainerExpression(
 
     using data_retriever_type = VtuOutputHelperUtilities::ContainerExpressionRetrieval<TContainerType>;
 
+        const typename ContainerExpression<TContainerType>::Pointer pContainerExpression,
+        const std::vector<typename TContainerType::value_type const*>& rEntities,
+        const Communicator& rCommunicator
+
     using data_retriever_type =
         VtuOutputHelperUtilities::VariableFlagRetrieval<ModelPart::ElementType>;
-    AddEntityData<bool, data_retriever_type>(
-        rFlagName, 1, data_retriever_type(rFlagVariable), 1);
+    AddEntityData<typename TContainerType::value_type, data_retriever_type>(
+        rExpressionName, pContainerExpression->GetFlattenedSize(), data_retriever_type(pContainerExpression, ), 1);
 
     if constexpr(std::is_same_v<TContainerType, ModelPart::ElementsContainerType>) {
 
