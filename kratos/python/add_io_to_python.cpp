@@ -32,6 +32,7 @@
 #include "input_output/vtk_output.h"
 #include "input_output/unv_output.h"
 #include "input_output/cad_json_input.h"
+#include "input_output/vtu_output.h"
 
 #ifdef JSON_INCLUDED
 #include "includes/json_io.h"
@@ -198,6 +199,41 @@ void  AddIOToPython(pybind11::module& m)
         .def(py::init<Parameters, std::size_t>())
         .def("ReadModelPart", &CadJsonInput<>::ReadModelPart)
         ;
+
+    // Import of CAD models to the model part
+    auto vtu_interface = py::class_<VtuOutput, VtuOutput::Pointer>(m, "VtuOutput")
+        .def(py::init<>())
+        .def("SetEntities", &VtuOutput::SetEntities, py::arg("model_part"), py::arg("entity_flags"), py::arg("is_initial_configuration") = true, py::arg("precision") = 9)
+        .def("AddHistoricalVariable", &VtuOutput::AddHistoricalVariable<int>, py::arg("int_variable"), py::arg("precision") = 9)
+        .def("AddHistoricalVariable", &VtuOutput::AddHistoricalVariable<double>, py::arg("double_variable"), py::arg("precision") = 9)
+        .def("AddHistoricalVariable", &VtuOutput::AddHistoricalVariable<array_1d<double, 3>>, py::arg("array3_variable"), py::arg("precision") = 9)
+        .def("AddHistoricalVariable", &VtuOutput::AddHistoricalVariable<array_1d<double, 4>>, py::arg("array4_variable"), py::arg("precision") = 9)
+        .def("AddHistoricalVariable", &VtuOutput::AddHistoricalVariable<array_1d<double, 6>>, py::arg("array6_variable"), py::arg("precision") = 9)
+        .def("AddHistoricalVariable", &VtuOutput::AddHistoricalVariable<array_1d<double, 9>>, py::arg("array9_variable"), py::arg("precision") = 9)
+        .def("AddNonHistoricalVariable", &VtuOutput::AddNonHistoricalVariable<int>, py::arg("int_variable"), py::arg("entity_flags"), py::arg("precision") = 9)
+        .def("AddNonHistoricalVariable", &VtuOutput::AddNonHistoricalVariable<double>, py::arg("double_variable"), py::arg("entity_flags"), py::arg("precision") = 9)
+        .def("AddNonHistoricalVariable", &VtuOutput::AddNonHistoricalVariable<array_1d<double, 3>>, py::arg("array3_variable"), py::arg("entity_flags"), py::arg("precision") = 9)
+        .def("AddNonHistoricalVariable", &VtuOutput::AddNonHistoricalVariable<array_1d<double, 4>>, py::arg("array4_variable"), py::arg("entity_flags"), py::arg("precision") = 9)
+        .def("AddNonHistoricalVariable", &VtuOutput::AddNonHistoricalVariable<array_1d<double, 6>>, py::arg("array6_variable"), py::arg("entity_flags"), py::arg("precision") = 9)
+        .def("AddNonHistoricalVariable", &VtuOutput::AddNonHistoricalVariable<array_1d<double, 9>>, py::arg("array9_variable"), py::arg("entity_flags"), py::arg("precision") = 9)
+        .def("AddNonHistoricalVariable", &VtuOutput::AddNonHistoricalVariable<array_1d<double, 9>>, py::arg("array9_variable"), py::arg("entity_flags"), py::arg("precision") = 9)
+        .def("AddFlagVariable", &VtuOutput::AddFlagVariable, py::arg("flag_variable_name"), py::arg("flag"), py::arg("entity_flags"))
+        .def("AddContainerExpression", &VtuOutput::AddContainerExpression<ModelPart::Node)
+        .def("Write", &VtuOutput::Write, py::arg("output_file_name_prefix"))
+        ;
+
+AddContainerExpression(
+        const std::string& rExpressionName,
+        const typename ContainerExpression<TContainerType>::Pointer pContainerExpression,
+        const IndexType Precision = 9);
+
+    vtu_interface.attr("NODES") = VtuOutput::NODES;
+    vtu_interface.attr("CONDITIONS") = VtuOutput::CONDITIONS;
+    vtu_interface.attr("ELEMENTS") = VtuOutput::ELEMENTS;
+
+    // // Import of CAD models to the model part
+    // py::class_<VtuOutput, VtuOutput::Pointer>(m, "VtuOutput")
+    //     ;
 }
 }  // namespace Python.
 

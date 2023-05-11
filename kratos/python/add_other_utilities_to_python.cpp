@@ -69,6 +69,9 @@
 #include "utilities/particles_utilities.h"
 #include "utilities/string_utilities.h"
 #include "utilities/model_part_operation_utilities.h"
+#include "utilities/xml_utilities/xml_element.h"
+#include "utilities/xml_utilities/xml_nodes.h"
+#include "utilities/xml_utilities/xml_entities.h"
 
 namespace Kratos {
 namespace Python {
@@ -806,11 +809,41 @@ void AddOtherUtilitiesToPython(pybind11::module &m)
 
     m.def_submodule("ModelPartOperationUtilities", "Free-floating utility functions for model part operations.")
         .def("CheckValidityOfModelPartsForOperations", &ModelPartOperationUtilities::CheckValidityOfModelPartsForOperations, py::arg("main_model_part"), py::arg("list_of_checking_model_parts"), py::arg("thow_error"))
-        .def("Merge", &ModelPartOperationUtilities::Merge, py::arg("output_model_part_name"), py::arg("main_model_part"), py::arg("model_parts_to_merge"), py::arg("add_neighbours"), py::return_value_policy::reference_internal)
-        .def("Substract", &ModelPartOperationUtilities::Substract, py::arg("output_model_part_name"), py::arg("main_model_part"), py::arg("model_parts_to_substract"), py::arg("add_neighbours"), py::return_value_policy::reference_internal)
-        .def("Intersect", &ModelPartOperationUtilities::Intersect, py::arg("output_model_part_name"), py::arg("main_model_part"), py::arg("model_parts_to_intersect"), py::arg("add_neighbours"), py::return_value_policy::reference_internal)
+        .def("Union", &ModelPartOperationUtilities::CreateModelPartWithOperation<ModelPartUnionOperator>, py::arg("output_model_part_name"), py::arg("main_model_part"), py::arg("model_parts_to_merge"), py::arg("add_neighbours"), py::return_value_policy::reference_internal)
+        .def("Substract", &ModelPartOperationUtilities::CreateModelPartWithOperation<ModelPartSubstractionOperator>, py::arg("output_model_part_name"), py::arg("main_model_part"), py::arg("model_parts_to_substract"), py::arg("add_neighbours"), py::return_value_policy::reference_internal)
+        .def("Intersect", &ModelPartOperationUtilities::CreateModelPartWithOperation<ModelPartIntersectionOperator>, py::arg("output_model_part_name"), py::arg("main_model_part"), py::arg("model_parts_to_intersect"), py::arg("add_neighbours"), py::return_value_policy::reference_internal)
         .def("HasIntersection", &ModelPartOperationUtilities::HasIntersection, py::arg("model_parts_to_intersect"))
     ;
+
+    auto xml_utilities = m.def_submodule("XML_Utilities");
+    py::class_<XmlElement, XmlElement::Pointer>(xml_utilities,"XmlElement")
+        .def(py::init<const std::string&>())
+        .def("AddAttribute", &XmlElement::AddAttribute, py::arg("attribute_name"), py::arg("attribute_value"))
+        .def("AddElement", &XmlElement::AddElement, py::arg("xml_element"))
+        .def("Print", &XmlElement::Print, py::arg("level") = 0)
+    ;
+    py::class_<XmlNodes, XmlNodes::Pointer, XmlElement>(xml_utilities,"XmlNodes")
+        .def(py::init<const std::vector<ModelPart::NodeType const*>&>(), py::arg("list_of_nodes"))
+        .def(py::init<const std::vector<ModelPart::NodeType const*>&, const bool>(), py::arg("list_of_nodes"), py::arg("is_initial_configuration"))
+        .def("GetNodes", &XmlNodes::GetEntities)
+        .def("GetNodeIdMap", &XmlNodes::GetNodeIdMap)
+    ;
+
+    using xml_condition_type = XmlEntities<ModelPart::ConditionType>;
+    py::class_<xml_condition_type, typename xml_condition_type::Pointer, XmlElement>(xml_utilities,"XmlConditions")
+        .def(py::init<const XmlNodes::Pointer, const std::vector<ModelPart::ConditionType const*>&>(), py::arg("xml_nodes"), py::arg("conditions"))
+        .def("GetXmlNodes", &xml_condition_type::GetXmlNodes)
+        .def("GetConditions", &xml_condition_type::GetEntities)
+    ;
+
+    using xml_element_type = XmlEntities<ModelPart::ElementType>;
+    py::class_<xml_element_type, typename xml_element_type::Pointer, XmlElement>(xml_utilities,"XmlElements")
+        .def(py::init<const XmlNodes::Pointer, const std::vector<ModelPart::ElementType const*>&>(), py::arg("xml_nodes"), py::arg("elements"))
+        .def("GetXmlNodes", &xml_element_type::GetXmlNodes)
+        .def("GetElements", &xml_element_type::GetEntities)
+    ;
+
+
 
 }
 
