@@ -68,12 +68,28 @@ LiteralExpression<double>::LiteralExpression(const double& Value)
 }
 
 template <>
+LiteralExpression<int>::LiteralExpression(const int& Value)
+    : mValue(Value),
+      mShape({})
+{
+}
+
+template <>
 double LiteralExpression<double>::Evaluate(
     const IndexType EntityIndex,
     const IndexType EntityDataBeginIndex,
     const IndexType ComponentIndex) const
 {
     return mValue;
+}
+
+template <>
+double LiteralExpression<int>::Evaluate(
+    const IndexType EntityIndex,
+    const IndexType EntityDataBeginIndex,
+    const IndexType ComponentIndex) const
+{
+    return static_cast<double>(mValue);
 }
 
 template <>
@@ -93,6 +109,7 @@ double LiteralExpression<Matrix>::Evaluate(
 }
 
 // template instantiations
+template class LiteralExpression<int>;
 template class LiteralExpression<double>;
 template class LiteralExpression<array_1d<double, 3>>;
 template class LiteralExpression<array_1d<double, 4>>;

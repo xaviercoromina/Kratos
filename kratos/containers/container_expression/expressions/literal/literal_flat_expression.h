@@ -34,12 +34,13 @@ namespace Kratos {
  * a Vector with large sizes.
  *
  */
+template<class TDataType = double>
 class KRATOS_API(KRATOS_CORE) LiteralFlatExpression : public Expression {
 public:
     ///@name Type definition
     ///@{
 
-    using Pointer = Kratos::intrusive_ptr<LiteralFlatExpression>;
+    using Pointer = Kratos::intrusive_ptr<LiteralFlatExpression<TDataType>>;
 
     ///@}
     ///@name Life cycle
@@ -50,7 +51,7 @@ public:
         const std::vector<IndexType>& rShape);
 
     LiteralFlatExpression(
-        double* pDataBegin,
+        TDataType* pDataBegin,
         const IndexType NumberOfEntities,
         const std::vector<IndexType>& rShape);
 
@@ -69,19 +70,19 @@ public:
      * @param rShape                            Shape of the data in each entity.
      * @return LiteralFlatExpression::Pointer   Returns an intrusive pointer to LiteralFlatExpression.
      */
-    static LiteralFlatExpression::Pointer Create(
+    static LiteralFlatExpression<TDataType>::Pointer Create(
         const IndexType NumberOfEntities,
         const std::vector<IndexType>& rShape);
 
-    static LiteralFlatExpression::Pointer Create(
-        double* pDataBegin,
+    static LiteralFlatExpression<TDataType>::Pointer Create(
+        TDataType* pDataBegin,
         const IndexType NumberOfEntities,
         const std::vector<IndexType>& rShape);
 
     void SetData(
         const IndexType EntityDataBeginIndex,
         const IndexType ComponentIndex,
-        const double Value);
+        const TDataType Value);
 
     const std::vector<IndexType> GetShape() const override;
 
@@ -119,14 +120,14 @@ protected:
          *
          * @param Size      Size of the allocated array.
          */
-        Data(const IndexType Size): mpBegin(new double[Size]), mIsManaged(true) {}
+        Data(const IndexType Size): mpBegin(new TDataType[Size]), mIsManaged(true) {}
 
         /**
          * @brief Construct a new Data object, where the underlying array memory is not managed by the object.
          *
          * @param pBegin    Pointer to the memory array.
          */
-        Data(double* pBegin): mpBegin(pBegin), mIsManaged(false) {}
+        Data(TDataType* pBegin): mpBegin(pBegin), mIsManaged(false) {}
 
         ~Data() { if (mIsManaged) { delete[] mpBegin; } }
 
@@ -134,16 +135,16 @@ protected:
         ///@name Operators
         ///@{
 
-        double& operator[](const IndexType Index) noexcept { return mpBegin[Index]; }
+        TDataType& operator[](const IndexType Index) noexcept { return mpBegin[Index]; }
 
-        double operator[](const IndexType Index) const noexcept { return mpBegin[Index]; }
+        TDataType operator[](const IndexType Index) const noexcept { return mpBegin[Index]; }
 
         ///@}
     private:
         ///@name Private member variables
         ///@{
 
-        double* mpBegin;
+        TDataType* mpBegin;
 
         bool mIsManaged;
 
@@ -161,11 +162,12 @@ protected:
     ///@}
 };
 
-class LiteralScalarFlatExpression : public LiteralFlatExpression
+template<class TDataType = double>
+class LiteralScalarFlatExpression : public LiteralFlatExpression<TDataType>
 {
 public:
 
-    using LiteralFlatExpression::LiteralFlatExpression;
+    using LiteralFlatExpression<TDataType>::LiteralFlatExpression;
 
     double Evaluate(
         const IndexType EntityIndex,
@@ -174,11 +176,12 @@ public:
 
 };
 
-class LiteralNonScalarFlatExpression : public LiteralFlatExpression
+template<class TDataType = double>
+class LiteralNonScalarFlatExpression : public LiteralFlatExpression<TDataType>
 {
 public:
 
-    using LiteralFlatExpression::LiteralFlatExpression;
+    using LiteralFlatExpression<TDataType>::LiteralFlatExpression;
 
     double Evaluate(
         const IndexType EntityIndex,
