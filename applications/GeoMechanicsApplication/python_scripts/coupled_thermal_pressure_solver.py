@@ -105,20 +105,19 @@ class CoupledThermalPressureSolver(PythonSolver):
         if self.domain_size == 2:
             modeler.GenerateModelPart(self.pressure_solver.main_model_part,
                                       self.thermal_solver.main_model_part,
-                                      "TransientPwElement",
-                                      "GeneralThermalElement")
+                                      "TransientThermalElement2D3N",
+                                      "TNormalFluxCondition2D2N")
         else:
             modeler.GenerateModelPart(self.pressure_solver.main_model_part,
                                       self.thermal_solver.main_model_part,
-                                      "TransientPwElement",
-                                      "GeneralThermalElement")
+                                      "TransientThermalElement3D8N",
+                                      "TNormalFluxCondition2D3N")
 
-        self.thermal_solver.PrepareModelPart()
-        
         # Set the saved convection diffusion settings to the new thermal model part
         #self.thermal_solver.main_model_part.ProcessInfo.SetValue(KratosMultiphysics.CONVECTION_DIFFUSION_SETTINGS, convection_diffusion_settings)
 
-        
+        self.thermal_solver.PrepareModelPart()
+
 
     def AddDofs(self):
         self.pressure_solver.AddDofs()
