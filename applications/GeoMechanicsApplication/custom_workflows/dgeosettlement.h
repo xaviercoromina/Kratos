@@ -15,7 +15,10 @@
 #include <string>
 #include <functional>
 
+#include "includes/kernel.h"
 #include "includes/kratos_export_api.h"
+
+#include "geo_mechanics_application.h"
 
 
 namespace Kratos
@@ -24,12 +27,18 @@ namespace Kratos
 class KRATOS_API(GEO_MECHANICS_APPLICATION) KratosGeoSettlement
 {
 public:
+    KratosGeoSettlement();
+
     int Run(const std::string&          rWorkingDirectory,
             const std::string&          rParameterName,
             std::function<void(char*)>  logCallback,
             std::function<void(double)> reportProgress,
             std::function<void(char*)>  reportTextualProgress,
             std::function<bool()>       shouldCancel);
+
+private:
+    Kernel mKernel;
+    KratosGeoMechanicsApplication::Pointer mpApp;
 };
 
 }
