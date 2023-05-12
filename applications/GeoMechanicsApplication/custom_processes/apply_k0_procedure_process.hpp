@@ -90,20 +90,24 @@ class ApplyK0ProcedureProcess : public Process
           const Element::PropertiesType& rProp = rElement.GetProperties();
           ConstitutiveLaw::Pointer pConstitutiveLaw = rProp.GetValue(CONSTITUTIVE_LAW);
           const int& K0MainDirection = rProp[K0_MAIN_DIRECTION];
-          const double& K0ValueXX = rProp[K0_VALUE_XX];
-          const double& K0ValueYY = rProp[K0_VALUE_YY];
-          const double& K0ValueZZ = rProp[K0_VALUE_ZZ];
+          if (K0MainDirection < 0 || K0MainDirection > 1) {
+              KRATOS_ERROR << "undefined K0_MAIN_DIRECTION in ApplyK0ProcedureProcess: " << K0MainDirection << std::endl;
+          }
          
           //Check for alternative K0 specifications
-          double K0NC = 0.;
           double PoissonUR = 0.;
-          if ( rProp.Has(K0_NC) || rProp.Has(SIN_PHI) ) {
-              if ( rProp.Has(K0_NC) ) {
-                  K0NC = rProp[K0_NC];
-              } else {
-                  K0NC = 1.0 - rProp[SIN_PHI];
-              }
-              PoissonUR = rProp[POISSON_UNLOADING_RELOADING];
+          if (rProp.Has(POISSON_UNLOADING_RELOADING)) PoissonUR = rProp[POISSON_UNLOADING_RELOADING];
+          array_1d<double, 3> K0Vector;
+          if (rProp.Has(K0_NC)) {
+              std::fill(K0Vector.begin(), K0Vector.end(), rProp[K0_NC]);
+           }
+          else if (rProp.Has(SIN_PHI)) {
+              std::fill(K0Vector.begin(), K0Vector.end(), 1.0 - rProp[SIN_PHI]);
+          }
+          else {
+              K0Vector[0] = rProp[K0_VALUE_XX];
+              K0Vector[1] = rProp[K0_VALUE_YY];
+              K0Vector[2] = rProp[K0_VALUE_ZZ];
           }
 
           //Loop over integration points
@@ -112,46 +116,29 @@ class ApplyK0ProcedureProcess : public Process
           
           // Get element stress tensor 
           ProcessInfo& rCurrentProcessInfo = this->mrModelPart.GetProcessInfo();
-          std::vector<ConstitutiveLaw::StressVectorType> rStressVector;
-          rElement.CalculateOnIntegrationPoints(CAUCHY_STRESS_VECTOR, rStressVector, rCurrentProcessInfo);
+          std::vector<ConstitutiveLaw::StressVectorType> rStressVectors;
+          rElement.CalculateOnIntegrationPoints(CAUCHY_STRESS_VECTOR, rStressVectors, rCurrentProcessInfo);
 
           for (unsigned int GPoint = 0; GPoint < IntegrationPoints.size(); ++GPoint) {
 
-              // Apply K0 procedure
-              if (K0MainDirection == 0) {
-                  if (rProp.Has(K0_NC) || rProp.Has(SIN_PHI)) {
-                      double K0Value = K0NC;
-                      //Modify for presence of OCR (or POP?) field values
-                      double OCRValue = 1.0;
-                      if (rProp.Has(OCR)) OCRValue = rProp[OCR];
-                      K0Value = K0Value * OCRValue - (PoissonUR / (1.0 - PoissonUR)) * (OCRValue - 1.0);
-                      rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_YY] = K0Value * rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_XX];
-                      rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_ZZ] = K0Value * rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_XX];
-                  } else {
-                      rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_YY] = K0ValueYY * rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_XX];
-                      rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_ZZ] = K0ValueZZ * rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_XX];
-                  }
+              // Determine OCR dependent K0 values
+              if ((rProp.Has(K0_NC) || rProp.Has(SIN_PHI)) && rProp.Has(OCR)) {
+                  //Modify for presence of OCR (or POP?) field values
+                  double K0Value = rProp[K0_NC] * rProp[OCR] - (PoissonUR / (1.0 - PoissonUR)) * (rProp[OCR] - 1.0);
+                  std::fill(K0Vector.begin(), K0Vector.end(), K0Value);
+              }
 
-              }
-              else if (K0MainDirection == 1) {
-                  if (rProp.Has(K0_NC) || rProp.Has(SIN_PHI)) {
-                      double K0Value = K0NC;
-                      //Modify for presence of OCR (or POP?) field values
-                      double OCRValue = 1.0;
-                      if (rProp.Has(OCR)) OCRValue = rProp[OCR];
-                      K0Value = K0Value * OCRValue - (PoissonUR / (1.0 - PoissonUR)) * (OCRValue - 1.0);
-                      rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_XX] = K0Value * rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_YY];
-                      rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_ZZ] = K0Value * rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_YY];
-                  } else {
-                      rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_XX] = K0ValueXX * rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_YY];
-                      rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_ZZ] = K0ValueZZ * rStressVector[GPoint][INDEX_2D_PLANE_STRAIN_YY];
+              // Apply K0 procedure
+             for (unsigned int IDir = 0; IDir <= 2; ++IDir) {
+                  if (IDir != K0MainDirection) {
+                      rStressVectors[GPoint][IDir] = K0Vector[IDir] * rStressVectors[GPoint][K0MainDirection];
                   }
-              } else {
-                  KRATOS_ERROR << "undefined K0_MAIN_DIRECTION in ApplyK0ProcedureProcess: " << K0MainDirection << std::endl;
               }
-          }
+             // Erase shear stresses
+             std::fill(rStressVectors[GPoint].begin()+2, rStressVectors[GPoint].end(), 0.0);
+           }
           // Set element integration point stress tensors
-          rElement.SetValuesOnIntegrationPoints(CAUCHY_STRESS_VECTOR, rStressVector, rCurrentProcessInfo);
+          rElement.SetValuesOnIntegrationPoints(CAUCHY_STRESS_VECTOR, rStressVectors, rCurrentProcessInfo);
 
       }
 

@@ -23,12 +23,14 @@ class KratosGeoMechanicsK0ProcedureProcessTests(KratosUnittest.TestCase):
         # retrieve Cauchy stress tensor
         cauchy_stresses = test_helper.get_on_integration_points(simulation,Kratos.CAUCHY_STRESS_TENSOR)
 
-        # compare cauchy_stress_xx = k0_nc * cauchy_stress_yy
+        # compare cauchy_stress_xx = k0_nc * cauchy_stress_yy, cauchy_stress_xy = 0.
         k0_nc = 0.6
         sig_integrationpoint1_element1 = cauchy_stresses[1][1]
         sig_yy = sig_integrationpoint1_element1[1,1]
         sig_xx = sig_integrationpoint1_element1[0,0]
         self.assertAlmostEqual( sig_xx, k0_nc*sig_yy )
+        sig_xy = sig_integrationpoint1_element1[0,1]
+        self.assertEqual( sig_xy, 0.0 )
 
     def test_k0_procedure_k0_nc_ocr(self):
         """
@@ -44,7 +46,7 @@ class KratosGeoMechanicsK0ProcedureProcessTests(KratosUnittest.TestCase):
         # retrieve Cauchy stress tensor
         cauchy_stresses = test_helper.get_on_integration_points(simulation,Kratos.CAUCHY_STRESS_TENSOR)
 
-        # compare cauchy_stress_xx = k0 * cauchy_stress_yy
+        # compare cauchy_stress_xx = k0 * cauchy_stress_yy, cauchy_stress_xy = 0.
         k0_nc      = 0.6
         poisson_ur = 0.
         ocr        = 1.5
@@ -53,6 +55,8 @@ class KratosGeoMechanicsK0ProcedureProcessTests(KratosUnittest.TestCase):
         sig_yy = sig_integrationpoint1_element1[1,1]
         sig_xx = sig_integrationpoint1_element1[0,0]
         self.assertAlmostEqual( sig_xx, k0*sig_yy )
+        sig_xy = sig_integrationpoint1_element1[0,1]
+        self.assertEqual( sig_xy, 0.0 )
 
 if __name__ == '__main__':
     KratosUnittest.main()
