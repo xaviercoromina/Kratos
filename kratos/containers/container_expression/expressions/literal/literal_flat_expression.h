@@ -86,6 +86,10 @@ public:
 
     const std::vector<IndexType> GetShape() const override;
 
+    inline TDataType& operator[](const IndexType Index) noexcept { return mData[Index]; }
+
+    inline TDataType operator[](const IndexType Index) const noexcept { return mData[Index]; }
+
     std::string Info() const override;
 
     ///@}
@@ -135,9 +139,9 @@ protected:
         ///@name Operators
         ///@{
 
-        TDataType& operator[](const IndexType Index) noexcept { return mpBegin[Index]; }
+        inline TDataType& operator[](const IndexType Index) noexcept { return mpBegin[Index]; }
 
-        TDataType operator[](const IndexType Index) const noexcept { return mpBegin[Index]; }
+        inline TDataType operator[](const IndexType Index) const noexcept { return mpBegin[Index]; }
 
         ///@}
     private:
