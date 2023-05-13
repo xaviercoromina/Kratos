@@ -311,14 +311,14 @@ Expression::Pointer CreateGhostNodeExpression(
 
     std::vector<int> ghost_indices(number_of_ghost_nodes);
     std::transform(rGhostNodes.begin(), rGhostNodes.end(), ghost_indices.begin(), [](const auto& rNode) { return rNode.Id(); });
-    auto gp_list = GlobalPointerUtilities::RetrieveGlobalIndexedPointers(rGhostNodes, ghost_indices, rDataCommunicator);
+    auto gp_list = GlobalPointerUtilities::RetrieveGlobalIndexedPointers(rLocalNodes, ghost_indices, rDataCommunicator);
 
     GlobalPointerCommunicator<ModelPart::NodeType> pointer_comm(rDataCommunicator, gp_list.ptr_begin(), gp_list.ptr_end());
 
     const IndexType number_of_components = rLocalNodesExpression.GetFlattenedSize();
 
     auto values_proxy = pointer_comm.Apply(
-        [&rLocalNodes, &rLocalNodesExpression, number_of_components, &rKratosVtuIndicesMap](GlobalPointer<ModelPart::NodeType>& rGP) -> std::vector<double> {
+        [&rLocalNodesExpression, number_of_components, &rKratosVtuIndicesMap](GlobalPointer<ModelPart::NodeType>& rGP) -> std::vector<double> {
             std::vector<double> values(number_of_components);
             const auto p_itr = rKratosVtuIndicesMap.find(rGP->Id());
             if (p_itr != rKratosVtuIndicesMap.end()) {
