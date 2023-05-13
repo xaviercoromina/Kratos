@@ -13,6 +13,7 @@
 // System includes
 #include <string>
 #include <vector>
+#include <iomanip>
 
 // External includes
 
@@ -36,9 +37,12 @@ const std::string XmlOStreamWriter::GetTabbing(const IndexType Level)
     return ss_tabbing.str();
 }
 
-XmlOStreamWriter::XmlOStreamWriter(std::ostream& rOStream)
+XmlOStreamWriter::XmlOStreamWriter(
+    std::ostream& rOStream,
+    const IndexType Precision)
     : mrOStream(rOStream)
 {
+    mrOStream << std::scientific << std::setprecision(Precision);
 }
 
 void XmlOStreamWriter::WriteAttributes(

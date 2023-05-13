@@ -38,7 +38,9 @@ public:
     ///@name Life cycle
     ///@{
 
-    XmlOStreamWriter(std::ostream& rOStream);
+    XmlOStreamWriter(
+        std::ostream& rOStream,
+        const IndexType Precision);
 
     ///@}
     ///@name Public operations
