@@ -122,6 +122,7 @@ void AddContainerExpressionToPython(pybind11::module& m, const std::string& rNam
                            shape.data(),
                            shape.size());
         }, py::arg("numpy_double_array").noconvert())
+        .def("HasExpression", &container_expression_holder_base::HasExpression)
         .def("GetModelPart", py::overload_cast<>(&container_expression_holder_base::GetModelPart), py::return_value_policy::reference)
         .def("GetContainer", py::overload_cast<>(&container_expression_holder_base::GetContainer), py::return_value_policy::reference)
         .def("PrintData", &container_expression_holder_base::PrintData)
