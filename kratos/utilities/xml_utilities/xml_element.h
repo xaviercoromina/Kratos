@@ -1,0 +1,92 @@
+//    |  /           |
+//    ' /   __| _` | __|  _ \   __|
+//    . \  |   (   | |   (   |\__ `
+//   _|\_\_|  \__,_|\__|\___/ ____/
+//                   Multi-Physics
+//
+//  License:         BSD License
+//                   Kratos default license: kratos/license.txt
+//
+//  Main authors:    Suneth Warnakulasuriya
+//
+
+#pragma once
+
+// System includes
+#include <string>
+#include <vector>
+
+// External includes
+
+// Project includes
+#include "includes/define.h"
+#include "containers/container_expression/expressions/expression.h"
+#include "utilities/xml_utilities/xml_writer.h"
+
+namespace Kratos {
+
+class KRATOS_API(KRATOS_CORE) XmlElement {
+public:
+    ///@name Type definitions
+    ///@{
+
+    using IndexType = std::size_t;
+
+    KRATOS_CLASS_POINTER_DEFINITION(XmlElement);
+
+    ///@}
+    ///@name Life cycle
+    ///@{
+
+    XmlElement(const std::string& rTagName);
+
+    XmlElement(
+        const std::string& rDataName,
+        const std::vector<Expression::Pointer>& rExpressions,
+        const std::vector<IndexType>& rNumberOfEntities);
+
+    ///@}
+    ///@name Public operations
+    ///@{
+
+    const std::string GetTagName() const;
+
+    void AddAttribute(
+        const std::string& rName,
+        const std::string& rValue);
+
+    const std::vector<std::pair<const std::string, const std::string>>& GetAttributes() const;
+
+    void ClearAttributes();
+
+    void AddElement(const XmlElement::Pointer pXmlElement);
+
+    const std::vector<XmlElement::Pointer>& GetElements() const;
+
+    void ClearElements();
+
+    void Write(
+        XmlWriter& rWriter,
+        const IndexType Level = 0) const;
+
+    std::string Print(const IndexType Level = 0) const;
+
+    ///@}
+
+private:
+    ///@name Private member variables
+    ///@{
+
+    const std::string mTagName;
+
+    std::vector<std::pair<const std::string, const std::string>> mAttributes;
+
+    std::vector<XmlElement::Pointer> mXmlElements;
+
+    const std::vector<Expression::Pointer> mExpressions;
+
+    const std::vector<IndexType> mNumberOfEntities;
+
+    ///@}
+};
+} // namespace Kratos
