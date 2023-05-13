@@ -548,9 +548,11 @@ void WritePvtuFile(
 VtuOutput::VtuOutput(
     ModelPart& rModelPart,
     const bool IsInitialConfiguration,
+    const bool WriteSubModelParts,
     const IndexType Precision)
     : mrModelPart(rModelPart),
       mIsInitialConfiguration(IsInitialConfiguration),
+      mWriteSubModelParts(WriteSubModelParts),
       mPrecision(Precision)
 {
     const auto& r_communicator = rModelPart.GetCommunicator();
@@ -758,6 +760,41 @@ void VtuOutput::WriteModelPart(
         VtuOutputHelperUtilities::WritePvtuFile(vtk_file_element, rModelPart, rOutputFileNamePrefix,
                                                 output_vtu_file_name.str());
     }
+}
+
+void VtuOutput::ClearHistoricalVariables()
+{
+    mHistoricalVariablesMap.clear();
+}
+
+void VtuOutput::ClearNodalNonHistoricalVariables()
+{
+    mNonHistoricalNodalVariablesMap.clear();
+}
+
+void VtuOutput::ClearCellNonHistoricalVariables()
+{
+    mNonHistoricalCellVariablesMap.clear();
+}
+
+void VtuOutput::ClearNodalFlags()
+{
+    mNodalFlagsMap.clear();
+}
+
+void VtuOutput::ClearCellFlags()
+{
+    mCellFlagsMap.clear();
+}
+
+void VtuOutput::ClearNodalContainerExpressions()
+{
+    mPointContainerExpressionsMap.clear();
+}
+
+void VtuOutput::ClearCellContainerExpressions()
+{
+    mCellContainerExpressionsMap.clear();
 }
 
 void VtuOutput::PrintOutput(const std::string& rOutputFilenamePrefix)

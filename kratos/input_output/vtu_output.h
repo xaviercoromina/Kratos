@@ -79,6 +79,7 @@ public:
     VtuOutput(
         ModelPart& rModelPart,
         const bool IsInitialConfiguration,
+        const bool WriteSubModelParts,
         const IndexType Precision);
 
     ///@}
@@ -103,6 +104,20 @@ public:
         const std::string& rExpressionName,
         const typename ContainerExpression<TContainerType>::Pointer pContainerExpression);
 
+    void ClearHistoricalVariables();
+
+    void ClearNodalNonHistoricalVariables();
+
+    void ClearCellNonHistoricalVariables();
+
+    void ClearNodalFlags();
+
+    void ClearCellFlags();
+
+    void ClearNodalContainerExpressions();
+
+    void ClearCellContainerExpressions();
+
     void PrintOutput(const std::string& rOutputFilenamePrefix);
 
     ///@}
@@ -114,6 +129,8 @@ private:
     ModelPart& mrModelPart;
 
     const bool mIsInitialConfiguration;
+
+    const bool mWriteSubModelParts;
 
     const IndexType mPrecision;
 
