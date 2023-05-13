@@ -61,6 +61,8 @@ public:
 
     void AddElement(const XmlElement::Pointer pXmlElement);
 
+    std::vector<XmlElement::Pointer> GetElements(const std::string& rTagName) const;
+
     const std::vector<XmlElement::Pointer>& GetElements() const;
 
     void ClearElements();
