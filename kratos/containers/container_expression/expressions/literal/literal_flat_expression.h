@@ -171,6 +171,8 @@ class LiteralScalarFlatExpression : public LiteralFlatExpression<TDataType>
 {
 public:
 
+    using IndexType = std::size_t;
+
     using LiteralFlatExpression<TDataType>::LiteralFlatExpression;
 
     double Evaluate(
@@ -184,6 +186,8 @@ template<class TDataType = double>
 class LiteralNonScalarFlatExpression : public LiteralFlatExpression<TDataType>
 {
 public:
+
+    using IndexType = std::size_t;
 
     using LiteralFlatExpression<TDataType>::LiteralFlatExpression;
 

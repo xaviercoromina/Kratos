@@ -101,7 +101,7 @@ double LiteralScalarFlatExpression<TDataType>::Evaluate(
     const IndexType EntityDataBeginIndex,
     const IndexType ComponentIndex) const
 {
-    return mData[EntityIndex];
+    return this->mData[EntityIndex];
 }
 
 template<class TDataType>
@@ -110,7 +110,7 @@ double LiteralNonScalarFlatExpression<TDataType>::Evaluate(
     const IndexType EntityDataBeginIndex,
     const IndexType ComponentIndex) const
 {
-    return mData[EntityDataBeginIndex + ComponentIndex];
+    return this->mData[EntityDataBeginIndex + ComponentIndex];
 }
 
 // template instantiations
