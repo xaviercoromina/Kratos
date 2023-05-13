@@ -15,8 +15,8 @@
 // System includes
 #include <string>
 #include <variant>
-#include <vector>
-#include <utility>
+#include <set>
+#include <unordered_map>
 
 // External includes
 
@@ -45,10 +45,9 @@ public:
                                     const Variable<array_1d<double, 6>>*,
                                     const Variable<array_1d<double, 9>>*>;
 
-    using SupportedContainerExpressions = std::variant<
-                                            ContainerExpression<ModelPart::NodesContainerType>::Pointer,
-                                            ContainerExpression<ModelPart::ConditionsContainerType>::Pointer,
-                                            ContainerExpression<ModelPart::ElementsContainerType>::Pointer>;
+    using SupportedCellContainerExpressions = std::variant<
+                                                ContainerExpression<ModelPart::ConditionsContainerType>::Pointer,
+                                                ContainerExpression<ModelPart::ElementsContainerType>::Pointer>;
 
     KRATOS_CLASS_POINTER_DEFINITION(VtuOutput);
 
@@ -90,6 +89,24 @@ public:
     ///@}
 
 private:
+    ///@name Private classes
+    ///@{
+
+    struct VariableComparator
+    {
+        bool operator()(
+            const SupportedVariables& rFirst,
+            const SupportedVariables& rSecond) const
+        {
+            bool is_less = false;
+            std::visit([&is_less](auto pFirst, auto pSecond) {
+                is_less = pFirst->Key() < pSecond->Key();
+            }, rFirst, rSecond);
+            return is_less;
+        }
+    };
+
+    ///@}
     ///@name Private member variables
     ///@{
 
@@ -105,17 +122,19 @@ private:
 
     std::unordered_map<IndexType, IndexType> mKratosVtuIndicesMap;
 
-    std::vector<SupportedVariables> mHistoricalVariablesList;
+    std::set<SupportedVariables, VariableComparator> mHistoricalVariablesList;
 
-    std::vector<SupportedVariables> mNonHistoricalNodalVariablesList;
+    std::set<SupportedVariables, VariableComparator> mNonHistoricalNodalVariablesList;
 
-    std::vector<SupportedVariables> mNonHistoricalCellVariablesList;
+    std::set<SupportedVariables, VariableComparator> mNonHistoricalCellVariablesList;
 
-    std::vector<std::pair<std::string, const Flags*>> mNodalFlagsList;
+    std::unordered_map<std::string, const Flags*> mNodalFlagsList;
 
-    std::vector<std::pair<std::string, const Flags*>> mCellFlagsList;
+    std::unordered_map<std::string, const Flags*> mCellFlagsList;
 
-    std::vector<SupportedContainerExpressions> mContainerExpressionsList;
+    std::unordered_map<std::string, ContainerExpression<ModelPart::NodesContainerType>::Pointer> mPointContainerExpressionsList;
+
+    std::unordered_map<std::string, SupportedCellContainerExpressions> mCellContainerExpressionsList;
 
     ///@}
 };
