@@ -24,6 +24,7 @@
 #include "utilities/pointer_communicator.h"
 #include "utilities/global_pointer_utilities.h"
 #include "utilities/xml_utilities/xml_element.h"
+#include "utilities/xml_utilities/xml_ostream_writer.h"
 #include "containers/container_expression/expressions/literal/literal_flat_expression.h"
 
 // Include base h
@@ -90,6 +91,45 @@ Expression::Pointer CreatePositionsExpression(
     return p_position_expression;
 }
 
+XmlElement::Pointer CreateDataArrayElement(
+    const std::string& rDataArrayName,
+    const std::vector<Expression*>& rExpressions,
+    const std::vector<IndexType>& rNumberOfEntities)
+{
+    std::vector<Expression::Pointer> expressions;
+    std::vector<IndexType> number_of_entities;
+    for (IndexType i = 0; i < rExpressions.size(); ++i) {
+        if (rNumberOfEntities[i] > 0) {
+            expressions.push_back(rExpressions[i]);
+            number_of_entities.push_back(rNumberOfEntities[i]);
+        }
+    }
+    if (expressions.size() > 0) {
+        return Kratos::make_shared<XmlElement>(rDataArrayName, expressions, number_of_entities);
+    } else {
+        return nullptr;
+    }
+}
+
+template<class TContainerType, class TMeshType>
+Expression* pGetExpression(const ContainerExpression<TContainerType, TMeshType>& rContainerExpression)
+{
+    if (rContainerExpression.HasExpression()) {
+        return &*rContainerExpression.pGetExpression();
+    } else {
+        return nullptr;
+    }
+}
+
+void AddDataArrayElement(
+    XmlElement::Pointer pParentElement,
+    XmlElement::Pointer pDataArrayElement)
+{
+    if (pDataArrayElement) {
+        pParentElement->AddElement(pDataArrayElement);
+    }
+}
+
 XmlElement::Pointer CreatePointsXmlElement(
     const ModelPart& rModelPart,
     const bool IsInitialConfiguration)
@@ -100,16 +140,14 @@ XmlElement::Pointer CreatePointsXmlElement(
     const auto& r_local_nodes = r_communicator.LocalMesh().Nodes();
     const auto& r_ghost_nodes = r_communicator.GhostMesh().Nodes();
 
-    std::vector<Expression::Pointer> p_position(2);
+    auto local_position = CreatePositionsExpression(r_local_nodes, IsInitialConfiguration);
+    auto ghost_position = CreatePositionsExpression(r_ghost_nodes, IsInitialConfiguration);
 
-    p_position[0] = CreatePositionsExpression(r_local_nodes, IsInitialConfiguration);
-    p_position[1] = CreatePositionsExpression(r_ghost_nodes, IsInitialConfiguration);
+    AddDataArrayElement(
+        p_points_xml_element,
+        CreateDataArrayElement("Position", {&*local_position, &*ghost_position},
+                               {r_local_nodes.size(), r_ghost_nodes.size()}));
 
-    auto p_positions_xml_element = Kratos::make_shared<XmlElement>(
-        "Position", p_position,
-        std::vector<IndexType>({r_local_nodes.size(), r_ghost_nodes.size()}));
-
-    p_points_xml_element->AddElement(p_positions_xml_element);
     return p_points_xml_element;
 }
 
@@ -119,10 +157,11 @@ Expression::Pointer CreateOffsetsExpression(
     const TContainerType& rContainer)
 {
     auto p_offsets_expression = LiteralFlatExpression<int>::Create(rContainer.size(), {});
+    auto& r_offsets_expression = *p_offsets_expression;
     rTotalOffset = 0;
     for (IndexType i = 0; i < rContainer.size(); ++i) {
         rTotalOffset += (rContainer.begin() + i)->GetGeometry().size();
-        p_offsets_expression[i] = rTotalOffset;
+        r_offsets_expression[i] = rTotalOffset;
     }
     return p_offsets_expression;
 }
@@ -131,10 +170,11 @@ template<class TContainerType>
 Expression::Pointer CreateGeometryTypesExpression(const TContainerType& rContainer)
 {
     auto p_geometry_expression = LiteralFlatExpression<int>::Create(rContainer.size(), {});
+    auto& r_geometry_expression = *p_geometry_expression;
     for (IndexType i = 0; i < rContainer.size(); ++i) {
         const auto p_itr = KratosVtuGeometryTypes.find((rContainer.begin() + i)->GetGeometry().GetGeometryType());
         if (p_itr != KratosVtuGeometryTypes.end()) {
-            p_geometry_expression[i] = p_itr->second;
+            r_geometry_expression[i] = p_itr->second;
         } else {
             KRATOS_ERROR << "Element with id " << (rContainer.begin() + i)->Id() << " has unsupported geometry.";
         }
@@ -155,7 +195,7 @@ Expression::Pointer CreateConnectivityExpression(
         for (const auto& r_node : r_entity.GetGeometry()) {
             const auto p_itr = rKratosVtuIndicesMap.find(r_node.Id());
             if (p_itr != rKratosVtuIndicesMap.end()) {
-                r_connectivity_expression[local_index++] = p_itr.second;
+                r_connectivity_expression[local_index++] = p_itr->second;
             } else {
                 KRATOS_ERROR << "Node with id " << r_node.Id() << " not found in nodes list.";
             }
@@ -176,19 +216,16 @@ XmlElement::Pointer CreateCellsXmlElement(
     auto p_connectivity_expression = CreateConnectivityExpression(total_offset, rContainer, rKratosVtuIndicesMap);
     auto p_geometry_type_expression = CreateGeometryTypesExpression(rContainer);
 
-    auto p_connectivity_xml_element = Kratos::make_shared<XmlElement>(
-        "connectivity", std::vector<Expression::Pointer>({p_connectivity_expression}),
-        std::vector<IndexType>({total_offset}));
-    auto p_offsets_xml_element = Kratos::make_shared<XmlElement>(
-        "offsets", std::vector<Expression::Pointer>({p_offsets_expression}),
-        std::vector<IndexType>({rContainer.size()}));
-    auto p_types_xml_element = Kratos::make_shared<XmlElement>(
-        "types", std::vector<Expression::Pointer>({p_geometry_type_expression}),
-        std::vector<IndexType>({rContainer.size()}));
-
-    p_cells_xml_element->AddElement(p_connectivity_xml_element);
-    p_cells_xml_element->AddElement(p_offsets_xml_element);
-    p_cells_xml_element->AddElement(p_types_xml_element);
+    AddDataArrayElement(
+        p_cells_xml_element,
+        CreateDataArrayElement("connectivity", {&*p_connectivity_expression},
+                               {static_cast<IndexType>(total_offset)}));
+    AddDataArrayElement(p_cells_xml_element,
+                        CreateDataArrayElement("offsets", {&*p_offsets_expression},
+                                               {rContainer.size()}));
+    AddDataArrayElement(p_cells_xml_element,
+                        CreateDataArrayElement("types", {&*p_geometry_type_expression},
+                                               {rContainer.size()}));
     return p_cells_xml_element;
 }
 
@@ -198,23 +235,24 @@ XmlElement::Pointer CreateVariableDataXmlElement(
     ModelPart& rModelPart)
 {
     if constexpr(std::is_same_v<TContainerType, ModelPart::NodesContainerType>) {
-        SpecializedContainerExpression<TContainerType, TContainerDataIOTag, MeshType::Local> local_container(rModelPart);
+        SpecializedContainerExpression<TContainerType, ContainerDataIO<TContainerDataIOTag>, MeshType::Local> local_container(rModelPart);
         local_container.Read(rVariable);
-        SpecializedContainerExpression<TContainerType, TContainerDataIOTag, MeshType::Ghost> ghost_container(rModelPart);
+        SpecializedContainerExpression<TContainerType, ContainerDataIO<TContainerDataIOTag>, MeshType::Ghost> ghost_container(rModelPart);
         ghost_container.Read(rVariable);
 
-        std::vector<Expression::Pointer> expressions({local_container.pGetExpression(), ghost_container.pGetExpression()});
-        std::vector<IndexType> number_of_entities({local_container.GetContainer().size(), ghost_container.GetContainer().size()});
-
-        return Kratos::make_shared<XmlElement>(rVariable.Name(), expressions, number_of_entities);
+        return CreateDataArrayElement(
+            rVariable.Name(),
+            {pGetExpression(local_container), pGetExpression(ghost_container)},
+            {local_container.GetContainer().size(),
+             ghost_container.GetContainer().size()});
     } else {
-        SpecializedContainerExpression<TContainerType, TContainerDataIOTag> local_container(rModelPart);
+        SpecializedContainerExpression<TContainerType, ContainerDataIO<TContainerDataIOTag>> local_container(rModelPart);
         local_container.Read(rVariable);
 
-        std::vector<Expression::Pointer> expressions({local_container.pGetExpression()});
-        std::vector<IndexType> number_of_entities({local_container.GetContainer().size()});
-
-        return Kratos::make_shared<XmlElement>(rVariable.Name(), expressions, number_of_entities);
+        return CreateDataArrayElement(
+            rVariable.Name(),
+            {pGetExpression(local_container)},
+            {local_container.GetContainer().size()});
     }
 }
 
@@ -244,22 +282,160 @@ XmlElement::Pointer CreateFlagDataXmlElement(
         const auto& r_local_nodes = r_communicator.LocalMesh().Nodes();
         const auto& r_ghost_nodes = r_communicator.GhostMesh().Nodes();
 
-        std::vector<Expression::Pointer> expressions({CreateContainerFlagExpression(r_local_nodes, rFlags), CreateContainerFlagExpression(r_ghost_nodes, rFlags)});
-        std::vector<IndexType> number_of_entities({r_local_nodes.size(), r_ghost_nodes.size()});
-
-        return Kratos::make_shared<XmlElement>(rFlagName, expressions, number_of_entities);
+        return CreateDataArrayElement(
+            rFlagName,
+            {&*CreateContainerFlagExpression(r_local_nodes, rFlags),
+             &*CreateContainerFlagExpression(r_ghost_nodes, rFlags)},
+            {r_local_nodes.size(), r_ghost_nodes.size()});
     } else if constexpr(std::is_same_v<TContainerType, ModelPart::ConditionsContainerType>) {
-
-        std::vector<Expression::Pointer> expressions({CreateContainerFlagExpression(rModelPart.Conditions(), rFlags)});
-        std::vector<IndexType> number_of_entities({rModelPart.NumberOfConditions()});
-
-        return Kratos::make_shared<XmlElement>(rFlagName, expressions, number_of_entities);
+        return CreateDataArrayElement(
+            rFlagName,
+            {&*CreateContainerFlagExpression(rModelPart.GetCommunicator().LocalMesh().Conditions(), rFlags)},
+            {rModelPart.NumberOfConditions()});
     } else if constexpr(std::is_same_v<TContainerType, ModelPart::ElementsContainerType>) {
+        return CreateDataArrayElement(
+            rFlagName,
+            {&*CreateContainerFlagExpression(rModelPart.GetCommunicator().LocalMesh().Elements(), rFlags)},
+            {rModelPart.NumberOfElements()});
+    }
+}
 
-        std::vector<Expression::Pointer> expressions({CreateContainerFlagExpression(rModelPart.Elements(), rFlags)});
-        std::vector<IndexType> number_of_entities({rModelPart.NumberOfElements()});
+Expression::Pointer CreateGhostNodeExpression(
+    const DataCommunicator& rDataCommunicator,
+    const Expression& rLocalNodesExpression,
+    const ModelPart::NodesContainerType& rLocalNodes,
+    const ModelPart::NodesContainerType& rGhostNodes,
+    const std::unordered_map<IndexType, IndexType>& rKratosVtuIndicesMap)
+{
+    const IndexType number_of_ghost_nodes = rGhostNodes.size();
 
-        return Kratos::make_shared<XmlElement>(rFlagName, expressions, number_of_entities);
+    std::vector<int> ghost_indices(number_of_ghost_nodes);
+    std::transform(rGhostNodes.begin(), rGhostNodes.end(), ghost_indices.begin(), [](const auto& rNode) { return rNode.Id(); });
+    auto gp_list = GlobalPointerUtilities::RetrieveGlobalIndexedPointers(rGhostNodes, ghost_indices, rDataCommunicator);
+
+    GlobalPointerCommunicator<ModelPart::NodeType> pointer_comm(rDataCommunicator, gp_list.ptr_begin(), gp_list.ptr_end());
+
+    const IndexType number_of_components = rLocalNodesExpression.GetFlattenedSize();
+
+    auto values_proxy = pointer_comm.Apply(
+        [&rLocalNodes, &rLocalNodesExpression, number_of_components, &rKratosVtuIndicesMap](GlobalPointer<ModelPart::NodeType>& rGP) -> std::vector<double> {
+            std::vector<double> values(number_of_components);
+            const auto p_itr = rKratosVtuIndicesMap.find(rGP->Id());
+            if (p_itr != rKratosVtuIndicesMap.end()) {
+                const auto entity_index = (p_itr->second - rLocalNodes.size());
+                const IndexType enitity_data_begin_index = entity_index * number_of_components;
+                for (IndexType i = 0; i < number_of_components; ++i) {
+                    values[i] = rLocalNodesExpression.Evaluate(entity_index, enitity_data_begin_index, i);
+                }
+            } else {
+                KRATOS_ERROR << "The node with id " << rGP->Id() << " not found in the owning rank local expression.";
+            }
+            return values;
+        }
+    );
+
+    auto p_ghost_nodes_expression = LiteralFlatExpression<double>::Create(number_of_ghost_nodes, rLocalNodesExpression.GetShape());
+    auto& r_ghost_nodes_expression = *p_ghost_nodes_expression;
+
+    IndexType local_index = 0;
+    for(IndexType i = 0; i < number_of_ghost_nodes; ++i) {
+        const auto& r_gp_value = values_proxy.Get(gp_list(i));
+        for (IndexType j = 0; j < number_of_components; ++j) {
+            r_ghost_nodes_expression[local_index++] = r_gp_value[j];
+        }
+    }
+    return p_ghost_nodes_expression;
+}
+
+template<class TContainerType>
+XmlElement::Pointer CreateContainerExpressionXmlElement(
+    const std::string& rExpressionName,
+    const ContainerExpression<TContainerType>& rContainerExpression,
+    const std::unordered_map<IndexType, IndexType>& rKratosVtuIndicesMap)
+{
+    if constexpr(std::is_same_v<TContainerType, ModelPart::NodesContainerType>) {
+        const auto& r_communicator = rContainerExpression.GetModelPart().GetCommunicator();
+        const auto& r_local_nodes = r_communicator.LocalMesh().Nodes();
+        const auto& r_ghost_nodes = r_communicator.GhostMesh().Nodes();
+
+        auto ghost_node_expression = CreateGhostNodeExpression(
+            r_communicator.GetDataCommunicator(), rContainerExpression.GetExpression(),
+            r_local_nodes, r_ghost_nodes, rKratosVtuIndicesMap);
+
+        return CreateDataArrayElement(
+            rExpressionName, {pGetExpression(rContainerExpression), &*ghost_node_expression},
+            {r_local_nodes.size(), r_ghost_nodes.size()});
+    } else {
+        return CreateDataArrayElement(rExpressionName,
+                                      {pGetExpression(rContainerExpression)},
+                                      {rContainerExpression.GetContainer().size()});
+    }
+}
+
+template<class... TLists>
+void CheckDataArrayName(
+    const std::string& rName,
+    TLists&... rLists)
+{
+    const bool found_existing_name = !(... && (rLists.find(rName) == rLists.end()));
+    KRATOS_ERROR_IF(found_existing_name)
+        << "Found an existing data array with the same name = \"" << rName << "\".\n";
+}
+
+template<class TContaierType, class TContainerIOTag>
+void AddListOfVariables(
+    XmlElement::Pointer pXmlDataElement,
+    ModelPart& rModelPart,
+    const std::unordered_map<std::string, VtuOutput::SupportedVariables>& rVariablesMap)
+{
+    for (const auto& p_variable_variant : rVariablesMap){
+        std::visit([&rModelPart, &pXmlDataElement](auto pVariable) {
+                using variable_type =
+                    typename std::remove_const_t<std::remove_reference_t<decltype(*pVariable)>>::Type;
+                AddDataArrayElement(
+                    pXmlDataElement,
+                    CreateVariableDataXmlElement<variable_type, TContaierType, TContainerIOTag>(
+                        *pVariable, rModelPart));
+            },
+            p_variable_variant.second);
+    }
+}
+
+template<class TContaierType>
+void AddListOfFlags(
+    XmlElement::Pointer pXmlDataElement,
+    ModelPart& rModelPart,
+    const std::unordered_map<std::string, const Flags*>& rFlagsMap)
+{
+    for (const auto& r_flag_pair : rFlagsMap){
+        AddDataArrayElement(pXmlDataElement, CreateFlagDataXmlElement<TContaierType>(r_flag_pair.first, *r_flag_pair.second, rModelPart));
+    }
+}
+
+template<class TContainerExpressionType>
+void AddListOfContainerExpressions(
+    XmlElement::Pointer pXmlDataElement,
+    ModelPart& rModelPart,
+    const std::unordered_map<IndexType, IndexType>& rKratosVtuIndicesMap,
+    const std::unordered_map<std::string, TContainerExpressionType>& rContainerExpressionsMap)
+{
+    for (const auto& r_container_expression_pair : rContainerExpressionsMap){
+        const std::string& r_name = r_container_expression_pair.first;
+        if constexpr(std::is_same_v<TContainerExpressionType, ContainerExpression<ModelPart::NodesContainerType>::Pointer>) {
+            AddDataArrayElement(
+                pXmlDataElement,
+                CreateContainerExpressionXmlElement(
+                    r_name,
+                    *r_container_expression_pair.second, rKratosVtuIndicesMap));
+        } else {
+            std::visit([&r_name, &pXmlDataElement, &rKratosVtuIndicesMap](auto pContainerExpression) {
+                    AddDataArrayElement(
+                        pXmlDataElement,
+                        CreateContainerExpressionXmlElement(
+                            r_name, *pContainerExpression, rKratosVtuIndicesMap));
+                },
+                r_container_expression_pair.second);
+        }
     }
 }
 
@@ -280,6 +456,90 @@ void CreatePDataArrays(
         auto new_pdata_array = Kratos::make_shared<XmlElement>("PDataArray");
         CopyAttributes(*new_pdata_array, *p_element);
         rOutputElement.AddElement(new_pdata_array);
+    }
+}
+
+void WritePvtuFile(
+    XmlElement::Pointer pVtkFileElement,
+    const ModelPart& rModelPart,
+    const std::string& rOutputFileNamePrefix,
+    const std::string& rOutputFileName)
+{
+    // get list of file names
+    std::stringstream list_of_file_names;
+
+    const auto& r_communicator = rModelPart.GetCommunicator();
+    const auto& r_data_communicator = r_communicator.GetDataCommunicator();
+
+    // TODO: May be we want to check a rank which has some entities (not empty ranks)
+    //       Then write on that rank.
+    const int writing_rank = 0;
+
+    list_of_file_names << rOutputFileName << "\n";
+    if (r_data_communicator.Rank() == writing_rank) {
+        for (int rank = 0; rank < r_data_communicator.Size(); ++rank) {
+            if (rank != writing_rank) {
+                std::string msg;
+                r_data_communicator.Recv(msg, rank);
+                list_of_file_names << msg;
+            }
+        }
+    } else {
+        r_data_communicator.Send(list_of_file_names.str(), writing_rank);
+    }
+    r_data_communicator.Barrier();
+
+    if (r_data_communicator.Rank() == writing_rank) {
+        // create the vtk file
+        auto vtk_file_element = Kratos::make_shared<XmlElement>("VTKFile");
+        vtk_file_element->AddAttribute("type", "PUnstructuredGrid");
+        vtk_file_element->AddAttribute("version", "0.1");
+        vtk_file_element->AddAttribute("byte_order", "BigEndian");
+
+        // create the unstructured grid
+        auto unstructured_grid_element = Kratos::make_shared<XmlElement>("PUnstructuredGrid");
+        unstructured_grid_element->AddAttribute("GhostLevel", "0");
+        vtk_file_element->AddElement(unstructured_grid_element);
+
+        // get the points xml element
+        auto piece = pVtkFileElement->GetElements("UnstructuredGrid")[0]->GetElements("Piece")[0];
+
+        auto points = piece->GetElements("Points")[0];
+        auto p_points = Kratos::make_shared<XmlElement>("PPoints");
+        VtuOutputHelperUtilities::CreatePDataArrays(*p_points, *points);
+        unstructured_grid_element->AddElement(p_points);
+
+        auto cells = piece->GetElements("Cells")[0];
+        auto p_cells = Kratos::make_shared<XmlElement>("PCells");
+        VtuOutputHelperUtilities::CreatePDataArrays(*p_cells, *cells);
+        unstructured_grid_element->AddElement(p_cells);
+
+        auto point_data = piece->GetElements("PointData")[0];
+        auto p_point_data = Kratos::make_shared<XmlElement>("PPointData");
+        VtuOutputHelperUtilities::CreatePDataArrays(*p_point_data, *point_data);
+        unstructured_grid_element->AddElement(p_point_data);
+
+        auto cell_data = piece->GetElements("CellData")[0];
+        auto p_cell_data = Kratos::make_shared<XmlElement>("PCellData");
+        VtuOutputHelperUtilities::CreatePDataArrays(*p_cell_data, *cell_data);
+        unstructured_grid_element->AddElement(p_cell_data);
+
+        // now write all the pieces
+        const auto& r_file_names = StringUtilities::SplitStringByDelimiter(list_of_file_names.str(), '\n');
+        for (const auto& r_file_name : r_file_names) {
+            auto piece = Kratos::make_shared<XmlElement>("Piece");
+            piece->AddAttribute("Source", r_file_name);
+            unstructured_grid_element->AddElement(piece);
+        }
+
+        // writing to file
+        std::stringstream output_pvtu_file_name;
+        output_pvtu_file_name << rOutputFileNamePrefix << ".pvtu";
+        std::ofstream output_file;
+        output_file.open(output_pvtu_file_name.str(), std::ios::out | std::ios::trunc);
+        XmlOStreamWriter writer(output_file, 1);
+        vtk_file_element->Write(writer);
+        output_file.close();
     }
 }
 
@@ -321,12 +581,9 @@ VtuOutput::VtuOutput(
 template<class TDataType>
 void VtuOutput::AddHistoricalVariable(const Variable<TDataType>& rVariable)
 {
-    KRATOS_ERROR_IF(mNonHistoricalNodalVariablesList.find(&rVariable) !=
-                    mNonHistoricalNodalVariablesList.end())
-        << "The same \"" << rVariable.Name()
-        << "\" exists in the non-historical nodal variables list.\n";
-
-    mHistoricalVariablesList.insert(&rVariable);
+    VtuOutputHelperUtilities::CheckDataArrayName(
+        rVariable.Name(), mNonHistoricalNodalVariablesMap, mNodalFlagsMap, mPointContainerExpressionsMap);
+    mHistoricalVariablesMap[rVariable.Name()] = &rVariable;
 }
 
 template<class TDataType>
@@ -335,24 +592,24 @@ void VtuOutput::AddNonHistoricalVariable(
     const Flags& rEntityFlags)
 {
     if (rEntityFlags.Is(NODES)) {
-        KRATOS_ERROR_IF(mHistoricalVariablesList.find(&rVariable) !=
-                        mHistoricalVariablesList.end())
-            << "The same \"" << rVariable.Name()
-            << "\" exists in the historical nodal variables list.\n";
+        VtuOutputHelperUtilities::CheckDataArrayName(
+            rVariable.Name(), mHistoricalVariablesMap, mNodalFlagsMap,
+            mPointContainerExpressionsMap);
+        mNonHistoricalNodalVariablesMap[rVariable.Name()] = &rVariable;
+    } else {
+        KRATOS_ERROR_IF_NOT(!rEntityFlags.Is(CONDITIONS) || (rEntityFlags.Is(CONDITIONS) && mIsConditionsConsidered))
+            << "Condition variable \""
+            << rVariable.Name() << "\" cannot be written for a model part with elements [ model part name = \""
+            << mrModelPart.FullName() << "\" ].\n";
 
-        mNonHistoricalNodalVariablesList.insert(&rVariable);
-    } else if (rEntityFlags.Is(CONDITIONS)) {
-        KRATOS_ERROR_IF_NOT(mIsConditionsConsidered)
-            << "Condition variable \"" << rVariable.Name()
-            << "\" cannot be written for a model part with elements [ model part name = \""
+        KRATOS_ERROR_IF_NOT(!rEntityFlags.Is(ELEMENTS) || (rEntityFlags.Is(ELEMENTS) && mIsElementsConsidered))
+            << "Element variable \""
+            << rVariable.Name() << "\" cannot be written for a model part with only conditions [ model part name = \""
             << mrModelPart.FullName() << "\" ].\n";
-        mNonHistoricalCellVariablesList.insert(&rVariable);
-    } else if (rEntityFlags.Is(ELEMENTS)) {
-        KRATOS_ERROR_IF_NOT(mIsElementsConsidered)
-            << "Element variable \"" << rVariable.Name()
-            << "\" cannot be written for a model part with only conditions [ model part name = \""
-            << mrModelPart.FullName() << "\" ].\n";
-        mNonHistoricalCellVariablesList.insert(&rVariable);
+
+        VtuOutputHelperUtilities::CheckDataArrayName(
+            rVariable.Name(), mCellFlagsMap, mCellContainerExpressionsMap);
+        mNonHistoricalCellVariablesMap[rVariable.Name()] = &rVariable;
     }
 }
 
@@ -362,19 +619,24 @@ void VtuOutput::AddFlagVariable(
     const Flags& rEntityFlags)
 {
     if (rEntityFlags.Is(NODES)) {
-        mNodalFlagsList[rFlagName] = &rFlagVariable;
-    } else if (rEntityFlags.Is(CONDITIONS)) {
-        KRATOS_ERROR_IF_NOT(mIsConditionsConsidered)
-            << "Condition flag \"" << rFlagName
-            << "\" cannot be written for a model part with elements [ model part name = \""
+        VtuOutputHelperUtilities::CheckDataArrayName(
+            rFlagName, mHistoricalVariablesMap, mNonHistoricalNodalVariablesMap,
+            mPointContainerExpressionsMap);
+        mNodalFlagsMap[rFlagName] = &rFlagVariable;
+    } else {
+        KRATOS_ERROR_IF_NOT(!rEntityFlags.Is(CONDITIONS) || (rEntityFlags.Is(CONDITIONS) && mIsConditionsConsidered))
+            << "Condition flag \""
+            << rFlagName << "\" cannot be written for a model part with elements [ model part name = \""
             << mrModelPart.FullName() << "\" ].\n";
-        mCellFlagsList[rFlagName] = &rFlagVariable;
-    } else if (rEntityFlags.Is(ELEMENTS)) {
-        KRATOS_ERROR_IF_NOT(mIsElementsConsidered)
-            << "Element flag \"" << rFlagName
-            << "\" cannot be written for a model part with only conditions [ model part name = \""
+
+        KRATOS_ERROR_IF_NOT(!rEntityFlags.Is(ELEMENTS) || (rEntityFlags.Is(ELEMENTS) && mIsElementsConsidered))
+            << "Element flag \""
+            << rFlagName << "\" cannot be written for a model part with only conditions [ model part name = \""
             << mrModelPart.FullName() << "\" ].\n";
-        mCellFlagsList[rFlagName] = &rFlagVariable;
+
+        VtuOutputHelperUtilities::CheckDataArrayName(
+            rFlagName, mNonHistoricalCellVariablesMap, mCellContainerExpressionsMap);
+        mCellFlagsMap[rFlagName] = &rFlagVariable;
     }
 }
 
@@ -395,20 +657,112 @@ void VtuOutput::AddContainerExpression(
             << mrModelPart.FullName() << "\" ].\n";
     }
 
-    if constexpr(std::is_same_v<TContainerType, ModelPart::NodesContainerType>) {
-        KRATOS_ERROR_IF(mPointContainerExpressionsList.find(rExpressionName) !=
-                        mPointContainerExpressionsList.end())
-            << "A container expression named \"" << rExpressionName
-            << "\" already exists in point data.\n";
-
-        mPointContainerExpressionsList[rExpressionName] = pContainerExpression;
+    if constexpr (std::is_same_v<TContainerType, ModelPart::NodesContainerType>) {
+        VtuOutputHelperUtilities::CheckDataArrayName(
+            rExpressionName, mHistoricalVariablesMap,
+            mNonHistoricalNodalVariablesMap, mNodalFlagsMap);
+        mPointContainerExpressionsMap[rExpressionName] = pContainerExpression;
     } else {
-        KRATOS_ERROR_IF(mCellContainerExpressionsList.find(rExpressionName) !=
-                        mCellContainerExpressionsList.end())
-            << "A container expression named \"" << rExpressionName
-            << "\" already exists in cell data.\n";
-        mCellContainerExpressionsList[rExpressionName] = pContainerExpression;
+        VtuOutputHelperUtilities::CheckDataArrayName(
+            rExpressionName, mNonHistoricalCellVariablesMap, mCellFlagsMap);
+        mCellContainerExpressionsMap[rExpressionName] = pContainerExpression;
     }
+}
+
+void VtuOutput::WriteModelPart(
+    const std::string& rOutputFileNamePrefix,
+    ModelPart& rModelPart) const
+{
+    // create the vtk file
+    auto vtk_file_element = Kratos::make_shared<XmlElement>("VTKFile");
+    vtk_file_element->AddAttribute("type", "UnstructuredGrid");
+    vtk_file_element->AddAttribute("version", "0.1");
+    vtk_file_element->AddAttribute("byte_order", "BigEndian");
+
+    // create the unstructured grid
+    auto unstructured_grid_element = Kratos::make_shared<XmlElement>("UnstructuredGrid");
+    vtk_file_element->AddElement(unstructured_grid_element);
+
+    // create the piece element
+    auto piece_element = Kratos::make_shared<XmlElement>("Piece");
+    piece_element->AddAttribute("NumberOfPoints",
+                                std::to_string(rModelPart.NumberOfNodes()));
+    piece_element->AddAttribute(
+        "NumberOfCells",
+        std::to_string(mIsElementsConsidered ? rModelPart.NumberOfElements()
+                                             : rModelPart.NumberOfConditions()));
+    unstructured_grid_element->AddElement(piece_element);
+
+    // create the points element
+    auto points_element = VtuOutputHelperUtilities::CreatePointsXmlElement(
+        rModelPart, mIsConditionsConsidered);
+    piece_element->AddElement(points_element);
+
+    // create the cells element
+    XmlElement::Pointer cells_element;
+    if (mIsElementsConsidered) {
+        cells_element = VtuOutputHelperUtilities::CreateCellsXmlElement(
+            rModelPart.GetCommunicator().LocalMesh().Elements(), mKratosVtuIndicesMap);
+    } else {
+        cells_element = VtuOutputHelperUtilities::CreateCellsXmlElement(
+            rModelPart.GetCommunicator().LocalMesh().Conditions(), mKratosVtuIndicesMap);
+    }
+    piece_element->AddElement(cells_element);
+
+    // create the point data
+    auto point_data_element = Kratos::make_shared<XmlElement>("PointData");
+    piece_element->AddElement(point_data_element);
+    VtuOutputHelperUtilities::AddListOfVariables<ModelPart::NodesContainerType, ContainerDataIOTags::Historical>(
+        point_data_element, rModelPart, mHistoricalVariablesMap);
+    VtuOutputHelperUtilities::AddListOfVariables<ModelPart::NodesContainerType, ContainerDataIOTags::NonHistorical>(
+        point_data_element, rModelPart, mNonHistoricalNodalVariablesMap);
+    VtuOutputHelperUtilities::AddListOfFlags<ModelPart::NodesContainerType>(
+        point_data_element, rModelPart, mNodalFlagsMap);
+    VtuOutputHelperUtilities::AddListOfContainerExpressions(
+        point_data_element, rModelPart, mKratosVtuIndicesMap, mPointContainerExpressionsMap);
+
+    // create cell data
+    auto cell_data_element = Kratos::make_shared<XmlElement>("CellData");
+    piece_element->AddElement(cell_data_element);
+    if (mIsElementsConsidered) {
+        VtuOutputHelperUtilities::AddListOfVariables<ModelPart::ElementsContainerType, ContainerDataIOTags::NonHistorical>(
+            cell_data_element, rModelPart, mNonHistoricalCellVariablesMap);
+        VtuOutputHelperUtilities::AddListOfFlags<ModelPart::ElementsContainerType>(
+            cell_data_element, rModelPart, mCellFlagsMap);
+    } else if (mIsConditionsConsidered) {
+        VtuOutputHelperUtilities::AddListOfVariables<ModelPart::ConditionsContainerType, ContainerDataIOTags::NonHistorical>(
+            cell_data_element, rModelPart, mNonHistoricalCellVariablesMap);
+        VtuOutputHelperUtilities::AddListOfFlags<ModelPart::ConditionsContainerType>(
+            cell_data_element, rModelPart, mCellFlagsMap);
+    }
+
+    VtuOutputHelperUtilities::AddListOfContainerExpressions(
+        cell_data_element, rModelPart, mKratosVtuIndicesMap, mCellContainerExpressionsMap);
+
+    const auto& r_communiator = rModelPart.GetCommunicator();
+
+    std::stringstream output_vtu_file_name;
+    output_vtu_file_name << rOutputFileNamePrefix;
+    if (r_communiator.IsDistributed()) {
+        output_vtu_file_name << "_" << r_communiator.MyPID();
+    }
+    output_vtu_file_name << ".vtu";
+
+    std::ofstream output_file;
+    output_file.open(output_vtu_file_name.str(), std::ios::out | std::ios::trunc);
+    XmlOStreamWriter writer(output_file, mPrecision);
+    vtk_file_element->Write(writer);
+    output_file.close();
+
+    if (r_communiator.IsDistributed()) {
+        VtuOutputHelperUtilities::WritePvtuFile(vtk_file_element, rModelPart, rOutputFileNamePrefix,
+                                                output_vtu_file_name.str());
+    }
+}
+
+void VtuOutput::PrintOutput(const std::string& rOutputFilenamePrefix)
+{
+    WriteModelPart(rOutputFilenamePrefix, mrModelPart);
 }
 
 // template instantiations

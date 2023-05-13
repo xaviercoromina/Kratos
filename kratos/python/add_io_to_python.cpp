@@ -32,6 +32,7 @@
 #include "input_output/vtk_output.h"
 #include "input_output/unv_output.h"
 #include "input_output/cad_json_input.h"
+#include "input_output/vtu_output.h"
 
 #ifdef JSON_INCLUDED
 #include "includes/json_io.h"
@@ -198,6 +199,28 @@ void  AddIOToPython(pybind11::module& m)
         .def(py::init<Parameters, std::size_t>())
         .def("ReadModelPart", &CadJsonInput<>::ReadModelPart)
         ;
+
+    auto vtu_output = py::class_<VtuOutput, VtuOutput::Pointer>(m, "VtuOutput")
+        .def(py::init<ModelPart&, const bool, const std::size_t>(), py::arg("model_part"), py::arg("is_initial_configuration_considered") = true, py::arg("precision") = 9)
+        .def("AddHistoricalVariable", &VtuOutput::AddHistoricalVariable<int>, py::arg("int_variable"))
+        .def("AddHistoricalVariable", &VtuOutput::AddHistoricalVariable<double>, py::arg("double_variable"))
+        .def("AddHistoricalVariable", &VtuOutput::AddHistoricalVariable<array_1d<double, 3>>, py::arg("array3_variable"))
+        .def("AddHistoricalVariable", &VtuOutput::AddHistoricalVariable<array_1d<double, 4>>, py::arg("array4_variable"))
+        .def("AddHistoricalVariable", &VtuOutput::AddHistoricalVariable<array_1d<double, 6>>, py::arg("array6_variable"))
+        .def("AddHistoricalVariable", &VtuOutput::AddHistoricalVariable<array_1d<double, 9>>, py::arg("array9_variable"))
+        .def("AddNonHistoricalVariable", &VtuOutput::AddNonHistoricalVariable<int>, py::arg("int_variable"), py::arg("entity_flags"))
+        .def("AddNonHistoricalVariable", &VtuOutput::AddNonHistoricalVariable<double>, py::arg("double_variable"), py::arg("entity_flags"))
+        .def("AddNonHistoricalVariable", &VtuOutput::AddNonHistoricalVariable<array_1d<double, 3>>, py::arg("array3_variable"), py::arg("entity_flags"))
+        .def("AddNonHistoricalVariable", &VtuOutput::AddNonHistoricalVariable<array_1d<double, 4>>, py::arg("array4_variable"), py::arg("entity_flags"))
+        .def("AddNonHistoricalVariable", &VtuOutput::AddNonHistoricalVariable<array_1d<double, 6>>, py::arg("array6_variable"), py::arg("entity_flags"))
+        .def("AddNonHistoricalVariable", &VtuOutput::AddNonHistoricalVariable<array_1d<double, 9>>, py::arg("array9_variable"), py::arg("entity_flags"))
+        .def("AddFlagVariable", &VtuOutput::AddFlagVariable, py::arg("flag_variable_name"), py::arg("flag"), py::arg("entity_flags"))
+        .def("PrintOutput", &VtuOutput::PrintOutput, py::arg("output_file_name_prefix"))
+        ;
+
+    vtu_output.attr("NODES") = VtuOutput::NODES;
+    vtu_output.attr("CONDITIONS") = VtuOutput::CONDITIONS;
+    vtu_output.attr("ELEMENTS") = VtuOutput::ELEMENTS;
 }
 }  // namespace Python.
 

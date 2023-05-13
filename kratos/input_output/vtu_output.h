@@ -15,7 +15,6 @@
 // System includes
 #include <string>
 #include <variant>
-#include <set>
 #include <unordered_map>
 
 // External includes
@@ -56,6 +55,24 @@ public:
     KRATOS_DEFINE_LOCAL_FLAG( ELEMENTS );
 
     ///@}
+    ///@name Public classes
+    ///@{
+
+    struct VariableComparator
+    {
+        bool operator()(
+            const SupportedVariables& rFirst,
+            const SupportedVariables& rSecond) const
+        {
+            bool is_less = false;
+            std::visit([&is_less](auto pFirst, auto pSecond) {
+                is_less = pFirst->Key() < pSecond->Key();
+            }, rFirst, rSecond);
+            return is_less;
+        }
+    };
+
+    ///@}
     ///@name Life cycle
     ///@{
 
@@ -86,27 +103,11 @@ public:
         const std::string& rExpressionName,
         const typename ContainerExpression<TContainerType>::Pointer pContainerExpression);
 
+    void PrintOutput(const std::string& rOutputFilenamePrefix);
+
     ///@}
 
 private:
-    ///@name Private classes
-    ///@{
-
-    struct VariableComparator
-    {
-        bool operator()(
-            const SupportedVariables& rFirst,
-            const SupportedVariables& rSecond) const
-        {
-            bool is_less = false;
-            std::visit([&is_less](auto pFirst, auto pSecond) {
-                is_less = pFirst->Key() < pSecond->Key();
-            }, rFirst, rSecond);
-            return is_less;
-        }
-    };
-
-    ///@}
     ///@name Private member variables
     ///@{
 
@@ -122,19 +123,27 @@ private:
 
     std::unordered_map<IndexType, IndexType> mKratosVtuIndicesMap;
 
-    std::set<SupportedVariables, VariableComparator> mHistoricalVariablesList;
+    std::unordered_map<std::string, SupportedVariables> mHistoricalVariablesMap;
 
-    std::set<SupportedVariables, VariableComparator> mNonHistoricalNodalVariablesList;
+    std::unordered_map<std::string, SupportedVariables> mNonHistoricalNodalVariablesMap;
 
-    std::set<SupportedVariables, VariableComparator> mNonHistoricalCellVariablesList;
+    std::unordered_map<std::string, SupportedVariables> mNonHistoricalCellVariablesMap;
 
-    std::unordered_map<std::string, const Flags*> mNodalFlagsList;
+    std::unordered_map<std::string, const Flags*> mNodalFlagsMap;
 
-    std::unordered_map<std::string, const Flags*> mCellFlagsList;
+    std::unordered_map<std::string, const Flags*> mCellFlagsMap;
 
-    std::unordered_map<std::string, ContainerExpression<ModelPart::NodesContainerType>::Pointer> mPointContainerExpressionsList;
+    std::unordered_map<std::string, ContainerExpression<ModelPart::NodesContainerType>::Pointer> mPointContainerExpressionsMap;
 
-    std::unordered_map<std::string, SupportedCellContainerExpressions> mCellContainerExpressionsList;
+    std::unordered_map<std::string, SupportedCellContainerExpressions> mCellContainerExpressionsMap;
+
+    ///@}
+    ///@name Private operations
+    ///@{
+
+    void WriteModelPart(
+        const std::string& rOutputFileNamePrefix,
+        ModelPart& rModelPart) const;
 
     ///@}
 };
