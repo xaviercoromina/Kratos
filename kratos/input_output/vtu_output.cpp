@@ -322,10 +322,9 @@ Expression::Pointer CreateGhostNodeExpression(
             std::vector<double> values(number_of_components);
             const auto p_itr = rKratosVtuIndicesMap.find(rGP->Id());
             if (p_itr != rKratosVtuIndicesMap.end()) {
-                const auto entity_index = (p_itr->second - rLocalNodes.size());
-                const IndexType enitity_data_begin_index = entity_index * number_of_components;
+                const IndexType enitity_data_begin_index = p_itr->second * number_of_components;
                 for (IndexType i = 0; i < number_of_components; ++i) {
-                    values[i] = rLocalNodesExpression.Evaluate(entity_index, enitity_data_begin_index, i);
+                    values[i] = rLocalNodesExpression.Evaluate(p_itr->second, enitity_data_begin_index, i);
                 }
             } else {
                 KRATOS_ERROR << "The node with id " << rGP->Id() << " not found in the owning rank local expression.";
