@@ -50,13 +50,13 @@ namespace Kratos {
  * @tparam TContainerType           Container type
  * @tparam TContainerDataIO         Container entity input/output type
  */
-template <class TContainerType, class TContainerDataIO>
-class SpecializedContainerExpression : public ContainerExpression<TContainerType> {
+template <class TContainerType, class TContainerDataIO, class TMeshType = MeshType::Local>
+class SpecializedContainerExpression : public ContainerExpression<TContainerType, TMeshType> {
 public:
     ///@name Type definitions
     ///@{
 
-    using BaseType = ContainerExpression<TContainerType>;
+    using BaseType = ContainerExpression<TContainerType, TMeshType>;
 
     using IndexType = std::size_t;
 
@@ -214,10 +214,10 @@ public:
 
 ///@}
 /// output stream function
-template<class TContainerType, class TContainerDataIO>
+template <class TContainerType, class TContainerDataIO, class TMeshType>
 inline std::ostream& operator<<(
     std::ostream& rOStream,
-    const SpecializedContainerExpression<TContainerType, TContainerDataIO>& rThis)
+    const SpecializedContainerExpression<TContainerType, TContainerDataIO, TMeshType>& rThis)
 {
     return rOStream << rThis.Info();
 }
