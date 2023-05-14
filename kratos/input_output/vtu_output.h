@@ -80,6 +80,7 @@ public:
         ModelPart& rModelPart,
         const bool IsInitialConfiguration,
         const bool WriteSubModelParts,
+        const bool BinaryOutput,
         const IndexType Precision);
 
     ///@}
@@ -131,6 +132,8 @@ private:
     const bool mIsInitialConfiguration;
 
     const bool mWriteSubModelParts;
+
+    const bool mBinaryOutput;
 
     const IndexType mPrecision;
 

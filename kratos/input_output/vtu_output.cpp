@@ -458,6 +458,17 @@ void CreatePDataArrays(
     }
 }
 
+std::string GetEndianess()
+{
+    int i = 0x0001;
+
+    if (*reinterpret_cast<char*>(&i) != 0) {
+        return "LittleEndian";
+    } else {
+        return "BigEndian";
+    }
+}
+
 void WritePvtuFile(
     XmlElement::Pointer pVtkFileElement,
     const ModelPart& rModelPart,
@@ -493,7 +504,7 @@ void WritePvtuFile(
         auto vtk_file_element = Kratos::make_shared<XmlElement>("VTKFile");
         vtk_file_element->AddAttribute("type", "PUnstructuredGrid");
         vtk_file_element->AddAttribute("version", "0.1");
-        vtk_file_element->AddAttribute("byte_order", "BigEndian");
+        vtk_file_element->AddAttribute("byte_order", GetEndianess());
 
         // create the unstructured grid
         auto unstructured_grid_element = Kratos::make_shared<XmlElement>("PUnstructuredGrid");
@@ -536,7 +547,7 @@ void WritePvtuFile(
         output_pvtu_file_name << rOutputFileNamePrefix << ".pvtu";
         std::ofstream output_file;
         output_file.open(output_pvtu_file_name.str(), std::ios::out | std::ios::trunc);
-        XmlOStreamWriter writer(output_file, 1);
+        XmlOStreamWriter writer(output_file, XmlOStreamWriter::WriterFormat::ASCII, 1);
         vtk_file_element->Write(writer);
         output_file.close();
     }
@@ -548,10 +559,12 @@ VtuOutput::VtuOutput(
     ModelPart& rModelPart,
     const bool IsInitialConfiguration,
     const bool WriteSubModelParts,
+    const bool BinaryOutput,
     const IndexType Precision)
     : mrModelPart(rModelPart),
       mIsInitialConfiguration(IsInitialConfiguration),
       mWriteSubModelParts(WriteSubModelParts),
+      mBinaryOutput(BinaryOutput),
       mPrecision(Precision)
 {
     const auto& r_communicator = rModelPart.GetCommunicator();
@@ -678,7 +691,7 @@ void VtuOutput::WriteModelPart(
     auto vtk_file_element = Kratos::make_shared<XmlElement>("VTKFile");
     vtk_file_element->AddAttribute("type", "UnstructuredGrid");
     vtk_file_element->AddAttribute("version", "0.1");
-    vtk_file_element->AddAttribute("byte_order", "BigEndian");
+    vtk_file_element->AddAttribute("byte_order", VtuOutputHelperUtilities::GetEndianess());
 
     // create the unstructured grid
     auto unstructured_grid_element = Kratos::make_shared<XmlElement>("UnstructuredGrid");
@@ -751,8 +764,13 @@ void VtuOutput::WriteModelPart(
 
     std::ofstream output_file;
     output_file.open(output_vtu_file_name.str(), std::ios::out | std::ios::trunc);
-    XmlOStreamWriter writer(output_file, mPrecision);
-    vtk_file_element->Write(writer);
+    if (mBinaryOutput) {
+        XmlOStreamWriter writer(output_file, XmlOStreamWriter::WriterFormat::BINARY, mPrecision);
+        vtk_file_element->Write(writer);
+    } else {
+        XmlOStreamWriter writer(output_file, XmlOStreamWriter::WriterFormat::ASCII, mPrecision);
+        vtk_file_element->Write(writer);
+    }
     output_file.close();
 
     if (r_communiator.IsDistributed()) {

@@ -191,7 +191,7 @@ void XmlElement::Write(
 std::string XmlElement::Print(const IndexType Level) const
 {
     std::stringstream msg;
-    XmlOStreamWriter writer(msg, 9);
+    XmlOStreamWriter writer(msg, XmlOStreamWriter::WriterFormat::ASCII, 9);
     this->Write(writer, Level);
     return msg.str();
 

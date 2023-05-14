@@ -35,11 +35,22 @@ public:
     using IndexType = std::size_t;
 
     ///@}
+    ///@name Public enums
+    ///@{
+
+    enum WriterFormat
+    {
+        ASCII,
+        BINARY
+    };
+
+    ///@}
     ///@name Life cycle
     ///@{
 
     XmlOStreamWriter(
         std::ostream& rOStream,
+        const WriterFormat OutputFormat,
         const IndexType Precision);
 
     ///@}
@@ -85,6 +96,8 @@ private:
 
     std::ostream& mrOStream;
 
+    const WriterFormat mOutputFormat;
+
     ///@}
     ///@name Private operations
     ///@{
@@ -93,6 +106,22 @@ private:
         const std::string& rTagName,
         const std::vector<std::pair<const std::string, const std::string>>& rAttributes,
         const IndexType Level);
+
+    template<class TExpressionType>
+    void WriteDataElementAscii(
+        const std::string& rTagName,
+        const std::vector<std::pair<const std::string, const std::string>>& rAttributes,
+        const std::vector<IndexType> rNumberOfEntities,
+        const IndexType Level,
+        const std::vector<TExpressionType>& rExpressions);
+
+    template<class TExpressionType>
+    void WriteDataElementBinary(
+        const std::string& rTagName,
+        const std::vector<std::pair<const std::string, const std::string>>& rAttributes,
+        const std::vector<IndexType> rNumberOfEntities,
+        const IndexType Level,
+        const std::vector<TExpressionType>& rExpressions);
 
     static const std::string GetTabbing(const IndexType Level);
 

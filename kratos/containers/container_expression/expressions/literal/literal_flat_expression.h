@@ -40,6 +40,8 @@ public:
     ///@name Type definition
     ///@{
 
+    using DataType = TDataType;
+
     using Pointer = Kratos::intrusive_ptr<LiteralFlatExpression<TDataType>>;
 
     ///@}

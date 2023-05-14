@@ -37,6 +37,8 @@ public:
     ///@name Type definitions
     ///@{
 
+    using DataType = double;
+
     using Pointer = Kratos::intrusive_ptr<Expression>;
 
     using IndexType = std::size_t;
