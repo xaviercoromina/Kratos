@@ -58,5 +58,29 @@ class KratosGeoMechanicsK0ProcedureProcessTests(KratosUnittest.TestCase):
         sig_xy = sig_integrationpoint1_element1[0,1]
         self.assertEqual( sig_xy, 0.0 )
 
+    def test_k0_procedure_k0_umat(self):
+        """
+        Test to check if CAUCHY_STRESS_XX is correctly derived from CAUCHY_STRESS_YY using K0_NC = 1 - sin( PHI ),
+        with PHI from UMAT material parameters
+        """
+
+        test_name = os.path.join("test_k0_procedure_process", "test_k0_procedure_k0_umat")
+        file_path = test_helper.get_file_path(test_name)
+
+        # run simulation
+        simulation = test_helper.run_kratos(file_path)
+
+        # retrieve Cauchy stress tensor
+        cauchy_stresses = test_helper.get_on_integration_points(simulation,Kratos.CAUCHY_STRESS_TENSOR)
+
+        # compare cauchy_stress_xx = k0_nc * cauchy_stress_yy, cauchy_stress_xy = 0. k0_nc = 1 - sin( 30 degrees )
+        k0_nc = 0.5
+        sig_integrationpoint1_element1 = cauchy_stresses[1][1]
+        sig_yy = sig_integrationpoint1_element1[1,1]
+        sig_xx = sig_integrationpoint1_element1[0,0]
+        self.assertAlmostEqual( sig_xx, k0_nc*sig_yy )
+        sig_xy = sig_integrationpoint1_element1[0,1]
+        self.assertEqual( sig_xy, 0.0 )
+
 if __name__ == '__main__':
     KratosUnittest.main()

@@ -93,7 +93,8 @@ class ApplyK0ProcedureProcess : public Process
           if (K0MainDirection < 0 || K0MainDirection > 1) {
               KRATOS_ERROR << "undefined K0_MAIN_DIRECTION in ApplyK0ProcedureProcess: " << K0MainDirection << std::endl;
           }
-         
+          KRATOS_INFO("apply_k0_procedure_process") << " K0_NC " << rProp.Has(K0_NC) << " index voor Phi  " << rProp.Has(NUMBER_OF_UMAT_PHI_PARAMETER) << std::endl;
+
           //Check for alternative K0 specifications
           double PoissonUR = 0.;
           if (rProp.Has(POISSON_UNLOADING_RELOADING)) PoissonUR = rProp[POISSON_UNLOADING_RELOADING];
@@ -101,13 +102,26 @@ class ApplyK0ProcedureProcess : public Process
           if (rProp.Has(K0_NC)) {
               std::fill(K0Vector.begin(), K0Vector.end(), rProp[K0_NC]);
            }
-          else if (rProp.Has(SIN_PHI)) {
-              std::fill(K0Vector.begin(), K0Vector.end(), 1.0 - rProp[SIN_PHI]);
+          else if (rProp.Has(NUMBER_OF_UMAT_PHI_PARAMETER) && rProp.Has(NUMBER_OF_UMAT_PARAMETERS) && rProp.Has(UMAT_PARAMETERS)) {
+              if (rProp[NUMBER_OF_UMAT_PHI_PARAMETER] < 1 || rProp[NUMBER_OF_UMAT_PHI_PARAMETER] > rProp[NUMBER_OF_UMAT_PARAMETERS]) {
+                  KRATOS_ERROR << "undefined NUMBER_OF_UMAT_PHI_PARAMETER in ApplyK0ProcedureProcess: " << rProp[NUMBER_OF_UMAT_PHI_PARAMETER] << std::endl;
+              }
+              // is more checking is possible and should that happen here?
+              double Phi = rProp[UMAT_PARAMETERS][rProp[NUMBER_OF_UMAT_PHI_PARAMETER] - 1];
+              if (Phi < 0. || Phi > 90.) {
+                  KRATOS_ERROR << "friction angle Phi out of range in ApplyK0ProcedureProcess: " << Phi << std::endl;
+              }
+              // convert to Radians Use the conversion function of Anne i.s.o. the nonsens to Radians below.
+              Phi *= Globals::Pi / 180.;
+              std::fill(K0Vector.begin(), K0Vector.end(), 1.0 - sin(Phi));
           }
-          else {
+          else if (rProp.Has(K0_VALUE_XX) && rProp.Has(K0_VALUE_YY) && rProp.Has(K0_VALUE_ZZ)) {
               K0Vector[0] = rProp[K0_VALUE_XX];
               K0Vector[1] = rProp[K0_VALUE_YY];
               K0Vector[2] = rProp[K0_VALUE_ZZ];
+          }
+          else {
+              KRATOS_ERROR << "Insufficient material dat for K0 procedure process: " << std::endl;
           }
 
           //Loop over integration points
@@ -122,7 +136,7 @@ class ApplyK0ProcedureProcess : public Process
           for (unsigned int GPoint = 0; GPoint < IntegrationPoints.size(); ++GPoint) {
 
               // Determine OCR dependent K0 values
-              if ((rProp.Has(K0_NC) || rProp.Has(SIN_PHI)) && rProp.Has(OCR)) {
+              if ((rProp.Has(K0_NC) || rProp.Has(NUMBER_OF_UMAT_PHI_PARAMETER)) && rProp.Has(OCR)) {
                   //Modify for presence of OCR (or POP?) field values
                   double K0Value = rProp[K0_NC] * rProp[OCR] - (PoissonUR / (1.0 - PoissonUR)) * (rProp[OCR] - 1.0);
                   std::fill(K0Vector.begin(), K0Vector.end(), K0Value);
@@ -135,7 +149,7 @@ class ApplyK0ProcedureProcess : public Process
                   }
               }
              // Erase shear stresses
-             std::fill(rStressVectors[GPoint].begin()+2, rStressVectors[GPoint].end(), 0.0);
+             std::fill(rStressVectors[GPoint].begin()+3, rStressVectors[GPoint].end(), 0.0);
            }
           // Set element integration point stress tensors
           rElement.SetValuesOnIntegrationPoints(CAUCHY_STRESS_VECTOR, rStressVectors, rCurrentProcessInfo);
