@@ -82,6 +82,14 @@ const std::vector<std::size_t> LiteralFlatExpression<TDataType>::GetShape() cons
 }
 
 template<>
+std::string LiteralFlatExpression<char>::Info() const
+{
+    std::stringstream msg;
+    msg << "CharVec" << mShape;
+    return msg.str();
+}
+
+template<>
 std::string LiteralFlatExpression<int>::Info() const
 {
     std::stringstream msg;
@@ -116,6 +124,10 @@ double LiteralNonScalarFlatExpression<TDataType>::Evaluate(
 }
 
 // template instantiations
+template class LiteralFlatExpression<char>;
+template class LiteralScalarFlatExpression<char>;
+template class LiteralNonScalarFlatExpression<char>;
+
 template class LiteralFlatExpression<int>;
 template class LiteralScalarFlatExpression<int>;
 template class LiteralNonScalarFlatExpression<int>;

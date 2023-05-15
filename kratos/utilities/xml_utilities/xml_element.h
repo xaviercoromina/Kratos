@@ -42,8 +42,7 @@ public:
 
     XmlElement(
         const std::string& rDataName,
-        const std::vector<Expression::Pointer>& rExpressions,
-        const std::vector<IndexType>& rNumberOfEntities);
+        const std::vector<Expression::Pointer>& rExpressions);
 
     ///@}
     ///@name Public operations
@@ -86,8 +85,6 @@ private:
     std::vector<XmlElement::Pointer> mXmlElements;
 
     const std::vector<Expression::Pointer> mExpressions;
-
-    const std::vector<IndexType> mNumberOfEntities;
 
     ///@}
 };

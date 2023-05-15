@@ -35,40 +35,33 @@ XmlElement::XmlElement(const std::string& rTagName)
 
 XmlElement::XmlElement(
     const std::string& rDataName,
-    const std::vector<Expression::Pointer>& rExpressions,
-    const std::vector<IndexType>& rNumberOfEntities)
+    const std::vector<Expression::Pointer>& rExpressions)
     : mTagName("DataArray"),
-      mExpressions(rExpressions),
-      mNumberOfEntities(rNumberOfEntities)
+      mExpressions(rExpressions)
 {
     KRATOS_ERROR_IF(rExpressions.size() == 0)
         << "Empty expression lists are not allowed.";
 
-    KRATOS_ERROR_IF(rExpressions.size() != rNumberOfEntities.size())
-        << "Expressions list and size of number of entities list mismatch "
-        << "[ number of expressions = " << mExpressions.size()
-        << ", size of number entities list = "
-        << mNumberOfEntities.size() << " ].";
-
     IndexType number_of_components = 0;
 
-    for (IndexType i = 0; i < rExpressions.size(); ++i) {
-        if (mNumberOfEntities[i] > 0) {
-            if (number_of_components == 0) {
-                number_of_components = rExpressions[i]->GetFlattenedSize();
-            }
-            KRATOS_ERROR_IF(number_of_components != rExpressions[i]->GetFlattenedSize())
-                << "Found expressions with mismatching shapes.";
+    for (const auto& p_expression : rExpressions) {
+        if (number_of_components == 0) {
+            number_of_components = p_expression->GetFlattenedShapeSize();
         }
+        KRATOS_ERROR_IF(number_of_components != p_expression->GetFlattenedShapeSize())
+            << "Found expressions with mismatching shapes.";
     }
 
     if (std::all_of(mExpressions.begin(), mExpressions.end(), [](const auto& pExpression) {
+            return dynamic_cast<LiteralFlatExpression<char>*>(&*pExpression);
+        })) {
+        AddAttribute("type", "UInt8");
+    } else if (std::all_of(mExpressions.begin(), mExpressions.end(), [](const auto& pExpression) {
             return dynamic_cast<LiteralFlatExpression<int>*>(&*pExpression);
         })) {
         AddAttribute("type", "Int32");
-    }
-    else {
-        AddAttribute("type", "Float32");
+    } else {
+        AddAttribute("type", "Float64");
     }
 
     AddAttribute("Name", rDataName);
@@ -143,48 +136,16 @@ void XmlElement::Write(
     XmlWriter& rWriter,
     const IndexType Level) const
 {
-    if (mExpressions.size() == 0 && mXmlElements.size() == 0) {
-        rWriter.WriteElement(GetTagName(), GetAttributes(), Level, true);
-    } else if (mXmlElements.size() > 0) {
+    if (mXmlElements.size() > 0) {
         rWriter.WriteElement(GetTagName(), GetAttributes(), Level, false);
         for (const auto& p_element : mXmlElements) {
             p_element->Write(rWriter, Level + 1);
         }
         rWriter.CloseElement(GetTagName(), Level);
     } else if (mExpressions.size() > 0) {
-        if (std::all_of(
-                mExpressions.begin(),
-                mExpressions.end(),
-                [](const auto& pExpression) {
-                    return dynamic_cast<LiteralFlatExpression<int>*>(&*pExpression);})) {
-            std::vector<LiteralFlatExpression<int>::Pointer> int_flat_expressions(mExpressions.size());
-            std::transform(
-                mExpressions.begin(),
-                mExpressions.end(),
-                int_flat_expressions.begin(),
-                [](auto pExpression) {
-                    return LiteralFlatExpression<int>::Pointer(dynamic_cast<LiteralFlatExpression<int>*>(&*(pExpression)));
-                }
-            );
-            rWriter.WriteDataElement(GetTagName(), GetAttributes(),  int_flat_expressions, mNumberOfEntities, Level);
-        } else if (std::all_of(
-                        mExpressions.begin(),
-                        mExpressions.end(),
-                        [](const auto& pExpression) {
-                            return dynamic_cast<LiteralFlatExpression<double>*>(&*pExpression);})) {
-            std::vector<LiteralFlatExpression<double>::Pointer> double_flat_expressions(mExpressions.size());
-            std::transform(
-                mExpressions.begin(),
-                mExpressions.end(),
-                double_flat_expressions.begin(),
-                [](auto pExpression) {
-                    return LiteralFlatExpression<double>::Pointer(dynamic_cast<LiteralFlatExpression<double>*>(&*(pExpression)));
-                }
-            );
-            rWriter.WriteDataElement(GetTagName(), GetAttributes(),  double_flat_expressions, mNumberOfEntities, Level);
-        } else {
-            rWriter.WriteDataElement(GetTagName(), GetAttributes(), mExpressions, mNumberOfEntities, Level);
-        }
+        rWriter.WriteDataElement(GetTagName(), GetAttributes(), mExpressions, Level);
+    } else {
+        rWriter.WriteElement(GetTagName(), GetAttributes(), Level, true);
     }
 }
 

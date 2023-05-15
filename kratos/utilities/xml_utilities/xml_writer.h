@@ -55,21 +55,6 @@ public:
         const std::string& rTagName,
         const std::vector<std::pair<const std::string, const std::string>>& rAttributes,
         const std::vector<Expression::Pointer>& rExpressions,
-        const std::vector<IndexType> rNumberOfEntities,
-        const IndexType Level) = 0;
-
-    virtual void WriteDataElement(
-        const std::string& rTagName,
-        const std::vector<std::pair<const std::string, const std::string>>& rAttributes,
-        const std::vector<LiteralFlatExpression<int>::Pointer>& rExpressions,
-        const std::vector<IndexType> rNumberOfEntities,
-        const IndexType Level) = 0;
-
-    virtual void WriteDataElement(
-        const std::string& rTagName,
-        const std::vector<std::pair<const std::string, const std::string>>& rAttributes,
-        const std::vector<LiteralFlatExpression<double>::Pointer>& rExpressions,
-        const std::vector<IndexType> rNumberOfEntities,
         const IndexType Level) = 0;
 
     ///@}
