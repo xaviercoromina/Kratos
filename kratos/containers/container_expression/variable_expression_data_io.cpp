@@ -172,7 +172,7 @@ void VariableExpressionDataIO<Vector>::Assign(
     const Expression& rExpression,
     const IndexType EntityIndex) const
 {
-    const IndexType flattened_size = rExpression.GetFlattenedSize();
+    const IndexType flattened_size = rExpression.GetFlattenedShapeSize();
 
     if (rOutput.size() != flattened_size) {
         rOutput.resize(flattened_size, false);
@@ -208,7 +208,7 @@ void VariableExpressionDataIO<Matrix>::Assign(
         rOutput.resize(r_shape[0], r_shape[1], false);
     }
 
-    const IndexType flattened_size = rExpression.GetFlattenedSize();
+    const IndexType flattened_size = rExpression.GetFlattenedShapeSize();
     const IndexType entity_data_begin_index = EntityIndex * flattened_size;
 
     for (IndexType i = 0; i < flattened_size; ++i) {
@@ -222,7 +222,7 @@ void VariableExpressionDataIO<Matrix>::Read(
     const IndexType EntityIndex,
     const Matrix& Value) const
 {
-    const IndexType flattened_size = rExpression.GetFlattenedSize();
+    const IndexType flattened_size = rExpression.GetFlattenedShapeSize();
     const IndexType entity_data_begin_index = EntityIndex * flattened_size;
 
     for (IndexType i = 0; i < flattened_size; ++i) {

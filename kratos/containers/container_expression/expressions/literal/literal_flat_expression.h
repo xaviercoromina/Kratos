@@ -88,9 +88,13 @@ public:
 
     const std::vector<IndexType> GetShape() const override;
 
-    inline TDataType& operator[](const IndexType Index) noexcept { return mData[Index]; }
+    inline IndexType Size() const noexcept { return mData.Size(); }
 
-    inline TDataType operator[](const IndexType Index) const noexcept { return mData[Index]; }
+    inline TDataType* data_begin() noexcept { return mData.data_begin(); }
+
+    inline TDataType const* data_begin() const noexcept { return mData.data_begin(); }
+
+    inline TDataType const* data_end() const noexcept { return mData.data_end(); }
 
     std::string Info() const override;
 
@@ -126,14 +130,14 @@ protected:
          *
          * @param Size      Size of the allocated array.
          */
-        Data(const IndexType Size): mpBegin(new TDataType[Size]), mIsManaged(true) {}
+        Data(const IndexType Size): mpBegin(new TDataType[Size]), mIsManaged(true), mSize(Size) {}
 
         /**
          * @brief Construct a new Data object, where the underlying array memory is not managed by the object.
          *
          * @param pBegin    Pointer to the memory array.
          */
-        Data(TDataType* pBegin): mpBegin(pBegin), mIsManaged(false) {}
+        Data(TDataType* pBegin, const IndexType Size): mpBegin(pBegin), mIsManaged(false), mSize(Size) {}
 
         ~Data() { if (mIsManaged) { delete[] mpBegin; } }
 
@@ -141,9 +145,13 @@ protected:
         ///@name Operators
         ///@{
 
-        inline TDataType& operator[](const IndexType Index) noexcept { return mpBegin[Index]; }
+        inline TDataType* data_begin() noexcept { return mpBegin; }
 
-        inline TDataType operator[](const IndexType Index) const noexcept { return mpBegin[Index]; }
+        inline TDataType const* data_begin() const noexcept { return mpBegin; }
+
+        inline TDataType const* data_end() const noexcept { return mpBegin + mSize; }
+
+        inline IndexType Size() const noexcept { return mSize; }
 
         ///@}
     private:
@@ -152,7 +160,9 @@ protected:
 
         TDataType* mpBegin;
 
-        bool mIsManaged;
+        const bool mIsManaged;
+
+        const IndexType mSize;
 
         ///@}
     };

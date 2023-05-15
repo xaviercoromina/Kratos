@@ -47,6 +47,8 @@ public:
     ///@name Life cycle
     ///@{
 
+    Expression(const IndexType NumberOfEntities) : mNumberOfEntities(NumberOfEntities) {}
+
     virtual ~Expression() = default;
 
     ///@}
@@ -74,11 +76,20 @@ public:
     virtual const std::vector<IndexType> GetShape() const = 0;
 
     /**
-     * @brief Get the Local Size of the expression
+     * @brief Get the maximum number of entities allowed for this expression.
      *
      * @return IndexType
      */
-    IndexType GetFlattenedSize() const;
+    inline IndexType GetNumberOfEntities() const { return mNumberOfEntities; };
+
+    /**
+     * @brief Get the Local Size of the expression
+     *
+     * @return IndexTypen
+     */
+    IndexType GetFlattenedShapeSize() const;
+
+    // IndexType begin
 
     ///@}
     ///@name Input and output
@@ -89,6 +100,12 @@ public:
     ///@}
 
 private:
+    ///@name Private member variables
+    ///@{
+
+    const IndexType mNumberOfEntities;
+
+    ///@}
     ///@name Private operations
     ///@{
 

@@ -24,8 +24,9 @@ template<class TDataType>
 LiteralFlatExpression<TDataType>::LiteralFlatExpression(
     const IndexType NumberOfEntities,
     const std::vector<IndexType>& rShape)
-    : mShape(rShape),
-      mData(NumberOfEntities * this->GetFlattenedSize())
+    : Expression(NumberOfEntities),
+      mShape(rShape),
+      mData(NumberOfEntities * this->GetFlattenedShapeSize())
 {
 }
 
@@ -34,8 +35,9 @@ LiteralFlatExpression<TDataType>::LiteralFlatExpression(
     TDataType* pDataBegin,
     const IndexType NumberOfEntities,
     const std::vector<IndexType>& rShape)
-    : mShape(rShape),
-      mData(pDataBegin)
+    : Expression(NumberOfEntities),
+      mShape(rShape),
+      mData(pDataBegin, NumberOfEntities * this->GetFlattenedShapeSize())
 {
 }
 
@@ -70,7 +72,7 @@ void LiteralFlatExpression<TDataType>::SetData(
     const IndexType ComponentIndex,
     const TDataType Value)
 {
-    mData[EntityDataBeginIndex + ComponentIndex] = Value;
+    *(mData.data_begin() + EntityDataBeginIndex + ComponentIndex) = Value;
 }
 
 template<class TDataType>
@@ -101,7 +103,7 @@ double LiteralScalarFlatExpression<TDataType>::Evaluate(
     const IndexType EntityDataBeginIndex,
     const IndexType ComponentIndex) const
 {
-    return this->mData[EntityIndex];
+    return *(this->mData.data_begin() + EntityIndex);
 }
 
 template<class TDataType>
@@ -110,7 +112,7 @@ double LiteralNonScalarFlatExpression<TDataType>::Evaluate(
     const IndexType EntityDataBeginIndex,
     const IndexType ComponentIndex) const
 {
-    return this->mData[EntityDataBeginIndex + ComponentIndex];
+    return *(this->mData.data_begin() + EntityDataBeginIndex + ComponentIndex);
 }
 
 // template instantiations
