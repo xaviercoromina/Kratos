@@ -91,11 +91,11 @@ public:
 
     inline IndexType Size() const noexcept { return mData.Size(); }
 
-    inline RawTDataType* data_begin() noexcept { return mData.data_begin(); }
+    inline RawTDataType* DataBegin() noexcept { return mData.DataBegin(); }
 
-    inline RawTDataType const* data_begin() const noexcept { return mData.data_begin(); }
+    inline RawTDataType const* DataBegin() const noexcept { return mData.DataBegin(); }
 
-    inline RawTDataType const* data_end() const noexcept { return mData.data_end(); }
+    inline RawTDataType const* DataEnd() const noexcept { return mData.DataEnd(); }
 
     std::string Info() const override;
 
@@ -146,11 +146,11 @@ protected:
         ///@name Operators
         ///@{
 
-        inline RawTDataType* data_begin() noexcept { return mpBegin; }
+        inline RawTDataType* DataBegin() noexcept { return mpBegin; }
 
-        inline RawTDataType const* data_begin() const noexcept { return mpBegin; }
+        inline RawTDataType const* DataBegin() const noexcept { return mpBegin; }
 
-        inline RawTDataType const* data_end() const noexcept { return mpBegin + mSize; }
+        inline RawTDataType const* DataEnd() const noexcept { return mpBegin + mSize; }
 
         inline IndexType Size() const noexcept { return mSize; }
 

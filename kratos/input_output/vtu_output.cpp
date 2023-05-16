@@ -151,7 +151,7 @@ template<class TContainerType>
 LiteralFlatExpression<int>::Pointer CreateOffsetsExpression(const TContainerType& rContainer)
 {
     auto p_offsets_expression = LiteralFlatExpression<int>::Create(rContainer.size(), {});
-    auto data_itr = p_offsets_expression->data_begin();
+    auto data_itr = p_offsets_expression->DataBegin();
 
     IndexType total_offset = 0;
     for (const auto& r_entity : rContainer) {
@@ -165,7 +165,7 @@ template<class TContainerType>
 Expression::Pointer CreateGeometryTypesExpression(const TContainerType& rContainer)
 {
     auto p_geometry_expression = LiteralFlatExpression<char>::Create(rContainer.size(), {});
-    auto data_itr = p_geometry_expression->data_begin();
+    auto data_itr = p_geometry_expression->DataBegin();
 
     IndexPartition<IndexType>(rContainer.size()).for_each([data_itr, &rContainer](const IndexType Index) {
         const auto p_itr = KratosVtuGeometryTypes.find((rContainer.begin() + Index)->GetGeometry().GetGeometryType());
@@ -184,10 +184,10 @@ Expression::Pointer CreateConnectivityExpression(
     const TContainerType& rContainer,
     const std::unordered_map<IndexType, IndexType>& rKratosVtuIndicesMap)
 {
-    auto offset_data_itr = pOffsetsExpression->data_begin();
+    auto offset_data_itr = pOffsetsExpression->DataBegin();
 
     auto p_connectivity_expression = LiteralFlatExpression<int>::Create(*(offset_data_itr + rContainer.size() - 1), {});
-    auto data_itr = p_connectivity_expression->data_begin();
+    auto data_itr = p_connectivity_expression->DataBegin();
 
     IndexPartition<IndexType>(rContainer.size()).for_each([data_itr, offset_data_itr, &rContainer, &rKratosVtuIndicesMap](const IndexType Index) {
         const auto& r_geometry = (rContainer.begin() + Index)->GetGeometry();
@@ -254,7 +254,7 @@ Expression::Pointer CreateContainerFlagExpression(
     const Flags& rFlag)
 {
     auto p_flag_expression = LiteralFlatExpression<int>::Create(rContainer.size(), {});
-    auto data_itr = p_flag_expression->data_begin();
+    auto data_itr = p_flag_expression->DataBegin();
 
     IndexPartition<IndexType>(rContainer.size()).for_each([data_itr, &rContainer, &rFlag](const IndexType Index) {
         *(data_itr + Index) = (rContainer.begin() + Index)->Is(rFlag);
@@ -323,7 +323,7 @@ Expression::Pointer CreateGhostNodeExpression(
     );
 
     auto p_ghost_nodes_expression = LiteralFlatExpression<double>::Create(number_of_ghost_nodes, rLocalNodesExpression.GetShape());
-    auto data_itr = p_ghost_nodes_expression->data_begin();
+    auto data_itr = p_ghost_nodes_expression->DataBegin();
 
     for(IndexType i = 0; i < number_of_ghost_nodes; ++i) {
         const auto& r_gp_value = values_proxy.Get(gp_list(i));

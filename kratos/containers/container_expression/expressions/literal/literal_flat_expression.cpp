@@ -72,7 +72,7 @@ void LiteralFlatExpression<RawTDataType>::SetData(
     const IndexType ComponentIndex,
     const RawTDataType Value)
 {
-    *(mData.data_begin() + EntityDataBeginIndex + ComponentIndex) = Value;
+    *(mData.DataBegin() + EntityDataBeginIndex + ComponentIndex) = Value;
 }
 
 template<class RawTDataType>
@@ -111,7 +111,7 @@ double LiteralScalarFlatExpression<RawTDataType>::Evaluate(
     const IndexType EntityDataBeginIndex,
     const IndexType ComponentIndex) const
 {
-    return *(this->mData.data_begin() + EntityIndex);
+    return *(this->mData.DataBegin() + EntityIndex);
 }
 
 template<class RawTDataType>
@@ -120,7 +120,7 @@ double LiteralNonScalarFlatExpression<RawTDataType>::Evaluate(
     const IndexType EntityDataBeginIndex,
     const IndexType ComponentIndex) const
 {
-    return *(this->mData.data_begin() + EntityDataBeginIndex + ComponentIndex);
+    return *(this->mData.DataBegin() + EntityDataBeginIndex + ComponentIndex);
 }
 
 // template instantiations

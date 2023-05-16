@@ -41,9 +41,9 @@ struct ExpressionIterator
 
     ExpressionType const* mpExpression;
 
-    IteratorType begin() { return mpExpression->data_begin(); }
+    IteratorType begin() { return mpExpression->DataBegin(); }
 
-    IteratorType end() { return mpExpression->data_end(); }
+    IteratorType end() { return mpExpression->DataEnd(); }
 };
 
 template <>
@@ -145,9 +145,9 @@ void XmlOStreamWriter::WriteDataElementAscii(
 
     for (const auto& p_expression : transformed_expressions) {
         exp_itr_type expression_iterator{p_expression};
-        auto data_begin = expression_iterator.begin();
-        auto data_end   = expression_iterator.end();
-        for (data_itr_type itr = data_begin; itr != data_end; ++itr) {
+        auto DataBegin = expression_iterator.begin();
+        auto DataEnd   = expression_iterator.end();
+        for (data_itr_type itr = DataBegin; itr != DataEnd; ++itr) {
             if constexpr(std::is_same_v<typename exp_itr_type::DataType, char>) {
                 mrOStream << "  " << static_cast<int>(*(itr));
             } else {
@@ -217,7 +217,7 @@ void XmlOStreamWriter::WriteDataElementBinary(
     IndexType byte_index = 0;
     auto p_expression = transformed_expressions.data();
     data_itr_type data_itr = exp_itr_type{*p_expression}.begin();
-    data_itr_type data_end = exp_itr_type{*p_expression}.end();
+    data_itr_type DataEnd = exp_itr_type{*p_expression}.end();
     writing_data_type current_value =  *data_itr;
 
     auto get_next_byte = [&]() -> char {
@@ -225,10 +225,10 @@ void XmlOStreamWriter::WriteDataElementBinary(
             byte_index = 0;
             ++data_itr;
 
-            if (data_itr == data_end) {
+            if (data_itr == DataEnd) {
                 ++p_expression;
                 data_itr = exp_itr_type{*p_expression}.begin();
-                data_end = exp_itr_type{*p_expression}.end();
+                DataEnd = exp_itr_type{*p_expression}.end();
             }
 
             current_value = *data_itr;
