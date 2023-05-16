@@ -87,8 +87,6 @@ public:
      */
     IndexType GetFlattenedShapeSize() const;
 
-    // IndexType begin
-
     ///@}
     ///@name Input and output
     ///@{
