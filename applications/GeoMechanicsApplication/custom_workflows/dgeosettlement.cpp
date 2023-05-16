@@ -29,12 +29,12 @@ KratosGeoSettlement::KratosGeoSettlement()
     }
 }
 
-int KratosGeoSettlement::Run(const std::string&          rWorkingDirectory,
-                             const std::string&          rParameterName,
-                             std::function<void(char*)>  logCallback,
-                             std::function<void(double)> reportProgress,
-                             std::function<void(char*)>  reportTextualProgress,
-                             std::function<bool()>       shouldCancel)
+int KratosGeoSettlement::RunStage(const std::string&          rWorkingDirectory,
+                                  const std::string&          rParameterName,
+                                  std::function<void(char*)>  logCallback,
+                                  std::function<void(double)> reportProgress,
+                                  std::function<void(char*)>  reportTextualProgress,
+                                  std::function<bool()>       shouldCancel)
 {
     return 1;
 }

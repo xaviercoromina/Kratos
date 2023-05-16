@@ -43,20 +43,20 @@ extern "C"
         return new Kratos::KratosGeoSettlement{};
     }
 
-    EXPORT int __stdcall runSettlementCalculation(Kratos::KratosGeoSettlement* instance,
-                                                  char*                        workingDirectory,
-                                                  char*                        projectFileName,
-                                                  void __stdcall               logCallback(char*),
-                                                  void __stdcall               reportProgress(double),
-                                                  void __stdcall               reportTextualProgress(char*),
-                                                  bool __stdcall               shouldCancel())
+    EXPORT int __stdcall runSettlementStage(Kratos::KratosGeoSettlement* instance,
+                                            char*                        workingDirectory,
+                                            char*                        projectFileName,
+                                            void __stdcall               logCallback(char*),
+                                            void __stdcall               reportProgress(double),
+                                            void __stdcall               reportTextualProgress(char*),
+                                            bool __stdcall               shouldCancel())
     {
-        return instance->Run(workingDirectory,
-                             projectFileName,
-                             logCallback,
-                             reportProgress,
-                             reportTextualProgress,
-                             shouldCancel);
+        return instance->RunStage(workingDirectory,
+                                  projectFileName,
+                                  logCallback,
+                                  reportProgress,
+                                  reportTextualProgress,
+                                  shouldCancel);
     }
 
 #endif
