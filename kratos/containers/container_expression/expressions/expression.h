@@ -83,7 +83,7 @@ public:
     /**
      * @brief Get the Local Size of the expression
      *
-     * @return IndexTypen
+     * @return IndexType
      */
     IndexType GetFlattenedShapeSize() const;
 
