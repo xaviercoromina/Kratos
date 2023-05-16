@@ -49,7 +49,7 @@ void XmlOStreamWriter::WriteDataElementAscii(
     const IndexType Level,
     const std::vector<Expression::Pointer>& rExpressions)
 {
-    using exp_itr_type = ExpressionIterator<typename TExpressionType::Pointer>;
+    using exp_itr_type = ExpressionIterator<TExpressionType>;
 
     using data_itr_type = typename exp_itr_type::ConstIteratorType;
 
@@ -66,8 +66,8 @@ void XmlOStreamWriter::WriteDataElementAscii(
 
     for (const auto& p_expression : transformed_expressions) {
         exp_itr_type expression_iterator(p_expression);
-        auto data_begin = expression_iterator.ConstDataBegin();
-        auto data_end   = expression_iterator.ConstDataEnd();
+        auto data_begin = expression_iterator.cbegin();
+        auto data_end   = expression_iterator.cend();
         for (data_itr_type itr = data_begin; itr != data_end; ++itr) {
             if constexpr(std::is_same_v<typename exp_itr_type::DataType, char>) {
                 mrOStream << "  " << static_cast<int>(*(itr));
@@ -88,7 +88,7 @@ void XmlOStreamWriter::WriteDataElementBinary(
     const IndexType Level,
     const std::vector<Expression::Pointer>& rExpressions)
 {
-    using exp_itr_type = ExpressionIterator<typename TExpressionType::Pointer>;
+    using exp_itr_type = ExpressionIterator<TExpressionType>;
 
     using data_type = typename exp_itr_type::DataType;
 
@@ -108,7 +108,7 @@ void XmlOStreamWriter::WriteDataElementBinary(
     } else {
         data_type min_value{std::numeric_limits<data_type>::max()}, max_value{std::numeric_limits<data_type>::lowest()};
         for (const auto& p_expression : transformed_expressions) {
-            data_itr_type data_itr = exp_itr_type(p_expression).ConstDataBegin();
+            data_itr_type data_itr = exp_itr_type(p_expression).cbegin();
             const auto values = IndexPartition<IndexType>(p_expression->GetFlattenedShapeSize() * p_expression->NumberOfEntities()).for_each<CombinedReduction<MinReduction<data_type>, MaxReduction<data_type>>>([&data_itr](const IndexType Index) {
                 const data_type value = *(data_itr + Index);
                 return std::make_tuple(value, value);
@@ -140,8 +140,8 @@ void XmlOStreamWriter::WriteDataElementBinary(
 
     IndexType byte_index = 0;
     auto p_expression = transformed_expressions.data();
-    data_itr_type data_itr = exp_itr_type(*p_expression).ConstDataBegin();
-    data_itr_type data_end = exp_itr_type(*p_expression).ConstDataEnd();
+    data_itr_type data_itr = exp_itr_type(*p_expression).cbegin();
+    data_itr_type data_end = exp_itr_type(*p_expression).cend();
     writing_data_type current_value =  *data_itr;
 
     auto get_next_byte = [&]() -> char {
@@ -151,8 +151,8 @@ void XmlOStreamWriter::WriteDataElementBinary(
 
             if (data_itr == data_end) {
                 ++p_expression;
-                data_itr = exp_itr_type(*p_expression).ConstDataBegin();
-                data_end = exp_itr_type(*p_expression).ConstDataEnd();
+                data_itr = exp_itr_type(*p_expression).cbegin();
+                data_end = exp_itr_type(*p_expression).cend();
             }
 
             current_value = *data_itr;

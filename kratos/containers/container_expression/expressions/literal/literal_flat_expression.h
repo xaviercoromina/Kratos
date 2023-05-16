@@ -89,15 +89,15 @@ public:
 
     const std::vector<IndexType> GetShape() const override;
 
-    inline IndexType DataSize() const noexcept { return mData.DataSize(); }
+    IndexType DataSize() const noexcept { return mData.DataSize(); }
 
-    inline TRawDataType* DataBegin() noexcept { return mData.DataBegin(); }
+    TRawDataType* begin() noexcept { return mData.begin(); }
 
-    inline TRawDataType* DataEnd() noexcept { return mData.DataEnd(); }
+    TRawDataType* end() noexcept { return mData.end(); }
 
-    inline TRawDataType const* ConstDataBegin() const noexcept { return mData.ConstDataBegin(); }
+    TRawDataType const* cbegin() const noexcept { return mData.cbegin(); }
 
-    inline TRawDataType const* ConstDataEnd() const noexcept { return mData.ConstDataEnd(); }
+    TRawDataType const* cend() const noexcept { return mData.cend(); }
 
     std::string Info() const override;
 
@@ -148,15 +148,15 @@ protected:
         ///@name Operators
         ///@{
 
-        inline TRawDataType* DataBegin() noexcept { return mpBegin; }
+        TRawDataType* begin() noexcept { return mpBegin; }
 
-        inline TRawDataType* DataEnd() noexcept { return mpBegin + mSize; }
+        TRawDataType* end() noexcept { return mpBegin + mSize; }
 
-        inline TRawDataType const* ConstDataBegin() const noexcept { return mpBegin; }
+        TRawDataType const* cbegin() const noexcept { return mpBegin; }
 
-        inline TRawDataType const* ConstDataEnd() const noexcept { return mpBegin + mSize; }
+        TRawDataType const* cend() const noexcept { return mpBegin + mSize; }
 
-        inline IndexType DataSize() const noexcept { return mSize; }
+        IndexType DataSize() const noexcept { return mSize; }
 
         ///@}
     private:
