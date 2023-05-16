@@ -111,7 +111,7 @@ double LiteralScalarFlatExpression<TRawDataType>::Evaluate(
     const IndexType EntityDataBeginIndex,
     const IndexType ComponentIndex) const
 {
-    return *(this->mData.DataBegin() + EntityIndex);
+    return *(this->mData.ConstDataBegin() + EntityIndex);
 }
 
 template<class TRawDataType>
@@ -120,7 +120,7 @@ double LiteralNonScalarFlatExpression<TRawDataType>::Evaluate(
     const IndexType EntityDataBeginIndex,
     const IndexType ComponentIndex) const
 {
-    return *(this->mData.DataBegin() + EntityDataBeginIndex + ComponentIndex);
+    return *(this->mData.ConstDataBegin() + EntityDataBeginIndex + ComponentIndex);
 }
 
 // template instantiations

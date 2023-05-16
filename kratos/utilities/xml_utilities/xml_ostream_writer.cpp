@@ -21,6 +21,7 @@
 // Project includes
 #include "includes/define.h"
 #include "containers/container_expression/expressions/expression.h"
+#include "containers/container_expression/expressions/expression_iterator.h"
 #include "containers/container_expression/expressions/literal/literal_flat_expression.h"
 #include "utilities/parallel_utilities.h"
 #include "utilities/reduction_utilities.h"
@@ -31,89 +32,6 @@
 
 namespace Kratos {
 
-namespace XmlOStreamWriterHelperUtilities {
-template <class ExpressionType>
-struct ExpressionIterator
-{
-    using DataType = typename ExpressionType::DataType;
-
-    using IteratorType = DataType const*;
-
-    ExpressionType const* mpExpression;
-
-    IteratorType begin() { return mpExpression->DataBegin(); }
-
-    IteratorType end() { return mpExpression->DataEnd(); }
-};
-
-template <>
-struct ExpressionIterator<Expression>
-{
-    using IndexType = std::size_t;
-
-    using DataType = double;
-
-    using IteratorType = ExpressionIterator<Expression>;
-
-    Expression const* mpExpression;
-
-    IndexType mEntityIndex = 0;
-
-    IndexType mEntityDataBeginIndex = 0;
-
-    IndexType mComponentIndex = 0;
-
-    IndexType mFlattenedShapeSize = mpExpression->GetFlattenedShapeSize();
-
-    IteratorType begin() { return IteratorType{mpExpression}; }
-
-    IteratorType end() { return IteratorType{mpExpression, mpExpression->NumberOfEntities()}; }
-
-    double operator*() const
-    {
-        return mpExpression->Evaluate(mEntityIndex, mEntityDataBeginIndex, mComponentIndex);
-    }
-
-    bool operator==(const IteratorType& rOther) const
-    {
-        return (mpExpression == rOther.mpExpression) && (mEntityIndex == rOther.mEntityIndex) && (mComponentIndex == rOther.mComponentIndex);
-    }
-
-    bool operator!=(const IteratorType& rOther) const
-    {
-        return !this->operator==(rOther);
-    }
-
-    IteratorType operator+(const IndexType n) const
-    {
-        IteratorType result{mpExpression};
-        result.mComponentIndex = (mComponentIndex + n) % mFlattenedShapeSize;
-        result.mEntityIndex += n / mFlattenedShapeSize;
-        result.mEntityDataBeginIndex = result.mEntityIndex * mFlattenedShapeSize;
-        return result;
-    }
-
-    IteratorType& operator++()
-    {
-        ++mComponentIndex;
-        if (mComponentIndex == mFlattenedShapeSize) {
-            mComponentIndex = 0;
-            ++mEntityIndex;
-            mEntityDataBeginIndex = mEntityIndex * mFlattenedShapeSize;
-        }
-        return *this;
-    }
-
-    IteratorType operator++(int)
-    {
-        IteratorType temp = *this;
-        ++*this;
-        return temp;
-    }
-
-};
-
-} // namespace XmlOStreamWriterHelperUtilities
 
 const std::string XmlOStreamWriter::GetTabbing(const IndexType Level)
 {
@@ -131,9 +49,9 @@ void XmlOStreamWriter::WriteDataElementAscii(
     const IndexType Level,
     const std::vector<Expression::Pointer>& rExpressions)
 {
-    using exp_itr_type = typename XmlOStreamWriterHelperUtilities::ExpressionIterator<TExpressionType>;
+    using exp_itr_type = ExpressionIterator<typename TExpressionType::Pointer>;
 
-    using data_itr_type = typename exp_itr_type::IteratorType;
+    using data_itr_type = typename exp_itr_type::ConstIteratorType;
 
     WriteAttributes(rTagName, rAttributes, Level);
     // add format
@@ -141,13 +59,16 @@ void XmlOStreamWriter::WriteDataElementAscii(
     mrOStream << " format=\"ascii\">\n" << tabbing;
 
     std::vector<TExpressionType*> transformed_expressions(rExpressions.size());
-    std::transform(rExpressions.begin(), rExpressions.end(), transformed_expressions.begin(), [](auto pExpression) { return dynamic_cast<TExpressionType*>(&*(pExpression)); });
+    std::transform(rExpressions.begin(), rExpressions.end(),
+                   transformed_expressions.begin(), [](auto& pExpression) {
+                       return dynamic_cast<TExpressionType*>(&*(pExpression));
+                   });
 
     for (const auto& p_expression : transformed_expressions) {
-        exp_itr_type expression_iterator{p_expression};
-        auto DataBegin = expression_iterator.begin();
-        auto DataEnd   = expression_iterator.end();
-        for (data_itr_type itr = DataBegin; itr != DataEnd; ++itr) {
+        exp_itr_type expression_iterator(p_expression);
+        auto data_begin = expression_iterator.ConstDataBegin();
+        auto data_end   = expression_iterator.ConstDataEnd();
+        for (data_itr_type itr = data_begin; itr != data_end; ++itr) {
             if constexpr(std::is_same_v<typename exp_itr_type::DataType, char>) {
                 mrOStream << "  " << static_cast<int>(*(itr));
             } else {
@@ -167,16 +88,19 @@ void XmlOStreamWriter::WriteDataElementBinary(
     const IndexType Level,
     const std::vector<Expression::Pointer>& rExpressions)
 {
-    using exp_itr_type = typename XmlOStreamWriterHelperUtilities::ExpressionIterator<TExpressionType>;
+    using exp_itr_type = ExpressionIterator<typename TExpressionType::Pointer>;
 
     using data_type = typename exp_itr_type::DataType;
 
-    using data_itr_type = typename exp_itr_type::IteratorType;
+    using data_itr_type = typename exp_itr_type::ConstIteratorType;
 
     WriteAttributes(rTagName, rAttributes, Level);
 
     std::vector<TExpressionType*> transformed_expressions(rExpressions.size());
-    std::transform(rExpressions.begin(), rExpressions.end(), transformed_expressions.begin(), [](auto pExpression) { return dynamic_cast<TExpressionType*>(&*(pExpression)); });
+    std::transform(rExpressions.begin(), rExpressions.end(),
+                   transformed_expressions.begin(), [](auto& pExpression) {
+                       return dynamic_cast<TExpressionType*>(&*(pExpression));
+                   });
 
     if (rExpressions.size() == 0) {
         mrOStream << " format=\"binary\"/>\n";
@@ -184,7 +108,7 @@ void XmlOStreamWriter::WriteDataElementBinary(
     } else {
         data_type min_value{std::numeric_limits<data_type>::max()}, max_value{std::numeric_limits<data_type>::lowest()};
         for (const auto& p_expression : transformed_expressions) {
-            data_itr_type data_itr = exp_itr_type{p_expression}.begin();
+            data_itr_type data_itr = exp_itr_type(p_expression).ConstDataBegin();
             const auto values = IndexPartition<IndexType>(p_expression->GetFlattenedShapeSize() * p_expression->NumberOfEntities()).for_each<CombinedReduction<MinReduction<data_type>, MaxReduction<data_type>>>([&data_itr](const IndexType Index) {
                 const data_type value = *(data_itr + Index);
                 return std::make_tuple(value, value);
@@ -216,8 +140,8 @@ void XmlOStreamWriter::WriteDataElementBinary(
 
     IndexType byte_index = 0;
     auto p_expression = transformed_expressions.data();
-    data_itr_type data_itr = exp_itr_type{*p_expression}.begin();
-    data_itr_type DataEnd = exp_itr_type{*p_expression}.end();
+    data_itr_type data_itr = exp_itr_type(*p_expression).ConstDataBegin();
+    data_itr_type data_end = exp_itr_type(*p_expression).ConstDataEnd();
     writing_data_type current_value =  *data_itr;
 
     auto get_next_byte = [&]() -> char {
@@ -225,10 +149,10 @@ void XmlOStreamWriter::WriteDataElementBinary(
             byte_index = 0;
             ++data_itr;
 
-            if (data_itr == DataEnd) {
+            if (data_itr == data_end) {
                 ++p_expression;
-                data_itr = exp_itr_type{*p_expression}.begin();
-                DataEnd = exp_itr_type{*p_expression}.end();
+                data_itr = exp_itr_type(*p_expression).ConstDataBegin();
+                data_end = exp_itr_type(*p_expression).ConstDataEnd();
             }
 
             current_value = *data_itr;
