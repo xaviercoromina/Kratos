@@ -47,8 +47,9 @@ namespace Kratos {
  *
  * This class can take advantage of OpenMP and MPI.
  *
- * @tparam TContainerType           Container type
- * @tparam TContainerDataIO         Container entity input/output type
+ * @tparam TContainerType           Container type.
+ * @tparam TContainerDataIO         Container entity input/output type.
+ * @tparam TMeshType                Mesh type, should be Local, Ghost or Interface.
  */
 template <class TContainerType, class TContainerDataIO, class TMeshType = MeshType::Local>
 class SpecializedContainerExpression : public ContainerExpression<TContainerType, TMeshType> {
