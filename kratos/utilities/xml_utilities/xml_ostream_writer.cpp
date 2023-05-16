@@ -67,7 +67,7 @@ struct ExpressionIterator<Expression>
 
     IteratorType begin() { return IteratorType{mpExpression}; }
 
-    IteratorType end() { return IteratorType{mpExpression, mpExpression->GetNumberOfEntities()}; }
+    IteratorType end() { return IteratorType{mpExpression, mpExpression->NumberOfEntities()}; }
 
     double operator*() const
     {
@@ -185,7 +185,7 @@ void XmlOStreamWriter::WriteDataElementBinary(
         data_type min_value{std::numeric_limits<data_type>::max()}, max_value{std::numeric_limits<data_type>::lowest()};
         for (const auto& p_expression : transformed_expressions) {
             data_itr_type data_itr = exp_itr_type{p_expression}.begin();
-            const auto values = IndexPartition<IndexType>(p_expression->GetFlattenedShapeSize() * p_expression->GetNumberOfEntities()).for_each<CombinedReduction<MinReduction<data_type>, MaxReduction<data_type>>>([&data_itr](const IndexType Index) {
+            const auto values = IndexPartition<IndexType>(p_expression->GetFlattenedShapeSize() * p_expression->NumberOfEntities()).for_each<CombinedReduction<MinReduction<data_type>, MaxReduction<data_type>>>([&data_itr](const IndexType Index) {
                 const data_type value = *(data_itr + Index);
                 return std::make_tuple(value, value);
             });
@@ -204,7 +204,7 @@ void XmlOStreamWriter::WriteDataElementBinary(
 
     constexpr char base64_map[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-    const IndexType total_entities = std::accumulate(rExpressions.begin(), rExpressions.end(), 0U, [](const IndexType LHS, const auto& pExpression) { return LHS + pExpression->GetNumberOfEntities();});
+    const IndexType total_entities = std::accumulate(rExpressions.begin(), rExpressions.end(), 0U, [](const IndexType LHS, const auto& pExpression) { return LHS + pExpression->NumberOfEntities();});
 
     using writing_data_type = data_type;
     constexpr IndexType data_type_size = sizeof(writing_data_type);

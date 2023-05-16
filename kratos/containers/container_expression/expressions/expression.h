@@ -78,7 +78,7 @@ public:
      *
      * @return IndexType
      */
-    inline IndexType GetNumberOfEntities() const { return mNumberOfEntities; };
+    inline IndexType NumberOfEntities() const { return mNumberOfEntities; };
 
     /**
      * @brief Get the Local Size of the expression
