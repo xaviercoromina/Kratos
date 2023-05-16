@@ -33,16 +33,17 @@ namespace Kratos {
  * flattening the data structure to a vector. This allocates
  * a Vector with large sizes.
  *
+ * @tparam RawTDataType        Raw data type of the literal. Can be char, int or double
  */
-template<class TDataType = double>
+template<class RawTDataType = double>
 class KRATOS_API(KRATOS_CORE) LiteralFlatExpression : public Expression {
 public:
     ///@name Type definition
     ///@{
 
-    using DataType = TDataType;
+    using DataType = RawTDataType;
 
-    using Pointer = Kratos::intrusive_ptr<LiteralFlatExpression<TDataType>>;
+    using Pointer = Kratos::intrusive_ptr<LiteralFlatExpression<RawTDataType>>;
 
     ///@}
     ///@name Life cycle
@@ -53,7 +54,7 @@ public:
         const std::vector<IndexType>& rShape);
 
     LiteralFlatExpression(
-        TDataType* pDataBegin,
+        RawTDataType* pDataBegin,
         const IndexType NumberOfEntities,
         const std::vector<IndexType>& rShape);
 
@@ -72,29 +73,29 @@ public:
      * @param rShape                            Shape of the data in each entity.
      * @return LiteralFlatExpression::Pointer   Returns an intrusive pointer to LiteralFlatExpression.
      */
-    static LiteralFlatExpression<TDataType>::Pointer Create(
+    static LiteralFlatExpression<RawTDataType>::Pointer Create(
         const IndexType NumberOfEntities,
         const std::vector<IndexType>& rShape);
 
-    static LiteralFlatExpression<TDataType>::Pointer Create(
-        TDataType* pDataBegin,
+    static LiteralFlatExpression<RawTDataType>::Pointer Create(
+        RawTDataType* pDataBegin,
         const IndexType NumberOfEntities,
         const std::vector<IndexType>& rShape);
 
     void SetData(
         const IndexType EntityDataBeginIndex,
         const IndexType ComponentIndex,
-        const TDataType Value);
+        const RawTDataType Value);
 
     const std::vector<IndexType> GetShape() const override;
 
     inline IndexType Size() const noexcept { return mData.Size(); }
 
-    inline TDataType* data_begin() noexcept { return mData.data_begin(); }
+    inline RawTDataType* data_begin() noexcept { return mData.data_begin(); }
 
-    inline TDataType const* data_begin() const noexcept { return mData.data_begin(); }
+    inline RawTDataType const* data_begin() const noexcept { return mData.data_begin(); }
 
-    inline TDataType const* data_end() const noexcept { return mData.data_end(); }
+    inline RawTDataType const* data_end() const noexcept { return mData.data_end(); }
 
     std::string Info() const override;
 
@@ -130,14 +131,14 @@ protected:
          *
          * @param Size      Size of the allocated array.
          */
-        Data(const IndexType Size): mpBegin(new TDataType[Size]), mIsManaged(true), mSize(Size) {}
+        Data(const IndexType Size): mpBegin(new RawTDataType[Size]), mIsManaged(true), mSize(Size) {}
 
         /**
          * @brief Construct a new Data object, where the underlying array memory is not managed by the object.
          *
          * @param pBegin    Pointer to the memory array.
          */
-        Data(TDataType* pBegin, const IndexType Size): mpBegin(pBegin), mIsManaged(false), mSize(Size) {}
+        Data(RawTDataType* pBegin, const IndexType Size): mpBegin(pBegin), mIsManaged(false), mSize(Size) {}
 
         ~Data() { if (mIsManaged) { delete[] mpBegin; } }
 
@@ -145,11 +146,11 @@ protected:
         ///@name Operators
         ///@{
 
-        inline TDataType* data_begin() noexcept { return mpBegin; }
+        inline RawTDataType* data_begin() noexcept { return mpBegin; }
 
-        inline TDataType const* data_begin() const noexcept { return mpBegin; }
+        inline RawTDataType const* data_begin() const noexcept { return mpBegin; }
 
-        inline TDataType const* data_end() const noexcept { return mpBegin + mSize; }
+        inline RawTDataType const* data_end() const noexcept { return mpBegin + mSize; }
 
         inline IndexType Size() const noexcept { return mSize; }
 
@@ -158,7 +159,7 @@ protected:
         ///@name Private member variables
         ///@{
 
-        TDataType* mpBegin;
+        RawTDataType* mpBegin;
 
         const bool mIsManaged;
 
@@ -178,14 +179,14 @@ protected:
     ///@}
 };
 
-template<class TDataType = double>
-class LiteralScalarFlatExpression : public LiteralFlatExpression<TDataType>
+template<class RawTDataType = double>
+class LiteralScalarFlatExpression : public LiteralFlatExpression<RawTDataType>
 {
 public:
 
     using IndexType = std::size_t;
 
-    using LiteralFlatExpression<TDataType>::LiteralFlatExpression;
+    using LiteralFlatExpression<RawTDataType>::LiteralFlatExpression;
 
     double Evaluate(
         const IndexType EntityIndex,
@@ -194,14 +195,14 @@ public:
 
 };
 
-template<class TDataType = double>
-class LiteralNonScalarFlatExpression : public LiteralFlatExpression<TDataType>
+template<class RawTDataType = double>
+class LiteralNonScalarFlatExpression : public LiteralFlatExpression<RawTDataType>
 {
 public:
 
     using IndexType = std::size_t;
 
-    using LiteralFlatExpression<TDataType>::LiteralFlatExpression;
+    using LiteralFlatExpression<RawTDataType>::LiteralFlatExpression;
 
     double Evaluate(
         const IndexType EntityIndex,

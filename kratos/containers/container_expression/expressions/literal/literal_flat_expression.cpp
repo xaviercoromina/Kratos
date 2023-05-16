@@ -20,8 +20,8 @@
 
 namespace Kratos {
 
-template<class TDataType>
-LiteralFlatExpression<TDataType>::LiteralFlatExpression(
+template<class RawTDataType>
+LiteralFlatExpression<RawTDataType>::LiteralFlatExpression(
     const IndexType NumberOfEntities,
     const std::vector<IndexType>& rShape)
     : Expression(NumberOfEntities),
@@ -30,9 +30,9 @@ LiteralFlatExpression<TDataType>::LiteralFlatExpression(
 {
 }
 
-template<class TDataType>
-LiteralFlatExpression<TDataType>::LiteralFlatExpression(
-    TDataType* pDataBegin,
+template<class RawTDataType>
+LiteralFlatExpression<RawTDataType>::LiteralFlatExpression(
+    RawTDataType* pDataBegin,
     const IndexType NumberOfEntities,
     const std::vector<IndexType>& rShape)
     : Expression(NumberOfEntities),
@@ -41,42 +41,42 @@ LiteralFlatExpression<TDataType>::LiteralFlatExpression(
 {
 }
 
-template<class TDataType>
-typename LiteralFlatExpression<TDataType>::Pointer LiteralFlatExpression<TDataType>::Create(
+template<class RawTDataType>
+typename LiteralFlatExpression<RawTDataType>::Pointer LiteralFlatExpression<RawTDataType>::Create(
     const IndexType NumberOfEntities,
     const std::vector<IndexType>& rShape)
 {
     if (rShape.size() == 0) {
-        return Kratos::make_intrusive<LiteralScalarFlatExpression<TDataType>>(NumberOfEntities, rShape);
+        return Kratos::make_intrusive<LiteralScalarFlatExpression<RawTDataType>>(NumberOfEntities, rShape);
     } else {
-        return Kratos::make_intrusive<LiteralNonScalarFlatExpression<TDataType>>(NumberOfEntities, rShape);
+        return Kratos::make_intrusive<LiteralNonScalarFlatExpression<RawTDataType>>(NumberOfEntities, rShape);
     }
 }
 
-template<class TDataType>
-typename LiteralFlatExpression<TDataType>::Pointer LiteralFlatExpression<TDataType>::Create(
-    TDataType* pDataBegin,
+template<class RawTDataType>
+typename LiteralFlatExpression<RawTDataType>::Pointer LiteralFlatExpression<RawTDataType>::Create(
+    RawTDataType* pDataBegin,
     const IndexType NumberOfEntities,
     const std::vector<IndexType>& rShape)
 {
     if (rShape.size() == 0) {
-        return Kratos::make_intrusive<LiteralScalarFlatExpression<TDataType>>(pDataBegin, NumberOfEntities, rShape);
+        return Kratos::make_intrusive<LiteralScalarFlatExpression<RawTDataType>>(pDataBegin, NumberOfEntities, rShape);
     } else {
-        return Kratos::make_intrusive<LiteralNonScalarFlatExpression<TDataType>>(pDataBegin, NumberOfEntities, rShape);
+        return Kratos::make_intrusive<LiteralNonScalarFlatExpression<RawTDataType>>(pDataBegin, NumberOfEntities, rShape);
     }
 }
 
-template<class TDataType>
-void LiteralFlatExpression<TDataType>::SetData(
+template<class RawTDataType>
+void LiteralFlatExpression<RawTDataType>::SetData(
     const IndexType EntityDataBeginIndex,
     const IndexType ComponentIndex,
-    const TDataType Value)
+    const RawTDataType Value)
 {
     *(mData.data_begin() + EntityDataBeginIndex + ComponentIndex) = Value;
 }
 
-template<class TDataType>
-const std::vector<std::size_t> LiteralFlatExpression<TDataType>::GetShape() const
+template<class RawTDataType>
+const std::vector<std::size_t> LiteralFlatExpression<RawTDataType>::GetShape() const
 {
     return mShape;
 }
@@ -105,8 +105,8 @@ std::string LiteralFlatExpression<double>::Info() const
     return msg.str();
 }
 
-template<class TDataType>
-double LiteralScalarFlatExpression<TDataType>::Evaluate(
+template<class RawTDataType>
+double LiteralScalarFlatExpression<RawTDataType>::Evaluate(
     const IndexType EntityIndex,
     const IndexType EntityDataBeginIndex,
     const IndexType ComponentIndex) const
@@ -114,8 +114,8 @@ double LiteralScalarFlatExpression<TDataType>::Evaluate(
     return *(this->mData.data_begin() + EntityIndex);
 }
 
-template<class TDataType>
-double LiteralNonScalarFlatExpression<TDataType>::Evaluate(
+template<class RawTDataType>
+double LiteralNonScalarFlatExpression<RawTDataType>::Evaluate(
     const IndexType EntityIndex,
     const IndexType EntityDataBeginIndex,
     const IndexType ComponentIndex) const
