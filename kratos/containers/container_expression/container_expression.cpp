@@ -73,19 +73,19 @@ template <class TContainerType>
 TContainerType& GetContainer(ModelPart::MeshType &rMesh);
 
 template<>
-ModelPart::NodesContainerType& GetContainer<ModelPart::NodesContainerType>(ModelPart::MeshType &rMesh)
+ModelPart::NodesContainerType& GetContainer<ModelPart::NodesContainerType>(ModelPart::MeshType& rMesh)
 {
     return rMesh.Nodes();
 }
 
 template<>
-ModelPart::ConditionsContainerType& GetContainer<ModelPart::ConditionsContainerType>(ModelPart::MeshType &rMesh)
+ModelPart::ConditionsContainerType& GetContainer<ModelPart::ConditionsContainerType>(ModelPart::MeshType& rMesh)
 {
     return rMesh.Conditions();
 }
 
 template<>
-ModelPart::ElementsContainerType& GetContainer<ModelPart::ElementsContainerType>(ModelPart::MeshType &rMesh)
+ModelPart::ElementsContainerType& GetContainer<ModelPart::ElementsContainerType>(ModelPart::MeshType& rMesh)
 {
     return rMesh.Elements();
 }
@@ -94,19 +94,19 @@ template <class TContainerType>
 const TContainerType& GetContainer(const ModelPart::MeshType &rMesh);
 
 template<>
-const ModelPart::NodesContainerType& GetContainer<ModelPart::NodesContainerType>(const ModelPart::MeshType &rMesh)
+const ModelPart::NodesContainerType& GetContainer<ModelPart::NodesContainerType>(const ModelPart::MeshType& rMesh)
 {
     return rMesh.Nodes();
 }
 
 template<>
-const ModelPart::ConditionsContainerType& GetContainer<ModelPart::ConditionsContainerType>(const ModelPart::MeshType &rMesh)
+const ModelPart::ConditionsContainerType& GetContainer<ModelPart::ConditionsContainerType>(const ModelPart::MeshType& rMesh)
 {
     return rMesh.Conditions();
 }
 
 template<>
-const ModelPart::ElementsContainerType& GetContainer<ModelPart::ElementsContainerType>(const ModelPart::MeshType &rMesh)
+const ModelPart::ElementsContainerType& GetContainer<ModelPart::ElementsContainerType>(const ModelPart::MeshType& rMesh)
 {
     return rMesh.Elements();
 }
