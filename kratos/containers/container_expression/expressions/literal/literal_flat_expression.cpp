@@ -20,8 +20,8 @@
 
 namespace Kratos {
 
-template<class RawTDataType>
-LiteralFlatExpression<RawTDataType>::LiteralFlatExpression(
+template<class TRawDataType>
+LiteralFlatExpression<TRawDataType>::LiteralFlatExpression(
     const IndexType NumberOfEntities,
     const std::vector<IndexType>& rShape)
     : Expression(NumberOfEntities),
@@ -30,9 +30,9 @@ LiteralFlatExpression<RawTDataType>::LiteralFlatExpression(
 {
 }
 
-template<class RawTDataType>
-LiteralFlatExpression<RawTDataType>::LiteralFlatExpression(
-    RawTDataType* pDataBegin,
+template<class TRawDataType>
+LiteralFlatExpression<TRawDataType>::LiteralFlatExpression(
+    TRawDataType* pDataBegin,
     const IndexType NumberOfEntities,
     const std::vector<IndexType>& rShape)
     : Expression(NumberOfEntities),
@@ -41,42 +41,42 @@ LiteralFlatExpression<RawTDataType>::LiteralFlatExpression(
 {
 }
 
-template<class RawTDataType>
-typename LiteralFlatExpression<RawTDataType>::Pointer LiteralFlatExpression<RawTDataType>::Create(
+template<class TRawDataType>
+typename LiteralFlatExpression<TRawDataType>::Pointer LiteralFlatExpression<TRawDataType>::Create(
     const IndexType NumberOfEntities,
     const std::vector<IndexType>& rShape)
 {
     if (rShape.size() == 0) {
-        return Kratos::make_intrusive<LiteralScalarFlatExpression<RawTDataType>>(NumberOfEntities, rShape);
+        return Kratos::make_intrusive<LiteralScalarFlatExpression<TRawDataType>>(NumberOfEntities, rShape);
     } else {
-        return Kratos::make_intrusive<LiteralNonScalarFlatExpression<RawTDataType>>(NumberOfEntities, rShape);
+        return Kratos::make_intrusive<LiteralNonScalarFlatExpression<TRawDataType>>(NumberOfEntities, rShape);
     }
 }
 
-template<class RawTDataType>
-typename LiteralFlatExpression<RawTDataType>::Pointer LiteralFlatExpression<RawTDataType>::Create(
-    RawTDataType* pDataBegin,
+template<class TRawDataType>
+typename LiteralFlatExpression<TRawDataType>::Pointer LiteralFlatExpression<TRawDataType>::Create(
+    TRawDataType* pDataBegin,
     const IndexType NumberOfEntities,
     const std::vector<IndexType>& rShape)
 {
     if (rShape.size() == 0) {
-        return Kratos::make_intrusive<LiteralScalarFlatExpression<RawTDataType>>(pDataBegin, NumberOfEntities, rShape);
+        return Kratos::make_intrusive<LiteralScalarFlatExpression<TRawDataType>>(pDataBegin, NumberOfEntities, rShape);
     } else {
-        return Kratos::make_intrusive<LiteralNonScalarFlatExpression<RawTDataType>>(pDataBegin, NumberOfEntities, rShape);
+        return Kratos::make_intrusive<LiteralNonScalarFlatExpression<TRawDataType>>(pDataBegin, NumberOfEntities, rShape);
     }
 }
 
-template<class RawTDataType>
-void LiteralFlatExpression<RawTDataType>::SetData(
+template<class TRawDataType>
+void LiteralFlatExpression<TRawDataType>::SetData(
     const IndexType EntityDataBeginIndex,
     const IndexType ComponentIndex,
-    const RawTDataType Value)
+    const TRawDataType Value)
 {
     *(mData.DataBegin() + EntityDataBeginIndex + ComponentIndex) = Value;
 }
 
-template<class RawTDataType>
-const std::vector<std::size_t> LiteralFlatExpression<RawTDataType>::GetShape() const
+template<class TRawDataType>
+const std::vector<std::size_t> LiteralFlatExpression<TRawDataType>::GetShape() const
 {
     return mShape;
 }
@@ -105,8 +105,8 @@ std::string LiteralFlatExpression<double>::Info() const
     return msg.str();
 }
 
-template<class RawTDataType>
-double LiteralScalarFlatExpression<RawTDataType>::Evaluate(
+template<class TRawDataType>
+double LiteralScalarFlatExpression<TRawDataType>::Evaluate(
     const IndexType EntityIndex,
     const IndexType EntityDataBeginIndex,
     const IndexType ComponentIndex) const
@@ -114,8 +114,8 @@ double LiteralScalarFlatExpression<RawTDataType>::Evaluate(
     return *(this->mData.DataBegin() + EntityIndex);
 }
 
-template<class RawTDataType>
-double LiteralNonScalarFlatExpression<RawTDataType>::Evaluate(
+template<class TRawDataType>
+double LiteralNonScalarFlatExpression<TRawDataType>::Evaluate(
     const IndexType EntityIndex,
     const IndexType EntityDataBeginIndex,
     const IndexType ComponentIndex) const
