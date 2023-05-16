@@ -66,16 +66,6 @@ double LiteralExpression<TDataType>::Evaluate(
 }
 
 template <>
-LiteralExpression<double>::LiteralExpression(
-    const double& Value,
-    const IndexType NumberOfEntities)
-    : Expression(NumberOfEntities),
-      mValue(Value),
-      mShape({})
-{
-}
-
-template <>
 LiteralExpression<int>::LiteralExpression(
     const int& Value,
     const IndexType NumberOfEntities)
@@ -86,12 +76,13 @@ LiteralExpression<int>::LiteralExpression(
 }
 
 template <>
-double LiteralExpression<double>::Evaluate(
-    const IndexType EntityIndex,
-    const IndexType EntityDataBeginIndex,
-    const IndexType ComponentIndex) const
+LiteralExpression<double>::LiteralExpression(
+    const double& Value,
+    const IndexType NumberOfEntities)
+    : Expression(NumberOfEntities),
+      mValue(Value),
+      mShape({})
 {
-    return mValue;
 }
 
 template <>
@@ -101,6 +92,15 @@ double LiteralExpression<int>::Evaluate(
     const IndexType ComponentIndex) const
 {
     return static_cast<double>(mValue);
+}
+
+template <>
+double LiteralExpression<double>::Evaluate(
+    const IndexType EntityIndex,
+    const IndexType EntityDataBeginIndex,
+    const IndexType ComponentIndex) const
+{
+    return mValue;
 }
 
 template <>
