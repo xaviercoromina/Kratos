@@ -37,6 +37,8 @@ public:
                  std::function<bool()>       shouldCancel);
 
 private:
+    static void AddNodalSolutionStepVariablesTo(ModelPart& rModelPart);
+
     Kernel mKernel;
     Model mModel;
     KratosGeoMechanicsApplication::Pointer mpApp;

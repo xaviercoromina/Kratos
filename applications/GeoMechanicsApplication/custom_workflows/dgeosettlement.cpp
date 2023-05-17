@@ -49,7 +49,35 @@ int KratosGeoSettlement::RunStage(const std::string&          rWorkingDirectory,
 
     KRATOS_INFO("KratosGeoSettlement") << "Created a model part" << std::endl;
 
+    AddNodalSolutionStepVariablesTo(model_part);
+
+    KRATOS_INFO("KratosGeoSettlement") << "Added nodal solution step variables" << std::endl;
+
     return 1;
+}
+
+void KratosGeoSettlement::AddNodalSolutionStepVariablesTo(ModelPart& rModelPart)
+{
+    rModelPart.AddNodalSolutionStepVariable(VELOCITY);
+    rModelPart.AddNodalSolutionStepVariable(ACCELERATION);
+
+    // Displacement
+    rModelPart.AddNodalSolutionStepVariable(DISPLACEMENT);
+    rModelPart.AddNodalSolutionStepVariable(TOTAL_DISPLACEMENT);
+    rModelPart.AddNodalSolutionStepVariable(REACTION);
+    rModelPart.AddNodalSolutionStepVariable(POINT_LOAD);
+    rModelPart.AddNodalSolutionStepVariable(LINE_LOAD);
+    rModelPart.AddNodalSolutionStepVariable(SURFACE_LOAD);
+    rModelPart.AddNodalSolutionStepVariable(VOLUME_ACCELERATION);
+    rModelPart.AddNodalSolutionStepVariable(NORMAL_CONTACT_STRESS);
+    rModelPart.AddNodalSolutionStepVariable(TANGENTIAL_CONTACT_STRESS);
+
+    // Water
+    rModelPart.AddNodalSolutionStepVariable(WATER_PRESSURE);
+    rModelPart.AddNodalSolutionStepVariable(REACTION_WATER_PRESSURE);
+    rModelPart.AddNodalSolutionStepVariable(DT_WATER_PRESSURE);
+    rModelPart.AddNodalSolutionStepVariable(NORMAL_FLUID_FLUX);
+    rModelPart.AddNodalSolutionStepVariable(HYDRAULIC_DISCHARGE);
 }
 
 }
