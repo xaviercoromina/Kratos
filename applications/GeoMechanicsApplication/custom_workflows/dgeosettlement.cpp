@@ -43,6 +43,12 @@ int KratosGeoSettlement::RunStage(const std::string&          rWorkingDirectory,
 
     KRATOS_INFO("KratosGeoSettlement") << "Parsed project parameters file " << project_parameters_file_path << std::endl;
 
+    const auto model_part_name = project_parameters["solver_settings"]["model_part_name"].GetString();
+    ModelPart& model_part = mModel.CreateModelPart(model_part_name);
+    model_part.SetBufferSize(2);
+
+    KRATOS_INFO("KratosGeoSettlement") << "Created a model part" << std::endl;
+
     return 1;
 }
 

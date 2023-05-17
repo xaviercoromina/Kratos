@@ -38,6 +38,7 @@ public:
 
 private:
     Kernel mKernel;
+    Model mModel;
     KratosGeoMechanicsApplication::Pointer mpApp;
 };
 
