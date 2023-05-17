@@ -14,6 +14,7 @@
 #include "custom_utilities/input_utilities.h"
 #include "utilities/variable_utils.h"
 #include "includes/model_part_io.h"
+#include "utilities/read_materials_utility.h"
 
 
 namespace Kratos
@@ -67,6 +68,16 @@ int KratosGeoSettlement::RunStage(const std::string&          rWorkingDirectory,
     reader.ReadModelPart(model_part);
 
     KRATOS_INFO("KratosGeoSettlement") << "Read the mesh data from " << mesh_file_path << std::endl;
+
+    const auto material_file_name = project_parameters["solver_settings"]["material_import_settings"]["materials_filename"].GetString();
+    const auto material_file_path = rWorkingDirectory + "/" + material_file_name;
+    {
+        std::string material_parameters_location = "{ \"Parameters\" : { \"materials_filename\" :\"" + material_file_path + "\"}}";
+        Parameters material_parameters{material_parameters_location};
+        ReadMaterialsUtility tmp_material_reader(material_parameters, mModel);
+    }
+
+    KRATOS_INFO("KratosGeoSettlement") << "Read the materials from " << material_file_path << std::endl;
 
     return 1;
 }
