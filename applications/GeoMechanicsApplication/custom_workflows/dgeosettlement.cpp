@@ -12,6 +12,7 @@
 #include "dgeosettlement.h"
 #include "input_output/logger.h"
 #include "custom_utilities/input_utilities.h"
+#include "utilities/variable_utils.h"
 
 
 namespace Kratos
@@ -53,6 +54,10 @@ int KratosGeoSettlement::RunStage(const std::string&          rWorkingDirectory,
 
     KRATOS_INFO("KratosGeoSettlement") << "Added nodal solution step variables" << std::endl;
 
+    AddDegreesOfFreedomTo(model_part);
+
+    KRATOS_INFO("KratosGeoSettlement") << "Added degrees of freedom" << std::endl;
+
     return 1;
 }
 
@@ -78,6 +83,18 @@ void KratosGeoSettlement::AddNodalSolutionStepVariablesTo(ModelPart& rModelPart)
     rModelPart.AddNodalSolutionStepVariable(DT_WATER_PRESSURE);
     rModelPart.AddNodalSolutionStepVariable(NORMAL_FLUID_FLUX);
     rModelPart.AddNodalSolutionStepVariable(HYDRAULIC_DISCHARGE);
+}
+
+void KratosGeoSettlement::AddDegreesOfFreedomTo(Kratos::ModelPart &rModelPart)
+{
+    VariableUtils().AddDofWithReaction(DISPLACEMENT_X, REACTION_X, rModelPart);
+    VariableUtils().AddDofWithReaction(DISPLACEMENT_Y, REACTION_Y, rModelPart);
+    VariableUtils().AddDofWithReaction(DISPLACEMENT_Z, REACTION_Z, rModelPart);
+
+    VariableUtils().AddDofWithReaction(WATER_PRESSURE, REACTION_WATER_PRESSURE, rModelPart);
+    VariableUtils().AddDof(VOLUME_ACCELERATION_X, rModelPart);
+    VariableUtils().AddDof(VOLUME_ACCELERATION_Y, rModelPart);
+    VariableUtils().AddDof(VOLUME_ACCELERATION_Z, rModelPart);
 }
 
 }

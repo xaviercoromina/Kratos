@@ -38,6 +38,7 @@ public:
 
 private:
     static void AddNodalSolutionStepVariablesTo(ModelPart& rModelPart);
+    static void AddDegreesOfFreedomTo(ModelPart& rModelPart);
 
     Kernel mKernel;
     Model mModel;
