@@ -13,6 +13,7 @@
 #include "input_output/logger.h"
 #include "custom_utilities/input_utilities.h"
 #include "utilities/variable_utils.h"
+#include "includes/model_part_io.h"
 
 
 namespace Kratos
@@ -57,6 +58,15 @@ int KratosGeoSettlement::RunStage(const std::string&          rWorkingDirectory,
     AddDegreesOfFreedomTo(model_part);
 
     KRATOS_INFO("KratosGeoSettlement") << "Added degrees of freedom" << std::endl;
+
+    // Don't include the file extension of the mesh file name, since that is automatically appended by the
+    // constructor of class ModelPartIO
+    const auto mesh_file_name = project_parameters["solver_settings"]["model_import_settings"]["input_filename"].GetString();
+    const auto mesh_file_path = rWorkingDirectory + "/" + mesh_file_name;
+    ModelPartIO reader{mesh_file_path};
+    reader.ReadModelPart(model_part);
+
+    KRATOS_INFO("KratosGeoSettlement") << "Read the mesh data from " << mesh_file_path << std::endl;
 
     return 1;
 }
