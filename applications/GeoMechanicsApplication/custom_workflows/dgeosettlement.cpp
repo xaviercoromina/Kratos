@@ -9,9 +9,9 @@
 //
 //  Main authors:    Anne van de Graaf
 //
-
-#include "input_output/logger.h"
 #include "dgeosettlement.h"
+#include "input_output/logger.h"
+#include "custom_utilities/input_utilities.h"
 
 
 namespace Kratos
@@ -36,6 +36,13 @@ int KratosGeoSettlement::RunStage(const std::string&          rWorkingDirectory,
                                   std::function<void(char*)>  reportTextualProgress,
                                   std::function<bool()>       shouldCancel)
 {
+    KRATOS_INFO("KratosGeoSettlement") << "About to run a stage..." << std::endl;
+
+    const auto project_parameters_file_path = rWorkingDirectory + "/" + rProjectParametersFileName;
+    const auto project_parameters = makeProjectParametersFrom(project_parameters_file_path);
+
+    KRATOS_INFO("KratosGeoSettlement") << "Parsed project parameters file " << project_parameters_file_path << std::endl;
+
     return 1;
 }
 
