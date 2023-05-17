@@ -30,7 +30,7 @@ public:
     KratosGeoSettlement();
 
     int RunStage(const std::string&          rWorkingDirectory,
-                 const std::string&          rParameterName,
+                 const std::string&          rProjectParametersFileName,
                  std::function<void(char*)>  logCallback,
                  std::function<void(double)> reportProgress,
                  std::function<void(char*)>  reportTextualProgress,
