@@ -60,16 +60,6 @@ public:
     ///@name Operations
     ///@{
 
-    /**
-     * @brief This method provides the defaults parameters
-     */
-    static Parameters GetDefaultParameters();
-
-    /**
-     * @brief Prints mrModelPart in VTK format together with the results
-     */
-    void PrintOutput(const std::string& rOutputFilename = "");
-
     ///@}
 
     /// Turn back information as a string.
@@ -92,73 +82,24 @@ public:
     {
     }
 
-    enum class OutputEntities {
-        ELEMENTS,
-        CONDITIONS
-    };
-
 protected:
     ///@name Member Variables
     ///@{
 
-
-    ParticleVtkOutput::OutputEntities mOutputEntities;  /// The entity (element or condition) to print
 
     ///@}
     ///@name Operations
     ///@{
 
     /**
-     * @brief Print the given rModelPart as VTK file together with the requested results
-     * @param rModelPart modelpart which is beging output
-     * @param IsSubModelPart whether the modelpart is to be treated as a submodelpart
-     * this is only relevant for the file-name
-     */
-    void WriteModelPartToFile(
-        const ModelPart& rModelPart,
-        const bool IsSubModelPart,
-        const std::string& rOutputFilename
-        );
-
-    /**
-     * @brief Write the mesh from rModelPart: material point Elements or Conditions
+     * @brief Write the nodes in the rModelPart.
      * @param rModelPart modelpart which is beging output
      * @param rFileStream the file stream to which data is to be written.
      */
-    void WriteMeshToFile(
+    void WriteNodesToFile(
         const ModelPart& rModelPart,
         std::ofstream& rFileStream
-        ) const;
-
-    /**
-     * @brief Write the elements and conditions in rModelPart.
-     * @param rModelPart modelpart which is beging output
-     * @param rFileStream the file stream to which data is to be written.
-     */
-    void WriteConditionsAndElementsToFile(
-        const ModelPart& rModelPart,
-        std::ofstream& rFileStream
-        ) const;
-
-    /**
-     * @brief Write the results/flags on the elements of rModelPart.
-     * @param rModelPart modelpart which is beging output
-     * @param rFileStream the file stream to which data is to be written.
-     */
-    void WriteElementResultsToFile(
-        const ModelPart& rModelPart,
-        std::ofstream& rFileStream
-        );
-
-    /**
-     * @brief Write the results/flags on the conditions of rModelPart.
-     * @param rModelPart modelpart which is beging output
-     * @param rFileStream the file stream to which data is to be written.
-     */
-    void WriteConditionResultsToFile(
-        const ModelPart& rModelPart,
-        std::ofstream& rFileStream
-        );
+        ) const override;
 
     ///@}
 
