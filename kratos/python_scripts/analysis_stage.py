@@ -191,9 +191,9 @@ class AnalysisStage(object):
                 # TODO: Pullout test. Total force
                 total_force = 0.0
                 disp = 0.0
-                for node in self.model.GetModelPart('PorousModelPart.ImposedDisp_Y').Nodes:
-                    total_force += node.GetSolutionStepValue(KratosMultiphysics.REACTION_Y)
-                    disp = node.GetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_Y)
+                for node in self.model.GetModelPart('PorousModelPart.ImposedDisp_Z').Nodes:
+                    total_force += node.GetSolutionStepValue(KratosMultiphysics.REACTION_Z)
+                    disp = node.GetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_Z)
                 total_force = 4.0*total_force # symmetric conditions
                 out_total_force = open("time_disp_totalforce.txt","a")
                 out_total_force.write(str(time))
