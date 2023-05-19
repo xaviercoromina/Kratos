@@ -172,21 +172,49 @@ class AnalysisStage(object):
             time = main_model_part.ProcessInfo[KratosMultiphysics.TIME]
             if run_DCB_test:
                 # TODO: DCB_test. Delamination test total force
-                total_force_top = 0.0
-                disp_top = 0.0
+                total_force_top_Y = 0.0
+                disp_top_Y = 0.0
+                total_force_top_X = 0.0
+                disp_top_X = 0.0
+                total_force_top_Z = 0.0
+                disp_top_Z = 0.0
                 for node in self.model.GetModelPart('PorousModelPart.imposed_dispY_top').Nodes:
-                    total_force_top += node.GetSolutionStepValue(KratosMultiphysics.REACTION_Y)
-                    disp_top = node.GetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_Y)
-                total_force_top = 2.0*total_force_top # symmetric conditions
-                out_total_force_top = open("time_disptop_totalforcetop.txt","a")
-                out_total_force_top.write(str(time))
-                out_total_force_top.write(" ")
-                out_total_force_top.write(str(disp_top))
-                out_total_force_top.write(" ")
-                out_total_force_top.write(str(total_force_top))
-                out_total_force_top.write("\n")
-                out_total_force_top.close()
-                print('Delamination test total top force (N): ', total_force_top)
+                    total_force_top_Y += node.GetSolutionStepValue(KratosMultiphysics.REACTION_Y)
+                    disp_top_Y = node.GetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_Y)
+                    total_force_top_X += node.GetSolutionStepValue(KratosMultiphysics.REACTION_X)
+                    disp_top_X = node.GetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_X)
+                    total_force_top_Z += node.GetSolutionStepValue(KratosMultiphysics.REACTION_Z)
+                    disp_top_Z = node.GetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_Z)
+                total_force_top_Y = 2.0*total_force_top_Y # symmetric conditions (Mode i)
+                total_force_top_X = 2.0*total_force_top_X # symmetric conditions (Mode ii)
+                # There is no symmetry in the Mode iii experiment
+                out_total_force_top_Y = open("time_disptop_totalforcetop_Y.txt","a")
+                out_total_force_top_Y.write(str(time))
+                out_total_force_top_Y.write(" ")
+                out_total_force_top_Y.write(str(disp_top_Y))
+                out_total_force_top_Y.write(" ")
+                out_total_force_top_Y.write(str(total_force_top_Y))
+                out_total_force_top_Y.write("\n")
+                out_total_force_top_Y.close()
+                print('Delamination test total top force Y (N): ', total_force_top_Y)
+                out_total_force_top_X = open("time_disptop_totalforcetop_X.txt","a")
+                out_total_force_top_X.write(str(time))
+                out_total_force_top_X.write(" ")
+                out_total_force_top_X.write(str(disp_top_X))
+                out_total_force_top_X.write(" ")
+                out_total_force_top_X.write(str(total_force_top_X))
+                out_total_force_top_X.write("\n")
+                out_total_force_top_X.close()
+                print('Delamination test total top force X (N): ', total_force_top_X)
+                out_total_force_top_Z = open("time_disptop_totalforcetop_Z.txt","a")
+                out_total_force_top_Z.write(str(time))
+                out_total_force_top_Z.write(" ")
+                out_total_force_top_Z.write(str(disp_top_Z))
+                out_total_force_top_Z.write(" ")
+                out_total_force_top_Z.write(str(total_force_top_Z))
+                out_total_force_top_Z.write("\n")
+                out_total_force_top_Z.close()
+                print('Delamination test total top force Z (N): ', total_force_top_Z)
             else:
                 # TODO: Pullout test. Total force
                 total_force = 0.0
