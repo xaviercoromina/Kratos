@@ -9,10 +9,13 @@ import KratosMultiphysics.GeoMechanicsApplication as KratosGMA
 # Importing the base class
 from KratosMultiphysics.python_solver import PythonSolver
 
+# Import base class file
+from KratosMultiphysics.GeoMechanicsApplication.geomechanics_solver import GeoMechanicalSolver as GeoSolver
+
 def CreateSolver(main_model_part, custom_settings):
     return CoupledThermalPressureSolver(main_model_part, custom_settings)
 
-class CoupledThermalPressureSolver(PythonSolver):
+class CoupledThermalPressureSolver(GeoSolver):
 
     @classmethod
     def GetDefaultParameters(cls):
@@ -20,6 +23,7 @@ class CoupledThermalPressureSolver(PythonSolver):
         default_settings = KratosMultiphysics.Parameters("""
         {
             "solver_type" : "ThermalPressureCoupled",
+            "model_part_name": "PorousDomain",
             "domain_size" : -1,
             "echo_level": 0,
             "reduction_factor": 0.5,
@@ -28,41 +32,41 @@ class CoupledThermalPressureSolver(PythonSolver):
             "max_iterations": 15,
             "number_cycles": 5,
             "solution_type": "quasi_static",
-            "reset_displacements":  false,
+            "reset_displacements": false,
             "start_time": 0.0,
             "rebuild_level": 2,
-            "time_stepping"                   : {
+            "time_stepping": {
                 "time_step" : 1.0
             },
+            "model_import_settings": {
+                    "input_type"    : "mdpa",
+                    "input_filename": "unknown_name"
+            },
             "pressure_solver_settings": {
-                "solver_settings": {
-                    "solver_type"                     : "Pw",
-                    "model_part_name"                 : "PorousDomain",
-                    "domain_size"                     : 2,
-                    "echo_level"                      : 1,
-                    "max_iterations"             : 15,
-                    "model_import_settings": {
-                        "input_type": "mdpa",
-                        "input_filename": "unknown_name"
-                    },
-                    "material_import_settings"        : {
-                        "materials_filename" : "MaterialParameters.json"
-                    }
+                "solver_type"                     : "Pw",
+                "model_part_name"                 : "PorousDomain",
+                "domain_size"                     : 2,
+                "echo_level"                      : 1,
+                "max_iterations"                  : 15,
+                "model_import_settings": {
+                    "input_type"    : "mdpa",
+                    "input_filename": "unknown_name"
+                },
+                "material_import_settings": {
+                    "materials_filename" : "MaterialParameters.json"
                 }
             },
             "thermal_solver_settings": {
-                "solver_settings": {
-                    "solver_type"                     : "T",
-                    "model_part_name"                 : "PorousDomain",
-                    "domain_size"                     : 2,
-                    "echo_level"                      : 1,
-                    "max_iterations"             : 15,
-                    "model_import_settings": {
-                        "input_type": "use_input_model_part"
-                    },
-                    "material_import_settings": {
-                            "materials_filename": "MaterialParameters.json"
-                    }
+                "solver_type"                     : "T",
+                "model_part_name"                 : "PorousDomain",
+                "domain_size"                     : 2,
+                "echo_level"                      : 1,
+                "max_iterations"                  : 15,
+                "model_import_settings": {
+                    "input_type"   : "use_input_model_part"
+                },
+                "material_import_settings": {
+                    "materials_filename" : "MaterialParameters.json"
                 }
             },
             "time_integration_method": "implicit"
@@ -80,8 +84,8 @@ class CoupledThermalPressureSolver(PythonSolver):
         self.domain_size = self.settings["domain_size"].GetInt()
 
         from KratosMultiphysics.GeoMechanicsApplication import geomechanics_solvers_wrapper
-        self.pressure_solver = geomechanics_solvers_wrapper.CreateSolver(self.model, self.settings["pressure_solver_settings"])
-        self.thermal_solver = geomechanics_solvers_wrapper.CreateSolver(self.model,self.settings["thermal_solver_settings"])
+        self.pressure_solver = geomechanics_solvers_wrapper.CreateSolverByParameters(self.model, self.settings["pressure_solver_settings"], "OpenMP")
+        self.thermal_solver = geomechanics_solvers_wrapper.CreateSolverByParameters(self.model,self.settings["thermal_solver_settings"], "OpenMP")
 
     def AddVariables(self):
         # Import the structural and thermal solver variables. Then merge them to have them in both pressure and thermal solvers.
