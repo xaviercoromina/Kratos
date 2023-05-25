@@ -48,14 +48,13 @@ class UPwEigenSolver(UPwSolver):
 
     #### Private functions ####
 
-    #TODO: _ConstructScheme
-    def _CreateScheme(self):
-        solution_scheme = StructuralMechanicsApplication.EigensolverDynamicScheme()
+    def _ConstructScheme(self, scheme_type, solution_type):
 
-        return solution_scheme
+        scheme = StructuralMechanicsApplication.EigensolverDynamicScheme()
 
-    #TODO: _ConstructLinearSolver
-    def _CreateLinearSolver(self):
+        return scheme
+
+    def _ConstructLinearSolver(self):
         """Create the eigensolver.
 
         This overrides the base class method and replaces the usual linear solver
@@ -64,10 +63,11 @@ class UPwEigenSolver(UPwSolver):
         return eigen_solver_factory.ConstructSolver(self.settings["eigensolver_settings"])
 
     #TODO: _ConstructSolver
-    def _CreateSolutionStrategy(self):
-        eigen_scheme = self._GetScheme() # The scheme defines the matrices of the eigenvalue problem.
-        builder_and_solver = self._GetBuilderAndSolver() # The eigensolver is created here.
-        computing_model_part = self.GetComputingModelPart()
+    def _ConstructSolver(self, builder_and_solver, strategy_type):
+
+        self.linear_solver = _ConstructLinearSolver()
+        eigen_scheme = self.scheme # The scheme defines the matrices of the eigenvalue problem.
+        builder_and_solver = self._ConstructBuilderAndSolver(True) # The eigensolver is created here.
 
         solver_type = self.settings["eigensolver_settings"]["solver_type"].GetString()
         if solver_type in ["eigen_eigensystem", "spectra_sym_g_eigs_shift"]: # TODO evaluate what has to be used for spectra
@@ -87,8 +87,8 @@ class UPwEigenSolver(UPwSolver):
             mass_matrix_diagonal_value = diag_values["mass_matrix_diagonal_value"].GetDouble()
             stiffness_matrix_diagonal_value = diag_values["stiffness_matrix_diagonal_value"].GetDouble()
 
-        return StructuralMechanicsApplication.EigensolverStrategy(computing_model_part,
-                                                                  eigen_scheme,
+        return StructuralMechanicsApplication.EigensolverStrategy(self.computing_model_part,
+                                                                  self.scheme,
                                                                   builder_and_solver,
                                                                   mass_matrix_diagonal_value,
                                                                   stiffness_matrix_diagonal_value,
