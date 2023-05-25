@@ -62,7 +62,6 @@ class UPwEigenSolver(UPwSolver):
         """
         return eigen_solver_factory.ConstructSolver(self.settings["eigensolver_settings"])
 
-    #TODO: _ConstructSolver
     def _ConstructSolver(self, builder_and_solver, strategy_type):
 
         self.linear_solver = _ConstructLinearSolver()
