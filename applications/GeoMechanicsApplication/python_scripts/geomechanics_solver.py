@@ -522,8 +522,7 @@ class GeoMechanicalSolver(PythonSolver):
                                                                            reform_step_dofs,
                                                                            move_mesh_flag)
 
-
-       elif strategy_type.lower() == "linear":
+        elif strategy_type.lower() == "linear":
             solving_strategy = KratosMultiphysics.ResidualBasedLinearStrategy(self.computing_model_part,
                                                                               self.scheme,
                                                                               builder_and_solver,

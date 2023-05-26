@@ -56,7 +56,7 @@ class ApplyK0ProcedureProcess : public Process
     ///------------------------------------------------------------------------------------
 
     /// Destructor
-    ~ApplyK0ProcedureProcess() override{}
+    ~ApplyK0ProcedureProcess() override = default;
 
     //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -76,13 +76,9 @@ class ApplyK0ProcedureProcess : public Process
 
     //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
    
-  protected:
-    /// Member Variables
-
-    ModelPart& mrModelPart;
-    std::string mModelPartName;
-
   private:
+      ModelPart& mrModelPart;
+      std::string mModelPartName;
 
       void CalculateK0Stresses(Element& rElement)
       {
@@ -129,7 +125,7 @@ class ApplyK0ProcedureProcess : public Process
           const Element::GeometryType::IntegrationPointsArrayType& IntegrationPoints = rGeom.IntegrationPoints(rElement.GetIntegrationMethod());
           
           // Get element stress tensor 
-          ProcessInfo& rCurrentProcessInfo = this->mrModelPart.GetProcessInfo();
+          const ProcessInfo& rCurrentProcessInfo = this->mrModelPart.GetProcessInfo();
           std::vector<ConstitutiveLaw::StressVectorType> rStressVectors;
           rElement.CalculateOnIntegrationPoints(CAUCHY_STRESS_VECTOR, rStressVectors, rCurrentProcessInfo);
 
