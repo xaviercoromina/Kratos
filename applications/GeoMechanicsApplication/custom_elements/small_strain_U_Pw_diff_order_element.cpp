@@ -1021,10 +1021,10 @@ void SmallStrainUPwDiffOrderElement::
 {
     KRATOS_TRY
 
-    // KRATOS_INFO("0-SmallStrainUPwDiffOrderElement::SetValuesOnIntegrationPoints()") << std::endl;
+        // KRATOS_INFO("0-SmallStrainUPwDiffOrderElement::SetValuesOnIntegrationPoints()") << std::endl;
 
-    for ( unsigned int GPoint = 0; GPoint < mConstitutiveLawVector.size(); ++GPoint )
-        mConstitutiveLawVector[GPoint]->SetValue( rVariable, rValues[GPoint], rCurrentProcessInfo );
+        for ( unsigned int GPoint = 0; GPoint < mConstitutiveLawVector.size(); ++GPoint )
+            mConstitutiveLawVector[GPoint]->SetValue( rVariable, rValues[GPoint], rCurrentProcessInfo );
 
     // KRATOS_INFO("1-SmallStrainUPwDiffOrderElement::SetValuesOnIntegrationPoints()") << std::endl;
 
@@ -1042,9 +1042,14 @@ void SmallStrainUPwDiffOrderElement::
 
     // KRATOS_INFO("0-SmallStrainUPwDiffOrderElement::1-SetValuesOnIntegrationPoints()") << std::endl;
 
-    for ( unsigned int GPoint = 0; GPoint < mConstitutiveLawVector.size(); ++GPoint )
-        mConstitutiveLawVector[GPoint]->SetValue( rVariable, rValues[GPoint], rCurrentProcessInfo );
-
+        for (unsigned int GPoint = 0; GPoint < mConstitutiveLawVector.size(); ++GPoint) {
+            if (rVariable == CAUCHY_STRESS_VECTOR) {
+               mStressVector[GPoint] = rValues[GPoint];
+            }
+            else {
+                mConstitutiveLawVector[GPoint]->SetValue(rVariable, rValues[GPoint], rCurrentProcessInfo);
+            }
+        }
     // KRATOS_INFO("1-SmallStrainUPwDiffOrderElement::1-SetValuesOnIntegrationPoints()") << std::endl;
 
     KRATOS_CATCH( "" )
