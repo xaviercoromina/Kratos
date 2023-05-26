@@ -137,7 +137,6 @@ void SetParameterFieldProcess::ExecuteInitialize()
     const auto& r_var = KratosComponents< Variable<double> >::Get(mParameters["variable_name"].GetString());
 
     // set parameter field from input function
-    KRATOS_INFO("SetParameterFieldProcess ") << mParameters["func_type"].GetString() << r_var << std::endl;
     if (mParameters["func_type"].GetString() == "input")
     {
         this->SetParameterFieldUsingInputFunction(r_var);
