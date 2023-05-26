@@ -15,6 +15,7 @@
 #include "includes/variables.h"
 
 
+
 namespace Kratos
 {
 
@@ -34,18 +35,21 @@ namespace Kratos
             "velocity"                : 1,
 			"origin"                  : [0.0, 0.0, 0.0],
 			"configuration"           : [0.0],
-			"function_path"           : "please specify a string to the UVEC function path"
+			"function_path"           : "please specify a string to the UVEC function path",
+			"uvec_parameters"         : {"parameters":{}, "state":{}}
         }  )"
         );
 
-        // Set default velocity as a string, if the input velocity is a string
+
+    	// Set default velocity as a string, if the input velocity is a string
         if (mParameters.Has("velocity")) {
             if (mParameters["velocity"].IsString()) {
                 default_parameters["velocity"].SetString("1");
             }
         }
 
-        mParameters.RecursivelyValidateAndAssignDefaults(default_parameters);
+        // ToDo JDN: Needs dealing with (also in python)
+        //mParameters.RecursivelyValidateAndAssignDefaults(default_parameters);
 
         // check if load parameter has size 3
         KRATOS_ERROR_IF(mParameters["load"].size() != 3) <<
@@ -66,7 +70,7 @@ namespace Kratos
 
         KRATOS_ERROR_IF(!is_all_string && !is_all_number) << "'load' has to be a vector of numbers, or an array with strings" << std::endl;
 
-
+        
         int count = 0;
     	for (double offset : mParameters["configuration"].GetVector())
         {
@@ -74,12 +78,14 @@ namespace Kratos
             auto parameters_moving_load = mParameters.Clone();
 
     		count++;
+            mConfigurationCallback.push_back(false);
             const std::string newModelPartName = mrModelPart.Name() + "_cloned_" + std::to_string(count);
-            auto& new_cloned_model_part = CloneMovingConditionInComputeModelPart(newModelPartName);
+            auto& new_cloned_model_part = CloneMovingConditionInComputeModelPart(newModelPartName, count);
 
             parameters_moving_load.RemoveValue("configuration");
             parameters_moving_load.RemoveValue("compute_model_part_name");
             parameters_moving_load.RemoveValue("function_path");
+            parameters_moving_load.RemoveValue("uvec_parameters");
     		parameters_moving_load.AddDouble("offset", offset);
     		auto r_moving_point_process = SetMovingLoadProcess(new_cloned_model_part, parameters_moving_load);
             mMovingPointLoadsProcesses.push_back(r_moving_point_process);
@@ -90,7 +96,7 @@ namespace Kratos
 
     }
 
-    ModelPart& SetMultipleMovingLoadsProcess::CloneMovingConditionInComputeModelPart(std::string NewBodyPartName)
+    ModelPart& SetMultipleMovingLoadsProcess::CloneMovingConditionInComputeModelPart(std::string NewBodyPartName, int ConfigurationIndex)
     {
         auto& compute_model_part = mrModelPart.GetRootModelPart().GetSubModelPart(mParameters["compute_model_part_name"].GetString());
         auto& new_model_part = compute_model_part.CreateSubModelPart(NewBodyPartName);
@@ -105,7 +111,10 @@ namespace Kratos
             if (clone_condition_ptr == nullptr) KRATOS_ERROR << "SetMultipleMovingLoadsProcess:" << "Could not cast condition to MovingLoadCondition" << std::endl;
 
     		if (mPythonUvecFunction == nullptr) SetPythonUvecFunction();
-    		clone_condition_ptr->setUvecFunction(std::bind(&SetMultipleMovingLoadsProcess::PythonFinalizeNonLinearFunction, this));
+    		clone_condition_ptr->SetUvecFunction(
+                std::bind(&SetMultipleMovingLoadsProcess::PythonInitializeNonLinearFunction, this,
+                    std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+            clone_condition_ptr->SetConfigurationIndex(ConfigurationIndex-1);
     		new_model_part.AddCondition(clone_condition);
         }
         return new_model_part;
@@ -113,16 +122,77 @@ namespace Kratos
 
     void SetMultipleMovingLoadsProcess::SetPythonUvecFunction()
     {
-        PyObject* python_uvec_function_module = PyImport_ImportModule(mParameters["function_path"].GetString().c_str());
+        KRATOS_INFO("SetPythonUvecFunction") << "Setting Up" << std::endl;
+    	PyObject* python_uvec_function_module = PyImport_ImportModule(mParameters["function_path"].GetString().c_str());
         mPythonUvecFunction = PyObject_GetAttrString(python_uvec_function_module, "UVEC");
+        KRATOS_INFO("SetPythonUvecFunction") << "Complete" << std::endl;
     }
 
 
-	void SetMultipleMovingLoadsProcess::PythonFinalizeNonLinearFunction()
+	void SetMultipleMovingLoadsProcess::PythonInitializeNonLinearFunction(int configurationIndex, Vector u, Vector theta)
     {
-        // python version
-    	KRATOS_INFO("FinalizelizeNonLinearIteration") << "Python - C++" << std::endl;
-        PyObject_CallFunction(mPythonUvecFunction, nullptr);
+        mConfigurationCallback[configurationIndex] = true;
+		
+		//Update_json
+
+        // Displacements per axle
+    	if(!mParameters["uvec_parameters"]["u"].Has(std::to_string(configurationIndex)))
+        {
+            mParameters["uvec_parameters"]["u"].AddVector(std::to_string(configurationIndex), u);
+        }
+        else
+        {
+            mParameters["uvec_parameters"]["u"][std::to_string(configurationIndex)].SetVector(u);
+        }
+
+        // Rotations per axle
+        if (!mParameters["uvec_parameters"]["theta"].Has(std::to_string(configurationIndex)))
+        {
+            mParameters["uvec_parameters"]["theta"].AddVector(std::to_string(configurationIndex), theta);
+        }
+        else
+        {
+            mParameters["uvec_parameters"]["theta"][std::to_string(configurationIndex)].SetVector(theta);
+        }
+
+    	for (auto configuration : mConfigurationCallback)
+        {
+        	if (!configuration)
+            {
+                return;
+            }
+        }
+
+        mParameters["uvec_parameters"]["dt"].SetDouble(mrModelPart.GetProcessInfo()[DELTA_TIME]);
+
+        PyObject* py_string = PyUnicode_FromString(mParameters["uvec_parameters"].WriteJsonString().c_str());
+    	PyObject* result = PyObject_CallFunction(mPythonUvecFunction, "O", py_string);
+
+    	if (result)
+        {
+            const char* jsonStr = PyUnicode_AsUTF8(result);
+            Parameters kp = Parameters(jsonStr);
+            mParameters["uvec_parameters"] = kp;
+        }
+
+        // update the moving load on all conditions
+        int configurationNo = 0;
+        for (double offset : mParameters["configuration"].GetVector()) // Improve this loop
+        {
+            configurationNo++;
+            const std::string newModelPartName = mrModelPart.Name() + "_cloned_" + std::to_string(configurationNo);
+            auto& compute_model_part = mrModelPart.GetRootModelPart().GetSubModelPart(mParameters["compute_model_part_name"].GetString());
+            auto& relevantModelPart = compute_model_part.GetSubModelPart(newModelPartName);
+            for (Condition condition : relevantModelPart.Conditions())
+            {
+                condition.SetValue(POINT_LOAD, mParameters["uvec_parameters"]["loads"][std::to_string((configurationNo - 1))].GetVector());
+            }
+        }
+        for (auto configuration : mConfigurationCallback)
+        {
+            configuration = false;
+        }
+
     }
 
     int SetMultipleMovingLoadsProcess::GetMaxConditionsIndex()

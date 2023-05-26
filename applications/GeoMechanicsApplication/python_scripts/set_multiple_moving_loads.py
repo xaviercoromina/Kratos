@@ -27,12 +27,15 @@ def Factory(settings, Model):
                 "velocity"                : 1,
                 "origin"                  : [0.0,0.0,0.0],
                 "configuration"           : [0.0],
-                "function_path"           : "please specify a string to the UVEC function path"
+                "function_path"           : "please specify a string to the UVEC function path",
+                "uvec_parameters"         : {"parameters":{}, "state":{}}
             }
             """
-                                                     )
+        )
     load_settings = settings["Parameters"]
+    
     load_settings.ValidateAndAssignDefaults(default_settings)
+
     
     # Set process
     model_part = Model.GetModelPart(load_settings["model_part_name"].GetString())

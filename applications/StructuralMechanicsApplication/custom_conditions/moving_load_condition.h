@@ -139,17 +139,17 @@ public:
     ///@name Access
     ///@{
 
-    void setConfigurationIndex(IndexType ind)
+    void SetConfigurationIndex(IndexType ind)
     {
         mConfigurationNumber = ind;
     }
 
-    IndexType getConfigurationIndex(IndexType ind)
+    IndexType GetConfigurationIndex()
     {
         return mConfigurationNumber;
     }
 
-    void setUvecFunction(std::function<void(void)> p_function)
+    void SetUvecFunction(std::function<void(int, Vector, Vector)> p_function)
     {
         mNonLinearFunction = p_function;
     }
@@ -210,6 +210,10 @@ protected:
     ///@}
     ///@name Protected Operations
     ///@{
+    ///
+    Vector CalculateLoadPointDisplacementVector();
+    Vector CalculateLoadPointRotationVector();
+    
 
     /**
      * This functions calculates both the RHS and the LHS following a moving load
@@ -257,7 +261,7 @@ protected:
 
     Matrix CalculateGlobalMomentMatrix(const VectorType& RotationalShapeFunctionVector, array_1d<double, TDim> LocalMovingLoad) const;
 
-    void FinalizeNonLinearIteration(const ProcessInfo& rCurrentProcessInfo) override;
+    void InitializeNonLinearIteration(const ProcessInfo& rCurrentProcessInfo) override;
 
     ///@}
     ///@name Protected  Access
@@ -287,9 +291,9 @@ private:
     ///@name Member Variables
     ///@{
 
-	std::function<void(void)> mNonLinearFunction = nullptr;
+	std::function<void(int, vector<double>, vector<double>)> mNonLinearFunction = nullptr;
     int mConfigurationNumber;
-		
+    bool mIsMovingLoad;
 
     ///@}
     ///@name Private Operators

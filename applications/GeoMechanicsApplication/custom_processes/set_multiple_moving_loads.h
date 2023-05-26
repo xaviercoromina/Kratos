@@ -88,6 +88,7 @@ namespace Kratos {
 	        Parameters mParameters;
 	        std::vector<SetMovingLoadProcess> mMovingPointLoadsProcesses;
             PyObject* mPythonUvecFunction = nullptr;
+            std::vector<bool> mConfigurationCallback;
 
         ///@}
         ///
@@ -97,10 +98,10 @@ namespace Kratos {
         /**
         * \brief Clones condition into a new sub body part of the compute model part
     	*/
-			ModelPart& CloneMovingConditionInComputeModelPart(std::string NewBodyPartName);
+			ModelPart& CloneMovingConditionInComputeModelPart(std::string NewBodyPartName, int Index);
 
             void SetPythonUvecFunction();
-    		void PythonFinalizeNonLinearFunction();
+    		void PythonInitializeNonLinearFunction(int configurationIndex, Vector u, Vector theta);
         
 
         /**
