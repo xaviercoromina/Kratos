@@ -85,7 +85,7 @@ class ApplyK0ProcedureProcess : public Process
           // Get K0 material parameters of this element ( probably there is something more efficient )
           const Element::PropertiesType& rProp = rElement.GetProperties();
           ConstitutiveLaw::Pointer pConstitutiveLaw = rProp.GetValue(CONSTITUTIVE_LAW);
-          const int& K0MainDirection = rProp[K0_MAIN_DIRECTION];
+          const int K0MainDirection = rProp[K0_MAIN_DIRECTION];
           if (K0MainDirection < 0 || K0MainDirection > 1) {
               KRATOS_ERROR << "undefined K0_MAIN_DIRECTION in ApplyK0ProcedureProcess: " << K0MainDirection << std::endl;
           }
@@ -139,7 +139,7 @@ class ApplyK0ProcedureProcess : public Process
               }
 
               // Apply K0 procedure
-             for (unsigned int IDir = 0; IDir <= 2; ++IDir) {
+             for (int IDir = 0; IDir <= 2; ++IDir) {
                   if (IDir != K0MainDirection) {
                       rStressVectors[GPoint][IDir] = K0Vector[IDir] * rStressVectors[GPoint][K0MainDirection];
                   }
