@@ -39,7 +39,7 @@ class ApplyK0ProcedureProcess : public Process
 
     /// Constructor
     ApplyK0ProcedureProcess(ModelPart&  model_part,
-                           Parameters& rParameters) : Process(Flags()), mrModelPart(model_part)
+                           Parameters& ) : Process(Flags()), mrModelPart(model_part)
     {
     }
 
