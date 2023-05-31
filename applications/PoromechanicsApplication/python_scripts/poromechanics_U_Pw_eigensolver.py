@@ -64,7 +64,7 @@ class UPwEigenSolver(UPwSolver):
 
     def _ConstructSolver(self, builder_and_solver, strategy_type):
 
-        self.linear_solver = _ConstructLinearSolver()
+        # self.linear_solver = _ConstructLinearSolver() # It is already constructed in the base class
         eigen_scheme = self.scheme # The scheme defines the matrices of the eigenvalue problem.
         builder_and_solver = self._ConstructBuilderAndSolver(True) # The eigensolver is created here.
 
