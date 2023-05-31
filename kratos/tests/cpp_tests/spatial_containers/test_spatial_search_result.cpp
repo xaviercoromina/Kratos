@@ -23,10 +23,7 @@
 namespace Kratos::Testing 
 {
 
-/** @brief Test case for default construction of SpatialSearchResult.
- *  @tparam GeometricalObject The type of geometrical object.
- */
-KRATOS_TEST_CASE_IN_SUITE(DefaultConstructionSpatialSearchResult, KratosCoreFastSuite)
+KRATOS_TEST_CASE_IN_SUITE(SpatialSearchResultDefaultConstruction, KratosCoreFastSuite)
 {
     auto result = SpatialSearchResult<GeometricalObject>();
 
@@ -37,10 +34,7 @@ KRATOS_TEST_CASE_IN_SUITE(DefaultConstructionSpatialSearchResult, KratosCoreFast
     KRATOS_CHECK_EQUAL(result.GetDistance(), 0.0);
 }
 
-/** @brief Test case for setting the object found flag of SpatialSearchResult.
- *  @tparam GeometricalObject The type of geometrical object.
- */
-KRATOS_TEST_CASE_IN_SUITE(ObjectFoundSpatialSearchResult, KratosCoreFastSuite)
+KRATOS_TEST_CASE_IN_SUITE(SpatialSearchResultObjectFound, KratosCoreFastSuite)
 {
     auto result = SpatialSearchResult<GeometricalObject>();
     result.SetIsObjectFound(true);
@@ -49,10 +43,7 @@ KRATOS_TEST_CASE_IN_SUITE(ObjectFoundSpatialSearchResult, KratosCoreFastSuite)
     KRATOS_CHECK_EQUAL(result.IsObjectFound(), true);
 }
 
-/** @brief Test case for setting the distance calculated flag of SpatialSearchResult.
- *  @tparam GeometricalObject The type of geometrical object.
- */
-KRATOS_TEST_CASE_IN_SUITE(DistanceCalculatedSpatialSearchResult, KratosCoreFastSuite)
+KRATOS_TEST_CASE_IN_SUITE(SpatialSearchResultDistanceCalculated, KratosCoreFastSuite)
 {
     auto result = SpatialSearchResult<GeometricalObject>();
     result.SetIsDistanceCalculated(true);
@@ -61,10 +52,7 @@ KRATOS_TEST_CASE_IN_SUITE(DistanceCalculatedSpatialSearchResult, KratosCoreFastS
     KRATOS_CHECK_EQUAL(result.IsDistanceCalculated(), true);
 }
 
-/** @brief Test case for assigning a pointer to SpatialSearchResult.
- *  @tparam GeometricalObject The type of geometrical object.
- */
-KRATOS_TEST_CASE_IN_SUITE(PointerSpatialSearchResult, KratosCoreFastSuite)
+KRATOS_TEST_CASE_IN_SUITE(SpatialSearchResultPointer, KratosCoreFastSuite)
 {
     Element element = Element();
     auto result = SpatialSearchResult<GeometricalObject>(&element);
@@ -74,10 +62,7 @@ KRATOS_TEST_CASE_IN_SUITE(PointerSpatialSearchResult, KratosCoreFastSuite)
     KRATOS_CHECK_EQUAL(result.Get().get(), ptr);
 }
 
-/** @brief Test case for setting the distance of SpatialSearchResult.
- *  @tparam GeometricalObject The type of geometrical object.
- */
-KRATOS_TEST_CASE_IN_SUITE(DistanceSpatialSearchResult, KratosCoreFastSuite)
+KRATOS_TEST_CASE_IN_SUITE(SpatialSearchResultDistance, KratosCoreFastSuite)
 {
     auto result = SpatialSearchResult<GeometricalObject>();
     result.SetDistance(3.14);
