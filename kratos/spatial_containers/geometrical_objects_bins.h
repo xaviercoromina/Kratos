@@ -18,6 +18,7 @@
 // External includes
 
 // Project includes
+#include "includes/parallel_environment.h"
 #include "geometries/bounding_box.h"
 #include "geometries/point.h"
 #include "spatial_containers/spatial_search_result.h"
@@ -216,7 +217,6 @@ public:
         }
     }
 
-
     /**
      * @brief This method takes a point and finds the nearest object to it in a given radius.
      * @details If there are more than one object in the same minimum distance only one is returned
@@ -229,6 +229,21 @@ public:
     ResultType SearchNearestInRadius(
         const Point& rPoint,
         const double Radius
+        );
+
+    /**
+     * @brief This method takes a point and finds the nearest object to it in a given radius.
+     * @details If there are more than one object in the same minimum distance only one is returned
+     * If there are no objects in that radius the result will be set to not found.
+     * Result contains a flag is the object has been found or not.
+     * @param rPoint The point to be checked
+     * @param Radius The radius to be checked
+     * @param rResults The results of the search
+     */
+    void SearchNearestInRadius(
+        const Point& rPoint,
+        const double Radius,
+        ResultTypeContainer& rResults
         );
 
     /**
@@ -290,9 +305,11 @@ public:
             auto& r_point_result = rResults.InitializeResult(it_point->Coordinates());
             auto result = SearchNearestInRadius(*it_point, Radius);
             r_point_result.AddResult(result);
+            
+            // Synchronize
+            r_point_result.SynchronizeAll(ParallelEnvironment::GetDefaultDataCommunicator());
         }
     }
-
 
     /**
      * @brief This method takes a point and finds the nearest object to it.
@@ -302,6 +319,18 @@ public:
      * @return ResultType The result of the search
     */
     ResultType SearchNearest(const Point& rPoint);
+
+    /**
+     * @brief This method takes a point and finds the nearest object to it.
+     * @details If there are more than one object in the same minimum distance only one is returned
+     * Result contains a flag is the object has been found or not.
+     * @param rPoint The point to be checked
+     * @param rResults The results of the search
+    */
+    void SearchNearest(
+        const Point& rPoint,
+        ResultTypeContainer& rResults
+        );
 
     /**
      * @brief This method takes a point and finds the nearest object to it (iterative version).
@@ -356,6 +385,9 @@ public:
             auto& r_point_result = rResults.InitializeResult(it_point->Coordinates());
             auto result = SearchNearest(*it_point);
             r_point_result.AddResult(result);
+            
+            // Synchronize
+            r_point_result.SynchronizeAll(ParallelEnvironment::GetDefaultDataCommunicator());
         }
     }
 
@@ -369,6 +401,20 @@ public:
      * @return ResultType The result of the search
      */
     ResultType SearchIsInside(const Point& rPoint);
+
+    /**
+     * @brief This method takes a point and search if it's inside an geometrical object of the domain.
+     * @details If it is inside an object, it returns it, and search distance is set to zero.
+     * If there is no object, the result will be set to not found.
+     * Result contains a flag is the object has been found or not.
+     * This method is a simplified and faster method of SearchNearest.
+     * @param rPoint The point to be checked
+     * @param rResults The results of the search
+     */
+    void SearchIsInside(
+        const Point& rPoint,
+        ResultTypeContainer& rResults
+        );
 
     /**
      * @brief This method takes a point and search if it's inside an geometrical object of the domain (iterative version).
@@ -427,6 +473,9 @@ public:
             auto& r_point_result = rResults.InitializeResult(it_point->Coordinates());
             auto result = SearchIsInside(*it_point);
             r_point_result.AddResult(result);
+
+            // Synchronize
+            r_point_result.SynchronizeAll(ParallelEnvironment::GetDefaultDataCommunicator());
         }
     }
 
