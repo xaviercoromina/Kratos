@@ -82,29 +82,29 @@ class KratosGeoMechanicsK0ProcedureProcessTests(KratosUnittest.TestCase):
 
         # compare top layer left cauchy_stress_xx = k0_nc * cauchy_stress_yy, cauchy_stress_xy = 0.
         k0_nc = 0.6
-        sig_integrationpoint1_element6 = cauchy_stresses[2][0]
-        sig_yy = sig_integrationpoint1_element6[1,1]
-        sig_xx = sig_integrationpoint1_element6[0,0]
+        sig_integrationpoint1_element3 = cauchy_stresses[2][0]
+        sig_yy = sig_integrationpoint1_element3[1,1]
+        sig_xx = sig_integrationpoint1_element3[0,0]
         self.assertAlmostEqual( sig_xx, k0_nc*sig_yy )
-        sig_xy = sig_integrationpoint1_element6[0,1]
+        sig_xy = sig_integrationpoint1_element3[0,1]
         self.assertEqual( sig_xy, 0.0 )
 
         # compare middle layer right cauchy_stress_xx = k0_nc * cauchy_stress_yy, cauchy_stress_xy = 0.
         k0_nc = 0.7
-        sig_integrationpoint1_element6 = cauchy_stresses[79][0]
-        sig_yy = sig_integrationpoint1_element6[1,1]
-        sig_xx = sig_integrationpoint1_element6[0,0]
+        sig_integrationpoint1_element80 = cauchy_stresses[79][0]
+        sig_yy = sig_integrationpoint1_element80[1,1]
+        sig_xx = sig_integrationpoint1_element80[0,0]
         self.assertAlmostEqual( sig_xx, k0_nc*sig_yy )
-        sig_xy = sig_integrationpoint1_element6[0,1]
+        sig_xy = sig_integrationpoint1_element80[0,1]
         self.assertEqual( sig_xy, 0.0 )
 
         # compare bottom layer left cauchy_stress_xx = k0_nc * cauchy_stress_yy, cauchy_stress_xy = 0.
         k0_nc = 0.8
-        sig_integrationpoint1_element1 = cauchy_stresses[116][0]
-        sig_yy = sig_integrationpoint1_element1[1,1]
-        sig_xx = sig_integrationpoint1_element1[0,0]
+        sig_integrationpoint1_element117 = cauchy_stresses[116][0]
+        sig_yy = sig_integrationpoint1_element117[1,1]
+        sig_xx = sig_integrationpoint1_element117[0,0]
         self.assertAlmostEqual( sig_xx, k0_nc*sig_yy )
-        sig_xy = sig_integrationpoint1_element1[0,1]
+        sig_xy = sig_integrationpoint1_element117[0,1]
         self.assertEqual( sig_xy, 0.0 )
 
     def test_k0_procedure_k0_nc_ocr(self):
