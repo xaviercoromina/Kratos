@@ -82,12 +82,12 @@ class ApplyK0ProcedureProcess : public Process
           if (rProp.Has(K0_NC)) {
               std::fill(k0_vector.begin(), k0_vector.end(), rProp[K0_NC]);
            }
-          else if (rProp.Has(NUMBER_OF_UMAT_PHI_PARAMETER) && rProp.Has(NUMBER_OF_UMAT_PARAMETERS) && rProp.Has(UMAT_PARAMETERS)) {
-              if (rProp[NUMBER_OF_UMAT_PHI_PARAMETER] < 1 || rProp[NUMBER_OF_UMAT_PHI_PARAMETER] > rProp[NUMBER_OF_UMAT_PARAMETERS]) {
-                  KRATOS_ERROR << "undefined NUMBER_OF_UMAT_PHI_PARAMETER in ApplyK0ProcedureProcess: " << rProp[NUMBER_OF_UMAT_PHI_PARAMETER] << std::endl;
+          else if (rProp.Has(INDEX_OF_UMAT_PHI_PARAMETER) && rProp.Has(NUMBER_OF_UMAT_PARAMETERS) && rProp.Has(UMAT_PARAMETERS)) {
+              if (rProp[INDEX_OF_UMAT_PHI_PARAMETER] < 1 || rProp[INDEX_OF_UMAT_PHI_PARAMETER] > rProp[NUMBER_OF_UMAT_PARAMETERS]) {
+                  KRATOS_ERROR << "undefined INDEX_OF_UMAT_PHI_PARAMETER in ApplyK0ProcedureProcess: " << rProp[INDEX_OF_UMAT_PHI_PARAMETER] << std::endl;
               }
               // is more checking is possible and should that happen here?
-              double phi = rProp[UMAT_PARAMETERS][rProp[NUMBER_OF_UMAT_PHI_PARAMETER] - 1];
+              double phi = rProp[UMAT_PARAMETERS][rProp[INDEX_OF_UMAT_PHI_PARAMETER] - 1];
               if (phi < 0. || phi > 90.) {
                   KRATOS_ERROR << "friction angle Phi out of range in ApplyK0ProcedureProcess: " << phi << std::endl;
               }
@@ -104,12 +104,12 @@ class ApplyK0ProcedureProcess : public Process
           const auto PoissonUR = rProp.Has(POISSON_UNLOADING_RELOADING) ? rProp[POISSON_UNLOADING_RELOADING] : 0.;
 
           // Determine OCR dependent K0 values ( constant per element! )
-          if ((rProp.Has(K0_NC) || rProp.Has(NUMBER_OF_UMAT_PHI_PARAMETER)) && rProp.Has(OCR)) {
+          if ((rProp.Has(K0_NC) || rProp.Has(INDEX_OF_UMAT_PHI_PARAMETER)) && rProp.Has(OCR)) {
               //Modify for presence of OCR (or POP?) field values
               double k0_value = rProp[K0_NC] * rProp[OCR] - (PoissonUR / (1.0 - PoissonUR)) * (rProp[OCR] - 1.0);
               std::fill(k0_vector.begin(), k0_vector.end(), k0_value);
           }
-          // Get element stress vectors
+          // Get element stress vectorsn
           const ProcessInfo& rCurrentProcessInfo = this->mrModelPart.GetProcessInfo();
           std::vector<ConstitutiveLaw::StressVectorType> rStressVectors;
           rElement.CalculateOnIntegrationPoints(CAUCHY_STRESS_VECTOR, rStressVectors, rCurrentProcessInfo);
