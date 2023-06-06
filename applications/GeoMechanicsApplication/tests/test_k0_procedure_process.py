@@ -107,6 +107,66 @@ class KratosGeoMechanicsK0ProcedureProcessTests(KratosUnittest.TestCase):
         sig_xy = sig_integrationpoint1_element117[0,1]
         self.assertEqual( sig_xy, 0.0 )
 
+    def test_k0_procedure_k0_nc_skew_layers_dam(self):
+        """
+        Test to check if CAUCHY_STRESS_XX is correctly derived from CAUCHY_STRESS_YY using K0_NC,
+        even when materials are stacked in skewed layers
+        """
+
+        test_name = os.path.join("test_k0_procedure_process", "test_k0_procedure_k0_nc_skew_layers_dam")
+        file_path = test_helper.get_file_path(test_name)
+
+        # run simulation
+        simulation = test_helper.run_kratos(file_path)
+
+        # retrieve Cauchy stress tensor
+        cauchy_stresses = test_helper.get_on_integration_points(simulation,Kratos.CAUCHY_STRESS_TENSOR)
+
+        # compare top layer right cauchy_stress_xx = k0_nc * cauchy_stress_yy, cauchy_stress_xy = 0.
+        k0_nc = 0.6
+        sig_integrationpoint1_element100 = cauchy_stresses[99][0]
+        sig_yy = sig_integrationpoint1_element100[1,1]
+        sig_xx = sig_integrationpoint1_element100[0,0]
+        self.assertAlmostEqual( sig_xx, k0_nc*sig_yy )
+        sig_xy = sig_integrationpoint1_element100[0,1]
+        self.assertEqual( sig_xy, 0.0 )
+
+        # compare middle layer left cauchy_stress_xx = k0_nc * cauchy_stress_yy, cauchy_stress_xy = 0.
+        k0_nc = 0.7
+        sig_integrationpoint1_element5 = cauchy_stresses[4][0]
+        sig_yy = sig_integrationpoint1_element5[1,1]
+        sig_xx = sig_integrationpoint1_element5[0,0]
+        self.assertAlmostEqual( sig_xx, k0_nc*sig_yy )
+        sig_xy = sig_integrationpoint1_element5[0,1]
+        self.assertEqual( sig_xy, 0.0 )
+
+        # compare bottom layer right cauchy_stress_xx = k0_nc * cauchy_stress_yy, cauchy_stress_xy = 0.
+        k0_nc = 0.8
+        sig_integrationpoint1_element51 = cauchy_stresses[50][0]
+        sig_yy = sig_integrationpoint1_element51[1,1]
+        sig_xx = sig_integrationpoint1_element51[0,0]
+        self.assertAlmostEqual( sig_xx, k0_nc*sig_yy )
+        sig_xy = sig_integrationpoint1_element51[0,1]
+        self.assertEqual( sig_xy, 0.0 )
+
+        # compare dam1 right cauchy_stress_xx = k0_nc * cauchy_stress_yy, cauchy_stress_xy = 0.
+        k0_nc = 0.5
+        sig_integrationpoint1_element121 = cauchy_stresses[120][0]
+        sig_yy = sig_integrationpoint1_element121[1,1]
+        sig_xx = sig_integrationpoint1_element121[0,0]
+        self.assertAlmostEqual( sig_xx, k0_nc*sig_yy )
+        sig_xy = sig_integrationpoint1_element121[0,1]
+        self.assertEqual( sig_xy, 0.0 )
+
+        # compare dam2 cauchy_stress_xx = k0_nc * cauchy_stress_yy, cauchy_stress_xy = 0.
+        k0_nc = 0.5
+        sig_integrationpoint1_element126 = cauchy_stresses[124][0]
+        sig_yy = sig_integrationpoint1_element126[1,1]
+        sig_xx = sig_integrationpoint1_element126[0,0]
+        self.assertAlmostEqual( sig_xx, k0_nc*sig_yy )
+        sig_xy = sig_integrationpoint1_element126[0,1]
+        self.assertEqual( sig_xy, 0.0 )
+
     def test_k0_procedure_k0_nc_ocr(self):
         """
         Test to check if CAUCHY_STRESS_XX is correctly derived from CAUCHY_STRESS_YY using K0_NC and OCR
